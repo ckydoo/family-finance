@@ -321,7 +321,10 @@ class SavingsCircle {  final String name;
     required this.order,
   });
 
-  String get nextCollector => order[currentRound - 1];
+  /// Rotation wraps: a circle can run more rounds than members (cycle 2
+  /// starts at the top of [order]) — and an empty order can never crash.
+  String get nextCollector =>
+      order.isEmpty ? '' : order[(currentRound - 1) % order.length];
 
   Money get potSoFar =>
       Money(contribution.minor * (currentRound - 1), contribution.currency);

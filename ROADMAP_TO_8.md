@@ -412,3 +412,8 @@ Note: `lib/l10n/generated/app_localizations.dart` is a **build-time artifact** (
 - **Mhuri Money → Mhuri Hub** (user chose "Hub": neutral, nothing money-flavoured, whole-family platform feel). Scope: user-facing only — Material app title + home header, loginWelcome / recordsOnly across all 6 locales, pubspec description, docs. Internal Dart slug stays `mhuri_money` (invisible to users; zero code risk).
 - When platform folders are generated (device week, `flutter create .`): set `android:label="Mhuri Hub"` + iOS `CFBundleDisplayName` so the launcher icon matches.
 
+## App icon swap (2026-09-21)
+- New mark: **interlocking white rings + amber arc on teal gradient** (user pick C from 3 candidates) — family-circle/mukando symbolism, international-premium styling. Legacy hut icon archived at `design/app_icon_hut_legacy.png`; candidates + size-proof sheet in `design/`.
+- `assets/branding/` now bundles only `app_icon.png` + `splash.png` (directory-listed in pubspec — every file there ships in the APK).
+- Device week: generate launcher icons with `dart run flutter_launcher_icons` (pubspec already points at `assets/branding/app_icon.png`). If the rings read thin on a real launcher, thicken ring strokes in a v2.
+

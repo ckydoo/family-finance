@@ -42,8 +42,7 @@ class _AdultShellState extends State<AdultShell> {
       _NavDest(Icons.home_outlined, Icons.home_rounded, l.tabHome),
       _NavDest(Icons.pie_chart_outline, Icons.pie_chart, l.tabBudgets),
       _NavDest(Icons.savings_outlined, Icons.savings, l.tabSavings),
-      _NavDest(
-          Icons.shopping_cart_outlined, Icons.shopping_cart, l.tabLists),
+      _NavDest(Icons.list_outlined, Icons.list_rounded, l.tabLists),
     ];
 
     // IndexedStack keeps each tab's scroll position alive.
@@ -55,14 +54,14 @@ class _AdultShellState extends State<AdultShell> {
           // Budgets (tab 1) is the two-pane surface; other tabs stay phone-width.
           constraints: BoxConstraints(maxWidth: _tab == 1 ? 980 : 620),
           child: IndexedStack(
-            index: _tab,
-            children: const [
-              HomeScreen(),
-              BudgetsScreen(),
-              SavingsScreen(),
-              ListsScreen(),
-            ],
-          ),
+        index: _tab,
+        children: const [
+          HomeScreen(),
+          BudgetsScreen(),
+          SavingsScreen(),
+          ListsScreen(),
+        ],
+      )
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -80,6 +79,8 @@ class _AdultShellState extends State<AdultShell> {
         child: BottomAppBar(
           color: context.card,
           elevation: 0,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 8,
           child: Row(
             children: [
               Expanded(
@@ -119,7 +120,6 @@ class _AdultShellState extends State<AdultShell> {
         splashColor: context.primarySoft,
         highlightColor: context.primarySoft,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedScale(
@@ -128,17 +128,17 @@ class _AdultShellState extends State<AdultShell> {
               scale: selected ? 1.08 : 1.0,
               child: Icon(
                 selected ? d.active : d.rest,
-                size: 22,
+                size: 24,
                 color: color,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               d.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 11.5,
                 letterSpacing: 0.1,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 color: color,

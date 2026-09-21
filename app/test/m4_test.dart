@@ -48,7 +48,8 @@ void main() {
       expect(s.monthStartDay, 15);
     });
 
-    test('rollover envelope gains carry when the previous cycle was clean', () {
+    test('rollover envelope gains carry when the previous cycle was clean',
+        () {
       final s = AppState();
       s.setMonthStartDay(1);
       // Deterministic: pretend nothing was ever spent.
@@ -64,10 +65,10 @@ void main() {
     setUp(() async {
       final raw = await databaseFactory.openDatabase(
         inMemoryDatabasePath,
-        options: OpenDatabaseOptions(
-          version: 1,
-          onCreate: (d, v) async => AppDatabase.createSchema(d),
-        ),
+        version: 1,
+        onCreate: (d, v) async {
+          await AppDatabase.createSchema(d);
+        },
       );
       db = AppDatabase.wrap(raw);
     });
@@ -149,10 +150,10 @@ void main() {
     test('onboarding flag and month start survive a restart', () async {
       final raw = await databaseFactory.openDatabase(
         inMemoryDatabasePath,
-        options: OpenDatabaseOptions(
-          version: 1,
-          onCreate: (d, v) async => AppDatabase.createSchema(d),
-        ),
+        version: 1,
+        onCreate: (d, v) async {
+          await AppDatabase.createSchema(d);
+        },
       );
       final db = AppDatabase.wrap(raw);
 

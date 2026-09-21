@@ -86,3 +86,8 @@ Family screen: Switch-profile picker (all members, live included), Currency & ra
 - Fixed all ~25 compile errors: charts missing paren; members structural splice (sheets moved top-level, `_roleBg` top-level, context params on `_setting/_settingAction/_profileTile`); home `_card/_paceColor` + budgets `_paceColor` take BuildContext; const-InputDecoration sites (budgets×3, login×2, lists×2); theme cupertino import; persistence `required onboardingDone`; app_state nullable split + foundation import; mappers/app_icons library-first + null-safe envelopeId; meeting/reports imports; reports `_stat` IconData+context; teen painter colors via fields; settings `_header` context; recurring_ui `initialValue` (3.33 deprecation).
 - Tests: notify `rule()` return type + SavingsCircle literal; premium `US\$` escapes + self-contained settings round-trip; sync Outbox import + Request cast; auth non-const MapEntry(jsonEncode); app_icons_test material import.
 - Residual (user-side): ~26 AppLocalizations getters = stale generated l10n → `flutter pub get` in app/ regenerates; ~120 style infos (prefer_const etc.) → optional `dart fix --apply`; `version:/onCreate:` test params resolve once run from app/ context.
+
+## Device round 3 fixes (2026-09-22)
+- CRASH: tapping Collect on home → `RangeError (length): Not in inclusive range 0..4: 5`. Cause: seed circle runs 8 rounds with a 5-member order and `nextCollector` indexed `order[currentRound-1]` raw. Fix: rotation now wraps (`order[(currentRound-1) % order.length]`, empty-order guarded) — multi-cycle mukandas are valid; rounds 1..N behavior unchanged, sync_test fixture unaffected.
+- Reports badge: donut glyph 20→22px, thicker strokes, soft-teal chip border (user asked for it clearly visible).
+

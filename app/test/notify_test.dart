@@ -68,8 +68,7 @@ void main() {
 
   group('planner — bills due (C7: 3-day reminder)', () {
     test('due in 2 days → morning-of reminder', () {
-      final out =
-          plan(recurring: [rule('rc_x', now.add(const Duration(days: 2)))]);
+      final out = plan(recurring: [rule('rc_x', now.add(const Duration(days: 2)))]);
       final bill = out.where((r) => r.key.startsWith('bill_')).toList();
       expect(bill, hasLength(1));
       expect(bill.first.when.hour, 9);
@@ -146,8 +145,7 @@ void main() {
     test('chore waiting for confirmation reminds the parent', () {
       final out = plan(
         chores: [
-          Chore(
-              id: 'ch_1', name: 'Dishes', stars: 2, state: ChoreState.waiting),
+          Chore(id: 'ch_1', name: 'Dishes', stars: 2, state: ChoreState.waiting),
         ],
       );
       expect(out.where((r) => r.key == 'chore_ch_1'), hasLength(1));
@@ -299,10 +297,10 @@ void main() {
     setUp(() async {
       final raw = await databaseFactory.openDatabase(
         inMemoryDatabasePath,
-        options: OpenDatabaseOptions(
-          version: 1,
-          onCreate: (d, v) async => AppDatabase.createSchema(d),
-        ),
+        version: 1,
+        onCreate: (d, v) async {
+          await AppDatabase.createSchema(d);
+        },
       );
       db = AppDatabase.wrap(raw);
     });
@@ -345,12 +343,10 @@ void main() {
     });
 
     test('quiet window helpers behave (equal hours = no DND)', () {
-      const off =
-          NotifyConfig(enabled: true, allowed: {}, quietStart: 7, quietEnd: 7);
+      const off = NotifyConfig(enabled: true, allowed: {}, quietStart: 7, quietEnd: 7);
       expect(off.quietEnabled, isFalse);
       expect(off.inQuiet(23), isFalse);
-      const wrap =
-          NotifyConfig(enabled: true, allowed: {}, quietStart: 21, quietEnd: 7);
+      const wrap = NotifyConfig(enabled: true, allowed: {}, quietStart: 21, quietEnd: 7);
       expect(wrap.inQuiet(22), isTrue);
       expect(wrap.inQuiet(5), isTrue);
       expect(wrap.inQuiet(12), isFalse);

@@ -32,11 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final u = s.user;
     final hour = DateTime.now().hour;
     final l = AppLocalizations.of(context)!;
-    final greet = hour < 12
-        ? l.greetingMorning
-        : hour < 19
-            ? l.greetingAfternoon
-            : l.greetingEvening;
+    final greet =
+        hour < 12 ? l.greetingMorning : hour < 19 ? l.greetingAfternoon : l.greetingEvening;
 
     return SafeArea(
       // G10: the pool card compresses subtly as content scrolls under it.
@@ -129,17 +126,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(builder: (_) => const ReportsScreen()),
                 ),
                 icon: Container(
-                  padding: const EdgeInsets.all(7),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF2FB89A), Color(0xFF37C4A4)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
+                    color: context.card,
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: context.primarySoft, width: 1.4),
                   ),
-                  child: const Icon(Icons.donut_small,
-                      size: 20, color: Colors.white),
+                  child: _ReportsDonutGlyph(
+                    colors: [
+                      context.primary,
+                      context.accent,
+                      context.incomeGreen,
+                      context.expenseRed,
+                      context.primaryDark,
+                      const Color(0xFF7EC8F2),
+                      const Color(0xFFFF6B6B),
+                    ],
+                  ),
                 ),
               ),
               IconButton(
@@ -150,124 +153,117 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-                // ── Offline sync banner (demo of the outbox queue) ─────────────
-                if (s.pendingOps > 0) ...[
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      s.syncNow();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content:
-                              Text(AppLocalizations.of(context)!.allSynced),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFDF1DA),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.syncPill(s.pendingOps),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF8A6116),
-                          fontWeight: FontWeight.w600,
-                        ),
+          // ── Offline sync banner (demo of the outbox queue) ─────────────
+          if (s.pendingOps > 0) ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {
+                s.syncNow();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context)!.allSynced),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDF1DA),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.syncPill(s.pendingOps),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF8A6116),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+
+          // ── Family Pool ─────────────────────────────────────────────────
+          AnimatedScale(
+            scale: _poolCompact ? 0.97 : 1.0,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            child: const _PoolCard(),
+          ), // G10
+
+          const SizedBox(height: 16),
+
+          // ── Envelope chips ──────────────────────────────────────────────
+          SizedBox(
+            height: 122,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final e in s.envelopes.where((e) => !e.isPersonal).take(4))
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: _EnvChip(e: e),
+                  ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+                    if (s.pendingOps > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 6),
+              child: Row(
+                children: [
+                  Icon(Icons.cloud_off, size: 13, color: context.inkFaint),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      l.syncPill(s.pendingOps),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: context.inkFaint,
                       ),
                     ),
                   ),
                 ],
+              ),
+            ),
 
-                const SizedBox(height: 16),
-
-                // ── Family Pool ─────────────────────────────────────────────────
-                AnimatedScale(
-                  scale: _poolCompact ? 0.97 : 1.0,
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOut,
-                  child: const _PoolCard(),
-                ), // G10
-
-                const SizedBox(height: 16),
-
-                // ── Envelope chips ──────────────────────────────────────────────
-                SizedBox(
-                  height: 122,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      for (final e
-                          in s.envelopes.where((e) => !e.isPersonal).take(4))
-                        Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: _EnvChip(e: e),
-                        ),
-                    ],
-                  ),
+          // ── Recent activity ─────────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context)!.recentActivity,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.ink),
                 ),
-
-                const SizedBox(height: 8),
-
-                if (s.pendingOps > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 6),
-                    child: Row(
-                      children: [
-                        Icon(Icons.cloud_off,
-                            size: 13, color: context.inkFaint),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            l.syncPill(s.pendingOps),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: context.inkFaint,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // ── Recent activity ─────────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        AppLocalizations.of(context)!.recentActivity,
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: context.ink),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const ActivityScreen()),
-                      ),
-                      child: Text(AppLocalizations.of(context)!.seeAll),
-                    ),
-                  ],
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ActivityScreen()),
                 ),
-                for (final t in s.txs.take(3))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: TxTile(tx: t),
-                  ),
+                child: Text(AppLocalizations.of(context)!.seeAll),
+              ),
+            ],
+          ),
+          for (final t in s.txs.take(3))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TxTile(tx: t),
+            ),
 
-                const SizedBox(height: 8),
-                const SmartCard(),
-              ],
-            )),
+          const SizedBox(height: 8),
+          const SmartCard(),
+        ],
+      )),
       ),
     );
   }
@@ -316,7 +312,7 @@ class _PoolCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   AppLocalizations.of(context)!.familyPool,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white70,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -324,9 +320,7 @@ class _PoolCard extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: s.hideAmounts
-                    ? AppLocalizations.of(context)!.showAmountsTip
-                    : AppLocalizations.of(context)!.hideAmountsTip,
+                tooltip: s.hideAmounts ? AppLocalizations.of(context)!.showAmountsTip : AppLocalizations.of(context)!.hideAmountsTip,
                 visualDensity: VisualDensity.compact,
                 onPressed: () {
                   HapticFeedback.selectionClick();
@@ -344,8 +338,7 @@ class _PoolCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _amount(
-                    primary, '•••••', s.hideAmounts, s.displayCurrency.short),
+                child: _amount(primary, '•••••', s.hideAmounts, s.displayCurrency.short),
               ),
               IconButton(
                 tooltip: AppLocalizations.of(context)!.swapCurrency,
@@ -356,8 +349,7 @@ class _PoolCard extends StatelessWidget {
                 icon: const Icon(Icons.swap_horiz, color: Colors.white),
               ),
               Expanded(
-                child: _amount(secondary, '•••••', s.hideAmounts,
-                    s.displayCurrency.other.short),
+                child: _amount(secondary, '•••••', s.hideAmounts, s.displayCurrency.other.short),
               ),
             ],
           ),
@@ -418,7 +410,8 @@ class _EnvChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final spent = s.spentOn(e);
-    final value = e.limit.minor <= 0 ? 0.0 : spent.minor / e.limit.minor;
+    final value =
+        e.limit.minor <= 0 ? 0.0 : spent.minor / e.limit.minor;
     final pace = s.paceOf(e);
 
     return Container(
@@ -450,8 +443,7 @@ class _EnvChip extends StatelessWidget {
             e.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w700, color: context.ink),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.ink),
           ),
           const SizedBox(height: 6),
           ClipRRect(
@@ -499,13 +491,10 @@ class SmartCard extends StatelessWidget {
     }
     if (pending != null) {
       final kid = s.member(pending.kidId);
-      return _card(
-        context,
+      return _card(context,
         color: const Color(0xFFFBE7C6),
         icon: Icons.volunteer_activism,
-        title: AppLocalizations.of(context)!.requestTitle(
-            kid?.name ?? AppLocalizations.of(context)!.yourChild,
-            pending.amount.text),
+        title: AppLocalizations.of(context)!.requestTitle(kid?.name ?? AppLocalizations.of(context)!.yourChild, pending.amount.text),
         subtitle: pending.reason,
         actionLabel: AppLocalizations.of(context)!.review,
         onTap: () => _reviewRequest(context, s, pending!),
@@ -523,14 +512,11 @@ class SmartCard extends StatelessWidget {
     if (proposal != null) {
       final teen = s.member(proposal.teenId);
       final env = s.envelope(proposal.envelopeId);
-      return _card(
-        context,
+      return _card(context,
         color: const Color(0xFFDCEBFA),
         icon: Icons.confirmation_number,
-        title: AppLocalizations.of(context)!
-            .proposalTitle(teen?.name ?? 'Zoe', proposal.amount.text),
-        subtitle: AppLocalizations.of(context)!.proposalSub(proposal.reason,
-            env?.name ?? AppLocalizations.of(context)!.envelopeLabel),
+        title: AppLocalizations.of(context)!.proposalTitle(teen?.name ?? 'Zoe', proposal.amount.text),
+        subtitle: AppLocalizations.of(context)!.proposalSub(proposal.reason, env?.name ?? AppLocalizations.of(context)!.envelopeLabel),
         actionLabel: AppLocalizations.of(context)!.review,
         onTap: () => _reviewProposal(context, s, proposal!),
       );
@@ -539,15 +525,11 @@ class SmartCard extends StatelessWidget {
     // 1c. Recurring expense due soon (C7) — review, post or skip
     final dueRule = s.dueRecurring.isEmpty ? null : s.dueRecurring.first;
     if (dueRule != null) {
-      return _card(
-        context,
+      return _card(context,
         color: const Color(0xFFE8E4F7),
         icon: Icons.push_pin,
         title: '${dueRule.name} — ${dueRule.amount.text}',
-        subtitle: AppLocalizations.of(context)!.recDueSub(
-            dueRule.nextDue.isBefore(DateTime.now())
-                ? AppLocalizations.of(context)!.dueNow
-                : AppLocalizations.of(context)!.dueSoon),
+        subtitle: AppLocalizations.of(context)!.recDueSub(dueRule.nextDue.isBefore(DateTime.now()) ? AppLocalizations.of(context)!.dueNow : AppLocalizations.of(context)!.dueSoon),
         actionLabel: AppLocalizations.of(context)!.post,
         onTap: () {
           s.postRecurring(dueRule);
@@ -572,8 +554,7 @@ class SmartCard extends StatelessWidget {
       }
     }
     if (waiting != null) {
-      return _card(
-        context,
+      return _card(context,
         color: const Color(0xFFD9EDE8),
         icon: Icons.auto_awesome,
         title: AppLocalizations.of(context)!.choreDoneTitle(waiting.name),
@@ -585,8 +566,7 @@ class SmartCard extends StatelessWidget {
           celebrate(context); // G11: stars rain for the kid who did it
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content:
-                  Text(AppLocalizations.of(context)!.starsGiven(waiting.stars)),
+              content: Text(AppLocalizations.of(context)!.starsGiven(waiting.stars)),
               behavior: SnackBarBehavior.floating,
               action: SnackBarAction(
                 label: AppLocalizations.of(context)!.undo,
@@ -599,18 +579,16 @@ class SmartCard extends StatelessWidget {
     }
 
     // 3. Savings circle turn
-    return _card(
-      context,
+    return _card(context,
       color: const Color(0xFFEFE3F7),
       icon: Icons.autorenew,
-      title: AppLocalizations.of(context)!
-          .circleTitle(s.circle.currentRound, s.circle.totalRounds),
-      subtitle: AppLocalizations.of(context)!.circleSub(s.circle.nextCollector,
-          s.circle.contribution.text, s.circle.potSoFar.text),
+      title:
+          AppLocalizations.of(context)!.circleTitle(s.circle.currentRound, s.circle.totalRounds),
+      subtitle: AppLocalizations.of(context)!.circleSub(s.circle.nextCollector, s.circle.contribution.text, s.circle.potSoFar.text),
       actionLabel: AppLocalizations.of(context)!.markCollected,
       onTap: () {
         HapticFeedback.lightImpact();
-        s.circleCollect();
+          s.circleCollect();
         celebrate(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -622,16 +600,9 @@ class SmartCard extends StatelessWidget {
     );
   }
 
-  Future<void> _reviewRequest(
-      BuildContext context, AppState s, KidRequest r) async {
+  void _reviewRequest(BuildContext context, AppState s, KidRequest r) {
     final kid = s.member(r.kidId);
-    final l = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
-    final message = l.approvedReq(
-      r.amount.text,
-      kid?.name ?? l.yourChild,
-    );
-    final approved = await showDialog<bool>(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -639,9 +610,11 @@ class SmartCard extends StatelessWidget {
         content: Text(r.reason),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child:
-                Text(l.notThisWeek, style: TextStyle(color: context.inkSoft)),
+            onPressed: () {
+              s.declineRequest(r);
+              Navigator.pop(ctx);
+            },
+            child: Text(AppLocalizations.of(context)!.notThisWeek, style: TextStyle(color: context.inkSoft)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -650,49 +623,40 @@ class SmartCard extends StatelessWidget {
             ),
             onPressed: () {
               HapticFeedback.lightImpact();
-              Navigator.pop(ctx, true);
+              s.approveRequest(r);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.approvedReq(r.amount.text, kid?.name ?? AppLocalizations.of(context)!.yourChild),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
-            child: Text(l.approve),
+            child: Text(AppLocalizations.of(context)!.approve),
           ),
         ],
-      ),
-    );
-    if (approved == null || !context.mounted) return;
-    if (!approved) {
-      s.declineRequest(r);
-      return;
-    }
-    s.approveRequest(r);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  Future<void> _reviewProposal(
-      BuildContext context, AppState s, Proposal p) async {
+  void _reviewProposal(BuildContext context, AppState s, Proposal p) {
     final teen = s.member(p.teenId);
     final env = s.envelope(p.envelopeId);
-    final l = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
-    final message = l.approvedProp(
-      p.amount.text,
-      env?.name ?? l.envelopeLabel,
-    );
-    final approved = await showDialog<bool>(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(AppLocalizations.of(context)!
-            .proposalTitle(teen?.name ?? 'Zoe', p.amount.text)),
-        content: Text(AppLocalizations.of(context)!
-            .declineBody(p.reason, env?.name ?? '-')),
+        title: Text(AppLocalizations.of(context)!.proposalTitle(teen?.name ?? 'Zoe', p.amount.text)),
+        content: Text(AppLocalizations.of(context)!.declineBody(p.reason, env?.name ?? '-')),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l.decline, style: TextStyle(color: context.inkSoft)),
+            onPressed: () {
+              s.declineProposal(p);
+              Navigator.pop(ctx);
+            },
+            child: Text(AppLocalizations.of(context)!.decline, style: TextStyle(color: context.inkSoft)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -701,23 +665,20 @@ class SmartCard extends StatelessWidget {
             ),
             onPressed: () {
               HapticFeedback.lightImpact();
-              Navigator.pop(ctx, true);
+              s.approveProposal(p);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.approvedProp(p.amount.text, env?.name ?? AppLocalizations.of(context)!.envelopeLabel),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
-            child: Text(l.approve),
+            child: Text(AppLocalizations.of(context)!.approve),
           ),
         ],
-      ),
-    );
-    if (approved == null || !context.mounted) return;
-    if (!approved) {
-      s.declineProposal(p);
-      return;
-    }
-    s.approveProposal(p);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -793,7 +754,7 @@ class _ReportsDonutGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      size: const Size.square(20),
+      size: const Size.square(22),
       painter: _ReportsDonutPainter(colors),
     );
   }
@@ -806,7 +767,7 @@ class _ReportsDonutPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const stroke = 4.0;
+    const stroke = 4.2;
     final rect = Rect.fromLTWH(
       stroke / 2,
       stroke / 2,

@@ -54,8 +54,7 @@ void main() {
     final buffer = first.envelope('e7')!; // Emergency buffer
     final fees = first.envelope('e2')!; // School fees
     final before = fees.limit.minor;
-    first.moveMoney(
-        buffer, fees, Money.fromMajor(25, Currency.usd), 'fees top-up');
+    first.moveMoney(buffer, fees, Money.fromMajor(25, Currency.usd), 'fees top-up');
     await first.flushWrites();
     expect(fees.limit.minor, before + 2500);
 
