@@ -220,7 +220,7 @@ class _EnvelopeCard extends StatelessWidget {
                       value: value.clamp(0.0, 1.0).toDouble(),
                       minHeight: 7,
                       backgroundColor: context.track,
-                      color: _paceColor(pace),
+                      color: _paceColor(context, pace),
                     ),
                   ),
                 ],
@@ -385,7 +385,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                   child: DropdownButtonFormField<Envelope>(
                     initialValue: _from,
                     isExpanded: true,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'From',
                       filled: true,
                       fillColor: context.card,
@@ -422,7 +422,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                   child: DropdownButtonFormField<Envelope>(
                     initialValue: _to,
                     isExpanded: true,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'To',
                       filled: true,
                       fillColor: context.card,
@@ -470,7 +470,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                 Expanded(
                   child: TextField(
                     controller: _reason,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Why?',
                       filled: true,
                       fillColor: context.card,
@@ -571,7 +571,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
       );
 }
 
-Color _paceColor(Pace p) => switch (p) {
+Color _paceColor(BuildContext context, Pace p) => switch (p) {
       Pace.onTrack => context.primary,
       Pace.watch => context.accent,
       Pace.over => context.danger,

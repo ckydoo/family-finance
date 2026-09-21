@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -334,7 +335,7 @@ class AppState extends ChangeNotifier {
             quietEnd = int.tryParse(parts[1]) ?? 7;
           }
         }
-        _seenRequestResults = data.requestResultsSeen
+        _seenRequestResults = (data.requestResultsSeen ?? '')
             .split(',')
             .where((e) => e.isNotEmpty)
             .toSet();
@@ -939,9 +940,6 @@ class AppState extends ChangeNotifier {
 
   int get daysLeftInCycle =>
       nextCycleStart.difference(DateTime.now()).inDays + 1;
-
-  bool _inCurrentCycle(DateTime t) =>
-      !t.isBefore(cycleStart) && t.isBefore(nextCycleStart);
 
   Money _spentInCycle(Envelope e, DateTime from, DateTime to) {
     var sum = 0;

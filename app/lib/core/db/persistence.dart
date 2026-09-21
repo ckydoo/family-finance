@@ -55,7 +55,7 @@ class DbSnapshot {
     this.locale,
     this.displayCurrency,
     this.monthStartDay,
-    this.onboardingDone,
+    required this.onboardingDone,
     this.notifyEnabled,
     this.notifyPrefs,
     this.notifyQuiet,

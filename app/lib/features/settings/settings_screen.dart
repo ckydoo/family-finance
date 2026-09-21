@@ -25,7 +25,7 @@ class SettingsScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
-              _header(Icons.notifications_outlined, AppLocalizations.of(context)!.remindersTitle),
+              _header(context, Icons.notifications_outlined, AppLocalizations.of(context)!.remindersTitle),
               SwitchListTile(
                 value: s.notifyEnabled,
                 onChanged: (v) => s.setRemindersEnabled(v),
@@ -107,7 +107,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 8),
-              _header(Icons.calendar_month_outlined, AppLocalizations.of(context)!.monthCycle),
+              _header(context, Icons.calendar_month_outlined, AppLocalizations.of(context)!.monthCycle),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -136,7 +136,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              _header(Icons.folder_outlined, 'Data'),
+              _header(context, Icons.folder_outlined, 'Data'),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -245,7 +245,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _header(IconData icon, String text) => Padding(
+  Widget _header(BuildContext context, IconData icon, String text) => Padding(
         padding: const EdgeInsets.only(top: 16, bottom: 4),
         child: Row(
           children: [

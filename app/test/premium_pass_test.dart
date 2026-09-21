@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/db/app_database.dart';
 import 'package:mhuri_money/core/money/money.dart';
@@ -81,13 +82,13 @@ void main() {
 
   test('G7: money grouping stays en-US by default (tests + boot)', () {
     Money.localeTag = null;
-    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US$ 1,240.50');
+    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1,240.50');
     expect(Money(18940, Currency.zwg).text, 'ZiG 18,940');
   });
 
   test('G7: es/fr/pt locales regroup amounts (1.234,56)', () {
     Money.localeTag = 'es';
-    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US$ 1.240,50');
+    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1.240,50');
     Money.localeTag = 'fr';
     // fr uses narrow no-break space as the grouping separator.
     expect(
@@ -95,13 +96,13 @@ void main() {
           .text
           .replaceAll('\u202F', ' ')
           .replaceAll('\u00A0', ' '),
-      'US$ 1 240,50',
+      'US\$ 1 240,50',
     );
     Money.localeTag = 'pt';
-    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US$ 1.240,50');
+    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1.240,50');
     // Untranslated locales fall back to the en grouping.
     Money.localeTag = 'sn';
-    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US$ 1,240.50');
+    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1,240.50');
     Money.localeTag = null;
   });
   test('Interface pass 3: refresh() re-hydrates and preserves settings',
@@ -211,12 +212,14 @@ void main() {
   });
 
   test('settings: custom rate, display currency and auto-hide persist', () async {
+    final state = AppState(db: db);
+    await state.ready();
     state.setCustomRate(16.4);
     state.setDisplayCurrency(Currency.zwg);
     state.setAutoHideAmounts(false);
     await state.flushWrites();
 
-    final second = AppState(db: db, env: state.env);
+    final second = AppState(db: db);
     await second.ready();
     expect(second.rate, 16.4);
     expect(second.displayCurrency, Currency.zwg);

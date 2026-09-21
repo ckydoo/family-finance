@@ -239,7 +239,7 @@ Future<void> showAddRecurringSheet(BuildContext context) {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<Envelope>(
-                value: envelope,
+                initialValue: envelope,
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: AppLocalizations.of(context)!.envelopeLabel,
@@ -269,7 +269,7 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<Member>(
-                      value: member,
+                      initialValue: member,
                       isExpanded: true,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.whoLabel,
@@ -295,7 +295,7 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                   const SizedBox(width: 10),
                   Expanded(
                     child: DropdownButtonFormField<Method>(
-                      value: method,
+                      initialValue: method,
                       isExpanded: true,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.paidWithLabel,

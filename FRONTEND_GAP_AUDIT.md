@@ -75,3 +75,14 @@ Live-mode blockers fixed pre-emptively: client ids → uuid v4 (server columns a
 
 ## Device-feedback pass — DONE ✅ 2026-09-21
 Family screen: Switch-profile picker (all members, live included), Currency & rates sheet (display currency + custom ZiG rate, persisted), Privacy sheet (auto-hide preference + hide-now), Backup & export sheet (CSV, invite copy), Notifications → real Settings. autoHide/customRate persist via DbSnapshot. 329 keys ×6. All gates green.
+
+## Device-feedback pass 2 (2026-09) — SHIPPED
+- Auth gate: first run starts at Login in BOTH modes (demo: any phone + code 1234; kv session `demo_auth` restores; signOut clears). ARB: loginFooter rewrite + inviteTitle, inviteDemoNote, editProfile, editProfileSub, photoNote (334×6).
+- Nav mapping fixed: `adult_shell` now `index: _tab` (was `i<2?i:i-1` → Savings showed Budget, Lists showed Savings).
+- Members: invite row + sheet (live: code+copy / demo: note); own-row edit-profile sheet (name+avatar → `updateMember` → kv `profile_edits` re-applied on hydrate).
+- Home: family header pill (person_add + chevron); Reports badge gradient #2FB89A→#37C4A4.
+
+## Analyze-cleanup pass (2026-09-21) — first real `flutter analyze` triage
+- Fixed all ~25 compile errors: charts missing paren; members structural splice (sheets moved top-level, `_roleBg` top-level, context params on `_setting/_settingAction/_profileTile`); home `_card/_paceColor` + budgets `_paceColor` take BuildContext; const-InputDecoration sites (budgets×3, login×2, lists×2); theme cupertino import; persistence `required onboardingDone`; app_state nullable split + foundation import; mappers/app_icons library-first + null-safe envelopeId; meeting/reports imports; reports `_stat` IconData+context; teen painter colors via fields; settings `_header` context; recurring_ui `initialValue` (3.33 deprecation).
+- Tests: notify `rule()` return type + SavingsCircle literal; premium `US\$` escapes + self-contained settings round-trip; sync Outbox import + Request cast; auth non-const MapEntry(jsonEncode); app_icons_test material import.
+- Residual (user-side): ~26 AppLocalizations getters = stale generated l10n → `flutter pub get` in app/ regenerates; ~120 style infos (prefer_const etc.) → optional `dart fix --apply`; `version:/onCreate:` test params resolve once run from app/ context.

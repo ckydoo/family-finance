@@ -77,7 +77,7 @@ void main() {
         const MapEntry(200, '{}'),
         // verifyOtp → 400 first (wrong code), then 200 with tokens
         const MapEntry(400, '{"msg":"Invalid token"}'),
-        const MapEntry(200, jsonEncode({
+        MapEntry(200, jsonEncode({
           'access_token': 'access-1',
           'refresh_token': 'refresh-1',
           'user': {'id': 'uuid-7'},
@@ -127,7 +127,7 @@ void main() {
       kv['auth_phone'] = '+263772123456';
 
       client.responses.clear();
-      client.responses.add(const MapEntry(200, jsonEncode({
+      client.responses.add(MapEntry(200, jsonEncode({
         'access_token': 'access-2',
         'refresh_token': 'refresh-10',
       })));

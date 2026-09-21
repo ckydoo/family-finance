@@ -221,6 +221,8 @@ class TeenZone extends StatelessWidget {
                     child: CustomPaint(
                       size: const Size(double.infinity, 90),
                       painter: _BarsPainter(
+                        color: context.primary,
+                        lastColor: context.accent,
                         values: s.teenEarnings
                             .take(8).toList()
                             .reversed
@@ -734,8 +736,10 @@ class TeenZone extends StatelessWidget {
 
 class _BarsPainter extends CustomPainter {
   final List<double> values;
+  final Color color;
+  final Color lastColor;
 
-  _BarsPainter({required this.values});
+  _BarsPainter({required this.values, required this.color, required this.lastColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -754,7 +758,7 @@ class _BarsPainter extends CustomPainter {
         h == 0 ? 2 : h,
       );
       final paint = Paint()
-        ..color = i == n - 1 ? context.accent : context.primary
+        ..color = i == n - 1 ? lastColor : color
         ..style = PaintingStyle.fill;
       canvas.drawRRect(
         RRect.fromRectAndRadius(rect, const Radius.circular(5)),
@@ -896,7 +900,7 @@ class _PeekCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${tStr(context, 'peek')}',
+            tStr(context, 'peek'),
             style: TextStyle(fontSize: 11.5, color: context.inkSoft),
           ),
         ],

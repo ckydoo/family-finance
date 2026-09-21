@@ -36,9 +36,13 @@ class _LoginScreenState extends State<LoginScreen> {
   /// through untouched.
   String _normalizePhone(String raw) {
     var p = raw.replaceAll(RegExp(r'[\s\-()]'), '');
-    if (p.startsWith('00')) p = '+${p.substring(2)}';
-    else if (p.startsWith('0')) p = '+$kDefaultCountryCode${p.substring(1)}';
-    else if (!p.startsWith('+')) p = '+$p';
+    if (p.startsWith('00')) {
+      p = '+${p.substring(2)}';
+    } else if (p.startsWith('0')) {
+      p = '+$kDefaultCountryCode${p.substring(1)}';
+    } else if (!p.startsWith('+')) {
+      p = '+$p';
+    }
     return p;
   }
 
@@ -124,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: context.ink,
                   letterSpacing: 1,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '0772 123 456',
                   filled: true,
                   fillColor: context.card,
@@ -144,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: context.ink,
                   letterSpacing: 8,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '••••••',
                   counterText: '',
                   filled: true,

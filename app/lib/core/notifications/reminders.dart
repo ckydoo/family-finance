@@ -275,8 +275,8 @@ class ReminderPlanner {
       out.add(Reminder(
         key: 'digest_weekly',
         category: ReminderCategory.digest,
-        title: "📊 Weekly family digest",
-        body: "Five minutes together over this week's money.",
+        title: '📊 Weekly family digest',
+        body: 'Five minutes together over this week\'s money.',
         when: _nextSundayAt(now, 18),
         weekly: true,
       ));

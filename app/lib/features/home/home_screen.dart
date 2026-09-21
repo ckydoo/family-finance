@@ -312,7 +312,7 @@ class _PoolCard extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: s.hideAmounts ? l.showAmountsTip : l.hideAmountsTip,
+                tooltip: s.hideAmounts ? AppLocalizations.of(context)!.showAmountsTip : AppLocalizations.of(context)!.hideAmountsTip,
                 visualDensity: VisualDensity.compact,
                 onPressed: () {
                   HapticFeedback.selectionClick();
@@ -444,7 +444,7 @@ class _EnvChip extends StatelessWidget {
               value: value.clamp(0.0, 1.0).toDouble(),
               minHeight: 6,
               backgroundColor: context.track,
-              color: _paceColor(pace),
+              color: _paceColor(context, pace),
             ),
           ),
           const SizedBox(height: 6),
@@ -458,7 +458,7 @@ class _EnvChip extends StatelessWidget {
   }
 }
 
-Color _paceColor(Pace p) => switch (p) {
+Color _paceColor(BuildContext context, Pace p) => switch (p) {
       Pace.onTrack => context.primary,
       Pace.watch => context.accent,
       Pace.over => context.danger,
@@ -483,7 +483,7 @@ class SmartCard extends StatelessWidget {
     }
     if (pending != null) {
       final kid = s.member(pending.kidId);
-      return _card(
+      return _card(context,
         color: const Color(0xFFFBE7C6),
         icon: Icons.volunteer_activism,
         title: AppLocalizations.of(context)!.requestTitle(kid?.name ?? AppLocalizations.of(context)!.yourChild, pending.amount.text),
@@ -504,7 +504,7 @@ class SmartCard extends StatelessWidget {
     if (proposal != null) {
       final teen = s.member(proposal.teenId);
       final env = s.envelope(proposal.envelopeId);
-      return _card(
+      return _card(context,
         color: const Color(0xFFDCEBFA),
         icon: Icons.confirmation_number,
         title: AppLocalizations.of(context)!.proposalTitle(teen?.name ?? 'Zoe', proposal.amount.text),
@@ -517,7 +517,7 @@ class SmartCard extends StatelessWidget {
     // 1c. Recurring expense due soon (C7) — review, post or skip
     final dueRule = s.dueRecurring.isEmpty ? null : s.dueRecurring.first;
     if (dueRule != null) {
-      return _card(
+      return _card(context,
         color: const Color(0xFFE8E4F7),
         icon: Icons.push_pin,
         title: '${dueRule.name} — ${dueRule.amount.text}',
@@ -546,7 +546,7 @@ class SmartCard extends StatelessWidget {
       }
     }
     if (waiting != null) {
-      return _card(
+      return _card(context,
         color: const Color(0xFFD9EDE8),
         icon: Icons.auto_awesome,
         title: AppLocalizations.of(context)!.choreDoneTitle(waiting.name),
@@ -571,7 +571,7 @@ class SmartCard extends StatelessWidget {
     }
 
     // 3. Savings circle turn
-    return _card(
+    return _card(context,
       color: const Color(0xFFEFE3F7),
       icon: Icons.autorenew,
       title:
@@ -675,7 +675,8 @@ class SmartCard extends StatelessWidget {
     );
   }
 
-  Widget _card({
+  Widget _card(
+    BuildContext context, {
     required Color color,
     required IconData icon,
     required String title,

@@ -12,6 +12,7 @@ import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/core/sync/sync_engine.dart';
 import 'package:mhuri_money/core/sync/supabase_sync_client.dart';
+import 'package:mhuri_money/core/sync/outbox.dart';
 import 'package:mhuri_money/core/sync/sync_mappers.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -447,7 +448,7 @@ void main() {
       // every pushed row id is a well-formed uuid (server columns are uuid)
       final uuidRe = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$');
       for (final r in server.sent.where((r) => r.method == 'POST')) {
-        final body = jsonDecode(r.body) as List;
+        final body = jsonDecode((r as http.Request).body) as List;
         for (final row in body) {
           expect(uuidRe.hasMatch((row as Map<String, dynamic>)['id'] as String),
               isTrue,

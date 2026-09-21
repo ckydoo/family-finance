@@ -242,7 +242,7 @@ class _ListsScreenState extends State<ListsScreen> {
                 TextField(
                   controller: name,
                   autofocus: true,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Item',
                     filled: true,
                     fillColor: context.card,
@@ -256,7 +256,7 @@ class _ListsScreenState extends State<ListsScreen> {
                       child: TextField(
                         controller: qty,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Qty',
                           filled: true,
                           fillColor: context.card,

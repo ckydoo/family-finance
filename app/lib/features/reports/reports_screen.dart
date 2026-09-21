@@ -6,6 +6,7 @@ import '../../core/widgets/app_icons.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/when.dart';
+import '../../core/money/money.dart';
 import '../../core/models/models.dart';
 import '../../core/widgets/charts.dart';
 import '../../core/widgets/ring_progress.dart';
@@ -36,6 +37,7 @@ class ReportsScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _stat(
+                    context,
                     tStr(context, 'income'),
                     s.monthIncome.text,
                     context.incomeGreen,
@@ -45,6 +47,7 @@ class ReportsScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _stat(
+                    context,
                     tStr(context, 'spent'),
                     s.monthSpend.text,
                     context.expenseRed,
@@ -58,6 +61,7 @@ class ReportsScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _stat(
+                    context,
                     tStr(context, 'saved'),
                     s.monthSaved.text,
                     context.primary,
@@ -67,6 +71,7 @@ class ReportsScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _stat(
+                    context,
                     tStr(context, 'safePerDay'),
                     s.safeToSpend.text,
                     context.ink,
@@ -266,7 +271,7 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 
-  Widget _stat(String label, String value, Color color, String emoji) =>
+  Widget _stat(BuildContext context, String label, String value, Color color, IconData icon) =>
       Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -276,7 +281,7 @@ class ReportsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 18)),
+            Icon(icon, size: 18, color: context.primary),
             const SizedBox(height: 6),
             Text(
               label,

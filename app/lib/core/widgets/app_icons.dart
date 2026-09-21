@@ -1,7 +1,3 @@
-import 'package:flutter/material.dart';
-
-import '../theme/app_theme.dart';
-
 /// M8 polish — icon system. Every visual entity (envelope, goal, account,
 /// member, recurring rule) carries a stable SEMANTIC icon key in the data
 /// layer: 'cart', 'school', 'fuel', 'man', 'bank', 'autorenew', … No emojis
@@ -12,6 +8,10 @@ import '../theme/app_theme.dart';
 /// Notification text (reminders.dart) is the one intentional emoji zone —
 /// it renders in the OS tray, outside the app, where IconData cannot.
 library;
+import 'package:flutter/material.dart';
+
+import '../theme/app_theme.dart';
+
 
 /// Semantic icon keys → Material icons.
 const Map<String, IconData> kKeyIcons = {

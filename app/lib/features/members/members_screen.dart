@@ -11,6 +11,118 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 
+  void _editProfileSheet(BuildContext context, AppState s, Member m) {
+    final l = AppLocalizations.of(context)!;
+    final nameCtrl = TextEditingController(text: m.name);
+    var avatar = m.emoji;
+    const avatarKeys = ['person', 'man', 'woman', 'boy', 'baby', 'student', 'grandma'];
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+                20, 18, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.editProfile,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: context.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l.editProfileSub,
+                  style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: m.name,
+                    filled: true,
+                    fillColor: context.card,
+                    border: const OutlineInputBorder(
+                        borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final k in avatarKeys)
+                      InkWell(
+                        onTap: () => setSheet(() => avatar = k),
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: avatar == k
+                                  ? context.primary
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 21,
+                            backgroundColor:
+                                context.card,
+                            child: Icon(iconForKey(k) ?? Icons.person,
+                                size: 20, color: context.ink),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  l.photoNote,
+                  style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+                ),
+                const SizedBox(height: 14),
+                FilledButton(
+                  onPressed: () {
+                    s.updateMember(m.id,
+                        name: nameCtrl.text, emoji: avatar);
+                    Navigator.pop(ctx);
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.primary,
+                    foregroundColor: context.onSolid,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Text(l.save),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+Color _roleBg(Role role) => switch (role) {
+        Role.owner => const Color(0xFFD9EDE8),
+        Role.adult => const Color(0xFFFBE7C6),
+        Role.teen => const Color(0xFFDCEBFA),
+        Role.kid => const Color(0xFFFFF1C9),
+        Role.viewer => const Color(0xFFEFE3F7),
+      };
+
 /// Members, roles and the demo "View as" switcher (spec §3, §7.10).
 class MembersScreen extends StatelessWidget {
   const MembersScreen({super.key});
@@ -136,24 +248,24 @@ class MembersScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.ink),
             ),
             const SizedBox(height: 10),
-            _settingAction(
+            _settingAction(context,
               AppLocalizations.of(context)!.switchProfile,
               AppLocalizations.of(context)!.switchProfileSub,
               () => _switchProfileSheet(context, s),
             ),
-            _settingAction(
+            _settingAction(context,
               AppLocalizations.of(context)!.setCurrency,
               AppLocalizations.of(context)!.setCurrencySub(s.rateLabel),
               () => _currencySheet(context, s),
             ),
             _languageRow(context, s),
-            _settingAction(
+            _settingAction(context,
               AppLocalizations.of(context)!.setPrivacy,
               AppLocalizations.of(context)!.setPrivacySub,
               () => _privacySheet(context, s),
             ),
-            _setting(AppLocalizations.of(context)!.setMonthStart, AppLocalizations.of(context)!.setMonthStartSub),
-            _settingAction(
+            _setting(context, AppLocalizations.of(context)!.setMonthStart, AppLocalizations.of(context)!.setMonthStartSub),
+            _settingAction(context,
               AppLocalizations.of(context)!.setNotif,
               AppLocalizations.of(context)!.setNotifSub,
               () => Navigator.of(context).push(
@@ -163,7 +275,7 @@ class MembersScreen extends StatelessWidget {
             if (s.isLive) _spaceCard(context, s),
             _pinRow(context, s),
             if (s.env.isLive && s.auth != null) _accountRow(context, s),
-            _settingAction(
+            _settingAction(context,
               AppLocalizations.of(context)!.setBackup,
               AppLocalizations.of(context)!.setBackupSub,
               () => _backupSheet(context, s),
@@ -665,7 +777,7 @@ class MembersScreen extends StatelessWidget {
 
   // ── Premium pass: every settings row now does something ──────────────────
 
-  Widget _settingAction(String title, String subtitle, VoidCallback onTap) =>
+  Widget _settingAction(BuildContext context, String title, String subtitle, VoidCallback onTap) =>
       InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
@@ -784,110 +896,6 @@ class MembersScreen extends StatelessWidget {
     );
   }
 
-  void _editProfileSheet(BuildContext context, AppState s, Member m) {
-    final l = AppLocalizations.of(context)!;
-    final nameCtrl = TextEditingController(text: m.name);
-    var avatar = m.emoji;
-    const avatarKeys = ['person', 'man', 'woman', 'boy', 'baby', 'student', 'grandma'];
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: context.bg,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                20, 18, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l.editProfile,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: context.ink,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  l.editProfileSub,
-                  style: TextStyle(fontSize: 12.5, color: context.inkSoft),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: nameCtrl,
-                  decoration: InputDecoration(
-                    labelText: m.name,
-                    filled: true,
-                    fillColor: context.card,
-                    border: const OutlineInputBorder(
-                        borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final k in avatarKeys)
-                      InkWell(
-                        onTap: () => setSheet(() => avatar = k),
-                        borderRadius: BorderRadius.circular(30),
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: avatar == k
-                                  ? context.primary
-                                  : Colors.transparent,
-                              width: 2,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 21,
-                            backgroundColor:
-                                context.card,
-                            child: Icon(iconForKey(k) ?? Icons.person,
-                                size: 20, color: context.ink),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  l.photoNote,
-                  style: TextStyle(fontSize: 11.5, color: context.inkSoft),
-                ),
-                const SizedBox(height: 14),
-                FilledButton(
-                  onPressed: () {
-                    s.updateMember(m.id,
-                        name: nameCtrl.text, emoji: avatar);
-                    Navigator.pop(ctx);
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.onSolid,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: const StadiumBorder(),
-                  ),
-                  child: Text(l.save),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _switchProfileSheet(BuildContext context, AppState s) {
     final l = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
@@ -931,21 +939,21 @@ class MembersScreen extends StatelessWidget {
     final isCurrent = s.user.id == m.id;
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: _bg(m.role),
+        backgroundColor: _roleBg(m.role),
         child: Icon(iconForKey(m.emoji) ?? Icons.person,
-            size: 20, color: context.ink),
+            size: 20, color: ctx.ink),
       ),
       title: Text(
         m.name,
         style: TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 14.5,
-          color: context.ink,
+          color: ctx.ink,
         ),
       ),
       subtitle: Text(
         roleLabel(AppLocalizations.of(ctx)!, m.role),
-        style: TextStyle(fontSize: 12, color: context.inkSoft),
+        style: TextStyle(fontSize: 12, color: ctx.inkSoft),
       ),
       trailing: isCurrent
           ? Text(
@@ -953,10 +961,10 @@ class MembersScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
-                color: context.primary,
+                color: ctx.primary,
               ),
             )
-          : Icon(Icons.chevron_right, color: context.inkSoft),
+          : Icon(Icons.chevron_right, color: ctx.inkSoft),
       onTap: () {
         s.switchUser(m);
         Navigator.of(ctx).popUntil((r) => r.isFirst);
@@ -965,11 +973,11 @@ class MembersScreen extends StatelessWidget {
   }
 
   void _currencySheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(ctx)!;
     final rateCtrl = TextEditingController(text: s.rate.toStringAsFixed(2));
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: context.bg,
+      backgroundColor: ctx.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -989,7 +997,7 @@ class MembersScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: context.ink,
+                    color: ctx.ink,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -998,7 +1006,7 @@ class MembersScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
-                    color: context.inkSoft,
+                    color: ctx.inkSoft,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1014,8 +1022,8 @@ class MembersScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: s.displayCurrency == c
-                                  ? context.primary
-                                  : context.card,
+                                  ? ctx.primary
+                                  : ctx.card,
                               borderRadius: BorderRadius.circular(14),
                             ),
                             alignment: Alignment.center,
@@ -1024,8 +1032,8 @@ class MembersScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 color: s.displayCurrency == c
-                                    ? context.onSolid
-                                    : context.ink,
+                                    ? ctx.onSolid
+                                    : ctx.ink,
                               ),
                             ),
                           ),
@@ -1039,7 +1047,7 @@ class MembersScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
-                    color: context.inkSoft,
+                    color: ctx.inkSoft,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1049,7 +1057,7 @@ class MembersScreen extends StatelessWidget {
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: context.card,
+                    fillColor: ctx.card,
                     border: const OutlineInputBorder(
                         borderSide: BorderSide.none),
                     suffixIcon: TextButton(
@@ -1064,7 +1072,7 @@ class MembersScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   l.rateCustomNote,
-                  style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+                  style: TextStyle(fontSize: 11.5, color: ctx.inkSoft),
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
@@ -1074,8 +1082,8 @@ class MembersScreen extends StatelessWidget {
                     Navigator.pop(ctx);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.onSolid,
+                    backgroundColor: ctx.primary,
+                    foregroundColor: ctx.onSolid,
                     minimumSize: const Size.fromHeight(48),
                     shape: const StadiumBorder(),
                   ),
@@ -1090,10 +1098,10 @@ class MembersScreen extends StatelessWidget {
   }
 
   void _privacySheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(ctx)!;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: context.bg,
+      backgroundColor: ctx.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1113,7 +1121,7 @@ class MembersScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: context.ink,
+                      color: ctx.ink,
                     ),
                   ),
                 ),
@@ -1126,11 +1134,11 @@ class MembersScreen extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: context.ink),
+                        color: ctx.ink),
                   ),
                   subtitle: Text(
                     l.autoHideSub,
-                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    style: TextStyle(fontSize: 12, color: ctx.inkSoft),
                   ),
                 ),
                 SwitchListTile(
@@ -1141,7 +1149,7 @@ class MembersScreen extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: context.ink),
+                        color: ctx.ink),
                   ),
                 ),
               ],
@@ -1153,10 +1161,10 @@ class MembersScreen extends StatelessWidget {
   }
 
   void _backupSheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(ctx)!;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: context.bg,
+      backgroundColor: ctx.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1174,25 +1182,25 @@ class MembersScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: context.ink,
+                    color: ctx.ink,
                   ),
                 ),
               ),
               const SizedBox(height: 6),
               ListTile(
-                leading: Icon(Icons.ios_share, color: context.primary),
+                leading: Icon(Icons.ios_share, color: ctx.primary),
                 title: Text(
                   l.exportCsvRow,
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: context.ink),
+                      color: ctx.ink),
                 ),
                 onTap: () async {
                   final path = await s.exportCsv();
                   if (!ctx.mounted) return;
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(
                       content: Text(
                         path == null ? l.exportReal : l.exportedPath(path),
@@ -1204,19 +1212,19 @@ class MembersScreen extends StatelessWidget {
               ),
               if (s.isLive && (s.inviteCode ?? '').isNotEmpty)
                 ListTile(
-                  leading: Icon(Icons.link, color: context.primary),
+                  leading: Icon(Icons.link, color: ctx.primary),
                   title: Text(
                     l.copyInvite,
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: context.ink),
+                        color: ctx.ink),
                   ),
                   onTap: () {
                     Clipboard.setData(
                         ClipboardData(text: s.inviteCode ?? ''));
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(ctx).showSnackBar(
                       SnackBar(
                         content: Text(l.copied),
                         behavior: SnackBarBehavior.floating,
@@ -1229,7 +1237,7 @@ class MembersScreen extends StatelessWidget {
                 leading: const Icon(Icons.cloud_outlined),
                 title: Text(
                   l.backupComing,
-                  style: TextStyle(fontSize: 14, color: context.inkSoft),
+                  style: TextStyle(fontSize: 14, color: ctx.inkSoft),
                 ),
               ),
             ],
@@ -1239,7 +1247,7 @@ class MembersScreen extends StatelessWidget {
     );
   }
 
-  Widget _setting(String title, String subtitle) => Container(
+  Widget _setting(BuildContext context, String title, String subtitle) => Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -1297,7 +1305,7 @@ class _MemberRow extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: _bg(m.role),
+            backgroundColor: _roleBg(m.role),
             child: Icon(
               iconForKey(m.emoji) ?? Icons.person,
               size: 20,
@@ -1369,11 +1377,4 @@ class _MemberRow extends StatelessWidget {
     );
   }
 
-  Color _bg(Role role) => switch (role) {
-        Role.owner => const Color(0xFFD9EDE8),
-        Role.adult => const Color(0xFFFBE7C6),
-        Role.teen => const Color(0xFFDCEBFA),
-        Role.kid => const Color(0xFFFFF1C9),
-        Role.viewer => const Color(0xFFEFE3F7),
-      };
 }

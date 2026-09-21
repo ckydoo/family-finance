@@ -1,12 +1,12 @@
-import '../models/models.dart';
-import '../money/money.dart';
-import '../utils/ids.dart';
-
 /// The synced entity set (M3 + premium pass). The family ledger — money,
 /// budgets, lists, approvals, earnings — syncs, and as of the premium pass so
 /// do chores (stars), the savings-circle header (mukando, one per family) and
 /// recurring rules. Wallet balances stay device-local (see ROADMAP notes).
 library;
+import '../models/models.dart';
+import '../money/money.dart';
+import '../utils/ids.dart';
+
 
 /// Context a mapper needs beyond the domain object itself.
 class SyncCtx {
@@ -309,7 +309,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'emoji': r.emoji,
         'amount_minor': r.amount.minor,
         'currency': r.amount.currency.name,
-        'envelope_id': r.envelopeId.isEmpty ? null : r.envelopeId,
+        'envelope_id': (r.envelopeId?.isEmpty ?? true) ? null : r.envelopeId,
         'member_id': r.memberId.isEmpty ? null : r.memberId,
         'method': _methodOut[r.method],
         'frequency': r.frequency.name,

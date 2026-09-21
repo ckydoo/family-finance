@@ -24,7 +24,7 @@ void main() {
     },
   );
 
-  Reminder rule(String id, DateTime due, {bool active = true}) =>
+  RecurringRule rule(String id, DateTime due, {bool active = true}) =>
       RecurringRule(
         id: id,
         name: 'School levy',
@@ -53,7 +53,13 @@ void main() {
       envelopes: envelopes,
       chores: chores,
       requests: requests,
-      circle: muk,
+      circle: SavingsCircle(
+        name: 'Circle',
+        contribution: Money.fromMajor(10, Currency.usd),
+        totalRounds: 4,
+        currentRound: 2,
+        order: const ['m_leo', 'm_zoe'],
+      ),
       memberNames: const {'m_leo': 'Leo', 'm_zoe': 'Zoe'},
       monthStartDay: 25,
       extra: extra,

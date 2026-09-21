@@ -141,9 +141,8 @@ class TrendBars extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxAbs = bars.fold<double>(
         1, (a, b) => math.max(a, b.$2.abs().toDouble()));
-    final summary = 'Net trend: ' +
-        bars.map((b) => '${b.$1} ${b.$2 >= 0 ? '+' : '-'}'
-            '${b.$2.abs().round()}').join(', ');
+    final summary = 'Net trend: '
+        '${bars.map((b) => '${b.$1} ${b.$2 >= 0 ? '+' : '-'}${b.$2.abs().round()}').join(', ')}';
     return Semantics(
       label: summary,
       child: ExcludeSemantics(
@@ -214,6 +213,7 @@ class _Bar extends StatelessWidget {
                 ),
               ),
             ),
+            ),
             const SizedBox(height: 6),
             Text(label,
                 style: TextStyle(
@@ -222,7 +222,6 @@ class _Bar extends StatelessWidget {
                     color: labelColor)),
           ],
         ),
-      ),
     );
   }
 }
