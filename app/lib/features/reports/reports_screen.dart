@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/state/app_state.dart';
-import '../../core/widgets/app_icons.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/when.dart';

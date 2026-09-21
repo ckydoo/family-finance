@@ -4,6 +4,7 @@ import 'core/auth/auth_controller.dart';
 import 'core/config/app_env.dart';
 import 'core/db/app_database.dart';
 import 'core/notifications/notifier.dart';
+import 'core/l10n/localization_delegates.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'core/db/persistence.dart';
 import 'core/models/models.dart' show Role;
@@ -124,7 +125,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         // G7: money grouping follows the app locale (es/fr/pt via intl).
         Money.localeTag = _state.localeCode;
         return MaterialApp(
-        title: 'Mhuri Hub',
+        title: 'Mhuri Money',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         darkTheme: buildAppDarkTheme(),
@@ -183,8 +184,7 @@ class _Splash extends StatefulWidget {
   State<_Splash> createState() => _SplashState();
 }
 
-class _SplashState extends State<_Splash>
-    with SingleTickerProviderStateMixin {
+class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
 
   @override

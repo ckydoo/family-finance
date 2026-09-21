@@ -49,7 +49,8 @@ class TeenZone extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         AppLocalizations.of(context)!.teenZoneTitle,
-                        style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+                        style:
+                            TextStyle(fontSize: 12.5, color: context.inkSoft),
                       ),
                     ],
                   ),
@@ -77,7 +78,9 @@ class TeenZone extends StatelessWidget {
                   RingProgress(
                     value: jar == null || jar.target.minor <= 0
                         ? 0
-                        : (saved.minor / jar.target.minor).clamp(0.0, 1.0).toDouble(),
+                        : (saved.minor / jar.target.minor)
+                            .clamp(0.0, 1.0)
+                            .toDouble(),
                     size: 62,
                     color: context.primary,
                     child: Icon(
@@ -104,14 +107,18 @@ class TeenZone extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          jar == null ? '' : '${saved.text} of ${jar.target.text}',
-                          style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+                          jar == null
+                              ? ''
+                              : '${saved.text} of ${jar.target.text}',
+                          style:
+                              TextStyle(fontSize: 12.5, color: context.inkSoft),
                         ),
                         if (jar?.autoSave != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             jar!.autoSave!,
-                            style: TextStyle(fontSize: 11.5, color: context.accent),
+                            style: TextStyle(
+                                fontSize: 11.5, color: context.accent),
                           ),
                         ],
                       ],
@@ -158,7 +165,8 @@ class TeenZone extends StatelessWidget {
                         ),
                         Text(
                           tStr(context, 'savingsMatchNote'),
-                          style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+                          style:
+                              TextStyle(fontSize: 11.5, color: context.inkSoft),
                         ),
                       ],
                     ),
@@ -211,31 +219,31 @@ class TeenZone extends StatelessWidget {
                       child: EmptyState(
                         icon: Icons.fitness_center,
                         title: AppLocalizations.of(context)!.teenNoEarnings,
-                        subtitle:
-                            AppLocalizations.of(context)!.teenEarnHint,
+                        subtitle: AppLocalizations.of(context)!.teenEarnHint,
                       ),
                     )
                   else
                     SizedBox(
-                    height: 90,
-                    child: CustomPaint(
-                      size: const Size(double.infinity, 90),
-                      painter: _BarsPainter(
-                        color: context.primary,
-                        lastColor: context.accent,
-                        values: s.teenEarnings
-                            .take(8).toList()
-                            .reversed
-                            .map((e) => e.amount.inCurrency(Currency.usd, s.rate).major)
-                            .toList(),
+                      height: 90,
+                      child: CustomPaint(
+                        size: const Size(double.infinity, 90),
+                        painter: _BarsPainter(
+                          color: context.primary,
+                          lastColor: context.accent,
+                          values: s.teenEarnings
+                              .take(8)
+                              .toList()
+                              .reversed
+                              .map((e) => e.amount
+                                  .inCurrency(Currency.usd, s.rate)
+                                  .major)
+                              .toList(),
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 6),
                   Text(
-                    s.teenEarnings.isEmpty
-                        ? ''
-                        : s.teenEarnings.first.note,
+                    s.teenEarnings.isEmpty ? '' : s.teenEarnings.first.note,
                     style: TextStyle(fontSize: 11, color: context.inkSoft),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -276,8 +284,7 @@ class TeenZone extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  for (final p in s.proposals.take(3))
-                    _ProposalRow(p: p),
+                  for (final p in s.proposals.take(3)) _ProposalRow(p: p),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
                     onPressed: () => _proposeSheet(context),
@@ -325,16 +332,20 @@ class TeenZone extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      _seg(0.5, context.primary, AppLocalizations.of(context)!.teenSpend),
+                      _seg(0.5, context.primary,
+                          AppLocalizations.of(context)!.teenSpend),
                       const SizedBox(width: 4),
-                      _seg(0.4, context.accent, AppLocalizations.of(context)!.teenSave),
+                      _seg(0.4, context.accent,
+                          AppLocalizations.of(context)!.teenSave),
                       const SizedBox(width: 4),
-                      _seg(0.1, kKidCoral, AppLocalizations.of(context)!.teenGive),
+                      _seg(0.1, kKidCoral,
+                          AppLocalizations.of(context)!.teenGive),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    AppLocalizations.of(context)!.teenSplitHint(s.teenEarningsThisMonth.text),
+                    AppLocalizations.of(context)!
+                        .teenSplitHint(s.teenEarningsThisMonth.text),
                     style: TextStyle(fontSize: 11.5, color: context.inkSoft),
                   ),
                 ],
@@ -415,7 +426,8 @@ class TeenZone extends StatelessWidget {
                     prefixText: '${cur.symbol} ',
                     filled: true,
                     fillColor: context.card,
-                    border: const OutlineInputBorder(borderSide: BorderSide.none),
+                    border:
+                        const OutlineInputBorder(borderSide: BorderSide.none),
                     hintText: '0.00',
                   ),
                 ),
@@ -447,13 +459,16 @@ class TeenZone extends StatelessWidget {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    final v = double.tryParse(controller.text.replaceAll(',', ''));
+                    final v =
+                        double.tryParse(controller.text.replaceAll(',', ''));
                     if (v == null || v <= 0) return;
+                    final l = AppLocalizations.of(context)!;
+                    final messenger = ScaffoldMessenger.of(context);
                     s.contribute(jar, Money.fromMajor(v, cur));
                     Navigator.pop(sheetCtx);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(
-                        content: Text(AppLocalizations.of(context)!.teenSavedJar),
+                        content: Text(l.teenSavedJar),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -532,7 +547,8 @@ class TeenZone extends StatelessWidget {
                     prefixText: '${cur.symbol} ',
                     filled: true,
                     fillColor: context.card,
-                    border: const OutlineInputBorder(borderSide: BorderSide.none),
+                    border:
+                        const OutlineInputBorder(borderSide: BorderSide.none),
                     hintText: '0.00',
                   ),
                 ),
@@ -560,7 +576,8 @@ class TeenZone extends StatelessWidget {
                     if (v == null || v <= 0 || n.isEmpty) {
                       ScaffoldMessenger.of(sheetCtx).showSnackBar(
                         SnackBar(
-                          content: Text(AppLocalizations.of(context)!.logWhatAmount),
+                          content:
+                              Text(AppLocalizations.of(context)!.logWhatAmount),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -634,7 +651,8 @@ class TeenZone extends StatelessWidget {
                     prefixText: '${cur.symbol} ',
                     filled: true,
                     fillColor: context.card,
-                    border: const OutlineInputBorder(borderSide: BorderSide.none),
+                    border:
+                        const OutlineInputBorder(borderSide: BorderSide.none),
                     hintText: '0.00',
                   ),
                 ),
@@ -682,11 +700,11 @@ class TeenZone extends StatelessWidget {
                     for (final e in s.envelopes.where((e) => !e.isPersonal))
                       ChoiceChip(
                         label: Row(children: [
-                              Icon(iconForKey(e.emoji) ?? Icons.savings,
-                                  size: 16, color: context.primaryDark),
-                              const SizedBox(width: 8),
-                              Text(e.name),
-                            ]),
+                          Icon(iconForKey(e.emoji) ?? Icons.savings,
+                              size: 16, color: context.primaryDark),
+                          const SizedBox(width: 8),
+                          Text(e.name),
+                        ]),
                         selected: envelopeId == e.id,
                         onSelected: (_) => setSheet(() => envelopeId = e.id),
                       ),
@@ -700,17 +718,20 @@ class TeenZone extends StatelessWidget {
                     if (v == null || v <= 0 || r.isEmpty) {
                       ScaffoldMessenger.of(sheetCtx).showSnackBar(
                         SnackBar(
-                          content: Text(AppLocalizations.of(context)!.amountPurposeFirst),
+                          content: Text(
+                              AppLocalizations.of(context)!.amountPurposeFirst),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
                       return;
                     }
+                    final l = AppLocalizations.of(context)!;
+                    final messenger = ScaffoldMessenger.of(context);
                     s.proposeExpense(Money.fromMajor(v, cur), envelopeId, r);
                     Navigator.pop(sheetCtx);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(
-                        content: Text(AppLocalizations.of(context)!.sentApproval),
+                        content: Text(l.sentApproval),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -739,7 +760,8 @@ class _BarsPainter extends CustomPainter {
   final Color color;
   final Color lastColor;
 
-  _BarsPainter({required this.values, required this.color, required this.lastColor});
+  _BarsPainter(
+      {required this.values, required this.color, required this.lastColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -796,9 +818,18 @@ class _ProposalRow extends StatelessWidget {
     final s = AppScope.of(context);
     final env = s.envelope(p.envelopeId);
     final (chip, color) = switch (p.state) {
-      RequestState.pending => (AppLocalizations.of(context)!.stWaiting, const Color(0xFFFBE7C6)),
-      RequestState.approved => (AppLocalizations.of(context)!.stApproved, const Color(0xFFD9EDE8)),
-      RequestState.declined => (AppLocalizations.of(context)!.stDeclined, const Color(0xFFF9E0DF)),
+      RequestState.pending => (
+          AppLocalizations.of(context)!.stWaiting,
+          const Color(0xFFFBE7C6)
+        ),
+      RequestState.approved => (
+          AppLocalizations.of(context)!.stApproved,
+          const Color(0xFFD9EDE8)
+        ),
+      RequestState.declined => (
+          AppLocalizations.of(context)!.stDeclined,
+          const Color(0xFFF9E0DF)
+        ),
     };
 
     return Padding(
