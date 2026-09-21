@@ -1,0 +1,78 @@
+name: mhuri_money
+description: >-
+  Mhuri Money — family finance management for every kind of family,
+  built international. Offline-first: multi-currency ledgers (ships with
+  USD + ZiG), envelopes, goals, savings-circle (ROSCA) tracker, shared
+  shopping lists, Teen Zone and a sealed Kids Mode. Local persistence via
+  sqflite; optional Supabase sync.
+publish_to: "none"
+version: 0.2.0+2
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  sqflite: ^2.3.0
+  path: ^1.9.0
+  http: ^1.2.0
+  crypto: ^3.0.3
+  path_provider: ^2.1.0
+  flutter_local_notifications: ^22.3.1
+  timezone: ^0.11.0
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  # Runs the sqflite interface over a native SQLite for host-machine tests.
+  sqflite_common_ffi: ^2.3.0
+  # M7 branding generators (run once on your machine after `flutter create`):
+  #   dart run flutter_launcher_icons && dart run flutter_native_splash:create
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
+
+flutter_launcher_icons:
+  image_path: assets/branding/app_icon.png
+  android: launcher_icon
+  ios: true
+  remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#FAF7F2"
+  image: assets/branding/splash.png
+  # Dark variant so dark-mode users never get a white launch flash.
+  color_dark: "#0D1512"
+  image_dark: assets/branding/splash.png
+  android_12:
+    image: assets/branding/splash.png
+    color: "#FAF7F2"
+    image_dark: assets/branding/splash.png
+    color_dark: "#0D1512"
+
+flutter:
+  generate: true
+  uses-material-design: true
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/poppins/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/poppins/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/poppins/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/poppins/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/poppins/Poppins-ExtraBold.ttf
+          weight: 800
+  assets:
+    - assets/branding/
+    # M2: to go live, create .env from .env.example, then uncomment this
+    # line so the app can read it:
+    # - .env

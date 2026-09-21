@@ -1,0 +1,771 @@
+{
+  "@@locale": "en",
+  "tabHome": "Home",
+  "tabBudgets": "Budgets",
+  "tabSavings": "Savings",
+  "tabLists": "Lists",
+  "tabFamily": "Family",
+  "tabActivity": "Activity",
+  "greetingMorning": "Good morning",
+  "greetingAfternoon": "Good afternoon",
+  "greetingEvening": "Good evening",
+  "familyPool": "Family Pool",
+  "safeToSpend": "Safe to spend today: {amount}",
+  "@safeToSpend": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "seeAll": "See all",
+  "add": "Add",
+  "save": "Save",
+  "cancel": "Cancel",
+  "undo": "Undo",
+  "post": "Post",
+  "skip": "Skip",
+  "approve": "Approve",
+  "notThisWeek": "Not this week",
+  "done": "Done",
+  "export": "Export",
+  "meeting": "Meeting",
+  "newEnvelope": "New envelope",
+  "recurringExpenses": "Recurring expenses",
+  "shopping": "Shopping",
+  "activityTitle": "Activity",
+  "noActivityTitle": "No activity yet",
+  "noActivityHint": "Every expense, income and approval shows up here — add your first one with the + button.",
+  "noGoals": "No goals yet",
+  "noGoalsHint": "Start with an emergency fund — even a little each week changes how emergencies feel.",
+  "reportTitle": "Report card",
+  "income": "Income",
+  "spent": "Spent",
+  "saved": "Saved",
+  "safePerDay": "Safe / day",
+  "envelopeHealth": "Envelope health",
+  "cashLeak": "Cash leak",
+  "shareReport": "Share to family group",
+  "meetingCta": "Start the family meeting",
+  "exportCsv": "Export transactions (CSV)",
+  "family": "Family",
+  "hi": "Hi",
+  "mySavings": "My savings",
+  "addToJar": "Add to jar",
+  "savingsMatch": "Savings match",
+  "savingsMatchNote": "Parents match 50% of everything you save",
+  "earnings": "Earnings",
+  "logEarning": "Log earning",
+  "myProposals": "My proposals",
+  "proposeExpense": "Propose expense",
+  "proposeTitle": "Propose an expense",
+  "peek": "Parents let you see this envelope",
+  "plan": "Spend · Save · Give plan",
+  "settingsTitle": "Settings",
+  "remindersOnDevice": "Reminders on this device",
+  "remindersSubtitle": "Bills, budgets, kids, goals, savings circles & meetings",
+  "quietHours": "Quiet hours (no notifications inside this window)",
+  "monthStartsOn": "Month starts on",
+  "language": "Language",
+  "largeText": "Large text (easier to read)",
+  "exportCsvSettings": "Export transactions (CSV)",
+  "comingSoon": "Coming soon",
+  "remindersTitle": "Reminders",
+  "scheduledOn": "Scheduled on this device · quiet hours {from}–{to}",
+  "@scheduledOn": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "remindersOff": "Reminders are off",
+  "nothingComing": "Nothing coming up",
+  "ob1Title": "Money, managed together",
+  "ob1Body": "One calm place for everything your family earns, spends, saves and plans — in every currency you use, online or off.",
+  "ob2Title": "Envelopes, not guilt",
+  "ob2Body": "Give every dollar a job. Groceries, school fees, transport — see at a glance what is on track, what needs a top-up, and what is safe to spend today.",
+  "ob3Title": "Built for the whole family",
+  "ob3Body": "Partners share the plan. Kids grow jars and stars safely. Teens propose expenses and learn with savings matches. Grandparents keep the savings-circle record.",
+  "ob4Title": "Gentle reminders",
+  "syncPill": "{count, plural, =1{1 change saved on this device — syncs when online} other{{count} changes saved on this device — syncs when online}}",
+  "@syncPill": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hideAmountsTip": "Hide amounts",
+  "showAmountsTip": "Show amounts",
+  "themeLabel": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "sixMonthNet": "Six-month net (USD)",
+  "donutEmpty": "No spending recorded yet this cycle — the donut fills as you add expenses.",
+  "ob4Body": "Bill nags, budget watch and the weekly family digest — quiet hours respected, everything on your phone. You are in charge.",
+  "next": "Next",
+  "loginWelcome": "Welcome to Mhuri Money",
+  "loginEnterCode": "Enter the code",
+  "loginSentCode": "We sent a code by SMS to {phone}",
+  "@loginSentCode": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "loginSignInHint": "Sign in with your phone number to open your family space.",
+  "loginSendCode": "Send code",
+  "loginVerify": "Verify & sign in",
+  "loginChangeNumber": "Change number",
+  "loginBadPhone": "Enter a valid phone number (e.g. +44 7700 900123).",
+  "loginFooter": "By continuing you agree to family harmony.\nDemo build? No login needed — you are already home.",
+  "quickAddTitle": "Quick add",
+  "expense": "Expense",
+  "envelopeLabel": "Envelope",
+  "whoLabel": "Who",
+  "paidWithLabel": "Paid with",
+  "noteHint": "Note (e.g. FreshMart)",
+  "enterAmountFirst": "Enter an amount first",
+  "savedOffline": "Saved ✓ — works offline, syncs when online",
+  "kidsHi": "Hi {name}!",
+  "@kidsHi": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kidsMyJar": "My Jar",
+  "kidsGoalSaved": "Goal: {goal} — {pct}% saved",
+  "@kidsGoalSaved": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "kidsMyChores": "My Chores",
+  "kidsWishList": "Wish List",
+  "kidsWishItem": "Soccer ball — US$25 · saved {amount}",
+  "@kidsWishItem": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kidsAskMoney": "Ask Mom/Dad\nfor money",
+  "kidsDoChore": "Do a chore",
+  "kidsAllDone": "All chores done!",
+  "kidsParents": "Parents",
+  "kidsAskTitle": "Ask Mom & Dad",
+  "kidsWhatFor": "What for?",
+  "kidsDefaultReason": "Pocket money",
+  "teenZoneTitle": "Teen Zone · 13–17",
+  "teenNoEarnings": "No earnings logged yet",
+  "teenEarnHint": "Wash a car, help at the corner shop — log it and watch your jar grow.",
+  "teenSpend": "Spend 50%",
+  "teenSave": "Save 40%",
+  "teenGive": "Give 10%",
+  "teenSplitHint": "Suggested split of {amount} earned this month",
+  "@teenSplitHint": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "teenSavedJar": "Saved to your jar — parents match 50%",
+  "teenWhatDid": "What did you do?",
+  "familyTitle": "Family",
+  "membersDesc": "Couple + kids · month starts on the 1st",
+  "membersInviteHint": "Share the code or scan to invite a family member",
+  "membersDemoTip": "Demo tip: use \"View as\" to switch profiles. Kids open a sealed mode automatically.",
+  "setCurrency": "Currency & rates",
+  "setCurrencySub": "USD primary · ZiG secondary · {rate}",
+  "@setCurrencySub": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "setPrivacy": "Privacy",
+  "setPrivacySub": "Private pockets: off — partner sees shared only",
+  "setMonthStart": "Month start day",
+  "setMonthStartSub": "1st — aligns with salary cycle",
+  "setNotif": "Notifications",
+  "setNotifSub": "Budget 80% warning · bills · kid requests",
+  "setBackup": "Backup & export",
+  "setBackupSub": "Encrypted cloud backup · CSV export (owner)",
+  "meetingTitle": "Family meeting",
+  "mFigures": "Last month, in numbers",
+  "figureIncome": "Income",
+  "figureSpent": "Spent",
+  "figureSaved": "Saved",
+  "mEnvelopeHealth": "Envelope health",
+  "mReachedTalk": "Talk about the envelopes marked \"Reached\". Top them up together — calmly.",
+  "mGoals": "Savings goals",
+  "mChores": "Chores, jars & requests",
+  "mImprove": "One thing to improve",
+  "recSkipped": "Skipped — next: {date}",
+  "@recSkipped": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "recNew": "New recurring expense",
+  "recReview": "Nothing is charged automatically — you review and post everything.",
+  "recNoEnvelope": "No envelope",
+  "recNextDue": "Next due:",
+  "recNameAmount": "Give it a name and an amount",
+  "recSaveRule": "Save rule",
+  "recNameHint": "Name (e.g. School fees levy)",
+  "roleOwner": "Owner",
+  "roleAdult": "Adult",
+  "roleTeen": "Teen",
+  "roleKid": "Kid",
+  "roleViewer": "Elder · Viewer",
+  "methodCash": "Cash",
+  "methodMobile": "Mobile money",
+  "methodCard": "Bank card",
+  "methodTransfer": "Bank transfer",
+  "methodAgent": "Agent / cash point",
+  "methodOther": "Other",
+  "stateToBuy": "To buy",
+  "stateInCart": "In cart",
+  "stateDone": "Done",
+  "freqWeekly": "Weekly",
+  "freqMonthly": "Monthly",
+  "rollReset": "Reset each month",
+  "rollRoll": "Roll over what is left",
+  "rollAccum": "Keep accumulating",
+  "freqTerm": "Per term (~3 months)",
+  "budgetsTitle": "Budgets",
+  "noEnvelopes": "No envelopes yet",
+  "envelopesHint": "Envelopes are budgets you can see: Groceries, School fees, Transport. Create your first one below.",
+  "newEnvStub": "New envelope — coming in Phase 1",
+  "addRecurringTip": "Add recurring expense",
+  "recReviewed": "Reviewed before posting — nothing is charged silently.",
+  "noRecurring": "No recurring expenses yet",
+  "recurringHint": "Add school fees, rent or airtime rules — we remind you when each one comes due.",
+  "chipOnTrack": "On track",
+  "chipReached": "Reached",
+  "remaining": "Remaining",
+  "moveMoney": "Move money",
+  "pickFirst": "Pick envelopes and an amount first",
+  "skipPeriod": "Skip this period",
+  "pauseRule": "Pause rule",
+  "resumeRule": "Resume rule",
+  "meetingHint": "15 minutes, once a month.",
+  "mChoresLine": "{stars} stars earned · {requests} request(s) waiting · {proposals} teen proposal(s) waiting.",
+  "meetingNoteHint": "e.g. \"Cook more on Sundays — musika spending is creeping.\"",
+  "meetingSaveNote": "Save our note",
+  "savedTick": "Saved ✓",
+  "meetingDone": "Done — see you next month",
+  "reportCard": "Report card",
+  "recentActivity": "Recent activity",
+  "swapCurrency": "Swap display currency",
+  "yourChild": "Your child",
+  "review": "Review",
+  "confirm": "Confirm",
+  "markCollected": "Mark collected",
+  "decline": "Decline",
+  "sentToParents": "Sent to Mom & Dad",
+  "sendRequest": "Send request",
+  "parentsOnly": "Parents only",
+  "pinExitLine": "Enter your PIN to leave Kids Mode.",
+  "wrongPin": "Wrong PIN",
+  "unlock": "Unlock",
+  "addItem": "Add item",
+  "listSharedSub": "Family shopping list · shared with everyone",
+  "tickFirst": "Tick items off first",
+  "namePriceFirst": "Give the item a name and price",
+  "addToList": "Add to list",
+  "spaceSetup": "Set up your family space",
+  "spaceSetupSub": "Create a space for your family, or join the one your partner created with their invite code. Everything you log then syncs between your phones.",
+  "createSpace": "Create space",
+  "joinWithCode": "Join with code",
+  "offlineRetry": "Offline — will retry automatically",
+  "syncProblem": "Sync problem",
+  "signinExpired": "Sign-in expired — sign out and back in",
+  "syncing": "Syncing…",
+  "lastSync": "Last sync: {last}",
+  "familySpace": "Family space",
+  "syncNow": "Sync now",
+  "createFamilySpace": "Create family space",
+  "familyName": "Family name",
+  "localizedNote": "The whole app now speaks six languages — no more EN-only screens.",
+  "nextCreateSpace": "Next: create your family space (or join with a code) from the Family tab.",
+  "reachedMove": "{on} of {total} envelopes still on track. Open the ones marked \"Reached\" and move money in — calm, not perfect.",
+  "cashTrace": "Cash is easy to spend and hard to trace. Paying a bit more by mobile money or bank card keeps the picture clearer.",
+  "whereMoneyWent": "Where the money went",
+  "exportFailed": "Export failed on this device",
+  "csvSaved": "CSV saved: {path}",
+  "exportedPath": "Exported ✓ {path}",
+  "bringToMeeting": "Bring this to the monthly Family Meeting",
+  "savingsTitle": "Savings",
+  "markRound": "Mark this round collected",
+  "recordsOnly": "Mhuri Money never holds the money — records only.",
+  "saveContribution": "Save contribution",
+  "sendTest": "Send a test notification",
+  "testOk": "Reminders are working on this device.",
+  "monthCycle": "Month cycle",
+  "paydayAlign": "Payday-aligned budgets — cycles reset on this day, and the family meeting reminder lands the evening before",
+  "backupComing": "Backup & restore (coming)",
+  "fromLabel": "From",
+  "addTransaction": "Add transaction",
+  "logWhatAmount": "Add what you did and the amount",
+  "logIt": "Log it",
+  "fromEnvelope": "From envelope",
+  "amountPurposeFirst": "Add an amount and what it is for",
+  "sentApproval": "Sent to Mom & Dad for approval",
+  "sendProposal": "Send proposal",
+  "stWaiting": "Waiting ⏳",
+  "stApproved": "Approved ✓",
+  "stDeclined": "Declined",
+  "requestTitle": "{name} requested {amount}",
+  "proposalTitle": "{name} proposes {amount}",
+  "proposalSub": "{reason} · from {env}",
+  "recDueSub": "Recurring · comes due {when} · post it when you pay it",
+  "dueNow": "now",
+  "dueSoon": "soon",
+  "choreDoneTitle": "\"{name}\" done — confirm?",
+  "choreDoneSub": "{stars} stars — confirm to grow the jar",
+  "circleSub": "{who} to collect {amount} · pot {pot} so far",
+  "@mChoresLine": {
+    "placeholder": {
+      "placeholders": {
+        "stars": {
+          "type": "int"
+        },
+        "requests": {
+          "type": "int"
+        },
+        "proposals": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@lastSync": {
+    "placeholder": {
+      "placeholders": {
+        "last": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@reachedMove": {
+    "placeholder": {
+      "placeholders": {
+        "on": {
+          "type": "int"
+        },
+        "total": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@csvSaved": {
+    "placeholder": {
+      "placeholders": {
+        "path": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@exportedPath": {
+    "placeholder": {
+      "placeholders": {
+        "path": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@requestTitle": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        },
+        "amount": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@proposalTitle": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        },
+        "amount": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@proposalSub": {
+    "placeholder": {
+      "placeholders": {
+        "reason": {
+          "type": "String"
+        },
+        "env": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@recDueSub": {
+    "placeholder": {
+      "placeholders": {
+        "when": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@choreDoneTitle": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@choreDoneSub": {
+    "placeholder": {
+      "placeholders": {
+        "stars": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@circleSub": {
+    "placeholder": {
+      "placeholders": {
+        "who": {
+          "type": "String"
+        },
+        "amount": {
+          "type": "String"
+        },
+        "pot": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "exportReal": "Export works on a real device",
+  "allSynced": "✓ All changes synced",
+  "familyCta": "Manage family",
+  "familyMemberCount": "{count, plural, =1{1 member} other{{count} members}}",
+  "@familyMemberCount": {"placeholders": {"count": {"type": "int"}}},
+  "recentInEnv": "Recent in this envelope",
+  "nothingLogged": "Nothing logged here yet.",
+  "dueBy": "overdue by {days}d",
+  "dueToday": "due today",
+  "dueTomorrow": "due tomorrow",
+  "dueIn": "due in {days}d",
+  "circleTitle": "Savings circle — Round {round} of {total}",
+  "postedSnack": "{name} posted ✓ — envelope updated",
+  "starsGiven": "{stars} stars given to the kids!",
+  "approvedReq": "Approved ✓ — {amount} added to {name}",
+  "declineBody": "{reason}\n\nFrom envelope: {env}",
+  "approvedProp": "Approved ✓ — {amount} logged to {env}",
+  "sentKid": "\"{name}\" sent to Mom & Dad",
+  "listEmptyAdd": "Nothing here — add an item with ＋",
+  "usesPct": "Uses {pct}% of the {name}",
+  "loggedTo": "Logged {amount} to {name} ✓ — envelope updated",
+  "finishShop": "Finish shopping → log expense",
+  "estPrice": "Est. unit price ({symbol})",
+  "myFamily": "My family",
+  "spaceCreated": "Family space created ✓ Invite code: {code}",
+  "createFail": "Could not create the space — try again",
+  "joinSpaceTitle": "Join a family space",
+  "inviteCode": "Invite code",
+  "joinedOk": "Joined ✓ — your family data is syncing",
+  "joinFail": "Could not join — try again",
+  "kidsPin": "Kids Mode exit PIN",
+  "kidsPinSub": "Required to leave Kids Mode — tap to change",
+  "signedInAs": "Signed in: {masked}",
+  "signOut": "Sign out",
+  "viewAs": "View as",
+  "cashShare": "{pct}% of spending",
+  "donutA11y": "Spending by envelope, {name} selected, {share} percent",
+  "starsHome": "{stars} stars — confirm chores on Home to grow jars",
+  "circleMember": "Savings circle · {name}",
+  "potSoFar": "Pot so far: {pot}",
+  "roundOk": "Round recorded ✓ — records only, we never hold money",
+  "addToGoal": "Add to {name}",
+  "addedToGoal": "Added to {name}",
+  "goalBase": "Goal base: {short}",
+  "syncTime": "today at {t}",
+  "@dueBy": {
+    "placeholder": {
+      "placeholders": {
+        "days": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@dueIn": {
+    "placeholder": {
+      "placeholders": {
+        "days": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@circleTitle": {
+    "placeholder": {
+      "placeholders": {
+        "round": {
+          "type": "int"
+        },
+        "total": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@postedSnack": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@starsGiven": {
+    "placeholder": {
+      "placeholders": {
+        "stars": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@approvedReq": {
+    "placeholder": {
+      "placeholders": {
+        "amount": {
+          "type": "String"
+        },
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@declineBody": {
+    "placeholder": {
+      "placeholders": {
+        "reason": {
+          "type": "String"
+        },
+        "env": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@approvedProp": {
+    "placeholder": {
+      "placeholders": {
+        "amount": {
+          "type": "String"
+        },
+        "env": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@sentKid": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@usesPct": {
+    "placeholder": {
+      "placeholders": {
+        "pct": {
+          "type": "int"
+        },
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@loggedTo": {
+    "placeholder": {
+      "placeholders": {
+        "amount": {
+          "type": "String"
+        },
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@estPrice": {
+    "placeholder": {
+      "placeholders": {
+        "symbol": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@spaceCreated": {
+    "placeholder": {
+      "placeholders": {
+        "code": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@signedInAs": {
+    "placeholder": {
+      "placeholders": {
+        "masked": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@cashShare": {
+    "placeholder": {
+      "placeholders": {
+        "pct": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@donutA11y": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        },
+        "share": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@starsHome": {
+    "placeholder": {
+      "placeholders": {
+        "stars": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "@circleMember": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@potSoFar": {
+    "placeholder": {
+      "placeholders": {
+        "pot": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@addToGoal": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@addedToGoal": {
+    "placeholder": {
+      "placeholders": {
+        "name": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@goalBase": {
+    "placeholder": {
+      "placeholders": {
+        "short": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "@syncTime": {
+    "placeholder": {
+      "placeholders": {
+        "t": {
+          "type": "String"
+        }
+      }
+    }
+  },
+  "watch": "Watch",
+  "spentLabel": "Spent",
+  "limitLabel": "Limit",
+  "memberPot": "Pot so far: {pot} · {contribution} × {count} members",
+  "@memberPot": {
+    "placeholder": {
+      "placeholders": {
+        "pot": {
+          "type": "String"
+        },
+        "contribution": {
+          "type": "String"
+        },
+        "count": {
+          "type": "int"
+        }
+      }
+    }
+  }
+}

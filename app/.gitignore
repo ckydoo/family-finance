@@ -1,0 +1,28 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+coverage/
+
+# Platform
+android/.gradle/
+ios/Pods/
+ios/.symlinks/
+*.iml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Secrets — never commit real API keys
+.env
+.env.*.local
+
+# Misc
+*.log
+.DS_Store

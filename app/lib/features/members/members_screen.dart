@@ -1,0 +1,770 @@
+import 'package:flutter/material.dart';
+
+import '../../core/auth/pin_store.dart';
+import '../settings/settings_screen.dart';
+import '../../core/widgets/app_icons.dart';
+import '../../core/l10n/app_strings.dart';
+import '../../core/sync/sync_engine.dart';
+import '../../core/models/models.dart';
+import '../../core/state/app_state.dart';
+import '../../core/theme/app_theme.dart';
+import '../../l10n/generated/app_localizations.dart';
+
+/// Members, roles and the demo "View as" switcher (spec §3, §7.10).
+class MembersScreen extends StatelessWidget {
+  const MembersScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.familyTitle),
+        actions: [
+          IconButton(
+            tooltip: AppLocalizations.of(context)!.settingsTitle,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+            icon: Icon(Icons.settings_outlined, color: context.ink),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          children: [
+            // ── Space card ────────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [context.primary, context.primaryDark],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'The Taylor Family',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          AppLocalizations.of(context)!.membersDesc,
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Text(
+                      'MHRI-4F2K',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                AppLocalizations.of(context)!.membersInviteHint,
+                style: TextStyle(fontSize: 12, color: context.inkSoft),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Members ───────────────────────────────────────────────────
+            for (final m in s.members) ...[
+              _MemberRow(m: m),
+              const SizedBox(height: 10),
+            ],
+
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDF1DA),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.membersDemoTip,
+                style: TextStyle(fontSize: 12.5, color: Color(0xFF8A6116)),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Settings stubs ────────────────────────────────────────────
+            Text(
+              AppLocalizations.of(context)!.settingsTitle,
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: context.ink),
+            ),
+            const SizedBox(height: 10),
+            _setting(context, AppLocalizations.of(context)!.setCurrency,
+                AppLocalizations.of(context)!.setCurrencySub(s.rateLabel)),
+            _languageRow(context, s),
+            _setting(context, AppLocalizations.of(context)!.setPrivacy,
+                AppLocalizations.of(context)!.setPrivacySub),
+            _setting(context, AppLocalizations.of(context)!.setMonthStart,
+                AppLocalizations.of(context)!.setMonthStartSub),
+            _setting(context, AppLocalizations.of(context)!.setNotif,
+                AppLocalizations.of(context)!.setNotifSub),
+            if (s.isLive) _spaceCard(context, s),
+            _pinRow(context, s),
+            if (s.env.isLive && s.auth != null) _accountRow(context, s),
+            _setting(context, AppLocalizations.of(context)!.setBackup,
+                AppLocalizations.of(context)!.setBackupSub),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _languageRow(BuildContext context, AppState s) => InkWell(
+        onTap: () => _pickLanguage(context, s),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.card,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tStr(context, 'language'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: context.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      kLanguageNames[s.localeCode] ?? 'English',
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: context.inkSoft),
+            ],
+          ),
+        ),
+      );
+
+  void _pickLanguage(BuildContext context, AppState s) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(tStr(context, 'language')),
+        children: [
+          for (final entry in kLanguageNames.entries)
+            SimpleDialogOption(
+              onPressed: () {
+                s.setLocale(entry.key);
+                Navigator.pop(ctx);
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    if (s.localeCode == entry.key)
+                      Icon(Icons.check, color: context.primary, size: 18)
+                    else
+                      const SizedBox(width: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      entry.value,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Text(
+              AppLocalizations.of(context)!.localizedNote,
+              style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _twoDigits(int n) => n.toString().padLeft(2, '0');
+
+  Widget _spaceCard(BuildContext context, AppState s) {
+    final engine = s.sync;
+
+    // No space yet → setup card.
+    if (!s.hasSpace || engine == null) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.card,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.spaceSetup,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                color: context.ink,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              AppLocalizations.of(context)!.spaceSetupSub,
+              style:
+                  TextStyle(fontSize: 12, color: context.inkSoft, height: 1.35),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _createSpaceDialog(context, s),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.primary,
+                      foregroundColor: context.onSolid,
+                      shape: const StadiumBorder(),
+                    ),
+                    child: Text(AppLocalizations.of(context)!.createSpace),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _joinSpaceDialog(context, s),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.primary,
+                      side: BorderSide(color: context.primary),
+                      shape: const StadiumBorder(),
+                    ),
+                    child: Text(AppLocalizations.of(context)!.joinWithCode),
+                  ),
+                ),
+              ],
+            ),
+            if (s.syncLastError != null &&
+                (s.syncStatus == SyncStatus.error ||
+                    s.syncStatus == SyncStatus.offline)) ...[
+              const SizedBox(height: 10),
+              Text(
+                s.syncLastError!,
+                style: TextStyle(fontSize: 11.5, color: context.expenseRed),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    // Space linked → status card.
+    final last = s.lastSyncAt;
+    final lastText = last == null
+        ? 'never'
+        : AppLocalizations.of(context)!
+            .syncTime('${_twoDigits(last.hour)}:${_twoDigits(last.minute)}');
+    final statusText = switch (s.syncStatus) {
+      SyncStatus.syncing => AppLocalizations.of(context)!.syncing,
+      SyncStatus.offline => AppLocalizations.of(context)!.offlineRetry,
+      SyncStatus.error =>
+        s.syncLastError ?? AppLocalizations.of(context)!.syncProblem,
+      SyncStatus.needsSignIn => AppLocalizations.of(context)!.signinExpired,
+      _ => AppLocalizations.of(context)!.lastSync(lastText),
+    };
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient:
+            LinearGradient(colors: [context.primary, context.primaryDark]),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  s.spaceName ?? AppLocalizations.of(context)!.familySpace,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  s.inviteCode ?? '',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            AppLocalizations.of(context)!.membersInviteHint,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 11.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  statusText,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => engine.syncNow(),
+                icon: const Icon(Icons.sync, size: 16, color: Colors.white),
+                label: Text(
+                  AppLocalizations.of(context)!.syncNow,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createSpaceDialog(BuildContext context, AppState s) async {
+    final engine = s.sync;
+    if (engine == null) return;
+    final name = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(AppLocalizations.of(context)!.createFamilySpace),
+        content: TextField(
+          controller: name,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.familyName,
+            hintText: 'e.g. The Taylor Family',
+            filled: true,
+            fillColor: context.bg,
+            border: OutlineInputBorder(borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.primary,
+              foregroundColor: context.onSolid,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+    final ok = await engine.createSpace(name.text.trim().isEmpty
+        ? AppLocalizations.of(context)!.myFamily
+        : name.text.trim());
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? AppLocalizations.of(context)!.spaceCreated(s.inviteCode ?? '?')
+              : (s.syncLastError ?? AppLocalizations.of(context)!.createFail),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _joinSpaceDialog(BuildContext context, AppState s) async {
+    final engine = s.sync;
+    if (engine == null) return;
+    final code = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(AppLocalizations.of(context)!.joinSpaceTitle),
+        content: TextField(
+          controller: code,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.inviteCode,
+            hintText: 'MHRI-XXXX',
+            filled: true,
+            fillColor: context.bg,
+            border: OutlineInputBorder(borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.primary,
+              foregroundColor: context.onSolid,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Join'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ok = await engine.joinSpace(code.text);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? AppLocalizations.of(context)!.joinedOk
+              : (s.syncLastError ?? AppLocalizations.of(context)!.joinFail),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _pinRow(BuildContext context, AppState s) => InkWell(
+        onTap: () => _editParentPin(context, s),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.card,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.kidsPin,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: context.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppLocalizations.of(context)!.kidsPinSub,
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: context.inkSoft),
+            ],
+          ),
+        ),
+      );
+
+  void _editParentPin(BuildContext context, AppState s) {
+    final pin = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(AppLocalizations.of(context)!.kidsPin),
+        content: TextField(
+          controller: pin,
+          keyboardType: TextInputType.number,
+          obscureText: true,
+          maxLength: 6,
+          decoration: InputDecoration(
+            hintText: 'New PIN (4\u20136 digits)',
+            counterText: '',
+            filled: true,
+            fillColor: context.bg,
+            border: OutlineInputBorder(borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.primary,
+              foregroundColor: context.onSolid,
+            ),
+            onPressed: () async {
+              final v = pin.text.trim();
+              if (v.length >= 4) {
+                await s.pinStore.setPin(PinStore.parentKey, v);
+              }
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Kids Mode PIN updated \u2713'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _accountRow(BuildContext context, AppState s) {
+    final phone = s.auth!.session?.phone ?? '';
+    final masked = phone.length <= 4
+        ? phone
+        : '\u2022\u2022\u2022 ${phone.substring(phone.length - 4)}';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Account',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: context.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  AppLocalizations.of(context)!.signedInAs(masked),
+                  style: TextStyle(fontSize: 12, color: context.inkSoft),
+                ),
+              ],
+            ),
+          ),
+          OutlinedButton(
+            onPressed: () async {
+              Navigator.of(context).popUntil((r) => r.isFirst);
+              await s.auth!.signOut();
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: context.danger,
+              side: BorderSide(color: context.danger),
+              shape: const StadiumBorder(),
+            ),
+            child: Text(AppLocalizations.of(context)!.signOut),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _setting(BuildContext context, String title, String subtitle) =>
+      Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.card,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: context.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: context.inkSoft),
+          ],
+        ),
+      );
+}
+
+class _MemberRow extends StatelessWidget {
+  final Member m;
+
+  const _MemberRow({required this.m});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final isMe = s.user.id == m.id;
+    final canDemo = m.id == 'm_tendai' ||
+        m.id == 'm_rudo' ||
+        m.id == 'm_tino' ||
+        m.id == 'm_tariro';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: _bg(m.role),
+            child: Icon(
+              iconForKey(m.emoji) ?? Icons.person,
+              size: 20,
+              color: context.ink,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      m.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: context.ink,
+                      ),
+                    ),
+                    if (isMe) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        'You',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: context.primary,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  roleLabel(AppLocalizations.of(context)!, m.role),
+                  style: TextStyle(fontSize: 12, color: context.inkSoft),
+                ),
+              ],
+            ),
+          ),
+          if (canDemo && !isMe)
+            OutlinedButton(
+              onPressed: () {
+                s.switchUser(m);
+                Navigator.of(context).popUntil((r) => r.isFirst);
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: context.primary,
+                side: BorderSide(color: context.primary),
+                shape: const StadiumBorder(),
+              ),
+              child: Text(AppLocalizations.of(context)!.viewAs),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _bg(Role role) => switch (role) {
+        Role.owner => const Color(0xFFD9EDE8),
+        Role.adult => const Color(0xFFFBE7C6),
+        Role.teen => const Color(0xFFDCEBFA),
+        Role.kid => const Color(0xFFFFF1C9),
+        Role.viewer => const Color(0xFFEFE3F7),
+      };
+}
