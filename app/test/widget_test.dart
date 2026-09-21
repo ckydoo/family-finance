@@ -34,7 +34,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Gate is up.
-    expect(find.text('Welcome to Mhuri Money'), findsOneWidget);
+    expect(find.text('Welcome to Mhuri Hub'), findsOneWidget);
     expect(find.text('Send code'), findsOneWidget);
     // The family app stays hidden behind it.
     expect(find.text('Family Pool'), findsNothing);

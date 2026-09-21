@@ -258,7 +258,7 @@ Removed all Zimbabwe-only terminology app-wide (lib / test / ARBs / docs / previ
 - **Demo data**: the Taylor family (David, Maya, Leo, Mia, Zoe, Nana), Main bank / Mobile wallet, FreshMart / City Supermarket / Saturday market, 'Fuel + bus fares', 'Rice 10kg', 'Family Holiday — by the sea', space 'The Taylor Family', collection order 'Aunt Kim, Maya, Uncle Raj, David, Mrs. Lee'.
 - **RBZ** → 'daily central-bank snapshot' / 'daily reference'; **+263** → generic E.164 normaliser with a `kDefaultCountryCode` const (launch-market default).
 - **ARBs ×6**: onboarding copy internationalized ('in every currency you use'); Shona/Ndebele files keep native words — mukando/mhuri/Gogo are correct *translations*, which is the internationalization itself.
-- **Kept on purpose**: the USD+ZiG ledger pair (engine decision) + 'Zimbabwe Gold (ZiG)' currency labels; the 'Mhuri Money' product name (brand).
+- **Kept on purpose**: the USD+ZiG ledger pair (engine decision) + 'Zimbabwe Gold (ZiG)' currency labels; the 'Mhuri Hub' product name (brand).
 - Verified: terminology gate + structure checks PASS (56 dart files, 14,526 lines).
 
 ### Design polish pass (frontend quality, pre-M8)
@@ -407,3 +407,8 @@ Note: `lib/l10n/generated/app_localizations.dart` is a **build-time artifact** (
 - +5 l10n keys ×6 (**334 keys**, parity ✓). Gate: 60 files balance ✓, 334×6 ✓, 316 refs ✓.
 
 **On-device note:** indentation in spliced regions is off — run `dart format lib` once before committing.
+
+## Rebrand — display name (2026-09-21)
+- **Mhuri Money → Mhuri Hub** (user chose "Hub": neutral, nothing money-flavoured, whole-family platform feel). Scope: user-facing only — Material app title + home header, loginWelcome / recordsOnly across all 6 locales, pubspec description, docs. Internal Dart slug stays `mhuri_money` (invisible to users; zero code risk).
+- When platform folders are generated (device week, `flutter create .`): set `android:label="Mhuri Hub"` + iOS `CFBundleDisplayName` so the launcher icon matches.
+

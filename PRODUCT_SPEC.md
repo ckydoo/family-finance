@@ -1,9 +1,9 @@
-# Mhuri Money — Product Specification & Design Document
+# Mhuri Hub — Product Specification & Design Document
 
 **Family Finance Management for Every Kind of Family**
 Version 1.0 · September 2026 · Target platform: Flutter (Android & iOS)
 
-> "Mhuri" means *family* in Shona. Mhuri Money helps couples and families in Zimbabwe
+> "Mhuri" means *family* in Shona. Mhuri Hub helps couples and families in Zimbabwe
 > (and beyond) manage income, expenses, budgets, savings and shopping lists together —
 > in USD and ZiG, online or offline, with a safe, fun mode for kids.
 
@@ -124,7 +124,7 @@ Every user belongs to one or more **Family Spaces**. Each space has members with
 
 ### 3.2 Privacy controls (per couple agreement)
 
-Couples differ. Mhuri Money supports three sharing levels, set per member and per account:
+Couples differ. Mhuri Hub supports three sharing levels, set per member and per account:
 
 - **Full transparency** — partner sees all shared + personal accounts (default for shared accounts).
 - **Shared-only** — partner sees shared envelopes/accounts; personal accounts show only a "spent this month" number, never line items.
@@ -210,7 +210,7 @@ Features are grouped into modules. **MVP = modules A–E.**
 | E1 | Goals | Name, target, currency, deadline, cover image/icon, auto-save rule (e.g., $25/week on Friday), owner (family, member, or kid jar) |
 | E2 | Contributions | One-tap "add to goal"; contributions logged per member; progress ring + celebrations (confetti at 25/50/75/100%) |
 | E3 | Goal types | Sinking fund (school fees), emergency fund (recommended first goal — guided setup), big purchase, family event (wedding, funeral society contributions) |
-| E4 | Mukando / Round (ROSCA) tracker | Track a rotation circle: members, contribution amount & frequency, round order, who has collected, whose turn is next, pot total, and payment proof photos. Reminders before each collection date. **Records only — Mhuri Money never holds the money** |
+| E4 | Mukando / Round (ROSCA) tracker | Track a rotation circle: members, contribution amount & frequency, round order, who has collected, whose turn is next, pot total, and payment proof photos. Reminders before each collection date. **Records only — Mhuri Hub never holds the money** |
 | E5 | Burial society / community funds | Same tracker with monthly dues + claims record |
 | E6 | Emergency fund guard | Suggests moving unspent envelope money to the emergency fund at month end (opt-in) |
 
@@ -559,7 +559,7 @@ lib/
 | **Kids' privacy** | Kids Mode has no real balances; minimal data; no ads, no trackers, no external links in kids surfaces (COPPA-aligned posture) |
 | **Regulatory** | Zimbabwe Data Protection Act (Ch. 12:07) compliance: consent, data subject access/export, deletion; clear privacy policy in EN/SN/ND |
 | **Fraud/abuse** | Rate-limit OTP; audit log (hash-chained) for disputes; anomaly alerts on unusual deletes/exports |
-| ** disclaimer** | In-app note: Mhuri Money is a **tracking/planning tool**, not a licensed financial institution; no custody of funds |
+| ** disclaimer** | In-app note: Mhuri Hub is a **tracking/planning tool**, not a licensed financial institution; no custody of funds |
 
 ---
 
@@ -664,5 +664,5 @@ High-fidelity concept screens (in `mockups/`):
 
 ---
 
-*Prepared for the Mhuri Money project — Flutter / Supabase / offline-first / USD+ZiG.*
+*Prepared for the Mhuri Hub project — Flutter / Supabase / offline-first / USD+ZiG.*
 *Next step: Phase 0 — clickable prototype & Flutter scaffold.*

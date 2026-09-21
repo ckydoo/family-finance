@@ -13,9 +13,9 @@ import '../savings/savings_screen.dart';
 ///
 /// Interface rules (M3-informed, one system):
 ///  · every destination has an OUTLINED rest icon and a FILLED selected icon;
-///  · the selected item gets the soft-teal pill behind its icon;
+///  · the selected item turns green (icon + label), no pill;
 ///  · one radius ruler, one hairline, labels always visible;
-///  · no notch — the rounded-square FAB floats over a clean bar;
+///  · center-docked circular amber FAB in a curved notch (CircularNotchedRectangle);
 ///  · full-cell tap targets (Expanded + InkWell).
 class AdultShell extends StatefulWidget {
   const AdultShell({super.key});
@@ -42,8 +42,7 @@ class _AdultShellState extends State<AdultShell> {
       _NavDest(Icons.home_outlined, Icons.home_rounded, l.tabHome),
       _NavDest(Icons.pie_chart_outline, Icons.pie_chart, l.tabBudgets),
       _NavDest(Icons.savings_outlined, Icons.savings, l.tabSavings),
-      _NavDest(
-          Icons.shopping_cart_outlined, Icons.shopping_cart, l.tabLists),
+      _NavDest(Icons.list_outlined, Icons.list_rounded, l.tabLists),
     ];
 
     // IndexedStack keeps each tab's scroll position alive.
@@ -68,11 +67,9 @@ class _AdultShellState extends State<AdultShell> {
       floatingActionButton: FloatingActionButton(
         tooltip: AppLocalizations.of(context)!.addTransaction,
         onPressed: () => showQuickAdd(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: context.bg, width: 4),
-        ),
-        child: const Icon(Icons.add, size: 30),
+        backgroundColor: context.accent,
+        elevation: 4,
+        child: const Icon(Icons.add, size: 30, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: Container(
@@ -82,12 +79,27 @@ class _AdultShellState extends State<AdultShell> {
         child: BottomAppBar(
           color: context.card,
           elevation: 0,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 8,
           child: Row(
             children: [
-              for (var i = 0; i < 4; i++) ...[
-                _nav(destinations[i], i),
-                if (i == 1) const Spacer(),
-              ],
+              Expanded(
+                child: Row(
+                  children: [
+                    _nav(destinations[0], 0),
+                    _nav(destinations[1], 1),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 84),
+              Expanded(
+                child: Row(
+                  children: [
+                    _nav(destinations[2], 2),
+                    _nav(destinations[3], 3),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -97,6 +109,7 @@ class _AdultShellState extends State<AdultShell> {
 
   Widget _nav(_NavDest d, int idx) {
     final selected = _tab == idx;
+    final color = selected ? context.primaryDark : context.ink;
     return Expanded(
       child: InkWell(
         onTap: () {
@@ -109,30 +122,26 @@ class _AdultShellState extends State<AdultShell> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedContainer(
+            AnimatedScale(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 3),
-              decoration: BoxDecoration(
-                color: selected ? context.primarySoft : Colors.transparent,
-                borderRadius: BorderRadius.circular(30),
-              ),
+              scale: selected ? 1.08 : 1.0,
               child: Icon(
                 selected ? d.active : d.rest,
-                size: 23,
-                color: selected ? context.primaryDark : context.inkFaint,
+                size: 24,
+                color: color,
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             Text(
               d.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 11.5,
                 letterSpacing: 0.1,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                color: selected ? context.primaryDark : context.inkFaint,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: color,
               ),
             ),
           ],

@@ -124,7 +124,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         // G7: money grouping follows the app locale (es/fr/pt via intl).
         Money.localeTag = _state.localeCode;
         return MaterialApp(
-        title: 'Mhuri Money',
+        title: 'Mhuri Hub',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         darkTheme: buildAppDarkTheme(),
@@ -238,7 +238,7 @@ class _SplashState extends State<_Splash>
                   ),
             const SizedBox(height: 22),
             Text(
-              'Mhuri Money',
+              'Mhuri Hub',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,

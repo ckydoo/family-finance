@@ -109,7 +109,7 @@
   "donutEmpty": "No spending recorded yet this cycle — the donut fills as you add expenses.",
   "ob4Body": "Bill nags, budget watch and the weekly family digest — quiet hours respected, everything on your phone. You are in charge.",
   "next": "Next",
-  "loginWelcome": "Welcome to Mhuri Money",
+  "loginWelcome": "Welcome to Mhuri Hub",
   "loginEnterCode": "Enter the code",
   "loginSentCode": "We sent a code by SMS to {phone}",
   "@loginSentCode": {
@@ -317,7 +317,7 @@
   "bringToMeeting": "Bring this to the monthly Family Meeting",
   "savingsTitle": "Savings",
   "markRound": "Mark this round collected",
-  "recordsOnly": "Mhuri Money never holds the money — records only.",
+  "recordsOnly": "Mhuri Hub never holds the money — records only.",
   "saveContribution": "Save contribution",
   "sendTest": "Send a test notification",
   "testOk": "Reminders are working on this device.",

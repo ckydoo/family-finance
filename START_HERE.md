@@ -1,4 +1,4 @@
-# 🚀 START HERE — Run Mhuri Money on your device
+# 🚀 START HERE — Run Mhuri Hub on your device
 
 **Family finance management · offline-first demo · USD + ZiG · Envelopes ·
 Savings circles · Shopping lists · Teen Zone · Kids Mode**

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -126,15 +128,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF2FB89A), Color(0xFF37C4A4)],
-                    ),
+                    color: context.card,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.hairline),
                   ),
-                  child: const Icon(Icons.donut_small,
-                      size: 20, color: Colors.white),
+                  child: _ReportsDonutGlyph(
+                    colors: [
+                      context.primary,
+                      context.accent,
+                      context.incomeGreen,
+                      context.expenseRed,
+                      context.primaryDark,
+                      const Color(0xFF7EC8F2),
+                      const Color(0xFFFF6B6B),
+                    ],
+                  ),
                 ),
               ),
               IconButton(
@@ -732,4 +740,53 @@ class SmartCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Reports badge glyph — mini "where the money went" donut ─────────────────
+// Same palette, same order as the Reports screen donut; equal arcs with small
+// gaps so it reads as a colorful chart at 20px.
+
+class _ReportsDonutGlyph extends StatelessWidget {
+  const _ReportsDonutGlyph({required this.colors});
+
+  final List<Color> colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size.square(20),
+      painter: _ReportsDonutPainter(colors),
+    );
+  }
+}
+
+class _ReportsDonutPainter extends CustomPainter {
+  _ReportsDonutPainter(this.colors);
+
+  final List<Color> colors;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 4.0;
+    final rect = Rect.fromLTWH(
+      stroke / 2,
+      stroke / 2,
+      size.width - stroke,
+      size.height - stroke,
+    );
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    const gap = 0.14; // radians between segments
+    final sweep = (2 * math.pi - gap * colors.length) / colors.length;
+    var start = -math.pi / 2;
+    for (final c in colors) {
+      paint.color = c;
+      canvas.drawArc(rect, start, sweep, false, paint);
+      start += sweep + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ReportsDonutPainter old) => old.colors != colors;
 }

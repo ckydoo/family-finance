@@ -1,4 +1,4 @@
-# Mhuri Money — Flutter MVP Scaffold
+# Mhuri Hub — Flutter MVP Scaffold
 
 **Family finance management for every kind of family** · offline-first demo ·
 USD + ZiG dual-currency · envelopes · goals & savings circles · shared shopping lists ·
