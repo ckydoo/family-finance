@@ -66,9 +66,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     final s = AppScope.of(context);
 
     return SingleChildScrollView(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
         decoration: BoxDecoration(
@@ -90,24 +88,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               ),
             ),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    AppLocalizations.of(context)!.quickAddTitle,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: context.ink,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: AppLocalizations.of(context)!.cancel,
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
+            Text(
+              AppLocalizations.of(context)!.quickAddTitle,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: context.ink),
             ),
             const SizedBox(height: 14),
 
@@ -133,18 +116,11 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             TextField(
               controller: _amount,
               autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: context.ink),
               decoration: InputDecoration(
                 prefixText: '${_cur.symbol} ',
-                prefixStyle: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: context.inkSoft),
+                prefixStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: context.inkSoft),
                 filled: true,
                 fillColor: context.card,
                 border: const OutlineInputBorder(borderSide: BorderSide.none),
@@ -179,11 +155,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
 
             // Envelope (expenses only)
             if (_type == TxType.expense) ...[
-              Text(AppLocalizations.of(context)!.envelopeLabel,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: context.inkSoft)),
+              Text(AppLocalizations.of(context)!.envelopeLabel, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: context.inkSoft)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -206,11 +178,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             ],
 
             // Who
-            Text(AppLocalizations.of(context)!.whoLabel,
-                style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: context.inkSoft)),
+            Text(AppLocalizations.of(context)!.whoLabel, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: context.inkSoft)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -218,11 +186,11 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 for (final m in s.members)
                   ChoiceChip(
                     label: Row(children: [
-                      Icon(iconForKey(m.emoji) ?? Icons.person,
-                          size: 16, color: context.primaryDark),
-                      const SizedBox(width: 8),
-                      Text(m.name),
-                    ]),
+                        Icon(iconForKey(m.emoji) ?? Icons.person,
+                            size: 16, color: context.primaryDark),
+                        const SizedBox(width: 8),
+                        Text(m.name),
+                      ]),
                     selected: _member?.id == m.id,
                     onSelected: (_) => setState(() => _member = m),
                   ),
@@ -231,11 +199,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             const SizedBox(height: 12),
 
             // Method
-            Text(AppLocalizations.of(context)!.paidWithLabel,
-                style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: context.inkSoft)),
+            Text(AppLocalizations.of(context)!.paidWithLabel, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: context.inkSoft)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -269,34 +233,29 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 if (amt == null || _member == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content:
-                          Text(AppLocalizations.of(context)!.enterAmountFirst),
+                      content: Text(AppLocalizations.of(context)!.enterAmountFirst),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                   return;
                 }
-                final messenger = ScaffoldMessenger.of(context);
-                final l = AppLocalizations.of(context)!;
-                final savedMessage = l.savedOffline;
-                final defaultNote =
-                    _type == TxType.income ? l.income : l.expense;
                 s.addTx(
                   type: _type,
                   amount: Money.fromMajor(amt, _cur),
                   memberId: _member!.id,
                   method: _method,
                   note: _note.text.trim().isEmpty
-                      ? defaultNote
+                      ? (_type == TxType.income ? AppLocalizations.of(context)!.income : AppLocalizations.of(context)!.expense)
                       : _note.text.trim(),
                   envelopeId: _type == TxType.expense ? _envelope?.id : null,
                 );
                 HapticFeedback.mediumImpact();
                 HapticFeedback.mediumImpact();
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(context);
                 messenger.showSnackBar(
                   SnackBar(
-                    content: Text(savedMessage),
+                    content: Text(AppLocalizations.of(context)!.savedOffline),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );

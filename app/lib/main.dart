@@ -18,9 +18,9 @@ Future<void> main() async {
   // Auth (M2). Live mode restores a stored session before the first frame;
   // demo mode never shows login at all.
   final auth = AuthController(env: env, kvGet: db?.kvGet, kvSet: db?.kvSet);
-  if (env.isLive) {
-    await auth.restore();
-  }
+  // Demo AND live: restore a stored session (demo = kv marker; first run
+  // therefore starts at the login gate, as it should).
+  await auth.restore();
 
   runApp(MhuriMoneyApp(db: db, env: env, auth: auth));
 }

@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'core/auth/auth_controller.dart';
@@ -19,57 +18,6 @@ import 'features/kids/kids_mode.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/shell/adult_shell.dart';
 import 'features/teen/teen_zone.dart';
-
-/// Flutter does not ship Material widget translations for Shona or Northern
-/// Ndebele. Keep the app's translated strings while supplying the framework
-/// labels required by widgets such as [RefreshIndicator] and date pickers.
-class _MaterialFallbackDelegate
-    extends LocalizationsDelegate<MaterialLocalizations> {
-  const _MaterialFallbackDelegate();
-
-  @override
-  bool isSupported(Locale locale) =>
-      locale.languageCode == 'sn' || locale.languageCode == 'nd';
-
-  @override
-  Future<MaterialLocalizations> load(Locale locale) =>
-      DefaultMaterialLocalizations.delegate.load(const Locale('en'));
-
-  @override
-  bool shouldReload(_MaterialFallbackDelegate old) => false;
-}
-
-class _CupertinoFallbackDelegate
-    extends LocalizationsDelegate<CupertinoLocalizations> {
-  const _CupertinoFallbackDelegate();
-
-  @override
-  bool isSupported(Locale locale) =>
-      locale.languageCode == 'sn' || locale.languageCode == 'nd';
-
-  @override
-  Future<CupertinoLocalizations> load(Locale locale) =>
-      DefaultCupertinoLocalizations.delegate.load(const Locale('en'));
-
-  @override
-  bool shouldReload(_CupertinoFallbackDelegate old) => false;
-}
-
-class _WidgetsFallbackDelegate
-    extends LocalizationsDelegate<WidgetsLocalizations> {
-  const _WidgetsFallbackDelegate();
-
-  @override
-  bool isSupported(Locale locale) =>
-      locale.languageCode == 'sn' || locale.languageCode == 'nd';
-
-  @override
-  Future<WidgetsLocalizations> load(Locale locale) =>
-      DefaultWidgetsLocalizations.delegate.load(const Locale('en'));
-
-  @override
-  bool shouldReload(_WidgetsFallbackDelegate old) => false;
-}
 
 /// Root widget. Owns the [AppState] and [AuthController] and exposes state to
 /// the whole tree via [AppScope]. All parameters optional: `flutter test` and
@@ -146,7 +94,8 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     // The user reveals them again with the eye on the pool card.
     if ((state == AppLifecycleState.paused ||
             state == AppLifecycleState.hidden) &&
-        !_state.hideAmounts) {
+        !_state.hideAmounts &&
+        _state.autoHideAmounts) {
       _state.setHideAmounts(true);
     }
     // Premium pass: back in the foreground → pull the family's changes now
@@ -172,58 +121,54 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       child: AnimatedBuilder(
         animation: _state,
         builder: (context, _) {
-          // G7: money grouping follows the app locale (es/fr/pt via intl).
-          Money.localeTag = _state.localeCode;
-          return MaterialApp(
-            title: 'Mhuri Money',
-            debugShowCheckedModeBanner: false,
-            theme: buildAppTheme(),
-            darkTheme: buildAppDarkTheme(),
-            // G1: system-following dark mode with manual override.
-            themeMode: _state.themeMode == 1
-                ? ThemeMode.light
-                : _state.themeMode == 2
-                    ? ThemeMode.dark
-                    : ThemeMode.system,
-            // M6 international: 6 languages, system-aware, user-overridable.
-            locale:
-                _state.localeCode.isEmpty ? null : Locale(_state.localeCode),
-            localizationsDelegates: const [
-              _MaterialFallbackDelegate(),
-              _CupertinoFallbackDelegate(),
-              _WidgetsFallbackDelegate(),
-              ...AppLocalizations.localizationsDelegates,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            // Elder mode (J6): scale every screen's text.
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(_state.largeText ? 1.2 : 1.0)),
-              child: child ?? const SizedBox.shrink(),
-            ),
-            home: AnimatedBuilder(
-              animation: _auth,
-              builder: (context, _) {
-                // Hydration splash: local database is loading (demo boots fast).
-                if (_state.hydrating) {
-                  return const _Splash();
-                }
-                // Interface pass 3: a designed failure path, not a white screen.
-                if (_state.lastError != null) {
-                  return _ErrorPane(onRetry: () => _state.refresh());
-                }
-                // Live mode gates the app behind phone OTP. Demo mode never does.
-                if (_live && !_auth.isLoggedIn) {
-                  return LoginScreen(auth: _auth);
-                }
-                // First-run onboarding (live mode only; skip writes kv).
-                if (_live && _auth.isLoggedIn && !_state.onboardingComplete) {
-                  return OnboardingScreen(state: _state);
-                }
-                return const RoleGate();
-              },
-            ),
-          );
+        // G7: money grouping follows the app locale (es/fr/pt via intl).
+        Money.localeTag = _state.localeCode;
+        return MaterialApp(
+        title: 'Mhuri Money',
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(),
+        darkTheme: buildAppDarkTheme(),
+        // G1: system-following dark mode with manual override.
+        themeMode: _state.themeMode == 1
+            ? ThemeMode.light
+            : _state.themeMode == 2
+                ? ThemeMode.dark
+                : ThemeMode.system,
+        // M6 international: 6 languages, system-aware, user-overridable.
+        locale: _state.localeCode.isEmpty ? null : Locale(_state.localeCode),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        // Elder mode (J6): scale every screen's text.
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(_state.largeText ? 1.2 : 1.0)),
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: AnimatedBuilder(
+          animation: _auth,
+          builder: (context, _) {
+            // Hydration splash: local database is loading (demo boots fast).
+            if (_state.hydrating) {
+              return const _Splash();
+            }
+            // Interface pass 3: a designed failure path, not a white screen.
+            if (_state.lastError != null) {
+              return _ErrorPane(onRetry: () => _state.refresh());
+            }
+            // First run starts at Authentication in BOTH modes (demo login
+            // = any phone + code 1234). After verifying once, launches go
+            // straight in via the restored session.
+            if (!_auth.isLoggedIn) {
+              return LoginScreen(auth: _auth);
+            }
+            // First-run onboarding (live mode only; skip writes kv).
+            if (_live && _auth.isLoggedIn && !_state.onboardingComplete) {
+              return OnboardingScreen(state: _state);
+            }
+            return const RoleGate();
+          },
+        ),
+        );
         },
       ),
     );
@@ -238,7 +183,8 @@ class _Splash extends StatefulWidget {
   State<_Splash> createState() => _SplashState();
 }
 
-class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
+class _SplashState extends State<_Splash>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
 
   @override

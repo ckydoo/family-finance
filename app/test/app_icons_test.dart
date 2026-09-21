@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mhuri_money/core/widgets/app_icons.dart';
@@ -21,10 +20,7 @@ void main() {
       // defaults used by persistence/sync/sheets
       'money', 'receipt', 'autorenew', 'goal', 'person',
     ];
-    final missing = [
-      for (final k in seedKeys)
-        if (iconForKey(k) == null) k
-    ];
+    final missing = [for (final k in seedKeys) if (iconForKey(k) == null) k];
     expect(missing, isEmpty, reason: 'unmapped icon keys: $missing');
   });
 

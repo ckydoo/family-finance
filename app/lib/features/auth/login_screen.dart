@@ -36,10 +36,8 @@ class _LoginScreenState extends State<LoginScreen> {
   /// through untouched.
   String _normalizePhone(String raw) {
     var p = raw.replaceAll(RegExp(r'[\s\-()]'), '');
-    if (p.startsWith('00'))
-      p = '+${p.substring(2)}';
-    else if (p.startsWith('0'))
-      p = '+$kDefaultCountryCode${p.substring(1)}';
+    if (p.startsWith('00')) p = '+${p.substring(2)}';
+    else if (p.startsWith('0')) p = '+$kDefaultCountryCode${p.substring(1)}';
     else if (!p.startsWith('+')) p = '+$p';
     return p;
   }
@@ -100,9 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              _codeSent
-                  ? AppLocalizations.of(context)!.loginEnterCode
-                  : AppLocalizations.of(context)!.loginWelcome,
+              _codeSent ? AppLocalizations.of(context)!.loginEnterCode : AppLocalizations.of(context)!.loginWelcome,
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -112,11 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 8),
             Text(
               _codeSent
-                  ? AppLocalizations.of(context)!
-                      .loginSentCode(_normalizePhone(_phone.text))
+                  ? AppLocalizations.of(context)!.loginSentCode(_normalizePhone(_phone.text))
                   : AppLocalizations.of(context)!.loginSignInHint,
-              style: TextStyle(
-                  fontSize: 13.5, color: context.inkSoft, height: 1.4),
+              style: TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.4),
             ),
             const SizedBox(height: 24),
             if (!_codeSent) ...[
@@ -130,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: context.ink,
                   letterSpacing: 1,
                 ),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: '0772 123 456',
                   filled: true,
                   fillColor: context.card,
@@ -150,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: context.ink,
                   letterSpacing: 8,
                 ),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: '••••••',
                   counterText: '',
                   filled: true,
@@ -178,13 +172,13 @@ class _LoginScreenState extends State<LoginScreen> {
               builder: (context, _) {
                 final busy = widget.auth.busy;
                 return ElevatedButton(
-                  onPressed:
-                      busy ? null : () => _codeSent ? _verify() : _send(),
+                  onPressed: busy
+                      ? null
+                      : () => _codeSent ? _verify() : _send(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.primary,
                     foregroundColor: context.onSolid,
-                    disabledBackgroundColor:
-                        context.primary.withValues(alpha: 0.6),
+                    disabledBackgroundColor: context.primary.withValues(alpha: 0.6),
                     minimumSize: const Size.fromHeight(54),
                     shape: const StadiumBorder(),
                   ),
@@ -198,9 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         )
                       : Text(
-                          _codeSent
-                              ? AppLocalizations.of(context)!.loginVerify
-                              : AppLocalizations.of(context)!.loginSendCode,
+                          _codeSent ? AppLocalizations.of(context)!.loginVerify : AppLocalizations.of(context)!.loginSendCode,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
@@ -219,8 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 }),
                 child: Text(
                   AppLocalizations.of(context)!.loginChangeNumber,
-                  style: TextStyle(
-                      color: context.inkSoft, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.inkSoft, fontWeight: FontWeight.w600),
                 ),
               ),
             ],

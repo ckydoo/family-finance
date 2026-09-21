@@ -69,3 +69,9 @@ Sync 7→10 entities (chore, mukando, recurring_rule) + schema updated_at fixes 
 
 ## Hardening continuation — DONE ✅ 2026-09-21
 Live-mode blockers fixed pre-emptively: client ids → uuid v4 (server columns are uuid; FakeServer had masked this), space-adoption wipe covers chore/recurring/circle, resume-sync on app foreground, +3 engine tests (101 total). Gates all green (60 files / 315×6 / 297 refs / EN 0).
+
+
+---
+
+## Device-feedback pass — DONE ✅ 2026-09-21
+Family screen: Switch-profile picker (all members, live included), Currency & rates sheet (display currency + custom ZiG rate, persisted), Privacy sheet (auto-hide preference + hide-now), Backup & export sheet (CSV, invite copy), Notifications → real Settings. autoHide/customRate persist via DbSnapshot. 329 keys ×6. All gates green.

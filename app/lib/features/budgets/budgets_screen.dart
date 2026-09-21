@@ -27,10 +27,7 @@ class BudgetsScreen extends StatelessWidget {
           Expanded(
             child: Text(
               l.budgetsTitle,
-              style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: context.ink),
             ),
           ),
           Container(
@@ -206,10 +203,8 @@ class _EnvelopeCard extends StatelessWidget {
                         Icon(Icons.lock, size: 12, color: context.inkSoft),
                       const SizedBox(width: 4),
                       Text(
-                        rolloverLabel(
-                            AppLocalizations.of(context)!, e.rollover),
-                        style:
-                            TextStyle(fontSize: 10.5, color: context.inkSoft),
+                        rolloverLabel(AppLocalizations.of(context)!, e.rollover),
+                        style: TextStyle(fontSize: 10.5, color: context.inkSoft),
                       ),
                     ],
                   ),
@@ -225,7 +220,7 @@ class _EnvelopeCard extends StatelessWidget {
                       value: value.clamp(0.0, 1.0).toDouble(),
                       minHeight: 7,
                       backgroundColor: context.track,
-                      color: _paceColor(context, pace),
+                      color: _paceColor(pace),
                     ),
                   ),
                 ],
@@ -258,18 +253,9 @@ class _PaceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (pace) {
-      Pace.onTrack => (
-          AppLocalizations.of(context)!.chipOnTrack,
-          const Color(0xFFD9EDE8)
-        ),
-      Pace.watch => (
-          AppLocalizations.of(context)!.watch,
-          const Color(0xFFFBE7C6)
-        ),
-      Pace.over => (
-          AppLocalizations.of(context)!.chipReached,
-          const Color(0xFFF9E0DF)
-        ),
+      Pace.onTrack => (AppLocalizations.of(context)!.chipOnTrack, const Color(0xFFD9EDE8)),
+      Pace.watch => (AppLocalizations.of(context)!.watch, const Color(0xFFFBE7C6)),
+      Pace.over => (AppLocalizations.of(context)!.chipReached, const Color(0xFFF9E0DF)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -279,8 +265,7 @@ class _PaceChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-            fontSize: 11, fontWeight: FontWeight.w700, color: context.ink),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.ink),
       ),
     );
   }
@@ -329,8 +314,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
     final e = widget.e;
     final spent = s.spentOn(e);
     final remaining = s.remainingOn(e);
-    final inEnvelope =
-        s.txs.where((t) => t.envelopeId == e.id).take(4).toList();
+    final inEnvelope = s.txs.where((t) => t.envelopeId == e.id).take(4).toList();
 
     return SingleChildScrollView(
       padding: EdgeInsets.only(
@@ -384,21 +368,15 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             const SizedBox(height: 16),
             Row(
               children: [
-                _stat(context, AppLocalizations.of(context)!.spentLabel,
-                    spent.text),
-                _stat(context, AppLocalizations.of(context)!.remaining,
-                    remaining.text),
-                _stat(context, AppLocalizations.of(context)!.limitLabel,
-                    e.limit.text),
+                _stat(AppLocalizations.of(context)!.spentLabel, spent.text),
+                _stat(AppLocalizations.of(context)!.remaining, remaining.text),
+                _stat(AppLocalizations.of(context)!.limitLabel, e.limit.text),
               ],
             ),
             const SizedBox(height: 18),
             Text(
               AppLocalizations.of(context)!.moveMoney,
-              style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: context.ink),
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: context.ink),
             ),
             const SizedBox(height: 10),
             Row(
@@ -407,7 +385,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                   child: DropdownButtonFormField<Envelope>(
                     initialValue: _from,
                     isExpanded: true,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'From',
                       filled: true,
                       fillColor: context.card,
@@ -425,13 +403,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                                 color: context.primaryDark,
                               ),
                               const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  x.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                              Text(x.name),
                             ],
                           ),
                         ),
@@ -444,22 +416,20 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.arrow_forward,
-                      size: 18, color: context.inkSoft),
+                  child: Icon(Icons.arrow_forward, size: 18, color: context.inkSoft),
                 ),
                 Expanded(
                   child: DropdownButtonFormField<Envelope>(
                     initialValue: _to,
                     isExpanded: true,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'To',
                       filled: true,
                       fillColor: context.card,
                       border: OutlineInputBorder(borderSide: BorderSide.none),
                     ),
                     items: [
-                      for (final x
-                          in s.envelopes.where((x) => x.id != _from?.id))
+                      for (final x in s.envelopes.where((x) => x.id != _from?.id))
                         DropdownMenuItem(
                           value: x,
                           child: Row(
@@ -470,13 +440,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                                 color: context.primaryDark,
                               ),
                               const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  x.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                              Text(x.name),
                             ],
                           ),
                         ),
@@ -495,12 +459,10 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText:
-                          'Amount (${_from?.limit.currency.symbol ?? ''})',
+                      labelText: 'Amount (${_from?.limit.currency.symbol ?? ''})',
                       filled: true,
                       fillColor: context.card,
-                      border:
-                          const OutlineInputBorder(borderSide: BorderSide.none),
+                      border: const OutlineInputBorder(borderSide: BorderSide.none),
                     ),
                   ),
                 ),
@@ -508,7 +470,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                 Expanded(
                   child: TextField(
                     controller: _reason,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Why?',
                       filled: true,
                       fillColor: context.card,
@@ -560,10 +522,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             const SizedBox(height: 20),
             Text(
               AppLocalizations.of(context)!.recentInEnv,
-              style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: context.ink),
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: context.ink),
             ),
             const SizedBox(height: 10),
             if (inEnvelope.isEmpty)
@@ -583,7 +542,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
     );
   }
 
-  Widget _stat(BuildContext context, String label, String value) => Expanded(
+  Widget _stat(String label, String value) => Expanded(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           padding: const EdgeInsets.all(12),
@@ -593,8 +552,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
           ),
           child: Column(
             children: [
-              Text(label,
-                  style: TextStyle(fontSize: 11, color: context.inkSoft)),
+              Text(label, style: TextStyle(fontSize: 11, color: context.inkSoft)),
               const SizedBox(height: 4),
               FittedBox(
                 fit: BoxFit.scaleDown,
@@ -613,7 +571,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
       );
 }
 
-Color _paceColor(BuildContext context, Pace p) => switch (p) {
+Color _paceColor(Pace p) => switch (p) {
       Pace.onTrack => context.primary,
       Pace.watch => context.accent,
       Pace.over => context.danger,

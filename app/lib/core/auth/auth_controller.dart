@@ -11,12 +11,17 @@ import 'supabase_auth_service.dart';
 /// (only used if a test or demo build shows the gate — normally demo never
 /// shows login at all).
 class AuthController extends ChangeNotifier {
+  final KvGetter? _kvGet;
+  final KvSetter? _kvSet;
+
   AuthController({
     required this.env,
     AuthService? service,
     KvGetter? kvGet,
     KvSetter? kvSet,
-  }) : _service = service ??
+  })  : _kvGet = kvGet,
+        _kvSet = kvSet,
+        _service = service ??
             (env.isLive
                 ? SupabaseAuthService(
                     baseUrl: env.supabaseUrl!,
@@ -38,8 +43,18 @@ class AuthController extends ChangeNotifier {
   String? get lastError => _lastError;
   bool get busy => _busy;
 
-  /// Called once at startup (live mode): restores a stored session or null.
+  /// Called once at startup: restores a stored session or null. In demo
+  /// mode the session is a kv marker so the login gate shows on first run
+  /// only — after verifying once, launches go straight in.
   Future<void> restore() async {
+    if (!env.isLive) {
+      final p = await _kvGet?.call('demo_auth') ?? '';
+      if (p.isNotEmpty) {
+        _session = AuthSession(userId: 'demo_user', phone: p);
+      }
+      notifyListeners();
+      return;
+    }
     _session = await _service.restoreSession();
     notifyListeners();
   }
@@ -66,6 +81,7 @@ class AuthController extends ChangeNotifier {
       if (_session == null) {
         _session = AuthSession(userId: 'user', phone: phone);
       }
+      if (!env.isLive) await _kvSet?.call('demo_auth', phone);
     } else {
       _lastError = r.error;
     }
@@ -75,6 +91,7 @@ class AuthController extends ChangeNotifier {
 
   Future<void> signOut() async {
     await _service.signOut();
+    if (!env.isLive) await _kvSet?.call('demo_auth', '');
     _session = null;
     _lastError = null;
     notifyListeners();

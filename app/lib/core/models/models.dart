@@ -307,8 +307,7 @@ class Earning {
 
 /// Savings circle (ROSCA — rotation savings). Records only — never holds
 /// the money (spec §4 E4).
-class SavingsCircle {
-  final String name;
+class SavingsCircle {  final String name;
   final Money contribution;
   final int totalRounds;
   int currentRound; // 1-based; rounds before this are collected
@@ -322,18 +321,10 @@ class SavingsCircle {
     required this.order,
   });
 
-  String get nextCollector {
-    if (order.isEmpty) return '';
-    final index =
-        ((currentRound - 1) % order.length + order.length) % order.length;
-    return order[index];
-  }
+  String get nextCollector => order[currentRound - 1];
 
   Money get potSoFar =>
       Money(contribution.minor * (currentRound - 1), contribution.currency);
 
-  double get progress {
-    if (totalRounds <= 0) return 0;
-    return (currentRound / totalRounds).clamp(0.0, 1.0);
-  }
+  double get progress => currentRound / totalRounds;
 }

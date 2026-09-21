@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -84,6 +83,7 @@ const List<BoxShadow> kCardShadow = [
   BoxShadow(color: kShadow, blurRadius: 18, offset: Offset(0, 6)),
 ];
 
+
 /// ── Dark-mode palette ──────────────────────────────────────────────────────
 /// One object, two instances: every screen reads colors through [MhuriCtx]
 /// so light/dark swap is automatic (G1).
@@ -95,47 +95,23 @@ class MhuriColors {
   final List<BoxShadow> cardShadow;
 
   const MhuriColors({
-    required this.bg,
-    required this.card,
-    required this.ink,
-    required this.inkSoft,
-    required this.inkFaint,
-    required this.hairline,
-    required this.primary,
-    required this.primaryDark,
-    required this.primarySoft,
-    required this.accent,
-    required this.accentSoft,
-    required this.danger,
-    required this.dangerSoft,
-    required this.incomeGreen,
-    required this.expenseRed,
-    required this.track,
-    required this.shadowColor,
-    required this.onSolid,
+    required this.bg, required this.card, required this.ink,
+    required this.inkSoft, required this.inkFaint, required this.hairline,
+    required this.primary, required this.primaryDark, required this.primarySoft,
+    required this.accent, required this.accentSoft,
+    required this.danger, required this.dangerSoft,
+    required this.incomeGreen, required this.expenseRed,
+    required this.track, required this.shadowColor, required this.onSolid,
     required this.cardShadow,
   });
 
   static const light = MhuriColors(
-    bg: kBg,
-    card: kCard,
-    ink: kInk,
-    inkSoft: kInkSoft,
-    inkFaint: kInkFaint,
-    hairline: kHairline,
-    primary: kPrimary,
-    primaryDark: kPrimaryDark,
-    primarySoft: kPrimarySoft,
-    accent: kAccent,
-    accentSoft: kAccentSoft,
-    danger: kDanger,
-    dangerSoft: kDangerSoft,
-    incomeGreen: kIncomeGreen,
-    expenseRed: kExpenseRed,
-    track: kTrack,
-    shadowColor: kShadow,
-    onSolid: Colors.white,
-    cardShadow: kCardShadow,
+    bg: kBg, card: kCard, ink: kInk, inkSoft: kInkSoft, inkFaint: kInkFaint,
+    hairline: kHairline, primary: kPrimary, primaryDark: kPrimaryDark,
+    primarySoft: kPrimarySoft, accent: kAccent, accentSoft: kAccentSoft,
+    danger: kDanger, dangerSoft: kDangerSoft, incomeGreen: kIncomeGreen,
+    expenseRed: kExpenseRed, track: kTrack, shadowColor: kShadow,
+    onSolid: Colors.white, cardShadow: kCardShadow,
   );
 
   static const dark = MhuriColors(
@@ -157,9 +133,7 @@ class MhuriColors {
     track: Color(0xFF223029),
     shadowColor: Color(0x66000000),
     onSolid: Color(0xFF0C1411),
-    cardShadow: [
-      BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, 6))
-    ],
+    cardShadow: [BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, 6))],
   );
 
   static MhuriColors of(BuildContext c) =>
@@ -191,9 +165,7 @@ extension MhuriCtx on BuildContext {
 }
 
 ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
-  final scheme =
-      ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness)
-          .copyWith(
+  final scheme = ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness).copyWith(
     primary: p.primary,
     onPrimary: p.onSolid,
     primaryContainer: p.primarySoft,
@@ -291,10 +263,8 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
       backgroundColor: p.bg,
       // Status-bar icons always contrast the surface (light→dark icons).
       systemOverlayStyle: brightness == Brightness.dark
-          ? SystemUiOverlayStyle.light
-              .copyWith(statusBarColor: Colors.transparent)
-          : SystemUiOverlayStyle.dark
-              .copyWith(statusBarColor: Colors.transparent),
+          ? SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent)
+          : SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
       foregroundColor: p.ink,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -491,8 +461,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
-        (states) =>
-            states.contains(WidgetState.selected) ? p.onSolid : p.inkFaint,
+        (states) => states.contains(WidgetState.selected) ? p.onSolid : p.inkFaint,
       ),
       trackColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected) ? p.primary : p.track,
@@ -543,9 +512,9 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     ),
   );
 }
-
 /// Light theme (the original look).
 ThemeData buildAppTheme() => _buildTheme(MhuriColors.light, Brightness.light);
 
 /// Dark theme (G1): same structure, OLED-leaning dark surfaces.
 ThemeData buildAppDarkTheme() => _buildTheme(MhuriColors.dark, Brightness.dark);
+

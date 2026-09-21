@@ -1,6 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -92,8 +92,7 @@ class AppState extends ChangeNotifier {
   late SavingsCircle circle;
   late final List<RecurringRule> recurring;
 
-  Member _user =
-      const Member(id: 'x', name: 'x', emoji: 'person', role: Role.adult);
+  Member _user = const Member(id: 'x', name: 'x', emoji: 'person', role: Role.adult);
   Currency displayCurrency = Currency.usd;
 
   /// Demo FX rate (USD → ZiG). In production: a daily central-bank snapshot,
@@ -136,6 +135,7 @@ class AppState extends ChangeNotifier {
   Set<String> _seenRequestResults = {};
 
   /// True while the startup hydration runs (only with a database attached).
+  bool autoHideAmounts = true; // privacy: hide balances on background (kv 'auto_hide')
   bool hydrating = false;
   bool refreshing = false; // soft refresh in flight (tree stays mounted)
   bool _loadedOnce = false;
@@ -334,7 +334,7 @@ class AppState extends ChangeNotifier {
             quietEnd = int.tryParse(parts[1]) ?? 7;
           }
         }
-        _seenRequestResults = (data.requestResultsSeen ?? '')
+        _seenRequestResults = data.requestResultsSeen
             .split(',')
             .where((e) => e.isNotEmpty)
             .toSet();
@@ -343,6 +343,12 @@ class AppState extends ChangeNotifier {
         largeText = data.largeText ?? false;
         themeMode = data.themeMode ?? 0;
         hideAmounts = data.hideAmounts ?? false;
+        if (data.autoHide != null) autoHideAmounts = data.autoHide!;
+        _applyProfileEdits(data.profileEdits);
+        if (data.customRate != null) {
+          final r = double.tryParse(data.customRate!);
+          if (r != null && r > 0) rate = r;
+        }
         final dc = data.displayCurrency;
         if (dc != null) {
           for (final c in Currency.values) {
@@ -793,6 +799,50 @@ class AppState extends ChangeNotifier {
 
   // ── Display / session ─────────────────────────────────────────────────────
 
+  /// Edit-profile overrides (name / avatar), kv-persisted as JSON and
+  /// re-applied on every hydration.
+  void _applyProfileEdits(String? json) {
+    if (json == null || json.isEmpty) return;
+    try {
+      final map = (jsonDecode(json) as Map).cast<String, dynamic>();
+      for (var i = 0; i < members.length; i++) {
+        final e = map[members[i].id];
+        if (e is Map) {
+          members[i] = Member(
+            id: members[i].id,
+            role: members[i].role,
+            name: (e['name'] as String?) ?? members[i].name,
+            emoji: (e['emoji'] as String?) ?? members[i].emoji,
+          );
+        }
+      }
+    } catch (_) {
+      // corrupt overrides are ignored — seed data stays intact
+    }
+  }
+
+  /// Rename / re-avatar a member (Edit profile). Roles come from the family
+  /// space and are not editable here.
+  void updateMember(String id, {String? name, String? emoji}) {
+    final i = members.indexWhere((m) => m.id == id);
+    if (i < 0) return;
+    final m = members[i];
+    members[i] = Member(
+      id: m.id,
+      role: m.role,
+      name: name == null || name.trim().isEmpty ? m.name : name.trim(),
+      emoji: emoji ?? m.emoji,
+    );
+    _persistKv(
+      'profile_edits',
+      jsonEncode({
+        for (final m2 in members)
+          m2.id: {'name': m2.name, 'emoji': m2.emoji},
+      }),
+    );
+    notifyListeners();
+  }
+
   void switchUser(Member m) {
     _user = m;
     notifyListeners();
@@ -801,6 +851,25 @@ class AppState extends ChangeNotifier {
   void toggleDisplayCurrency() {
     displayCurrency = displayCurrency.other;
     _persistKv('displayCurrency', displayCurrency.name);
+    notifyListeners();
+  }
+
+  void setDisplayCurrency(Currency c) {
+    displayCurrency = c;
+    _persistKv('displayCurrency', c.name);
+    notifyListeners();
+  }
+
+  /// Custom ZiG-per-USD rate from Settings → Currency & rates.
+  void setCustomRate(double r) {
+    rate = r.clamp(0.01, 1000000);
+    _persistKv('custom_rate', rate.toStringAsFixed(4));
+    notifyListeners();
+  }
+
+  void setAutoHideAmounts(bool on) {
+    autoHideAmounts = on;
+    _persistKv('auto_hide', on ? '1' : '0');
     notifyListeners();
   }
 
@@ -1139,7 +1208,7 @@ class AppState extends ChangeNotifier {
     if (circle.currentRound < circle.totalRounds) {
       circle.currentRound++;
       _persistSavingsCircle();
-      _queue('mukando', circle);
+    _queue('mukando', circle);
       _resyncReminders();
       pendingOps++;
       notifyListeners();
@@ -1151,7 +1220,7 @@ class AppState extends ChangeNotifier {
     if (circle.currentRound > 1) {
       circle.currentRound--;
       _persistSavingsCircle();
-      _queue('mukando', circle);
+    _queue('mukando', circle);
       _resyncReminders();
       notifyListeners();
     }
@@ -1185,7 +1254,7 @@ class AppState extends ChangeNotifier {
       c.state = ChoreState.waiting;
       stars = (stars - c.stars).clamp(0, 1000000000);
       _persistChore(c);
-      _queue('chore', c);
+    _queue('chore', c);
       _persistKv('stars', '$stars');
       _resyncReminders();
       notifyListeners();

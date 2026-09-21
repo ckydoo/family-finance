@@ -11,7 +11,6 @@ import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/core/sync/sync_engine.dart';
-import 'package:mhuri_money/core/sync/outbox.dart';
 import 'package:mhuri_money/core/sync/supabase_sync_client.dart';
 import 'package:mhuri_money/core/sync/sync_mappers.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -34,6 +33,7 @@ class FakeServer extends http.BaseClient {
       headers: r.headers,
     );
   }
+
 }
 
 http.Response _json(Object? body, [int status = 200]) =>
@@ -50,10 +50,10 @@ const _liveEnv = AppEnv(
 Future<AppDatabase> _freshDb() async {
   final raw = await databaseFactory.openDatabase(
     inMemoryDatabasePath,
-    options: OpenDatabaseOptions(
-      version: 1,
-      onCreate: (d, v) async => AppDatabase.createSchema(d),
-    ),
+    version: 1,
+    onCreate: (d, v) async {
+      await AppDatabase.createSchema(d);
+    },
   );
   return AppDatabase.wrap(raw);
 }
@@ -109,8 +109,9 @@ void main() {
         amount: Money.fromMajor(5, Currency.usd),
         reason: 'trip',
       );
-      final decodedReq = kSyncAdapters['kid_request']!
-          .decode(kSyncAdapters['kid_request']!.encode(req, ctx)) as KidRequest;
+      final decodedReq =
+          kSyncAdapters['kid_request']!.decode(kSyncAdapters['kid_request']!.encode(req, ctx))
+              as KidRequest;
       expect(decodedReq.kidId, 'k1');
 
       final prop = Proposal(
@@ -122,7 +123,8 @@ void main() {
       );
       final j = kSyncAdapters['kid_request']!.encode(prop, ctx);
       expect(j['kind'], 'expense_proposal');
-      final decodedProp = kSyncAdapters['kid_request']!.decode(j) as Proposal;
+      final decodedProp =
+          kSyncAdapters['kid_request']!.decode(j) as Proposal;
       expect(decodedProp.envelopeId, 'e6');
     });
 
@@ -319,8 +321,7 @@ void main() {
       expect(engine.lastError, contains('invite code was not found'));
     });
 
-    test(
-        'premium entities: remote chore / recurring_rule / mukando pull applies',
+    test('premium entities: remote chore / recurring_rule / mukando pull applies',
         () async {
       server.handler = (request) async {
         final path = request.url.path;
@@ -390,8 +391,7 @@ void main() {
       expect(kv['sync_cursor'], '2026-09-21T09:10:00+00:00');
     });
 
-    test('premium entities: chore / recurring / circle mutations push',
-        () async {
+    test('premium entities: chore / recurring / circle mutations push', () async {
       server.handler = (request) async {
         final path = request.url.path;
         if (request.method == 'GET' && path == '/rest/v1/chore') {
@@ -445,10 +445,9 @@ void main() {
         ]),
       );
       // every pushed row id is a well-formed uuid (server columns are uuid)
-      final uuidRe = RegExp(
-          r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$');
+      final uuidRe = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$');
       for (final r in server.sent.where((r) => r.method == 'POST')) {
-        final body = jsonDecode((r as http.Request).body) as List;
+        final body = jsonDecode(r.body) as List;
         for (final row in body) {
           expect(uuidRe.hasMatch((row as Map<String, dynamic>)['id'] as String),
               isTrue,

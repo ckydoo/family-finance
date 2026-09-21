@@ -42,25 +42,28 @@ class _AdultShellState extends State<AdultShell> {
       _NavDest(Icons.home_outlined, Icons.home_rounded, l.tabHome),
       _NavDest(Icons.pie_chart_outline, Icons.pie_chart, l.tabBudgets),
       _NavDest(Icons.savings_outlined, Icons.savings, l.tabSavings),
-      _NavDest(Icons.shopping_cart_outlined, Icons.shopping_cart, l.tabLists),
+      _NavDest(
+          Icons.shopping_cart_outlined, Icons.shopping_cart, l.tabLists),
     ];
 
-    // IndexedStack keeps each tab's scroll position alive. The center action
-    // button is visual-only, so navigation indices map directly to screens.
+    // IndexedStack keeps each tab's scroll position alive.
+    // 4 nav destinations map 1:1 onto the 4 stacked screens (the FAB is
+    // docked in the BottomAppBar gap — it is not a tab slot).
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
-            // Budgets (tab 1) is the two-pane surface; other tabs stay phone-width.
-            constraints: BoxConstraints(maxWidth: _tab == 1 ? 980 : 620),
-            child: IndexedStack(
-              index: _tab,
-              children: const [
-                HomeScreen(),
-                BudgetsScreen(),
-                SavingsScreen(),
-                ListsScreen(),
-              ],
-            )),
+          // Budgets (tab 1) is the two-pane surface; other tabs stay phone-width.
+          constraints: BoxConstraints(maxWidth: _tab == 1 ? 980 : 620),
+          child: IndexedStack(
+        index: _tab,
+        children: const [
+          HomeScreen(),
+          BudgetsScreen(),
+          SavingsScreen(),
+          ListsScreen(),
+        ],
+      )
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: AppLocalizations.of(context)!.addTransaction,
@@ -79,7 +82,6 @@ class _AdultShellState extends State<AdultShell> {
         child: BottomAppBar(
           color: context.card,
           elevation: 0,
-          padding: EdgeInsets.zero,
           child: Row(
             children: [
               for (var i = 0; i < 4; i++) ...[

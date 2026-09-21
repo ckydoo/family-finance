@@ -6,6 +6,8 @@ import '../utils/ids.dart';
 /// budgets, lists, approvals, earnings — syncs, and as of the premium pass so
 /// do chores (stars), the savings-circle header (mukando, one per family) and
 /// recurring rules. Wallet balances stay device-local (see ROADMAP notes).
+library;
+
 /// Context a mapper needs beyond the domain object itself.
 class SyncCtx {
   final String spaceId;
@@ -296,7 +298,8 @@ final kSyncAdapters = <String, SyncAdapter>{
     spaceScoped: true,
     encode: (d, ctx) {
       final r = d as RecurringRule;
-      String dateIso(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+      String dateIso(DateTime d) =>
+          '${d.year.toString().padLeft(4, '0')}-'
           '${d.month.toString().padLeft(2, '0')}-'
           '${d.day.toString().padLeft(2, '0')}';
       return {
@@ -306,7 +309,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'emoji': r.emoji,
         'amount_minor': r.amount.minor,
         'currency': r.amount.currency.name,
-        'envelope_id': r.envelopeId?.isEmpty ?? true ? null : r.envelopeId,
+        'envelope_id': r.envelopeId.isEmpty ? null : r.envelopeId,
         'member_id': r.memberId.isEmpty ? null : r.memberId,
         'method': _methodOut[r.method],
         'frequency': r.frequency.name,
@@ -322,8 +325,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       envelopeId: j['envelope_id'] as String? ?? '',
       memberId: j['member_id'] as String? ?? '',
       method: _methodIn(j['method'] as String? ?? 'cash'),
-      frequency:
-          Frequency.values.byName(j['frequency'] as String? ?? 'monthly'),
+      frequency: Frequency.values.byName(j['frequency'] as String? ?? 'monthly'),
       nextDue: DateTime.parse(j['next_due'] as String),
       active: j['active'] as bool? ?? true,
     ),

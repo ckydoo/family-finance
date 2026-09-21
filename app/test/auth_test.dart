@@ -77,13 +77,11 @@ void main() {
         const MapEntry(200, '{}'),
         // verifyOtp → 400 first (wrong code), then 200 with tokens
         const MapEntry(400, '{"msg":"Invalid token"}'),
-        MapEntry(
-            200,
-            jsonEncode({
-              'access_token': 'access-1',
-              'refresh_token': 'refresh-1',
-              'user': {'id': 'uuid-7'},
-            })),
+        const MapEntry(200, jsonEncode({
+          'access_token': 'access-1',
+          'refresh_token': 'refresh-1',
+          'user': {'id': 'uuid-7'},
+        })),
       ]);
       service = SupabaseAuthService(
         baseUrl: 'https://abcdefgh.supabase.co/',
@@ -129,12 +127,10 @@ void main() {
       kv['auth_phone'] = '+263772123456';
 
       client.responses.clear();
-      client.responses.add(MapEntry(
-          200,
-          jsonEncode({
-            'access_token': 'access-2',
-            'refresh_token': 'refresh-10',
-          })));
+      client.responses.add(const MapEntry(200, jsonEncode({
+        'access_token': 'access-2',
+        'refresh_token': 'refresh-10',
+      })));
 
       final s = await service.restoreSession();
       expect(s, isNotNull);

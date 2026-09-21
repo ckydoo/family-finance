@@ -1,2 +1,45 @@
+# ── secrets — NEVER commit ──────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+key.properties
+
+# ── Flutter / Dart ──────────────────────────────────────────────────────────
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/flutter_export_environment.sh
+**/Generated.xcconfig
+**/generated_plugin_registrant.*
+**/Packages/
+**/.packages
+**/pubspec.lock
+
+# gen-l10n output — regenerates on `flutter pub get`; never edit, never commit
+app/lib/l10n/generated/
+
+# ── Android ─────────────────────────────────────────────────────────────────
+app/android/.gradle/
+app/android/local.properties
+app/android/app/.cxx/
+**/gradle-wrapper.jar
+
+# ── iOS / macOS ─────────────────────────────────────────────────────────────
+app/ios/Pods/
+app/ios/.symlinks/
+app/ios/Flutter/Flutter.framework/
+app/ios/Flutter/Flutter.podspec
+app/macos/Pods/
+app/macos/.symlinks/
+
+# ── OS / editor noise ───────────────────────────────────────────────────────
 .DS_Store
-**/.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+*.iml

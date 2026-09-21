@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -56,10 +55,8 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                 title: l.mFigures,
                 child: Row(
                   children: [
-                    _figure(l.figureIncome, s.monthIncome.text,
-                        context.incomeGreen),
-                    _figure(
-                        l.figureSpent, s.monthSpend.text, context.expenseRed),
+                    _figure(l.figureIncome, s.monthIncome.text, context.incomeGreen),
+                    _figure(l.figureSpent, s.monthSpend.text, context.expenseRed),
                     _figure(l.figureSaved, s.monthSaved.text, context.primary),
                   ],
                 ),
@@ -75,9 +72,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                       value: s.envelopeHealth,
                       size: 60,
                       stroke: 8,
-                      color: s.envelopeHealth >= 0.7
-                          ? context.primary
-                          : context.accent,
+                      color: s.envelopeHealth >= 0.7 ? context.primary : context.accent,
                       child: Text(
                         '${(s.envelopeHealth * 100).round()}%',
                         style: TextStyle(
@@ -153,12 +148,8 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                 child: Text(
                   l.mChoresLine(
                     s.stars,
-                    s.requests
-                        .where((r) => r.state == RequestState.pending)
-                        .length,
-                    s.proposals
-                        .where((p) => p.state == RequestState.pending)
-                        .length,
+                    s.requests.where((r) => r.state == RequestState.pending).length,
+                    s.proposals.where((p) => p.state == RequestState.pending).length,
                   ),
                   style: TextStyle(fontSize: 12.5, color: context.inkSoft),
                 ),
@@ -178,8 +169,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                         hintText: l.meetingNoteHint,
                         filled: true,
                         fillColor: context.card,
-                        border: const OutlineInputBorder(
-                            borderSide: BorderSide.none),
+                        border: const OutlineInputBorder(borderSide: BorderSide.none),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -245,8 +235,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
     );
   }
 
-  Widget _step(
-          {required int n, required String title, required Widget child}) =>
+  Widget _step({required int n, required String title, required Widget child}) =>
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

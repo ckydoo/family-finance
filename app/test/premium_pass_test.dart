@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' show Brightness;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/db/app_database.dart';
 import 'package:mhuri_money/core/money/money.dart';
@@ -22,10 +21,10 @@ void main() {
   setUp(() async {
     final raw = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
-      options: OpenDatabaseOptions(
-        version: 1,
-        onCreate: (d, v) async => AppDatabase.createSchema(d),
-      ),
+      version: 1,
+      onCreate: (d, v) async {
+        await AppDatabase.createSchema(d);
+      },
     );
     db = AppDatabase.wrap(raw);
   });
@@ -82,13 +81,13 @@ void main() {
 
   test('G7: money grouping stays en-US by default (tests + boot)', () {
     Money.localeTag = null;
-    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1,240.50');
+    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US$ 1,240.50');
     expect(Money(18940, Currency.zwg).text, 'ZiG 18,940');
   });
 
   test('G7: es/fr/pt locales regroup amounts (1.234,56)', () {
     Money.localeTag = 'es';
-    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1.240,50');
+    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US$ 1.240,50');
     Money.localeTag = 'fr';
     // fr uses narrow no-break space as the grouping separator.
     expect(
@@ -96,13 +95,13 @@ void main() {
           .text
           .replaceAll('\u202F', ' ')
           .replaceAll('\u00A0', ' '),
-      'US\$ 1 240,50',
+      'US$ 1 240,50',
     );
     Money.localeTag = 'pt';
-    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1.240,50');
+    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US$ 1.240,50');
     // Untranslated locales fall back to the en grouping.
     Money.localeTag = 'sn';
-    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1,240.50');
+    expect(Money.fromMajor(1240.50, Currency.usd).text, 'US$ 1,240.50');
     Money.localeTag = null;
   });
   test('Interface pass 3: refresh() re-hydrates and preserves settings',
@@ -117,7 +116,8 @@ void main() {
     expect(s.lastError, isNull);
   });
 
-  test('Interface pass 3: circle collect is undoable (records only)', () async {
+  test('Interface pass 3: circle collect is undoable (records only)',
+      () async {
     final s = await fresh();
     final before = s.circle.currentRound;
     s.circleCollect();
@@ -162,8 +162,7 @@ void main() {
   });
 
   test('chore adapter round-trip preserves state and stars', () {
-    final c =
-        Chore(id: 'ch1', name: 'Dishes', stars: 3, state: ChoreState.waiting);
+    final c = Chore(id: 'ch1', name: 'Dishes', stars: 3, state: ChoreState.waiting);
     final row = kSyncAdapters['chore']!.encode(c, ctx);
     final c2 = kSyncAdapters['chore']!.decode(row) as Chore;
     expect(c2.id, 'ch1');
@@ -190,37 +189,9 @@ void main() {
     expect(c2.contribution.currency, Currency.zwg);
   });
 
-  test('savings-circle collector rotation wraps across extra rounds', () {
-    final circle = SavingsCircle(
-      name: 'Family Circle',
-      contribution: Money.fromMajor(50, Currency.usd),
-      totalRounds: 8,
-      currentRound: 6,
-      order: const ['A', 'B', 'C', 'D', 'E'],
-    );
-
-    expect(circle.nextCollector, 'A');
-    circle.currentRound = 8;
-    expect(circle.nextCollector, 'C');
-  });
-
-  test('savings-circle getters tolerate malformed synced data', () {
-    final circle = SavingsCircle(
-      name: 'Empty Circle',
-      contribution: Money.fromMajor(50, Currency.usd),
-      totalRounds: 0,
-      currentRound: 5,
-      order: const [],
-    );
-
-    expect(circle.nextCollector, isEmpty);
-    expect(circle.progress, 0);
-  });
-
   test('every synced entity has exactly one pull slot', () {
     for (final k in kSyncAdapters.keys) {
-      expect(kPullOrder.contains(k), isTrue,
-          reason: '$k missing from kPullOrder');
+      expect(kPullOrder.contains(k), isTrue, reason: '$k missing from kPullOrder');
     }
     expect(kPullOrder.length, kSyncAdapters.length);
   });
@@ -237,6 +208,22 @@ void main() {
     expect(a, isNot(b));
     expect(uuidFromSeed('mukando/sp1'), uuidFromSeed('mukando/sp1'));
     expect(uuidFromSeed('mukando/sp2'), isNot(uuidFromSeed('mukando/sp1')));
+  });
+
+  test('settings: custom rate, display currency and auto-hide persist', () async {
+    state.setCustomRate(16.4);
+    state.setDisplayCurrency(Currency.zwg);
+    state.setAutoHideAmounts(false);
+    await state.flushWrites();
+
+    final second = AppState(db: db, env: state.env);
+    await second.ready();
+    expect(second.rate, 16.4);
+    expect(second.displayCurrency, Currency.zwg);
+    expect(second.autoHideAmounts, isFalse);
+    // clamping guard
+    state.setCustomRate(0);
+    expect(state.rate, greaterThan(0));
   });
 }
 

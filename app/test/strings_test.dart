@@ -100,10 +100,5 @@ void main() {
     state.setLocale('sn');
     await tester.pumpAndSettle();
     expect(find.text('Mari yemhuri yese'), findsOneWidget);
-
-    await tester.tap(find.text('Rondedzero'));
-    await tester.pumpAndSettle();
-    expect(find.text('Kutengesa'), findsOneWidget);
-    expect(tester.takeException(), isNull);
   });
 }

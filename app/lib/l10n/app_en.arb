@@ -124,7 +124,7 @@
   "loginVerify": "Verify & sign in",
   "loginChangeNumber": "Change number",
   "loginBadPhone": "Enter a valid phone number (e.g. +44 7700 900123).",
-  "loginFooter": "By continuing you agree to family harmony.\nDemo build? No login needed — you are already home.",
+  "loginFooter": "Demo mode: use any phone number and code 1234.\nLive mode sends a real SMS code.",
   "quickAddTitle": "Quick add",
   "expense": "Expense",
   "envelopeLabel": "Envelope",
@@ -478,9 +478,7 @@
   },
   "exportReal": "Export works on a real device",
   "allSynced": "✓ All changes synced",
-  "familyCta": "Manage family",
-  "familyMemberCount": "{count, plural, =1{1 member} other{{count} members}}",
-  "@familyMemberCount": {"placeholders": {"count": {"type": "int"}}},
+  "familyCta": "Family ›",
   "recentInEnv": "Recent in this envelope",
   "nothingLogged": "Nothing logged here yet.",
   "dueBy": "overdue by {days}d",
@@ -767,5 +765,24 @@
         }
       }
     }
-  }
+  },
+  "switchProfile": "Switch profile",
+  "switchProfileSub": "Preview the app as another family member",
+  "youTag": "You",
+  "pickCurrency": "Display currency",
+  "rateField": "ZiG per 1 USD",
+  "rateSave": "Save rate",
+  "rateReset": "Reset to RBZ snapshot",
+  "rateCustomNote": "Used for the ZiG view across the whole app. The bundled RBZ snapshot is 15.27.",
+  "autoHide": "Hide amounts when I leave the app",
+  "autoHideSub": "Balances hide automatically when the app goes to the background — turn off if you prefer.",
+  "hideNow": "Hide amounts right now",
+  "exportCsvRow": "Export all transactions (CSV)",
+  "copyInvite": "Copy invite code",
+  "copied": "Copied ✓",
+  "inviteTitle": "Invite a family member",
+  "inviteDemoNote": "Demo mode comes with a seeded family. In live mode your invite code lives here — share it and the family joins your space.",
+  "editProfile": "Edit profile",
+  "editProfileSub": "Name and avatar for this member",
+  "photoNote": "Profile photos arrive with family sync. Avatars are live now."
 }

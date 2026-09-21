@@ -25,8 +25,7 @@ class SettingsScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
-              _header(context, Icons.notifications_outlined,
-                  AppLocalizations.of(context)!.remindersTitle),
+              _header(Icons.notifications_outlined, AppLocalizations.of(context)!.remindersTitle),
               SwitchListTile(
                 value: s.notifyEnabled,
                 onChanged: (v) => s.setRemindersEnabled(v),
@@ -49,7 +48,7 @@ class SettingsScreen extends StatelessWidget {
                   SwitchListTile(
                     value: s.notifyAllowed.contains(c),
                     onChanged: (v) => s.setReminderPref(c, v),
-                    dense: true,
+                        dense: true,
                     contentPadding: const EdgeInsets.only(left: 8),
                     title: Text(
                       c.label,
@@ -67,8 +66,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    Text(AppLocalizations.of(context)!.fromLabel,
-                        style: const TextStyle(fontSize: 13)),
+                    Text(AppLocalizations.of(context)!.fromLabel, style: const TextStyle(fontSize: 13)),
                     _hourDropdown(
                       value: s.quietStart,
                       onChanged: (v) => s.setQuietHours(v, s.quietEnd),
@@ -94,14 +92,13 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   onTap: () {
-                    final l = AppLocalizations.of(context)!;
                     Notifier.requestPermission().then(
                       (_) => Notifier.showNow(
                         Reminder(
                           key: 'test_now',
                           category: ReminderCategory.digest,
-                          title: l.sendTest,
-                          body: l.testOk,
+                          title: AppLocalizations.of(context)!.sendTest,
+                          body: AppLocalizations.of(context)!.testOk,
                           when: DateTime.now(),
                         ),
                       ),
@@ -110,8 +107,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 8),
-              _header(context, Icons.calendar_month_outlined,
-                  AppLocalizations.of(context)!.monthCycle),
+              _header(Icons.calendar_month_outlined, AppLocalizations.of(context)!.monthCycle),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -140,7 +136,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              _header(context, Icons.folder_outlined, 'Data'),
+              _header(Icons.folder_outlined, 'Data'),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -155,13 +151,13 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 onTap: () async {
                   final messenger = ScaffoldMessenger.of(context);
-                  final l = AppLocalizations.of(context)!;
                   final path = await s.exportCsv();
-                  if (!context.mounted) return;
                   messenger.showSnackBar(
                     SnackBar(
                       content: Text(
-                        path != null ? l.exportedPath(path) : l.exportReal,
+                        path != null
+                            ? AppLocalizations.of(context)!.exportedPath(path)
+                            : AppLocalizations.of(context)!.exportReal,
                       ),
                       behavior: SnackBarBehavior.floating,
                     ),
@@ -249,7 +245,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _header(BuildContext context, IconData icon, String text) => Padding(
+  Widget _header(IconData icon, String text) => Padding(
         padding: const EdgeInsets.only(top: 16, bottom: 4),
         child: Row(
           children: [
@@ -257,19 +253,18 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               text,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: context.inkSoft,
-                letterSpacing: 0.3,
-              ),
-            ),
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w800,
+            color: context.inkSoft,
+            letterSpacing: 0.3,
+          ),
+          ),
           ],
         ),
       );
 
-  Widget _hourDropdown(
-          {required int value, required ValueChanged<int> onChanged}) =>
+  Widget _hourDropdown({required int value, required ValueChanged<int> onChanged}) =>
       DropdownButton<int>(
         value: value,
         underline: const SizedBox.shrink(),

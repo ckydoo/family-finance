@@ -11,6 +11,8 @@ import '../theme/app_theme.dart';
 ///
 /// Notification text (reminders.dart) is the one intentional emoji zone —
 /// it renders in the OS tray, outside the app, where IconData cannot.
+library;
+
 /// Semantic icon keys → Material icons.
 const Map<String, IconData> kKeyIcons = {
   // members

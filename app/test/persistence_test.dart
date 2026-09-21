@@ -21,13 +21,11 @@ void main() {
   late AppDatabase db;
 
   setUp(() async {
-    final raw = await databaseFactory.openDatabase(
-      inMemoryDatabasePath,
-      options: OpenDatabaseOptions(
-        version: 1,
-        onCreate: (d, v) async => AppDatabase.createSchema(d),
-      ),
-    );
+    final raw =
+        await databaseFactory.openDatabase(inMemoryDatabasePath, version: 1,
+            onCreate: (d, v) async {
+      await AppDatabase.createSchema(d);
+    });
     db = AppDatabase.wrap(raw);
   });
 
@@ -56,8 +54,7 @@ void main() {
     final buffer = first.envelope('e7')!; // Emergency buffer
     final fees = first.envelope('e2')!; // School fees
     final before = fees.limit.minor;
-    first.moveMoney(
-        buffer, fees, Money.fromMajor(25, Currency.usd), 'fees top-up');
+    first.moveMoney(buffer, fees, Money.fromMajor(25, Currency.usd), 'fees top-up');
     await first.flushWrites();
     expect(fees.limit.minor, before + 2500);
 

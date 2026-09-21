@@ -375,3 +375,35 @@ Note: `lib/l10n/generated/app_localizations.dart` is a **build-time artifact** (
 - **Tests**: +3 (uuid shape/uniqueness/determinism; premium-entity pull applies chore/recurring_rule/mukando and advances the cursor; premium-entity mutations push to all three server tables with every pushed id uuid-verified). **101 tests total.**
 
 **Gate:** 60-file Dart-aware balance ✓ · 315×6 parity ✓ · 297 refs ✓ · EN sweep 0 ✓ · uuid minting ✓.
+
+
+---
+
+## Device-feedback pass (Family screen dead rows + profile switching) — DONE ✅ 2026-09-21
+
+**First real-device feedback incorporated. The Family screen's stub rows are now fully functional:**
+- **Switch profile (new)**: settings row → member picker sheet (avatar, role, "You" tag) → `switchUser` + jump to root. **View-as is no longer demo-seed-only** — every member can be previewed in live mode too (Kids Mode stays PIN-sealed). The stray "You" chip is localized.
+- **Currency & rates** (new sheet): display-currency picker (USD/ZiG), editable ZiG-per-USD rate with save + "reset to RBZ snapshot" (15.27). New `setCustomRate` persists via kv and hydrates on restart.
+- **Privacy** (new sheet): "Hide amounts when I leave the app" toggle — the background auto-hide is now a *preference* (`autoHideAmounts`, kv-persisted, respected by the app lifecycle observer) instead of hardcoded — plus "Hide amounts right now".
+- **Backup & export** (new sheet): working CSV export (path snackbar), copy invite code (live), and an honestly-disabled "Encrypted cloud backup (coming)" row.
+- **Notifications** row now opens the real Settings screen (reminders, quiet hours, test notification). "Month start day" stays informational by design.
+
+**Plumbing:** `DbSnapshot` gained `autoHide`/`customRate` (persist + hydrate round-trip, covered by a new state test). +14 l10n keys ×6 (**329 keys**, parity ✓).
+
+**Process note:** two script batches reported success while silently not applying (unassigned transform calls) — caught by post-write disk verification, re-applied, and every edit is now grep-verified on disk. Gate: 60-file balance ✓ · 329×6 ✓ · 311 refs ✓.
+
+
+---
+
+## Device-feedback pass 2 (first-run auth, nav bug, affordances, profile editing) — DONE ✅ 2026-09-21
+
+- **First run now starts at Authentication** (both modes). Demo: any phone number + code `1234` (footer copy updated ×6); the demo session persists via kv (`demo_auth`) so subsequent launches go straight in; live unchanged (real OTP). Sign-out clears the marker.
+- **BUG — bottom-nav off-by-one**: the FAB center slot left 4 nav destinations but the IndexedStack math still assumed 5 (`_tab < 2 ? _tab : _tab - 1`) — **Savings rendered Budgets and Lists rendered Savings**. Now 1:1 (`index: _tab`).
+- **Invite a family member**: prominent button on the Family screen → sheet with the big invite code + copy (live), explanatory note (demo).
+- **Profile editing**: tapping your own member row (or the pencil) → name + avatar picker sheet (7 semantic avatar keys), persisted via kv `profile_edits`, re-applied on every hydration. Roles stay sync-owned. Profile photos noted as arriving with family sync.
+- **Header affordance**: the invisible avatar row is now a bordered tappable pill — overlapping avatars, person-add icon, "Family ›" with chevron.
+- **Reports icon**: black glyph → teal-gradient donut badge (white glyph) — it leads the charts, it now looks the part.
+- **Repaired a half-applied earlier edit**: View-as had silently collapsed to `canDemo = m.id == 'm_tariro'` (an id that doesn't exist in the seed) — the real cause of "no way to switch profiles" on device. Now `canDemo = true` for everyone.
+- +5 l10n keys ×6 (**334 keys**, parity ✓). Gate: 60 files balance ✓, 334×6 ✓, 316 refs ✓.
+
+**On-device note:** indentation in spliced regions is off — run `dart format lib` once before committing.
