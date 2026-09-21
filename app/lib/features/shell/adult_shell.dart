@@ -81,6 +81,8 @@ class _AdultShellState extends State<AdultShell> {
           elevation: 0,
           shape: const CircularNotchedRectangle(),
           notchMargin: 8,
+          padding: EdgeInsets.zero,
+          height: 64,
           child: Row(
             children: [
               Expanded(
@@ -120,6 +122,7 @@ class _AdultShellState extends State<AdultShell> {
         splashColor: context.primarySoft,
         highlightColor: context.primarySoft,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedScale(
@@ -128,17 +131,17 @@ class _AdultShellState extends State<AdultShell> {
               scale: selected ? 1.08 : 1.0,
               child: Icon(
                 selected ? d.active : d.rest,
-                size: 24,
+                size: 22,
                 color: color,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               d.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11.5,
+                fontSize: 11,
                 letterSpacing: 0.1,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 color: color,

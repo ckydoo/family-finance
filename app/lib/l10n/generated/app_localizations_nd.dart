@@ -285,7 +285,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get next => 'Okulandelayo';
 
   @override
-  String get loginWelcome => 'Wamukeleke kuMhuri Money';
+  String get loginWelcome => 'Wamukeleke kuMhuri Hub';
 
   @override
   String get loginEnterCode => 'Faka ikhodi';
@@ -314,7 +314,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get loginFooter =>
-      'Ngokuqhubeka uyavuma ukuthula komndeni.\nI-demo? Awudingi ukungena — usakhaya.';
+      'I-demo: noma yimuphi umfanekiso, ikhodi 1234.\nI-live ithumela ikhodi yeSMS yangempela.';
 
   @override
   String get quickAddTitle => 'Engeza okusheshayo';
@@ -798,7 +798,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get recordsOnly =>
-      'I-Mhuri Money ayisoze yagcina imali — ibhala kuphela.';
+      'I-Mhuri Hub ayisoze yagcina imali — ibhala kuphela.';
 
   @override
   String get saveContribution => 'Gcina isabelo';
@@ -900,18 +900,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get allSynced => '✓ Konke kuhlanganisiwe';
 
   @override
-  String get familyCta => 'Phatha umndeni';
-
-  @override
-  String familyMemberCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Amalunga angu-$count',
-      one: 'Ilunga eli-1',
-    );
-    return '$_temp0';
-  }
+  String get familyCta => 'Umndeni ›';
 
   @override
   String get recentInEnv => 'Okusanda kulekhava';
@@ -1093,4 +1082,65 @@ class AppLocalizationsNd extends AppLocalizations {
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Isigqi okwamanje: $pot · $contribution × $count abantu';
   }
+
+  @override
+  String get switchProfile => 'Shintsha iphrofayili';
+
+  @override
+  String get switchProfileSub => 'Bona i-app njengelinye lilunga lomndeni';
+
+  @override
+  String get youTag => 'Wena';
+
+  @override
+  String get pickCurrency => 'Imali eboniswayo';
+
+  @override
+  String get rateField => 'ZiG ngo-1 USD';
+
+  @override
+  String get rateSave => 'Gcina izinga';
+
+  @override
+  String get rateReset => 'Buyela kuRBZ yokuqala';
+
+  @override
+  String get rateCustomNote =>
+      'Isetshenziselwa ukubuka amaZiG ku-app yonke. EyRBZ yokuqala ngu-15,27.';
+
+  @override
+  String get autoHide => 'Fihla imali ngapha ngiphuma';
+
+  @override
+  String get autoHideSub =>
+      'Izibalo ziyafihlana i-app iya ngasemuva — yivala ungathanda.';
+
+  @override
+  String get hideNow => 'Fihla imali manje';
+
+  @override
+  String get exportCsvRow => 'Khipha wonke umsebenziswano (CSV)';
+
+  @override
+  String get copyInvite => 'Kopisha ikhodi yesimemo';
+
+  @override
+  String get copied => 'Kukopishiwe ✓';
+
+  @override
+  String get inviteTitle => 'Memela ilunga lomndeni';
+
+  @override
+  String get inviteDemoNote =>
+      'I-demo iza nomndeni omkhombiselwe. Ku-live ikhodi yakho yesimemo ihlala lapha — yabelana ngayo umndeni unge esikhaleni sakho.';
+
+  @override
+  String get editProfile => 'Hlela iphrofayili';
+
+  @override
+  String get editProfileSub => 'Igama nesithombe salendlu';
+
+  @override
+  String get photoNote =>
+      'Izithombe zephrofayili ziza nohlanganiselo lomndeni. Ama-avatar asekwilapha.';
 }

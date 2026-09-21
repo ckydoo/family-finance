@@ -288,7 +288,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get next => 'Suivant';
 
   @override
-  String get loginWelcome => 'Bienvenue sur Mhuri Money';
+  String get loginWelcome => 'Bienvenue sur Mhuri Hub';
 
   @override
   String get loginEnterCode => 'Saisissez le code';
@@ -316,7 +316,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get loginFooter =>
-      'En continuant, vous acceptez l\'harmonie familiale.\nVersion démo ? Pas de connexion nécessaire — vous êtes déjà chez vous.';
+      'Mode démo : n\'importe quel numéro et le code 1234.\nLe mode live envoie un vrai code SMS.';
 
   @override
   String get quickAddTitle => 'Ajout rapide';
@@ -803,7 +803,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get recordsOnly =>
-      'Mhuri Money ne garde jamais l\'argent — il ne fait que noter.';
+      'Mhuri Hub ne garde jamais l\'argent — il ne fait que noter.';
 
   @override
   String get saveContribution => 'Enregistrer la cotisation';
@@ -905,18 +905,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get allSynced => '✓ Tout est synchronisé';
 
   @override
-  String get familyCta => 'Gérer la famille';
-
-  @override
-  String familyMemberCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count membres',
-      one: '1 membre',
-    );
-    return '$_temp0';
-  }
+  String get familyCta => 'Famille ›';
 
   @override
   String get recentInEnv => 'Récent dans cette enveloppe';
@@ -1099,4 +1088,66 @@ class AppLocalizationsFr extends AppLocalizations {
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Cagnotte : $pot · $contribution × $count membres';
   }
+
+  @override
+  String get switchProfile => 'Changer de profil';
+
+  @override
+  String get switchProfileSub =>
+      'Voir l\'app comme un autre membre de la famille';
+
+  @override
+  String get youTag => 'Vous';
+
+  @override
+  String get pickCurrency => 'Devise affichée';
+
+  @override
+  String get rateField => 'ZiG pour 1 USD';
+
+  @override
+  String get rateSave => 'Enregistrer le taux';
+
+  @override
+  String get rateReset => 'Revenir à la référence RBZ';
+
+  @override
+  String get rateCustomNote =>
+      'Utilisée pour la vue ZiG dans toute l\'app. La référence RBZ incluse est 15,27.';
+
+  @override
+  String get autoHide => 'Masquer les montants en quittant l\'app';
+
+  @override
+  String get autoHideSub =>
+      'Les soldes se masquent quand l\'app passe en arrière-plan — désactivez si vous préférez.';
+
+  @override
+  String get hideNow => 'Masquer les montants maintenant';
+
+  @override
+  String get exportCsvRow => 'Exporter toutes les transactions (CSV)';
+
+  @override
+  String get copyInvite => 'Copier le code d\'invitation';
+
+  @override
+  String get copied => 'Copié ✓';
+
+  @override
+  String get inviteTitle => 'Inviter un membre de la famille';
+
+  @override
+  String get inviteDemoNote =>
+      'Le mode démo vient avec une famille d\'exemple. En mode live, votre code d\'invitation vit ici — partagez-le et la famille rejoint votre espace.';
+
+  @override
+  String get editProfile => 'Modifier le profil';
+
+  @override
+  String get editProfileSub => 'Nom et avatar de ce membre';
+
+  @override
+  String get photoNote =>
+      'Les photos de profil arrivent avec la synchro familiale. Les avatars sont déjà actifs.';
 }

@@ -284,7 +284,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get next => 'Next';
 
   @override
-  String get loginWelcome => 'Welcome to Mhuri Money';
+  String get loginWelcome => 'Welcome to Mhuri Hub';
 
   @override
   String get loginEnterCode => 'Enter the code';
@@ -313,7 +313,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginFooter =>
-      'By continuing you agree to family harmony.\nDemo build? No login needed — you are already home.';
+      'Demo mode: use any phone number and code 1234.\nLive mode sends a real SMS code.';
 
   @override
   String get quickAddTitle => 'Quick add';
@@ -792,7 +792,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markRound => 'Mark this round collected';
 
   @override
-  String get recordsOnly => 'Mhuri Money never holds the money — records only.';
+  String get recordsOnly => 'Mhuri Hub never holds the money — records only.';
 
   @override
   String get saveContribution => 'Save contribution';
@@ -894,18 +894,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allSynced => '✓ All changes synced';
 
   @override
-  String get familyCta => 'Manage family';
-
-  @override
-  String familyMemberCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count members',
-      one: '1 member',
-    );
-    return '$_temp0';
-  }
+  String get familyCta => 'Family ›';
 
   @override
   String get recentInEnv => 'Recent in this envelope';
@@ -1086,4 +1075,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Pot so far: $pot · $contribution × $count members';
   }
+
+  @override
+  String get switchProfile => 'Switch profile';
+
+  @override
+  String get switchProfileSub => 'Preview the app as another family member';
+
+  @override
+  String get youTag => 'You';
+
+  @override
+  String get pickCurrency => 'Display currency';
+
+  @override
+  String get rateField => 'ZiG per 1 USD';
+
+  @override
+  String get rateSave => 'Save rate';
+
+  @override
+  String get rateReset => 'Reset to RBZ snapshot';
+
+  @override
+  String get rateCustomNote =>
+      'Used for the ZiG view across the whole app. The bundled RBZ snapshot is 15.27.';
+
+  @override
+  String get autoHide => 'Hide amounts when I leave the app';
+
+  @override
+  String get autoHideSub =>
+      'Balances hide automatically when the app goes to the background — turn off if you prefer.';
+
+  @override
+  String get hideNow => 'Hide amounts right now';
+
+  @override
+  String get exportCsvRow => 'Export all transactions (CSV)';
+
+  @override
+  String get copyInvite => 'Copy invite code';
+
+  @override
+  String get copied => 'Copied ✓';
+
+  @override
+  String get inviteTitle => 'Invite a family member';
+
+  @override
+  String get inviteDemoNote =>
+      'Demo mode comes with a seeded family. In live mode your invite code lives here — share it and the family joins your space.';
+
+  @override
+  String get editProfile => 'Edit profile';
+
+  @override
+  String get editProfileSub => 'Name and avatar for this member';
+
+  @override
+  String get photoNote =>
+      'Profile photos arrive with family sync. Avatars are live now.';
 }

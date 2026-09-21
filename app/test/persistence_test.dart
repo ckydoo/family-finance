@@ -21,11 +21,15 @@ void main() {
   late AppDatabase db;
 
   setUp(() async {
-    final raw =
-        await databaseFactory.openDatabase(inMemoryDatabasePath, version: 1,
-            onCreate: (d, v) async {
-      await AppDatabase.createSchema(d);
-    });
+    final raw = await databaseFactory.openDatabase(
+      inMemoryDatabasePath,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (d, v) async {
+          await AppDatabase.createSchema(d);
+        },
+      ),
+    );
     db = AppDatabase.wrap(raw);
   });
 

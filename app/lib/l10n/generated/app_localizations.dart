@@ -619,7 +619,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginWelcome.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Mhuri Money'**
+  /// **'Welcome to Mhuri Hub'**
   String get loginWelcome;
 
   /// No description provided for @loginEnterCode.
@@ -667,7 +667,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginFooter.
   ///
   /// In en, this message translates to:
-  /// **'By continuing you agree to family harmony.\nDemo build? No login needed — you are already home.'**
+  /// **'Demo mode: use any phone number and code 1234.\nLive mode sends a real SMS code.'**
   String get loginFooter;
 
   /// No description provided for @quickAddTitle.
@@ -1555,7 +1555,7 @@ abstract class AppLocalizations {
   /// No description provided for @recordsOnly.
   ///
   /// In en, this message translates to:
-  /// **'Mhuri Money never holds the money — records only.'**
+  /// **'Mhuri Hub never holds the money — records only.'**
   String get recordsOnly;
 
   /// No description provided for @saveContribution.
@@ -1729,14 +1729,8 @@ abstract class AppLocalizations {
   /// No description provided for @familyCta.
   ///
   /// In en, this message translates to:
-  /// **'Manage family'**
+  /// **'Family ›'**
   String get familyCta;
-
-  /// No description provided for @familyMemberCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 member} other{{count} members}}'**
-  String familyMemberCount(int count);
 
   /// No description provided for @recentInEnv.
   ///
@@ -2001,6 +1995,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pot so far: {pot} · {contribution} × {count} members'**
   String memberPot(Object contribution, Object count, Object pot);
+
+  /// No description provided for @switchProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch profile'**
+  String get switchProfile;
+
+  /// No description provided for @switchProfileSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview the app as another family member'**
+  String get switchProfileSub;
+
+  /// No description provided for @youTag.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get youTag;
+
+  /// No description provided for @pickCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Display currency'**
+  String get pickCurrency;
+
+  /// No description provided for @rateField.
+  ///
+  /// In en, this message translates to:
+  /// **'ZiG per 1 USD'**
+  String get rateField;
+
+  /// No description provided for @rateSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save rate'**
+  String get rateSave;
+
+  /// No description provided for @rateReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to RBZ snapshot'**
+  String get rateReset;
+
+  /// No description provided for @rateCustomNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for the ZiG view across the whole app. The bundled RBZ snapshot is 15.27.'**
+  String get rateCustomNote;
+
+  /// No description provided for @autoHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide amounts when I leave the app'**
+  String get autoHide;
+
+  /// No description provided for @autoHideSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Balances hide automatically when the app goes to the background — turn off if you prefer.'**
+  String get autoHideSub;
+
+  /// No description provided for @hideNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide amounts right now'**
+  String get hideNow;
+
+  /// No description provided for @exportCsvRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Export all transactions (CSV)'**
+  String get exportCsvRow;
+
+  /// No description provided for @copyInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy invite code'**
+  String get copyInvite;
+
+  /// No description provided for @copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied ✓'**
+  String get copied;
+
+  /// No description provided for @inviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite a family member'**
+  String get inviteTitle;
+
+  /// No description provided for @inviteDemoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo mode comes with a seeded family. In live mode your invite code lives here — share it and the family joins your space.'**
+  String get inviteDemoNote;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfile;
+
+  /// No description provided for @editProfileSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and avatar for this member'**
+  String get editProfileSub;
+
+  /// No description provided for @photoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photos arrive with family sync. Avatars are live now.'**
+  String get photoNote;
 }
 
 class _AppLocalizationsDelegate

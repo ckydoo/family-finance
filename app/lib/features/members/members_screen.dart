@@ -8,6 +8,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
+import '../../core/money/money.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 
@@ -973,11 +974,11 @@ class MembersScreen extends StatelessWidget {
   }
 
   void _currencySheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(ctx)!;
+    final l = AppLocalizations.of(context)!;
     final rateCtrl = TextEditingController(text: s.rate.toStringAsFixed(2));
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: ctx.bg,
+      backgroundColor: context.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -1098,10 +1099,10 @@ class MembersScreen extends StatelessWidget {
   }
 
   void _privacySheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(ctx)!;
+    final l = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: ctx.bg,
+      backgroundColor: context.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1161,10 +1162,10 @@ class MembersScreen extends StatelessWidget {
   }
 
   void _backupSheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(ctx)!;
+    final l = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: ctx.bg,
+      backgroundColor: context.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

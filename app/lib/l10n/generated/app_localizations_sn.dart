@@ -284,7 +284,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get next => 'Zvinotevera';
 
   @override
-  String get loginWelcome => 'Svika kuMhuri Money';
+  String get loginWelcome => 'Svika kuMhuri Hub';
 
   @override
   String get loginEnterCode => 'Pinda iyo kodhi';
@@ -313,7 +313,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get loginFooter =>
-      'Mukuenderera mberi unobvuma runyararo hwemhuri.\nDemo here? Haudi kupinda — uri pamba iwe pachako.';
+      'Demo: chero nhare uye pinda 1234.\nLive inotumira kodhi yeSMS chaiyo.';
 
   @override
   String get quickAddTitle => 'Wedzera nyore';
@@ -796,7 +796,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get markRound => 'Ratidza zvaatorwa';
 
   @override
-  String get recordsOnly => 'Mhuri Money haimbori mari — inonyora chete.';
+  String get recordsOnly => 'Mhuri Hub haimbori mari — inonyora chete.';
 
   @override
   String get saveContribution => 'Chengetedza mupi';
@@ -898,18 +898,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get allSynced => '✓ Zvose zvaendaniswa';
 
   @override
-  String get familyCta => 'Tonga mhuri';
-
-  @override
-  String familyMemberCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Nhengo $count',
-      one: 'Nhengo 1',
-    );
-    return '$_temp0';
-  }
+  String get familyCta => 'Mhuri ›';
 
   @override
   String get recentInEnv => 'Changobva mubhuku rino';
@@ -1091,4 +1080,65 @@ class AppLocalizationsSn extends AppLocalizations {
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Mari yausvika: $pot · $contribution × $count vanhu';
   }
+
+  @override
+  String get switchProfile => 'Chinja profile';
+
+  @override
+  String get switchProfileSub => 'Tarisa app semhuri yemumwe';
+
+  @override
+  String get youTag => 'Iwe';
+
+  @override
+  String get pickCurrency => 'Mari inoratidzwa';
+
+  @override
+  String get rateField => 'ZiG pa1 USD';
+
+  @override
+  String get rateSave => 'Chengetedza mutengo';
+
+  @override
+  String get rateReset => 'Dzokera kuRBZ yekutanga';
+
+  @override
+  String get rateCustomNote =>
+      'Inoshandiswa kuona maZiG muapp yese. RBZ inotanga ndeye 15,27.';
+
+  @override
+  String get autoHide => 'Vanza mari ndisabuda muapp';
+
+  @override
+  String get autoHideSub =>
+      'Mari inovanzika app yasara kumashure — dzima usati ude.';
+
+  @override
+  String get hideNow => 'Vanza mari izvozvi';
+
+  @override
+  String get exportCsvRow => 'Buritsa zvose zvaitika (CSV)';
+
+  @override
+  String get copyInvite => 'Kopkodhi yekukoka';
+
+  @override
+  String get copied => 'Yakopiwa ✓';
+
+  @override
+  String get inviteTitle => 'Koka muridzi wemhuri';
+
+  @override
+  String get inviteDemoNote =>
+      'Demo inouya nemhuri yemuenzaniso. Mulive kodhi yekukoka inogara pano — igovane nemhuri ipinde munzvimbo yako.';
+
+  @override
+  String get editProfile => 'Chinja profile';
+
+  @override
+  String get editProfileSub => 'Zita nemufananidzo weuyu member';
+
+  @override
+  String get photoNote =>
+      'Mifananidzo yeprofile inouya nekuendanisa kwemhuri. Zvivanhu zviri po zvino.';
 }
