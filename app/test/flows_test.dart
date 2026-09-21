@@ -21,10 +21,10 @@ void main() {
   setUp(() async {
     final raw = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
-      version: 1,
-      onCreate: (d, v) async {
-        await AppDatabase.createSchema(d);
-      },
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (d, v) async => AppDatabase.createSchema(d),
+      ),
     );
     db = AppDatabase.wrap(raw);
   });
@@ -39,8 +39,7 @@ void main() {
     return s;
   }
 
-  test('flow 1 — money in & out hits envelopes and the family pool',
-      () async {
+  test('flow 1 — money in & out hits envelopes and the family pool', () async {
     final s = await fresh();
     s.txs.clear();
     final groceries = s.envelopes.firstWhere(
@@ -86,8 +85,7 @@ void main() {
     await s.flushWrites();
   });
 
-  test('flow 3 — kid asks, parent approves, jar and nudges follow',
-      () async {
+  test('flow 3 — kid asks, parent approves, jar and nudges follow', () async {
     final s = await fresh();
     final jar = s.kidJarGoal!;
     final jarBefore = s.savedOn(jar).minor;

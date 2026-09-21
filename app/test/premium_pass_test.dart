@@ -22,10 +22,10 @@ void main() {
   setUp(() async {
     final raw = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
-      version: 1,
-      onCreate: (d, v) async {
-        await AppDatabase.createSchema(d);
-      },
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (d, v) async => AppDatabase.createSchema(d),
+      ),
     );
     db = AppDatabase.wrap(raw);
   });
@@ -117,8 +117,7 @@ void main() {
     expect(s.lastError, isNull);
   });
 
-  test('Interface pass 3: circle collect is undoable (records only)',
-      () async {
+  test('Interface pass 3: circle collect is undoable (records only)', () async {
     final s = await fresh();
     final before = s.circle.currentRound;
     s.circleCollect();
@@ -163,7 +162,8 @@ void main() {
   });
 
   test('chore adapter round-trip preserves state and stars', () {
-    final c = Chore(id: 'ch1', name: 'Dishes', stars: 3, state: ChoreState.waiting);
+    final c =
+        Chore(id: 'ch1', name: 'Dishes', stars: 3, state: ChoreState.waiting);
     final row = kSyncAdapters['chore']!.encode(c, ctx);
     final c2 = kSyncAdapters['chore']!.decode(row) as Chore;
     expect(c2.id, 'ch1');
@@ -192,7 +192,8 @@ void main() {
 
   test('every synced entity has exactly one pull slot', () {
     for (final k in kSyncAdapters.keys) {
-      expect(kPullOrder.contains(k), isTrue, reason: '$k missing from kPullOrder');
+      expect(kPullOrder.contains(k), isTrue,
+          reason: '$k missing from kPullOrder');
     }
     expect(kPullOrder.length, kSyncAdapters.length);
   });
@@ -211,7 +212,8 @@ void main() {
     expect(uuidFromSeed('mukando/sp2'), isNot(uuidFromSeed('mukando/sp1')));
   });
 
-  test('settings: custom rate, display currency and auto-hide persist', () async {
+  test('settings: custom rate, display currency and auto-hide persist',
+      () async {
     final state = AppState(db: db);
     await state.ready();
     state.setCustomRate(16.4);

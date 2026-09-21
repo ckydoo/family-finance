@@ -6,7 +6,7 @@ import '../../l10n/generated/app_localizations.dart';
 
 /// Flutter does not ship framework translations for Shona or Ndebele.
 ///
-/// Mhuri Money still provides its own translated strings for those locales;
+/// Mhuri Hub still provides its own translated strings for those locales;
 /// these delegates supply the English framework labels and formatting needed
 /// by widgets such as [RefreshIndicator], date pickers and text fields.
 const mhuriLocalizationsDelegates = <LocalizationsDelegate<dynamic>>[

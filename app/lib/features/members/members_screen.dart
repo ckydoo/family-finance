@@ -5,123 +5,130 @@ import '../../core/auth/pin_store.dart';
 import '../settings/settings_screen.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/money/money.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
+import '../../core/money/money.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-  void _editProfileSheet(BuildContext context, AppState s, Member m) {
-    final l = AppLocalizations.of(context)!;
-    final nameCtrl = TextEditingController(text: m.name);
-    var avatar = m.emoji;
-    const avatarKeys = ['person', 'man', 'woman', 'boy', 'baby', 'student', 'grandma'];
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: context.bg,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                20, 18, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l.editProfile,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: context.ink,
-                  ),
+void _editProfileSheet(BuildContext context, AppState s, Member m) {
+  final l = AppLocalizations.of(context)!;
+  final nameCtrl = TextEditingController(text: m.name);
+  var avatar = m.emoji;
+  const avatarKeys = [
+    'person',
+    'man',
+    'woman',
+    'boy',
+    'baby',
+    'student',
+    'grandma'
+  ];
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: context.bg,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSheet) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+              20, 18, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l.editProfile,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: context.ink,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  l.editProfileSub,
-                  style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l.editProfileSub,
+                style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: m.name,
+                  filled: true,
+                  fillColor: context.card,
+                  border: const OutlineInputBorder(borderSide: BorderSide.none),
                 ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: nameCtrl,
-                  decoration: InputDecoration(
-                    labelText: m.name,
-                    filled: true,
-                    fillColor: context.card,
-                    border: const OutlineInputBorder(
-                        borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final k in avatarKeys)
-                      InkWell(
-                        onTap: () => setSheet(() => avatar = k),
-                        borderRadius: BorderRadius.circular(30),
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: avatar == k
-                                  ? context.primary
-                                  : Colors.transparent,
-                              width: 2,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 21,
-                            backgroundColor:
-                                context.card,
-                            child: Icon(iconForKey(k) ?? Icons.person,
-                                size: 20, color: context.ink),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  for (final k in avatarKeys)
+                    InkWell(
+                      onTap: () => setSheet(() => avatar = k),
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: avatar == k
+                                ? context.primary
+                                : Colors.transparent,
+                            width: 2,
                           ),
                         ),
+                        child: CircleAvatar(
+                          radius: 21,
+                          backgroundColor: context.card,
+                          child: Icon(iconForKey(k) ?? Icons.person,
+                              size: 20, color: context.ink),
+                        ),
                       ),
-                  ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                l.photoNote,
+                style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+              ),
+              const SizedBox(height: 14),
+              FilledButton(
+                onPressed: () {
+                  s.updateMember(m.id, name: nameCtrl.text, emoji: avatar);
+                  Navigator.pop(ctx);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.primary,
+                  foregroundColor: context.onSolid,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: const StadiumBorder(),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  l.photoNote,
-                  style: TextStyle(fontSize: 11.5, color: context.inkSoft),
-                ),
-                const SizedBox(height: 14),
-                FilledButton(
-                  onPressed: () {
-                    s.updateMember(m.id,
-                        name: nameCtrl.text, emoji: avatar);
-                    Navigator.pop(ctx);
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.onSolid,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: const StadiumBorder(),
-                  ),
-                  child: Text(l.save),
-                ),
-              ],
-            ),
+                child: Text(l.save),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
 Color _roleBg(Role role) => switch (role) {
-        Role.owner => const Color(0xFFD9EDE8),
-        Role.adult => const Color(0xFFFBE7C6),
-        Role.teen => const Color(0xFFDCEBFA),
-        Role.kid => const Color(0xFFFFF1C9),
-        Role.viewer => const Color(0xFFEFE3F7),
-      };
+      Role.owner => const Color(0xFFD9EDE8),
+      Role.adult => const Color(0xFFFBE7C6),
+      Role.teen => const Color(0xFFDCEBFA),
+      Role.kid => const Color(0xFFFFF1C9),
+      Role.viewer => const Color(0xFFEFE3F7),
+    };
 
 /// Members, roles and the demo "View as" switcher (spec §3, §7.10).
 class MembersScreen extends StatelessWidget {
@@ -245,27 +252,35 @@ class MembersScreen extends StatelessWidget {
             // ── Settings stubs ────────────────────────────────────────────
             Text(
               AppLocalizations.of(context)!.settingsTitle,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.ink),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: context.ink),
             ),
             const SizedBox(height: 10),
-            _settingAction(context,
+            _settingAction(
+              context,
               AppLocalizations.of(context)!.switchProfile,
               AppLocalizations.of(context)!.switchProfileSub,
               () => _switchProfileSheet(context, s),
             ),
-            _settingAction(context,
+            _settingAction(
+              context,
               AppLocalizations.of(context)!.setCurrency,
               AppLocalizations.of(context)!.setCurrencySub(s.rateLabel),
               () => _currencySheet(context, s),
             ),
             _languageRow(context, s),
-            _settingAction(context,
+            _settingAction(
+              context,
               AppLocalizations.of(context)!.setPrivacy,
               AppLocalizations.of(context)!.setPrivacySub,
               () => _privacySheet(context, s),
             ),
-            _setting(context, AppLocalizations.of(context)!.setMonthStart, AppLocalizations.of(context)!.setMonthStartSub),
-            _settingAction(context,
+            _setting(context, AppLocalizations.of(context)!.setMonthStart,
+                AppLocalizations.of(context)!.setMonthStartSub),
+            _settingAction(
+              context,
               AppLocalizations.of(context)!.setNotif,
               AppLocalizations.of(context)!.setNotifSub,
               () => Navigator.of(context).push(
@@ -275,7 +290,8 @@ class MembersScreen extends StatelessWidget {
             if (s.isLive) _spaceCard(context, s),
             _pinRow(context, s),
             if (s.env.isLive && s.auth != null) _accountRow(context, s),
-            _settingAction(context,
+            _settingAction(
+              context,
               AppLocalizations.of(context)!.setBackup,
               AppLocalizations.of(context)!.setBackupSub,
               () => _backupSheet(context, s),
@@ -334,8 +350,9 @@ class MembersScreen extends StatelessWidget {
           for (final entry in kLanguageNames.entries)
             SimpleDialogOption(
               onPressed: () {
+                final navigator = Navigator.of(ctx);
                 s.setLocale(entry.key);
-                Navigator.pop(ctx);
+                navigator.pop();
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -397,7 +414,8 @@ class MembersScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               AppLocalizations.of(context)!.spaceSetupSub,
-              style: TextStyle(fontSize: 12, color: context.inkSoft, height: 1.35),
+              style:
+                  TextStyle(fontSize: 12, color: context.inkSoft, height: 1.35),
             ),
             const SizedBox(height: 12),
             Row(
@@ -445,11 +463,13 @@ class MembersScreen extends StatelessWidget {
     final last = s.lastSyncAt;
     final lastText = last == null
         ? 'never'
-        : AppLocalizations.of(context)!.syncTime('${_twoDigits(last.hour)}:${_twoDigits(last.minute)}');
+        : AppLocalizations.of(context)!
+            .syncTime('${_twoDigits(last.hour)}:${_twoDigits(last.minute)}');
     final statusText = switch (s.syncStatus) {
       SyncStatus.syncing => AppLocalizations.of(context)!.syncing,
       SyncStatus.offline => AppLocalizations.of(context)!.offlineRetry,
-      SyncStatus.error => s.syncLastError ?? AppLocalizations.of(context)!.syncProblem,
+      SyncStatus.error =>
+        s.syncLastError ?? AppLocalizations.of(context)!.syncProblem,
       SyncStatus.needsSignIn => AppLocalizations.of(context)!.signinExpired,
       _ => AppLocalizations.of(context)!.lastSync(lastText),
     };
@@ -458,7 +478,8 @@ class MembersScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [context.primary, context.primaryDark]),
+        gradient:
+            LinearGradient(colors: [context.primary, context.primaryDark]),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -532,17 +553,18 @@ class MembersScreen extends StatelessWidget {
   Future<void> _createSpaceDialog(BuildContext context, AppState s) async {
     final engine = s.sync;
     if (engine == null) return;
+    final l = AppLocalizations.of(context)!;
     final name = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(AppLocalizations.of(context)!.createFamilySpace),
+        title: Text(l.createFamilySpace),
         content: TextField(
           controller: name,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: AppLocalizations.of(context)!.familyName,
+            labelText: l.familyName,
             hintText: 'e.g. The Taylor Family',
             filled: true,
             fillColor: context.bg,
@@ -566,15 +588,16 @@ class MembersScreen extends StatelessWidget {
       ),
     );
     if (confirmed != true) return;
-    final ok = await engine
-        .createSpace(name.text.trim().isEmpty ? AppLocalizations.of(context)!.myFamily : name.text.trim());
+    final ok = await engine.createSpace(
+      name.text.trim().isEmpty ? l.myFamily : name.text.trim(),
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           ok
-              ? AppLocalizations.of(context)!.spaceCreated(s.inviteCode ?? '?')
-              : (s.syncLastError ?? AppLocalizations.of(context)!.createFail),
+              ? l.spaceCreated(s.inviteCode ?? '?')
+              : (s.syncLastError ?? l.createFail),
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -774,10 +797,10 @@ class MembersScreen extends StatelessWidget {
     );
   }
 
-
   // ── Premium pass: every settings row now does something ──────────────────
 
-  Widget _settingAction(BuildContext context, String title, String subtitle, VoidCallback onTap) =>
+  Widget _settingAction(BuildContext context, String title, String subtitle,
+          VoidCallback onTap) =>
       InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
@@ -815,7 +838,6 @@ class MembersScreen extends StatelessWidget {
           ),
         ),
       );
-
 
   void _inviteSheet(BuildContext context, AppState s) {
     final l = AppLocalizations.of(context)!;
@@ -865,9 +887,10 @@ class MembersScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: () {
+                    final messenger = ScaffoldMessenger.of(context);
                     Clipboard.setData(ClipboardData(text: code));
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text(l.copied),
                         behavior: SnackBarBehavior.floating,
@@ -896,19 +919,23 @@ class MembersScreen extends StatelessWidget {
     );
   }
 
-  void _switchProfileSheet(BuildContext context, AppState s) {
+  Future<void> _switchProfileSheet(BuildContext context, AppState s) async {
     final l = AppLocalizations.of(context)!;
-    showModalBottomSheet<void>(
+    final navigator = Navigator.of(context);
+    final selected = await showModalBottomSheet<Member>(
       context: context,
       backgroundColor: context.bg,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => SafeArea(
+      builder: (ctx) => FractionallySizedBox(
+        heightFactor: 0.8,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -925,23 +952,44 @@ class MembersScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 12.5, color: context.inkSoft),
               ),
               const SizedBox(height: 12),
-              for (final m in s.members)
-                _profileTile(ctx, s, m),
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: s.members.length,
+                  itemBuilder: (ctx, index) {
+                    final member = s.members[index];
+                    return _profileTile(
+                      ctx,
+                      s,
+                      member,
+                      () => Navigator.pop(ctx, member),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+    if (selected == null || !navigator.mounted) return;
+    navigator.popUntil((route) => route.isFirst);
+    s.switchUser(selected);
   }
 
-  Widget _profileTile(BuildContext ctx, AppState s, Member m) {
+  Widget _profileTile(
+    BuildContext ctx,
+    AppState s,
+    Member m,
+    VoidCallback onSelected,
+  ) {
     final l = AppLocalizations.of(ctx)!;
     final isCurrent = s.user.id == m.id;
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: _roleBg(m.role),
-        child: Icon(iconForKey(m.emoji) ?? Icons.person,
-            size: 20, color: ctx.ink),
+        child:
+            Icon(iconForKey(m.emoji) ?? Icons.person, size: 20, color: ctx.ink),
       ),
       title: Text(
         m.name,
@@ -965,19 +1013,16 @@ class MembersScreen extends StatelessWidget {
               ),
             )
           : Icon(Icons.chevron_right, color: ctx.inkSoft),
-      onTap: () {
-        s.switchUser(m);
-        Navigator.of(ctx).popUntil((r) => r.isFirst);
-      },
+      onTap: onSelected,
     );
   }
 
   void _currencySheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(ctx)!;
+    final l = AppLocalizations.of(context)!;
     final rateCtrl = TextEditingController(text: s.rate.toStringAsFixed(2));
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: ctx.bg,
+      backgroundColor: context.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -1058,8 +1103,8 @@ class MembersScreen extends StatelessWidget {
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: ctx.card,
-                    border: const OutlineInputBorder(
-                        borderSide: BorderSide.none),
+                    border:
+                        const OutlineInputBorder(borderSide: BorderSide.none),
                     suffixIcon: TextButton(
                       onPressed: () {
                         s.setCustomRate(15.27);
@@ -1098,10 +1143,10 @@ class MembersScreen extends StatelessWidget {
   }
 
   void _privacySheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(ctx)!;
+    final l = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: ctx.bg,
+      backgroundColor: context.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1161,10 +1206,10 @@ class MembersScreen extends StatelessWidget {
   }
 
   void _backupSheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(ctx)!;
+    final l = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: ctx.bg,
+      backgroundColor: context.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1199,8 +1244,9 @@ class MembersScreen extends StatelessWidget {
                 onTap: () async {
                   final path = await s.exportCsv();
                   if (!ctx.mounted) return;
+                  final messenger = ScaffoldMessenger.of(context);
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(ctx).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text(
                         path == null ? l.exportReal : l.exportedPath(path),
@@ -1221,10 +1267,10 @@ class MembersScreen extends StatelessWidget {
                         color: ctx.ink),
                   ),
                   onTap: () {
-                    Clipboard.setData(
-                        ClipboardData(text: s.inviteCode ?? ''));
+                    final messenger = ScaffoldMessenger.of(context);
+                    Clipboard.setData(ClipboardData(text: s.inviteCode ?? ''));
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(ctx).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text(l.copied),
                         behavior: SnackBarBehavior.floating,
@@ -1247,7 +1293,8 @@ class MembersScreen extends StatelessWidget {
     );
   }
 
-  Widget _setting(BuildContext context, String title, String subtitle) => Container(
+  Widget _setting(BuildContext context, String title, String subtitle) =>
+      Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -1315,9 +1362,7 @@ class _MemberRow extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: InkWell(
-              onTap: isMe
-                  ? () => _editProfileSheet(context, s, m)
-                  : null,
+              onTap: isMe ? () => _editProfileSheet(context, s, m) : null,
               borderRadius: BorderRadius.circular(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1326,29 +1371,32 @@ class _MemberRow extends StatelessWidget {
                     children: [
                       Text(
                         m.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        color: context.ink,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: context.ink,
+                        ),
                       ),
-                    ),
-                    if (isMe) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        AppLocalizations.of(context)!.youTag,
-                        style: TextStyle(fontSize: 11, color: context.primary, fontWeight: FontWeight.w700),
-                      ),
+                      if (isMe) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          AppLocalizations.of(context)!.youTag,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: context.primary,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  roleLabel(AppLocalizations.of(context)!, m.role),
-                  style: TextStyle(fontSize: 12, color: context.inkSoft),
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    roleLabel(AppLocalizations.of(context)!, m.role),
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
           if (isMe)
             InkWell(
@@ -1362,8 +1410,9 @@ class _MemberRow extends StatelessWidget {
           if (canDemo && !isMe)
             OutlinedButton(
               onPressed: () {
+                final navigator = Navigator.of(context);
                 s.switchUser(m);
-                Navigator.of(context).popUntil((r) => r.isFirst);
+                navigator.popUntil((r) => r.isFirst);
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: context.primary,
@@ -1376,5 +1425,4 @@ class _MemberRow extends StatelessWidget {
       ),
     );
   }
-
 }

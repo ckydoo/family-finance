@@ -50,8 +50,8 @@ void main() {
   final errorWheres = <String>[];
 
   int txPosts() => server.sent
-      .where((r) =>
-          r.method == 'POST' && r.url.toString().contains('/rest/v1/tx'))
+      .where(
+          (r) => r.method == 'POST' && r.url.toString().contains('/rest/v1/tx'))
       .length;
 
   setUp(() async {
@@ -68,10 +68,10 @@ void main() {
     });
     final raw = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
-      version: 1,
-      onCreate: (d, v) async {
-        await AppDatabase.createSchema(d);
-      },
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (d, v) async => AppDatabase.createSchema(d),
+      ),
     );
     db = AppDatabase.wrap(raw);
     state = AppState(db: db);

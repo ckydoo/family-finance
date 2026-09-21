@@ -54,14 +54,14 @@ class _AdultShellState extends State<AdultShell> {
           // Budgets (tab 1) is the two-pane surface; other tabs stay phone-width.
           constraints: BoxConstraints(maxWidth: _tab == 1 ? 980 : 620),
           child: IndexedStack(
-        index: _tab,
-        children: const [
-          HomeScreen(),
-          BudgetsScreen(),
-          SavingsScreen(),
-          ListsScreen(),
-        ],
-      )
+            index: _tab,
+            children: const [
+              HomeScreen(),
+              BudgetsScreen(),
+              SavingsScreen(),
+              ListsScreen(),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -77,6 +77,7 @@ class _AdultShellState extends State<AdultShell> {
           border: Border(top: BorderSide(color: context.hairline)),
         ),
         child: BottomAppBar(
+          height: 68,
           color: context.card,
           elevation: 0,
           shape: const CircularNotchedRectangle(),
@@ -120,6 +121,7 @@ class _AdultShellState extends State<AdultShell> {
         splashColor: context.primarySoft,
         highlightColor: context.primarySoft,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedScale(
@@ -128,20 +130,23 @@ class _AdultShellState extends State<AdultShell> {
               scale: selected ? 1.08 : 1.0,
               child: Icon(
                 selected ? d.active : d.rest,
-                size: 24,
+                size: 22,
                 color: color,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              d.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11.5,
-                letterSpacing: 0.1,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: color,
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                d.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  letterSpacing: 0.1,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: color,
+                ),
               ),
             ),
           ],
