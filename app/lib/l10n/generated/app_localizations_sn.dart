@@ -296,7 +296,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get loginSignInHint =>
-      'Pinda nefoni yako kuvhura nzvimbo yemhuri yako.';
+      'Pinda neemail yako kuvhura nzvimbo yemhuri yako.';
 
   @override
   String get loginSendCode => 'Tumira kodhi';
@@ -1185,6 +1185,39 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get loginCreateAccount => 'Vhaka account';
+
+  @override
+  String get welcomeBack => 'Mauya zvakare';
+
+  @override
+  String get brandTagline => 'MARI YEMHURI, PAMWE CHETE';
+
+  @override
+  String get createAccountTitle => 'Vhaka account yako';
+
+  @override
+  String get createAccountHint =>
+      'Tanga nzvimbo yakachengeteka yemari yemhuri yako.';
+
+  @override
+  String get forgotPassword => 'Wakanganwa password?';
+
+  @override
+  String get sendingPasswordReset => 'Zviri kutumirwa…';
+
+  @override
+  String get passwordResetSent =>
+      'Email yekuchinja password yatumirwa — tarisa inbox yako.';
+
+  @override
+  String get passwordResetFailed =>
+      'Hatina kukwanisa kutumira email. Tarisa internet woedza zvakare.';
+
+  @override
+  String get newToMhuri => 'Mutsva kuMhuri Hub?';
+
+  @override
+  String get alreadyHaveAccount => 'Watova neaccount?';
 
   @override
   String get loginBadEmail => 'Nyora email inoshanda.';

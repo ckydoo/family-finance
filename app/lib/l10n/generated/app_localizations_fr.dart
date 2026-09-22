@@ -300,7 +300,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get loginSignInHint =>
-      'Connectez-vous avec votre téléphone pour ouvrir votre espace familial.';
+      'Connectez-vous avec votre e-mail pour ouvrir votre espace familial.';
 
   @override
   String get loginSendCode => 'Envoyer le code';
@@ -1195,6 +1195,39 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get loginCreateAccount => 'Créer un compte';
+
+  @override
+  String get welcomeBack => 'Bon retour';
+
+  @override
+  String get brandTagline => 'L\'ARGENT EN FAMILLE, ENSEMBLE';
+
+  @override
+  String get createAccountTitle => 'Crée ton compte';
+
+  @override
+  String get createAccountHint =>
+      'Crée l\'espace financier sécurisé de ta famille.';
+
+  @override
+  String get forgotPassword => 'Mot de passe oublié ?';
+
+  @override
+  String get sendingPasswordReset => 'Envoi…';
+
+  @override
+  String get passwordResetSent =>
+      'E-mail de réinitialisation envoyé — vérifie ta boîte.';
+
+  @override
+  String get passwordResetFailed =>
+      'Impossible d\'envoyer l\'e-mail. Vérifie ta connexion et réessaie.';
+
+  @override
+  String get newToMhuri => 'Nouveau sur Mhuri Hub ?';
+
+  @override
+  String get alreadyHaveAccount => 'Tu as déjà un compte ?';
 
   @override
   String get loginBadEmail => 'Saisissez une adresse e-mail valide.';

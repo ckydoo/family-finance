@@ -637,7 +637,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginSignInHint.
   ///
   /// In en, this message translates to:
-  /// **'Sign in with your phone number to open your family space.'**
+  /// **'Sign in with your email to open your family space.'**
   String get loginSignInHint;
 
   /// No description provided for @loginSendCode.
@@ -2199,6 +2199,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create account'**
   String get loginCreateAccount;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get welcomeBack;
+
+  /// No description provided for @brandTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'FAMILY MONEY, TOGETHER'**
+  String get brandTagline;
+
+  /// No description provided for @createAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account'**
+  String get createAccountTitle;
+
+  /// No description provided for @createAccountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start your secure family money space.'**
+  String get createAccountHint;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// No description provided for @sendingPasswordReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get sendingPasswordReset;
+
+  /// No description provided for @passwordResetSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset email sent — check your inbox.'**
+  String get passwordResetSent;
+
+  /// No description provided for @passwordResetFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the reset email. Check your connection and try again.'**
+  String get passwordResetFailed;
+
+  /// No description provided for @newToMhuri.
+  ///
+  /// In en, this message translates to:
+  /// **'New to Mhuri Hub?'**
+  String get newToMhuri;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account?'**
+  String get alreadyHaveAccount;
 
   /// No description provided for @loginBadEmail.
   ///

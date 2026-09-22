@@ -14,7 +14,7 @@ shared across devices. There is no demo mode.
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.19+ → check with `flutter doctor`
 - A phone with USB debugging enabled (**Android is easiest**) *or* an Android emulator / iOS simulator
-- A Supabase project with the backend installed (see `backend/README.md` + run migrations `001`–`004`)
+- A Supabase project with the backend installed (see `backend/README.md` + run migrations `001`–`006`)
 - Internet for the first `flutter pub get`
 
 ## 2. Connect it to your Supabase

@@ -34,7 +34,7 @@ class FakeAuthService implements AuthService {
       return const AuthResult.failure(
           'Enter a valid email and a password of at least 6 characters.');
     }
-    _session = const AuthSession(userId: 'test-user-1', email: email);
+    _session = AuthSession(userId: 'test-user-1', email: email);
     return const AuthResult.success();
   }
 
@@ -47,6 +47,9 @@ class FakeAuthService implements AuthService {
 
   @override
   Future<bool> resendConfirmation(String email) async => true;
+
+  @override
+  Future<bool> sendPasswordReset(String email) async => true;
 
   @override
   Future<void> signOut() async {
@@ -153,8 +156,7 @@ void main() {
     expect(s.user.id, session.userId);
   });
 
-  test('membersFromServer maps roster rows (roles, names, me-first)',
-      () async {
+  test('membersFromServer maps roster rows (roles, names, me-first)', () async {
     final (s, _) = await liveState();
     s.onSpaceAdopted(spaceName: 'Marufu');
     final meId = s.user.id;
@@ -200,8 +202,7 @@ void main() {
     expect(s.members, hasLength(2));
     expect(s.user.id, meId); // binding survives the merge
     expect(s.user.name, 'tendi'); // local display name kept
-    expect(s.members.any((m) => m.id == 'uuid-mai' && m.name == 'Mai'),
-        isTrue);
+    expect(s.members.any((m) => m.id == 'uuid-mai' && m.name == 'Mai'), isTrue);
   });
 
   test('applyEnvelopeLinks mirrors server links, persists, skips no-ops',
@@ -239,7 +240,8 @@ void main() {
 
     expect(s.txs.firstWhere((t) => t.id == 'tx_link').envelopeId, 'env-b');
     expect(s.txs.firstWhere((t) => t.id == 'tx_keep').envelopeId, 'env-a');
-    final row = (await raw.query('tx', where: 'id = ?', whereArgs: ['tx_link'])).single;
+    final row =
+        (await raw.query('tx', where: 'id = ?', whereArgs: ['tx_link'])).single;
     expect(row['envelope_id'], 'env-b'); // persisted for next boot
     expect(await raw.query('tx', where: 'id = ?', whereArgs: ['tx_ghost']),
         isEmpty);
@@ -252,7 +254,9 @@ void main() {
     await s.applyServerRate(15.95);
     expect(s.rate, 15.95);
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    final kv = (await raw.query('kv', where: 'k = ?', whereArgs: ['server_rate'])).single;
+    final kv =
+        (await raw.query('kv', where: 'k = ?', whereArgs: ['server_rate']))
+            .single;
     expect(kv['v'], '15.9500'); // hydrated at next boot
 
     s.setCustomRate(16.4);
@@ -269,7 +273,9 @@ void main() {
     s.reopenFamilySetup();
     expect(s.onboardingComplete, isFalse);
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    final kv = (await raw.query('kv', where: 'k = ?', whereArgs: ['onboarding_done'])).single;
+    final kv =
+        (await raw.query('kv', where: 'k = ?', whereArgs: ['onboarding_done']))
+            .single;
     expect(kv['v'], '0'); // banner path can flip it back on
   });
 
@@ -304,7 +310,8 @@ void main() {
     expect(s.envelopes, isEmpty);
     expect(s.onboardingComplete, isFalse);
     final flag =
-        (await raw.query('kv', where: 'k = ?', whereArgs: ['live_purged_v1'])).single;
+        (await raw.query('kv', where: 'k = ?', whereArgs: ['live_purged_v1']))
+            .single;
     expect(flag['v'], '1');
     final leftover =
         await raw.query('tx', where: 'id = ?', whereArgs: ['legacy-t1']);
@@ -319,7 +326,8 @@ void main() {
     expect(s.mukandoEnabled, isTrue);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     final kv =
-        (await raw.query('kv', where: 'k = ?', whereArgs: ['mukando_enabled'])).single;
+        (await raw.query('kv', where: 'k = ?', whereArgs: ['mukando_enabled']))
+            .single;
     expect(kv['v'], '1'); // choice survives a restart
 
     s.setMukandoEnabled(false);
@@ -352,7 +360,8 @@ void main() {
     expect(s.txs, hasLength(1)); // real data survives
     expect(s.txs.first.note, 'real fare');
     final flag =
-        (await raw.query('kv', where: 'k = ?', whereArgs: ['live_purged_v1'])).single;
+        (await raw.query('kv', where: 'k = ?', whereArgs: ['live_purged_v1']))
+            .single;
     expect(flag['v'], '1'); // guard runs once, harmlessly
   });
 }

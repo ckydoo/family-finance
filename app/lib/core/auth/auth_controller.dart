@@ -110,6 +110,9 @@ class AuthController extends ChangeNotifier {
   Future<bool> resendConfirmation(String email) =>
       _service.resendConfirmation(email);
 
+  Future<bool> sendPasswordReset(String email) =>
+      _service.sendPasswordReset(email);
+
   /// Fresh access token for the sync layer (null when unrenewable).
   Future<String?> refreshAccessToken() => _service.refreshAccessToken();
 

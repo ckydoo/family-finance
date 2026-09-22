@@ -11,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return AnimatedBuilder(
@@ -109,6 +110,8 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 8),
+              _header(context, Icons.savings_outlined,
+                  AppLocalizations.of(context)!.savingsTitle),
               SwitchListTile(
                 value: s.mukandoEnabled,
                 onChanged: (v) => s.setMukandoEnabled(v),
@@ -121,6 +124,10 @@ class SettingsScreen extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                     color: context.ink,
                   ),
+                ),
+                subtitle: Text(
+                  AppLocalizations.of(context)!.mukandoEnableSub,
+                  style: TextStyle(fontSize: 12, color: context.inkSoft),
                 ),
               ),
               _header(context, Icons.calendar_month_outlined,
@@ -248,7 +255,7 @@ class SettingsScreen extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 enabled: false,
-                leading: Icon(Icons.cloud_outlined, size: 20),
+                leading: const Icon(Icons.cloud_outlined, size: 20),
                 title: Text(
                   AppLocalizations.of(context)!.backupComing,
                   style: TextStyle(fontSize: 13, color: context.inkSoft),

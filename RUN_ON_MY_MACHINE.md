@@ -155,7 +155,7 @@ flutter run \
 
 **Verify:** login screen appears (not a seeded family). Sign up with a real
 email, create the family, record one transaction — then check Supabase →
-Table Editor: the row is in the `transaction` table. Migrations 001–004 must
+Table Editor: the row is in the `transaction` table. Migrations 001–006 must
 have run (004 = RLS, required for all pulls).
 
 **Upgrading a phone that had old data?** Uninstall first (or clear storage);

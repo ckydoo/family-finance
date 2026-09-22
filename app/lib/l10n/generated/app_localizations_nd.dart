@@ -297,7 +297,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get loginSignInHint =>
-      'Ngena ngofono yakho ukuvula isikhala somndeni wakho.';
+      'Ngena nge-imeyili yakho ukuvula isikhala somndeni wakho.';
 
   @override
   String get loginSendCode => 'Thumela ikhodi';
@@ -1187,6 +1187,38 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get loginCreateAccount => 'Yakha i-akhawunti';
+
+  @override
+  String get welcomeBack => 'Siyakwamukela futhi';
+
+  @override
+  String get brandTagline => 'IMALI YOMNDENI, SISONKE';
+
+  @override
+  String get createAccountTitle => 'Yakha i-akhawunti yakho';
+
+  @override
+  String get createAccountHint => 'Qalisa indawo yemali yomndeni ephephileyo.';
+
+  @override
+  String get forgotPassword => 'Ukhohlwe ipasiwedi?';
+
+  @override
+  String get sendingPasswordReset => 'Kuyathunyelwa…';
+
+  @override
+  String get passwordResetSent =>
+      'I-imeyili yokutshintsha ipasiwedi ithunyelwe — hlola inboksi yakho.';
+
+  @override
+  String get passwordResetFailed =>
+      'Asenelisanga ukuthumela i-imeyili. Hlola uxhumano uzame futhi.';
+
+  @override
+  String get newToMhuri => 'Umutsha kuMhuri Hub?';
+
+  @override
+  String get alreadyHaveAccount => 'Usuvele ule-akhawunti?';
 
   @override
   String get loginBadEmail => 'Bhala i-imeyili esetshenziswayo.';

@@ -23,7 +23,7 @@ class FakeAuthService implements AuthService {
       return const AuthResult.failure(
           'Enter a valid email and a password of at least 6 characters.');
     }
-    _session = const AuthSession(userId: 'test-user-1', email: email);
+    _session = AuthSession(userId: 'test-user-1', email: email);
     return const AuthResult.success();
   }
 
@@ -36,6 +36,9 @@ class FakeAuthService implements AuthService {
 
   @override
   Future<bool> resendConfirmation(String email) async => true;
+
+  @override
+  Future<bool> sendPasswordReset(String email) async => true;
 
   @override
   Future<void> signOut() async {

@@ -27,11 +27,13 @@ class AuthResult {
   /// shows "check your inbox" and switches to sign-in mode.
   final bool needsConfirmation;
 
-  const AuthResult._(this.ok, this.error, {this.needsConfirmation = false, this.code});
+  const AuthResult._(this.ok, this.error,
+      {this.needsConfirmation = false, this.code});
 
   const AuthResult.success() : this._(true, null);
 
-  const AuthResult.confirmationNeeded() : this._(true, null, needsConfirmation: true);
+  const AuthResult.confirmationNeeded()
+      : this._(true, null, needsConfirmation: true);
 
   const AuthResult.failure(String message, {String? code})
       : this._(false, message, code: code);
@@ -53,6 +55,9 @@ abstract class AuthService {
 
   /// Re-sends the signup confirmation email (email-confirmation providers).
   Future<bool> resendConfirmation(String email);
+
+  /// Sends a password-recovery email for an existing account.
+  Future<bool> sendPasswordReset(String email);
 
   /// Best-effort fresh access token for the sync layer (null when the
   /// session cannot be renewed — the caller must treat the user as signed

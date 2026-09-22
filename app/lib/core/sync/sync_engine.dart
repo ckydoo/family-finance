@@ -149,16 +149,24 @@ class SyncEngine {
 
   /// Creates a family space. Wipes this device's synced tables first so the
   /// device-local rows never leak into the family's server data.
-  Future<bool> createSpace(String name,
-      {String household = 'couple_kids'}) async {
+  Future<bool> createSpace(
+    String name, {
+    String household = 'couple_kids',
+    String baseCurrency = 'USD',
+    String? preferredName,
+  }) async {
     try {
       _setStatus(SyncStatus.syncing);
-      if (await client
-          .rpc('family_name_taken', {'p_name': name}) as bool) {
+      final taken = await client.rpc('family_name_taken', {'p_name': name});
+      if (taken == true) {
         throw const SyncException(409, 'FAMILY_NAME_TAKEN');
       }
-      final result = await client
-          .rpc('create_space', {'p_name': name, 'p_household': household});
+      final result = await client.rpc('create_space', {
+        'p_name': name,
+        'p_household': household,
+        'p_base_currency': baseCurrency,
+        'p_preferred_name': preferredName,
+      });
       if (result is! Map) {
         throw const SyncException(0, 'unexpected response from server');
       }
@@ -181,6 +189,7 @@ class SyncEngine {
       }
       return false;
     } catch (e) {
+      debugPrint('Mhuri create-space error: $e');
       _setStatus(SyncStatus.offline, 'Network error — try again.');
       return false;
     }
@@ -189,9 +198,23 @@ class SyncEngine {
   /// Inline availability check for the create-family form (005 RPC).
   Future<bool> familyNameTaken(String name) async {
     try {
-      return await client.rpc('family_name_taken', {'p_name': name}) as bool;
+      return await client.rpc('family_name_taken', {'p_name': name}) == true;
     } catch (_) {
       return false; // unreachable server → let create_space decide
+    }
+  }
+
+  /// Stores the owner's role-access choices in the family settings. These
+  /// settings drive the app experience; database RLS remains authoritative.
+  Future<bool> saveRolePermissions(Map<String, bool> permissions) async {
+    try {
+      await client.rpc('set_role_permissions', {
+        'p_permissions': permissions,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Mhuri role-permissions error: $e');
+      return false;
     }
   }
 
@@ -216,8 +239,8 @@ class SyncEngine {
   Future<bool> joinSpace(String code) async {
     try {
       _setStatus(SyncStatus.syncing);
-      final id = await client
-          .rpc('join_space', {'p_code': code.trim().toUpperCase()});
+      final id =
+          await client.rpc('join_space', {'p_code': code.trim().toUpperCase()});
       if (id == null) {
         throw const SyncException(0, 'unexpected response from server');
       }
@@ -368,7 +391,8 @@ class SyncEngine {
     for (final entry in byEntity.entries) {
       final adapter = kSyncAdapters[entry.key]!;
       try {
-        await client.pushRows(adapter.table, [for (final o in entry.value) o.payload]);
+        await client
+            .pushRows(adapter.table, [for (final o in entry.value) o.payload]);
         doneRowIds.addAll(entry.value.map((o) => o.rowId));
         // Sprint B: budget attribution rides with transaction pushes — the
         // server models it as the envelope_tx junction (no envelope_id col).

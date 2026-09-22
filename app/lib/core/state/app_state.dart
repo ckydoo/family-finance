@@ -33,8 +33,7 @@ enum Pace { onTrack, watch, over }
 /// SQLite database (fire-and-forget, errors never crash the app); on startup
 /// the stored state replaces the in-memory defaults.
 class AppState extends ChangeNotifier {
-  AppState({this.db, AppEnv? env, this.auth})
-      : env = env ?? const AppEnv() {
+  AppState({this.db, AppEnv? env, this.auth}) : env = env ?? const AppEnv() {
     // Real-data boot (the only boot). Empty until the family is adopted
     // (FamilySetup → create/join → server pull fills everything).
     space = const FamilySpace(name: 'My family');
@@ -308,9 +307,11 @@ class AppState extends ChangeNotifier {
       if ((await db?.kvGet('live_purged_v1') ?? '') == '') {
         final v1 = await db?.kvGet('members_v1');
         final sn = await db?.kvGet('space_name');
+        final sid = await db?.kvGet('space_id');
         final aid = await db?.kvGet('auth_user_id');
         final adopted = (v1 != null && v1.isNotEmpty) ||
             (sn != null && sn.isNotEmpty) ||
+            (sid != null && sid.isNotEmpty) ||
             (aid != null && aid.isNotEmpty);
         if (!adopted) await db?.wipeUserData();
         await db?.kvSet('live_purged_v1', '1');
@@ -333,6 +334,13 @@ class AppState extends ChangeNotifier {
       }
       final muk = await db?.kvGet('mukando_enabled');
       mukandoEnabled = muk == '1';
+      // Onboarding state is valid even before a new family has envelopes or
+      // transactions. Previously it was only read inside `hasData()`, so an
+      // empty but successfully created family reopened the create screen.
+      final onboardingMarker = await db?.kvGet('onboarding_done');
+      final adoptedSpaceId = await db?.kvGet('space_id');
+      onboardingComplete = onboardingMarker == '1' ||
+          (adoptedSpaceId != null && adoptedSpaceId.isNotEmpty);
       // FX precedence: user custom rate > last server snapshot > default.
       final custom = await db?.kvGet('custom_rate');
       if (custom == null || custom.isEmpty) {
@@ -382,7 +390,7 @@ class AppState extends ChangeNotifier {
             ..addAll(data.recurring);
         }
         if (data.monthStartDay != null) monthStartDay = data.monthStartDay!;
-        onboardingComplete = data.onboardingDone;
+        onboardingComplete = onboardingComplete || data.onboardingDone;
         notifyEnabled = data.notifyEnabled ?? true;
         if (data.notifyPrefs != null) {
           notifyAllowed = {
@@ -523,9 +531,11 @@ class AppState extends ChangeNotifier {
 
   // ── Onboarding, settings & export (M4) ────────────────────────────────
 
-  void completeOnboarding() {
+  Future<void> completeOnboarding() async {
     onboardingComplete = true;
-    _persistKv('onboarding_done', '1');
+    if (db != null) {
+      await db!.kvSet('onboarding_done', '1');
+    }
     _resyncReminders();
     notifyListeners();
   }
@@ -848,6 +858,28 @@ class AppState extends ChangeNotifier {
 
   /// Updates MY profile picture (device-local immediately, server push via
   /// the sync engine). Empty url clears the photo.
+  void setMyName(String name) {
+    final clean = name.trim();
+    if (clean.isEmpty) return;
+    final u = _user;
+    _user = Member(
+      id: u.id,
+      name: clean,
+      emoji: u.emoji,
+      role: u.role,
+      avatarUrl: u.avatarUrl,
+    );
+    for (var i = 0; i < members.length; i++) {
+      if (members[i].id == u.id) {
+        members[i] = _user;
+        break;
+      }
+    }
+    _persistKv('members_v1', _membersJson());
+    sync?.updateMyProfile({'name': clean});
+    notifyListeners();
+  }
+
   void setMyAvatar(String url) {
     final u = _user;
     final clean = url.trim();

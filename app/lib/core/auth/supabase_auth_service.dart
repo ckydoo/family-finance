@@ -66,7 +66,7 @@ class SupabaseAuthService implements AuthService {
       if (session == null) {
         return const AuthResult.failure('Sign-in failed — try again.');
       }
-      return AuthResult.success();
+      return const AuthResult.success();
     } catch (_) {
       return const AuthResult.failure(
           'Network error — check your connection and try again.',
@@ -92,12 +92,11 @@ class SupabaseAuthService implements AuthService {
         _sessionFrom(r.body);
         return const AuthResult.success();
       }
-      // Sessionless 200 = "Confirm email" is enabled: account exists, but the
-      // user must click the link in their inbox before signing in.
-      if (body['user'] != null) {
-        return const AuthResult.confirmationNeeded();
-      }
-      return const AuthResult.failure('Sign-up failed — try again.');
+      // Any successful sessionless signup means Supabase accepted the account
+      // but requires the email link before it will issue access tokens. The
+      // exact success payload differs across GoTrue versions, so do not depend
+      // on a nested `user` field being present.
+      return const AuthResult.confirmationNeeded();
     } catch (_) {
       return const AuthResult.failure(
           'Network error — check your connection and try again.',
@@ -120,6 +119,22 @@ class SupabaseAuthService implements AuthService {
     }
   }
 
+  /// Requests Supabase's recovery email. The email link destination is
+  /// configured in the project's Auth URL settings.
+  @override
+  Future<bool> sendPasswordReset(String email) async {
+    try {
+      final r = await _client.post(
+        Uri.parse('$_base/auth/v1/recover'),
+        headers: _headers,
+        body: jsonEncode({'email': email}),
+      );
+      return r.statusCode >= 200 && r.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Parses tokens out of a GoTrue response body, caches the session and
   /// persists it. Returns the session, or null when the body has no tokens.
   AuthSession? _sessionFrom(String body) {
@@ -128,8 +143,7 @@ class SupabaseAuthService implements AuthService {
     final refresh = map['refresh_token'] as String?;
     final user = map['user'] as Map<String, dynamic>?;
     final userId = (user?['id'] ?? map['user_id']).toString();
-    final email =
-        (user?['email'] ?? map['email'] ?? '').toString();
+    final email = (user?['email'] ?? map['email'] ?? '').toString();
     if (access == null || access.isEmpty) return null;
     _session = AuthSession(userId: userId, email: email);
     _persistTokens(
@@ -333,7 +347,10 @@ class SupabaseAuthService implements AuthService {
     if (low.contains('password should be') ||
         low.contains('weak_password') ||
         low.contains('signup requires a valid password')) {
-      return (raw.isEmpty ? 'Choose a stronger password.' : raw, 'weak_password');
+      return (
+        raw.isEmpty ? 'Choose a stronger password.' : raw,
+        'weak_password'
+      );
     }
     if (raw.isEmpty) {
       return ('Something went wrong ($r.statusCode). Try again.', null);

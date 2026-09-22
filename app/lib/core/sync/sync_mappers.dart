@@ -3,10 +3,10 @@
 /// do chores (stars), the savings-circle header (mukando, one per family) and
 /// recurring rules. Wallet balances stay device-local (see ROADMAP notes).
 library;
+
 import '../models/models.dart';
 import '../money/money.dart';
 import '../utils/ids.dart';
-
 
 /// Context a mapper needs beyond the domain object itself.
 class SyncCtx {
@@ -67,8 +67,11 @@ String _rolloverOut(Rollover r) => switch (r) {
 Rollover _rolloverIn(String v) =>
     v == 'rollover' ? Rollover.roll : Rollover.values.byName(v);
 
+Currency _currencyIn(Object? value) =>
+    Currency.values.byName(value.toString().toLowerCase());
+
 Money _moneyOf(Map<String, Object?> j, String minorKey, String currencyKey) =>
-    Money(j[minorKey] as int, Currency.values.byName(j[currencyKey] as String));
+    Money(j[minorKey] as int, _currencyIn(j[currencyKey]));
 
 DateTime? _iso(Object? v) =>
     v == null ? null : DateTime.parse(v as String).toLocal();
@@ -87,7 +90,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'space_id': ctx.spaceId,
         'type': t.type.name,
         'amount_minor': t.amount.minor,
-        'currency': t.amount.currency.name,
+        'currency': t.amount.currency.short,
         'member_id': t.memberId,
         'method': _methodOut[t.method],
         'note': t.note,
@@ -118,7 +121,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': e.name,
         'icon': e.emoji,
         'limit_minor': e.limit.minor,
-        'limit_currency': e.limit.currency.name,
+        'limit_currency': e.limit.currency.short,
         'period': 'monthly',
         'rollover': _rolloverOut(e.rollover),
         'sharing': e.isPersonal ? 'personal' : 'shared',
@@ -130,7 +133,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       emoji: j['icon'] as String? ?? 'receipt',
       limit: Money(
         j['limit_minor'] as int,
-        Currency.values.byName(j['limit_currency'] as String),
+        _currencyIn(j['limit_currency']),
       ),
       rollover: _rolloverIn(j['rollover'] as String? ?? 'reset'),
       isPersonal: (j['sharing'] as String? ?? 'shared') == 'personal',
@@ -148,7 +151,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': g.name,
         'icon': g.emoji,
         'target_minor': g.target.minor,
-        'target_currency': g.target.currency.name,
+        'target_currency': g.target.currency.short,
         'owner_member_id': g.ownerMemberId,
         'is_kid_jar': g.isKidJar,
         'status': 'active',
@@ -160,7 +163,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       emoji: j['icon'] as String? ?? 'goal',
       target: Money(
         j['target_minor'] as int,
-        Currency.values.byName(j['target_currency'] as String),
+        _currencyIn(j['target_currency']),
       ),
       ownerMemberId: j['owner_member_id'] as String?,
       isKidJar: (j['is_kid_jar'] as bool?) ?? false,
@@ -178,7 +181,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'goal_id': t.goalId,
         'member_id': t.byMemberId,
         'amount_minor': t.amount.minor,
-        'currency': t.amount.currency.name,
+        'currency': t.amount.currency.short,
         'note': '',
         'at': t.at.toUtc().toIso8601String(),
       };
@@ -202,7 +205,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': i.name,
         'qty': i.qty,
         'est_price_minor': i.est.minor,
-        'currency': i.est.currency.name,
+        'currency': i.est.currency.short,
         'added_by': i.addedById,
         'state': i.state.name,
       };
@@ -229,7 +232,7 @@ final kSyncAdapters = <String, SyncAdapter>{
           'space_id': ctx.spaceId,
           'requester_id': d.kidId,
           'amount_minor': d.amount.minor,
-          'currency': d.amount.currency.name,
+          'currency': d.amount.currency.short,
           'reason': d.reason,
           'kind': 'money',
           'state': d.state.name,
@@ -241,7 +244,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'space_id': ctx.spaceId,
         'requester_id': p.teenId,
         'amount_minor': p.amount.minor,
-        'currency': p.amount.currency.name,
+        'currency': p.amount.currency.short,
         'reason': p.reason,
         'kind': 'expense_proposal',
         'envelope_id': p.envelopeId,
@@ -280,7 +283,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'member_id': e.memberId,
         'note': e.note,
         'amount_minor': e.amount.minor,
-        'currency': e.amount.currency.name,
+        'currency': e.amount.currency.short,
         'occurred_at': e.when.toUtc().toIso8601String(),
       };
     },
@@ -298,8 +301,7 @@ final kSyncAdapters = <String, SyncAdapter>{
     spaceScoped: true,
     encode: (d, ctx) {
       final r = d as RecurringRule;
-      String dateIso(DateTime d) =>
-          '${d.year.toString().padLeft(4, '0')}-'
+      String dateIso(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
           '${d.month.toString().padLeft(2, '0')}-'
           '${d.day.toString().padLeft(2, '0')}';
       return {
@@ -308,7 +310,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': r.name,
         'emoji': r.emoji,
         'amount_minor': r.amount.minor,
-        'currency': r.amount.currency.name,
+        'currency': r.amount.currency.short,
         'envelope_id': (r.envelopeId?.isEmpty ?? true) ? null : r.envelopeId,
         'member_id': r.memberId.isEmpty ? null : r.memberId,
         'method': _methodOut[r.method],
@@ -325,7 +327,8 @@ final kSyncAdapters = <String, SyncAdapter>{
       envelopeId: j['envelope_id'] as String? ?? '',
       memberId: j['member_id'] as String? ?? '',
       method: _methodIn(j['method'] as String? ?? 'cash'),
-      frequency: Frequency.values.byName(j['frequency'] as String? ?? 'monthly'),
+      frequency:
+          Frequency.values.byName(j['frequency'] as String? ?? 'monthly'),
       nextDue: DateTime.parse(j['next_due'] as String),
       active: j['active'] as bool? ?? true,
     ),
@@ -365,7 +368,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'space_id': ctx.spaceId,
         'name': c.name,
         'contribution_minor': c.contribution.minor,
-        'currency': c.contribution.currency.name,
+        'currency': c.contribution.currency.short,
         'frequency': 'monthly',
         'total_rounds': c.totalRounds,
         'current_round': c.currentRound,
@@ -443,8 +446,8 @@ List<Member> membersFromServer({
     }
   }
   // Me first, then the rest alphabetically — stable list for the UI.
-  final meMember = me ??
-      Member(id: meId, name: 'Me', emoji: 'person', role: Role.owner);
+  final meMember =
+      me ?? Member(id: meId, name: 'Me', emoji: 'person', role: Role.owner);
   out.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   return [meMember, ...out];
 }

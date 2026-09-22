@@ -68,7 +68,9 @@ void main() {
   });
 
   group('AuthController', () {
-    test('sign-in flow: bad input fails, good input sets a session, signOut clears it', () async {
+    test(
+        'sign-in flow: bad input fails, good input sets a session, signOut clears it',
+        () async {
       final c = AuthController(
         env: testEnv(),
         service: FakeAuthService(),
@@ -135,6 +137,16 @@ void main() {
       expect(body['password'], '123456');
     });
 
+    test('password reset posts the email to the recovery endpoint', () async {
+      client.responses.add(const MapEntry(200, '{}'));
+
+      expect(await service.sendPasswordReset('david@mhuri.app'), isTrue);
+      expect(client.sent.single.url.path, '/auth/v1/recover');
+      final body =
+          jsonDecode(_reqOf(client.sent.single).body) as Map<String, dynamic>;
+      expect(body['email'], 'david@mhuri.app');
+    });
+
     test('signIn surfaces the server message on bad credentials', () async {
       client.responses
         ..clear()
@@ -146,7 +158,8 @@ void main() {
     });
 
     test('signIn stores tokens and session on success', () async {
-      client.responses..clear()
+      client.responses
+        ..clear()
         ..add(MapEntry(
             200,
             jsonEncode({
@@ -166,7 +179,8 @@ void main() {
 
     test('signUp with a session signs straight in (confirmation OFF)',
         () async {
-      client.responses..clear()
+      client.responses
+        ..clear()
         ..add(MapEntry(
             200,
             jsonEncode({
@@ -183,7 +197,8 @@ void main() {
 
     test('signUp without a session flags email confirmation (default ON)',
         () async {
-      client.responses..clear()
+      client.responses
+        ..clear()
         ..add(MapEntry(
             200,
             jsonEncode({
@@ -195,11 +210,24 @@ void main() {
       expect(kv.containsKey('auth_access_token'), isFalse);
     });
 
+    test('sessionless signup without a nested user is still confirmation',
+        () async {
+      client.responses
+        ..clear()
+        ..add(const MapEntry(200, '{}'));
+
+      final r = await service.signUp('mai@mhuri.app', '123456');
+
+      expect(r.ok, isTrue);
+      expect(r.needsConfirmation, isTrue);
+      expect(r.error, isNull);
+    });
+
     test('signUp surfaces server errors (weak password)', () async {
-      client.responses..clear()
+      client.responses
+        ..clear()
         ..add(const MapEntry(
-            422,
-            '{"error":"Password should be at least 6 characters"}'));
+            422, '{"error":"Password should be at least 6 characters"}'));
       final r = await service.signUp('mai@mhuri.app', '123');
       expect(r.ok, isFalse);
       expect(r.error, contains('at least 6'));
@@ -228,7 +256,9 @@ void main() {
       expect(kv['auth_refresh_token'], 'refresh-10');
     });
 
-    test('a TRANSIENT refresh failure keeps the stored session (no empty-JWT state)', () async {
+    test(
+        'a TRANSIENT refresh failure keeps the stored session (no empty-JWT state)',
+        () async {
       // Stored session from a previous run.
       kv['auth_access_token'] = 'access-1';
       kv['auth_refresh_token'] = 'refresh-1';
@@ -236,7 +266,8 @@ void main() {
       kv['auth_email'] = 'david@mhuri.app';
 
       // Supabase hiccups (5xx) on the refresh grant.
-      client = FakeClient([const MapEntry(500, '{"error":"upstream unavailable"}')]);
+      client =
+          FakeClient([const MapEntry(500, '{"error":"upstream unavailable"}')]);
       service = SupabaseAuthService(
         baseUrl: 'https://abcdefgh.supabase.co/',
         anonKey: 'anon-key',
@@ -255,13 +286,15 @@ void main() {
       expect(kv['auth_refresh_token'], 'refresh-1');
     });
 
-    test('a DEAD refresh token (400) clears tokens for a clean re-login', () async {
+    test('a DEAD refresh token (400) clears tokens for a clean re-login',
+        () async {
       kv['auth_access_token'] = 'access-1';
       kv['auth_refresh_token'] = 'refresh-dead';
       kv['auth_user_id'] = 'uuid-7';
       kv['auth_email'] = 'david@mhuri.app';
 
-      client = FakeClient([const MapEntry(400, '{"error":"Invalid Refresh Token"}')]);
+      client = FakeClient(
+          [const MapEntry(400, '{"error":"Invalid Refresh Token"}')]);
       service = SupabaseAuthService(
         baseUrl: 'https://abcdefgh.supabase.co/',
         anonKey: 'anon-key',
@@ -282,12 +315,14 @@ void main() {
       kv['auth_user_id'] = 'uuid-7';
       kv['auth_email'] = 'david@mhuri.app';
 
-      client = FakeClient([MapEntry(
-          200,
-          jsonEncode({
-            'access_token': 'access-9',
-            'refresh_token': 'refresh-9',
-          }))]);
+      client = FakeClient([
+        MapEntry(
+            200,
+            jsonEncode({
+              'access_token': 'access-9',
+              'refresh_token': 'refresh-9',
+            }))
+      ]);
       service = SupabaseAuthService(
         baseUrl: 'https://abcdefgh.supabase.co/',
         anonKey: 'anon-key',
@@ -305,14 +340,22 @@ void main() {
 
     test('signIn maps each GoTrue failure to an honest code', () async {
       final cases = [
-        (const MapEntry(400, '{"error":"email_not_confirmed"}'),
-            'email_not_confirmed'),
-        (const MapEntry(400, '{"error":"Invalid login credentials"}'),
-            'invalid_credentials'),
-        (const MapEntry(422, '{"error":"User already registered"}'),
-            'already_registered'),
-        (const MapEntry(429, '{"error":"over_request_rate_limit"}'),
-            'rate_limited'),
+        (
+          const MapEntry(400, '{"error":"email_not_confirmed"}'),
+          'email_not_confirmed'
+        ),
+        (
+          const MapEntry(400, '{"error":"Invalid login credentials"}'),
+          'invalid_credentials'
+        ),
+        (
+          const MapEntry(422, '{"error":"User already registered"}'),
+          'already_registered'
+        ),
+        (
+          const MapEntry(429, '{"error":"over_request_rate_limit"}'),
+          'rate_limited'
+        ),
       ];
       for (final (response, expectedCode) in cases) {
         client = FakeClient([response]);
@@ -361,8 +404,7 @@ void main() {
       expect(await service.restoreSession(), isNull);
     });
 
-    test('deleteAccount invokes the protected RPC and clears tokens',
-        () async {
+    test('deleteAccount invokes the protected RPC and clears tokens', () async {
       kv
         ..['auth_access_token'] = 'access-delete'
         ..['auth_refresh_token'] = 'refresh-delete'
