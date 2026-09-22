@@ -316,60 +316,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Demo build: any email + any password (6+ characters) signs you in.';
 
   @override
-  String get moreDetails => "More details";
-
-  @override
-  String get lessDetails => "Fewer details";
-
-  @override
-  String get discardTitle => "Discard this entry?";
-
-  @override
-  String get discardBody => "You entered details that are not saved yet.";
-
-  @override
-  String get keepEditing => "Keep editing";
-
-  @override
-  String get discard => "Discard";
-
-  @override
-  String get viewDetails => "View balance details";
-
-  @override
-  String get fabTip => "Tap + to record money in or out";
-
-  @override
-  String get emailLabel => "Email";
-
-  @override
-  String get passwordLabel => "Password";
-
-  @override
-  String get loginSignIn => "Sign in";
-
-  @override
-  String get loginCreateAccount => "Create account";
-
-  @override
-  String get loginBadEmail => "Enter a valid email address.";
-
-  @override
-  String get loginShortPassword => "Password must be at least 6 characters.";
-
-  @override
-  String get checkYourEmail => "Almost there — check your inbox and confirm your email, then sign in.";
-
-  @override
-  String get togglePassword => "Show or hide password";
-
-  @override
-  String get inviteHowTo => "They create an account with their email, then enter this code to join your family.";
-
-  @override
-  String get obDone => "Let's get started";
-
-  @override
   String get quickAddTitle => 'Quick add';
 
   @override
@@ -1210,4 +1156,60 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountFailed =>
       'We couldn\'t delete your account. Check your connection and try again.';
+
+  @override
+  String get moreDetails => 'More details';
+
+  @override
+  String get lessDetails => 'Fewer details';
+
+  @override
+  String get discardTitle => 'Discard this entry?';
+
+  @override
+  String get discardBody => 'You entered details that are not saved yet.';
+
+  @override
+  String get keepEditing => 'Keep editing';
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get viewDetails => 'View balance details';
+
+  @override
+  String get fabTip => 'Tap + to record money in or out';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get loginSignIn => 'Sign in';
+
+  @override
+  String get loginCreateAccount => 'Create account';
+
+  @override
+  String get loginBadEmail => 'Enter a valid email address.';
+
+  @override
+  String get loginShortPassword => 'Password must be at least 6 characters.';
+
+  @override
+  String get checkYourEmail =>
+      'Almost there — check your inbox and confirm your email, then sign in.';
+
+  @override
+  String get togglePassword => 'Show or hide password';
+
+  @override
+  String get inviteHowTo =>
+      'They create an account with their email, then enter this code to join your family.';
+
+  @override
+  String get obDone => 'Let\'s get started';
 }

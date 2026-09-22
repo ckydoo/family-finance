@@ -319,60 +319,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Démo : connecte-toi avec n’importe quel e-mail et mot de passe (6+ caractères).';
 
   @override
-  String get moreDetails => "Plus de détails";
-
-  @override
-  String get lessDetails => "Moins de détails";
-
-  @override
-  String get discardTitle => "Abandonner cette saisie ?";
-
-  @override
-  String get discardBody => "Vous avez saisi des détails qui ne sont pas encore enregistrés.";
-
-  @override
-  String get keepEditing => "Continuer la saisie";
-
-  @override
-  String get discard => "Abandonner";
-
-  @override
-  String get viewDetails => "Voir les détails du solde";
-
-  @override
-  String get fabTip => "Touchez + pour noter une entrée ou une sortie";
-
-  @override
-  String get emailLabel => "Adresse e-mail";
-
-  @override
-  String get passwordLabel => "Mot de passe";
-
-  @override
-  String get loginSignIn => "Se connecter";
-
-  @override
-  String get loginCreateAccount => "Créer un compte";
-
-  @override
-  String get loginBadEmail => "Saisissez une adresse e-mail valide.";
-
-  @override
-  String get loginShortPassword => "Le mot de passe doit contenir au moins 6 caractères.";
-
-  @override
-  String get checkYourEmail => "Presque fini — vérifie ta boîte mail et confirme ton e-mail, puis connecte-toi.";
-
-  @override
-  String get togglePassword => "Afficher ou masquer le mot de passe";
-
-  @override
-  String get inviteHowTo => "Il crée un compte avec son e-mail, puis saisit ce code pour rejoindre ta famille.";
-
-  @override
-  String get obDone => "C’est parti";
-
-  @override
   String get quickAddTitle => 'Ajout rapide';
 
   @override
@@ -1224,4 +1170,62 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteAccountFailed =>
       'Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get moreDetails => 'Plus de détails';
+
+  @override
+  String get lessDetails => 'Moins de détails';
+
+  @override
+  String get discardTitle => 'Abandonner cette saisie ?';
+
+  @override
+  String get discardBody =>
+      'Vous avez saisi des détails qui ne sont pas encore enregistrés.';
+
+  @override
+  String get keepEditing => 'Continuer la saisie';
+
+  @override
+  String get discard => 'Abandonner';
+
+  @override
+  String get viewDetails => 'Voir les détails du solde';
+
+  @override
+  String get fabTip => 'Touchez + pour noter une entrée ou une sortie';
+
+  @override
+  String get emailLabel => 'Adresse e-mail';
+
+  @override
+  String get passwordLabel => 'Mot de passe';
+
+  @override
+  String get loginSignIn => 'Se connecter';
+
+  @override
+  String get loginCreateAccount => 'Créer un compte';
+
+  @override
+  String get loginBadEmail => 'Saisissez une adresse e-mail valide.';
+
+  @override
+  String get loginShortPassword =>
+      'Le mot de passe doit contenir au moins 6 caractères.';
+
+  @override
+  String get checkYourEmail =>
+      'Presque fini — vérifie ta boîte mail et confirme ton e-mail, puis connecte-toi.';
+
+  @override
+  String get togglePassword => 'Afficher ou masquer le mot de passe';
+
+  @override
+  String get inviteHowTo =>
+      'Il crée un compte avec son e-mail, puis saisit ce code pour rejoindre ta famille.';
+
+  @override
+  String get obDone => 'C’est parti';
 }

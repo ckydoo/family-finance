@@ -667,44 +667,8 @@ abstract class AppLocalizations {
   /// No description provided for @loginFooter.
   ///
   /// In en, this message translates to:
-  /// **'Demo mode: use any phone number and code 1234.\nLive mode sends a real SMS code.'**
+  /// **'Demo build: any email + any password (6+ characters) signs you in.'**
   String get loginFooter;
-
-  String get moreDetails;
-
-  String get lessDetails;
-
-  String get discardTitle;
-
-  String get discardBody;
-
-  String get keepEditing;
-
-  String get discard;
-
-  String get viewDetails;
-
-  String get fabTip;
-
-  String get emailLabel;
-
-  String get passwordLabel;
-
-  String get loginSignIn;
-
-  String get loginCreateAccount;
-
-  String get loginBadEmail;
-
-  String get loginShortPassword;
-
-  String get checkYourEmail;
-
-  String get togglePassword;
-
-  String get inviteHowTo;
-
-  String get obDone;
 
   /// No description provided for @quickAddTitle.
   ///
@@ -2181,6 +2145,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t delete your account. Check your connection and try again.'**
   String get deleteAccountFailed;
+
+  /// No description provided for @moreDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'More details'**
+  String get moreDetails;
+
+  /// No description provided for @lessDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer details'**
+  String get lessDetails;
+
+  /// No description provided for @discardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this entry?'**
+  String get discardTitle;
+
+  /// No description provided for @discardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You entered details that are not saved yet.'**
+  String get discardBody;
+
+  /// No description provided for @keepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get keepEditing;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// No description provided for @viewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View balance details'**
+  String get viewDetails;
+
+  /// No description provided for @fabTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to record money in or out'**
+  String get fabTip;
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @loginSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get loginSignIn;
+
+  /// No description provided for @loginCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get loginCreateAccount;
+
+  /// No description provided for @loginBadEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get loginBadEmail;
+
+  /// No description provided for @loginShortPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters.'**
+  String get loginShortPassword;
+
+  /// No description provided for @checkYourEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost there — check your inbox and confirm your email, then sign in.'**
+  String get checkYourEmail;
+
+  /// No description provided for @togglePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show or hide password'**
+  String get togglePassword;
+
+  /// No description provided for @inviteHowTo.
+  ///
+  /// In en, this message translates to:
+  /// **'They create an account with their email, then enter this code to join your family.'**
+  String get inviteHowTo;
+
+  /// No description provided for @obDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s get started'**
+  String get obDone;
 }
 
 class _AppLocalizationsDelegate

@@ -754,7 +754,7 @@ class MembersScreen extends StatelessWidget {
   Widget _accountRow(BuildContext context, AppState s) {
     final auth = s.auth!;
     final l = AppLocalizations.of(context)!;
-    final phone = auth.session?.phone ?? '';
+    final phone = auth.session?.email ?? '';
     final masked = phone.length <= 4
         ? phone
         : '\u2022\u2022\u2022 ${phone.substring(phone.length - 4)}';

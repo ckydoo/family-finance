@@ -316,60 +316,6 @@ class AppLocalizationsSn extends AppLocalizations {
       'Demo: pinda mukati nechero email nemusteri (6+ mavara).';
 
   @override
-  String get moreDetails => "Mamwe mashoko";
-
-  @override
-  String get lessDetails => "Shoma mashoko";
-
-  @override
-  String get discardTitle => "Kurega iyi transaction?";
-
-  @override
-  String get discardBody => "Izvo zvamanyora hazatisati zasevwa.";
-
-  @override
-  String get keepEditing => "Enderera kunyora";
-
-  @override
-  String get discard => "Kurega";
-
-  @override
-  String get viewDetails => "Ona ruzivo rwemari";
-
-  @override
-  String get fabTip => "Dzvanya + kunyora mari inopinda kana kubuda";
-
-  @override
-  String get emailLabel => "Email";
-
-  @override
-  String get passwordLabel => "Password";
-
-  @override
-  String get loginSignIn => "Pinda mukati";
-
-  @override
-  String get loginCreateAccount => "Vhaka account";
-
-  @override
-  String get loginBadEmail => "Nyora email inoshanda.";
-
-  @override
-  String get loginShortPassword => "Password inofanira kuve neanopfuura 6 mavara.";
-
-  @override
-  String get checkYourEmail => "Pedyo nezvo — tarisa email yako woitambudza? aiwa, woisimba, wobvawapinda mukati.";
-
-  @override
-  String get togglePassword => "Ratidza kana kuvanza password";
-
-  @override
-  String get inviteHowTo => "Anovhaka account neemail yake, obva anyora code iyi kuti apinde mumhuri yako.";
-
-  @override
-  String get obDone => "Ngatangei";
-
-  @override
   String get quickAddTitle => 'Wedzera nyore';
 
   @override
@@ -1215,4 +1161,61 @@ class AppLocalizationsSn extends AppLocalizations {
   @override
   String get deleteAccountFailed =>
       'Hatina kukwanisa kudzima akaundi. Tarisa internet woedza zvakare.';
+
+  @override
+  String get moreDetails => 'Mamwe mashoko';
+
+  @override
+  String get lessDetails => 'Shoma mashoko';
+
+  @override
+  String get discardTitle => 'Kurega iyi transaction?';
+
+  @override
+  String get discardBody => 'Izvo zvamanyora hazatisati zasevwa.';
+
+  @override
+  String get keepEditing => 'Enderera kunyora';
+
+  @override
+  String get discard => 'Kurega';
+
+  @override
+  String get viewDetails => 'Ona ruzivo rwemari';
+
+  @override
+  String get fabTip => 'Dzvanya + kunyora mari inopinda kana kubuda';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get loginSignIn => 'Pinda mukati';
+
+  @override
+  String get loginCreateAccount => 'Vhaka account';
+
+  @override
+  String get loginBadEmail => 'Nyora email inoshanda.';
+
+  @override
+  String get loginShortPassword =>
+      'Password inofanira kuve neanopfuura 6 mavara.';
+
+  @override
+  String get checkYourEmail =>
+      'Pedyo nezvo — tarisa email yako woitambudza? aiwa, woisimba, wobvawapinda mukati.';
+
+  @override
+  String get togglePassword => 'Ratidza kana kuvanza password';
+
+  @override
+  String get inviteHowTo =>
+      'Anovhaka account neemail yake, obva anyora code iyi kuti apinde mumhuri yako.';
+
+  @override
+  String get obDone => 'Ngatangei';
 }
