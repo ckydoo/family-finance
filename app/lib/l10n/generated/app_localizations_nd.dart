@@ -629,7 +629,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get meetingHint => 'Amaminithi 15, kanye ngenyanga.';
 
   @override
-  String mChoresLine(Object proposals, Object requests, Object stars) {
+  String mChoresLine(Object stars, Object requests, Object proposals) {
     return '$stars izigqi ezitholiwe · $requests izicelo ezilindile · $proposals iziphakamiso zentsha ezilindile.';
   }
 
@@ -845,17 +845,17 @@ class AppLocalizationsNd extends AppLocalizations {
   String get stDeclined => 'Kwenqatshiwe';
 
   @override
-  String requestTitle(Object amount, Object name) {
+  String requestTitle(Object name, Object amount) {
     return '$name ucele $amount';
   }
 
   @override
-  String proposalTitle(Object amount, Object name) {
+  String proposalTitle(Object name, Object amount) {
     return '$name uphakamisa $amount';
   }
 
   @override
-  String proposalSub(Object env, Object reason) {
+  String proposalSub(Object reason, Object env) {
     return '$reason · esikhaveni $env';
   }
 
@@ -881,7 +881,7 @@ class AppLocalizationsNd extends AppLocalizations {
   }
 
   @override
-  String circleSub(Object amount, Object pot, Object who) {
+  String circleSub(Object who, Object amount, Object pot) {
     return '$who uzothatha $amount · isigqi $pot okwamanje';
   }
 
@@ -937,7 +937,7 @@ class AppLocalizationsNd extends AppLocalizations {
   }
 
   @override
-  String declineBody(Object env, Object reason) {
+  String declineBody(Object reason, Object env) {
     return '$reason\n\nEsikhaveni: $env';
   }
 
@@ -955,7 +955,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get listEmptyAdd => 'Akukho lapha — engeza into nge ＋';
 
   @override
-  String usesPct(Object name, Object pct) {
+  String usesPct(Object pct, Object name) {
     return 'Isebenzisa $pct% yekhava ye$name';
   }
 
@@ -1071,7 +1071,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get limitLabel => 'Umkhawulo';
 
   @override
-  String envelopeRemaining(Object amount, Object name) {
+  String envelopeRemaining(Object name, Object amount) {
     return 'I-$name isele lo-$amount';
   }
 
@@ -1081,7 +1081,7 @@ class AppLocalizationsNd extends AppLocalizations {
   }
 
   @override
-  String envelopeWillExceed(Object amount, Object name) {
+  String envelopeWillExceed(Object name, Object amount) {
     return 'Lokhu kwenza i-$name yedlule ngo-$amount';
   }
 
@@ -1089,7 +1089,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get overBudgetTitle => 'Imvilophu izadlula ibhajethi';
 
   @override
-  String overBudgetBody(Object amount, Object name) {
+  String overBudgetBody(Object name, Object amount) {
     return 'I-$name izadlula ngo-$amount. Izindleko zingabhalwa loba kunjalo.';
   }
 
@@ -1108,7 +1108,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get overBudgetLabel => 'Idlule ibhajethi';
 
   @override
-  String memberPot(Object contribution, Object count, Object pot) {
+  String memberPot(Object pot, Object contribution, Object count) {
     return 'Isigqi okwamanje: $pot · $contribution × $count abantu';
   }
 
@@ -1941,4 +1941,10 @@ class AppLocalizationsNd extends AppLocalizations {
   String filterAll(Object n) {
     return 'Zonke ($n)';
   }
+
+  @override
+  String get envLabel => 'Indawo';
+
+  @override
+  String get syncStateNeedsSetup => 'Hlela umndeni wakho ukuxhumana';
 }

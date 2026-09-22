@@ -549,7 +549,7 @@
   "invitePending": "Convites abertos",
   "inviteNone": "Nenhum convite aberto.",
   "inviteHistory": "Convites anteriores",
-  "inviteAcceptedLabel": "{code} — entrou",
+  "inviteAcceptedLabel": "{code} — entrou ({role})",
   "inviteRevoke": "Revogar",
   "inviteRevokeBody": "Revogar o convite {code}? A pessoa não vai poder entrar com ele.",
   "inviteFailed": "Não foi possível criar o convite — verifique a conexão e tente novamente.",
@@ -633,5 +633,7 @@
   "setupEnterJoin": "Escreve o teu nome e o código de convite.",
   "avatarError": "Não foi possível atualizar a foto. Tenta outra.",
   "invitesLoadFailed": "Não foi possível carregar os convites. Arrasta para atualizar.",
-  "filterAll": "Tudo ({n})"
+  "filterAll": "Tudo ({n})",
+  "envLabel": "Ambiente",
+  "syncStateNeedsSetup": "Configura a tua família para sincronizar"
 }

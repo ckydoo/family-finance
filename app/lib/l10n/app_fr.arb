@@ -549,7 +549,7 @@
   "invitePending": "Invitations en cours",
   "inviteNone": "Aucune invitation en cours.",
   "inviteHistory": "Invitations passées",
-  "inviteAcceptedLabel": "{code} — a rejoint",
+  "inviteAcceptedLabel": "{code} — a rejoint ({role})",
   "inviteRevoke": "Révoquer",
   "inviteRevokeBody": "Révoquer l’invitation {code} ? Elle ne pourront plus l’utiliser pour rejoindre.",
   "inviteFailed": "Impossible de créer l’invitation — vérifie ta connexion et réessaie.",
@@ -633,5 +633,7 @@
   "setupEnterJoin": "Saisis ton prénom et le code d’invitation.",
   "avatarError": "Impossible de mettre à jour la photo. Essaie-en une autre.",
   "invitesLoadFailed": "Impossible de charger les invitations. Tire pour actualiser.",
-  "filterAll": "Tout ({n})"
+  "filterAll": "Tout ({n})",
+  "envLabel": "Environnement",
+  "syncStateNeedsSetup": "Configure ta famille pour synchroniser"
 }

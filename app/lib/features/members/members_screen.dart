@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../core/widgets/ui.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/observability/reporter.dart';
 import '../../core/auth/pin_store.dart';
 import '../settings/settings_screen.dart';
 import '../settings/sync_screen.dart';
@@ -989,6 +990,8 @@ class MembersScreen extends StatelessWidget {
         false;
 
     if (!confirmed) return;
+    mhuriEvent('account.delete.requested',
+        {'role': s.user.role.name}); // no identifiers — see reporter.dart
     // Step 3 of 3 — progress while the server does the four phases; the
     // dialog is not dismissible and pops with the outcome.
     final deleted = await showDialog<bool>(
@@ -1717,7 +1720,7 @@ class _DeleteProgressDialogState extends State<_DeleteProgressDialog> {
     setState(() => _done = true);
     await Future<void>.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
-    Navigator.of(context).pop(r.ok);
+    Navigator.of(context).pop(r);
   }
 
   @override

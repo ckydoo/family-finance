@@ -31,6 +31,7 @@ class SyncScreen extends StatelessWidget {
       SyncStatus.error => (l.syncStateError, Colors.orange),
       SyncStatus.offline => (l.syncStateOffline, Colors.grey),
       SyncStatus.needsSignIn => (l.syncStateNeedsSignIn, Colors.deepPurple),
+      SyncStatus.needsSetup => (l.syncStateNeedsSetup, Colors.deepOrange),
       SyncStatus.idle => (l.syncStateSaved, Colors.green),
       null => (l.syncStateSaved, Colors.green),
     };
@@ -67,9 +68,10 @@ class SyncScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   _row(l.syncLastSync,
-                      last == null ? l.syncNever : fmtSyncTime(last)),
+                      last == null ? l.syncNever : _fmt(last)),
                   _row(l.syncPendingLabel,
                       s.pendingOps == 0 ? l.syncUpToDate : '${s.pendingOps}'),
+                  _row(l.envLabel, s.env.environment),
                   if (error != null && error.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -103,7 +105,7 @@ class SyncScreen extends StatelessWidget {
                           style: TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w800,
-                              color: Colors.orange.sh900)),
+                              color: Colors.orange.shade900)),
                       const SizedBox(height: 4),
                       Text(l.syncProblemsBody,
                           style: TextStyle(

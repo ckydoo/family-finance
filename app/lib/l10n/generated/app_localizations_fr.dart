@@ -632,7 +632,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get meetingHint => '15 minutes, une fois par mois.';
 
   @override
-  String mChoresLine(Object proposals, Object requests, Object stars) {
+  String mChoresLine(Object stars, Object requests, Object proposals) {
     return '$stars étoiles gagnées · $requests demandes en attente · $proposals propositions ado en attente.';
   }
 
@@ -850,17 +850,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get stDeclined => 'Refusé';
 
   @override
-  String requestTitle(Object amount, Object name) {
+  String requestTitle(Object name, Object amount) {
     return '$name a demandé $amount';
   }
 
   @override
-  String proposalTitle(Object amount, Object name) {
+  String proposalTitle(Object name, Object amount) {
     return '$name propose $amount';
   }
 
   @override
-  String proposalSub(Object env, Object reason) {
+  String proposalSub(Object reason, Object env) {
     return '$reason · depuis l\'enveloppe $env';
   }
 
@@ -886,7 +886,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String circleSub(Object amount, Object pot, Object who) {
+  String circleSub(Object who, Object amount, Object pot) {
     return 'À $who de collecter $amount · cagnotte $pot à ce jour';
   }
 
@@ -942,7 +942,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String declineBody(Object env, Object reason) {
+  String declineBody(Object reason, Object env) {
     return '$reason\n\nDepuis l\'enveloppe : $env';
   }
 
@@ -960,7 +960,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listEmptyAdd => 'Rien ici — ajoute un article avec ＋';
 
   @override
-  String usesPct(Object name, Object pct) {
+  String usesPct(Object pct, Object name) {
     return 'Utilise $pct% de l\'enveloppe $name';
   }
 
@@ -1077,7 +1077,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get limitLabel => 'Plafond';
 
   @override
-  String envelopeRemaining(Object amount, Object name) {
+  String envelopeRemaining(Object name, Object amount) {
     return 'Il reste $amount dans $name';
   }
 
@@ -1087,7 +1087,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String envelopeWillExceed(Object amount, Object name) {
+  String envelopeWillExceed(Object name, Object amount) {
     return 'Cela dépasse le budget de $name de $amount';
   }
 
@@ -1095,7 +1095,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get overBudgetTitle => 'Cette enveloppe dépassera le budget';
 
   @override
-  String overBudgetBody(Object amount, Object name) {
+  String overBudgetBody(Object name, Object amount) {
     return '$name dépassera le budget de $amount. Tu peux quand même enregistrer la dépense.';
   }
 
@@ -1114,7 +1114,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get overBudgetLabel => 'Budget dépassé';
 
   @override
-  String memberPot(Object contribution, Object count, Object pot) {
+  String memberPot(Object pot, Object contribution, Object count) {
     return 'Cagnotte : $pot · $contribution × $count membres';
   }
 
@@ -1951,4 +1951,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String filterAll(Object n) {
     return 'Tout ($n)';
   }
+
+  @override
+  String get envLabel => 'Environnement';
+
+  @override
+  String get syncStateNeedsSetup => 'Configure ta famille pour synchroniser';
 }

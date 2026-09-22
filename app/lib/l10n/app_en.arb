@@ -924,7 +924,7 @@
   "invitePending": "Open invites",
   "inviteNone": "No open invites.",
   "inviteHistory": "Earlier invites",
-  "inviteAcceptedLabel": "{code} — joined",
+  "inviteAcceptedLabel": "{code} — joined ({role})",
   "inviteRevoke": "Revoke",
   "inviteRevokeBody": "Revoke invite {code}? They will not be able to join with it.",
   "inviteFailed": "Could not create the invite — check your connection and try again.",
@@ -1008,5 +1008,7 @@
   "setupEnterJoin": "Enter your preferred name and invite code.",
   "avatarError": "Couldn't update that photo. Try another one.",
   "invitesLoadFailed": "Could not load invites. Pull to refresh.",
-  "filterAll": "All ({n})"
+  "filterAll": "All ({n})",
+  "envLabel": "Environment",
+  "syncStateNeedsSetup": "Set up your family to sync"
 }

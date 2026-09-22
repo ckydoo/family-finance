@@ -1256,7 +1256,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{stars} stars earned · {requests} request(s) waiting · {proposals} teen proposal(s) waiting.'**
-  String mChoresLine(Object proposals, Object requests, Object stars);
+  String mChoresLine(Object stars, Object requests, Object proposals);
 
   /// No description provided for @meetingNoteHint.
   ///
@@ -1652,19 +1652,19 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{name} requested {amount}'**
-  String requestTitle(Object amount, Object name);
+  String requestTitle(Object name, Object amount);
 
   /// No description provided for @proposalTitle.
   ///
   /// In en, this message translates to:
   /// **'{name} proposes {amount}'**
-  String proposalTitle(Object amount, Object name);
+  String proposalTitle(Object name, Object amount);
 
   /// No description provided for @proposalSub.
   ///
   /// In en, this message translates to:
   /// **'{reason} · from {env}'**
-  String proposalSub(Object env, Object reason);
+  String proposalSub(Object reason, Object env);
 
   /// No description provided for @recDueSub.
   ///
@@ -1700,7 +1700,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{who} to collect {amount} · pot {pot} so far'**
-  String circleSub(Object amount, Object pot, Object who);
+  String circleSub(Object who, Object amount, Object pot);
 
   /// No description provided for @exportReal.
   ///
@@ -1784,7 +1784,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{reason}\n\nFrom envelope: {env}'**
-  String declineBody(Object env, Object reason);
+  String declineBody(Object reason, Object env);
 
   /// No description provided for @approvedProp.
   ///
@@ -1808,7 +1808,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Uses {pct}% of the {name}'**
-  String usesPct(Object name, Object pct);
+  String usesPct(Object pct, Object name);
 
   /// No description provided for @loggedTo.
   ///
@@ -1982,7 +1982,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{name} has {amount} remaining'**
-  String envelopeRemaining(Object amount, Object name);
+  String envelopeRemaining(Object name, Object amount);
 
   /// No description provided for @envelopeWillLeave.
   ///
@@ -1994,7 +1994,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'This puts {name} {amount} over budget'**
-  String envelopeWillExceed(Object amount, Object name);
+  String envelopeWillExceed(Object name, Object amount);
 
   /// No description provided for @overBudgetTitle.
   ///
@@ -2006,7 +2006,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{name} will be over by {amount}. The expense can still be recorded.'**
-  String overBudgetBody(Object amount, Object name);
+  String overBudgetBody(Object name, Object amount);
 
   /// No description provided for @adjustAmount.
   ///
@@ -2036,7 +2036,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Pot so far: {pot} · {contribution} × {count} members'**
-  String memberPot(Object contribution, Object count, Object pot);
+  String memberPot(Object pot, Object contribution, Object count);
 
   /// No description provided for @switchProfile.
   ///
@@ -3164,4 +3164,10 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
 
   /// No description provided for @filterAll.
   String filterAll(Object n);
+
+  /// No description provided for @envLabel.
+  String get envLabel;
+
+  /// No description provided for @syncStateNeedsSetup.
+  String get syncStateNeedsSetup;
 }

@@ -54,7 +54,7 @@ Future<void> seedDb(Database raw) async {
 }
 
 void seedMemory(AppState s) {
-  s.envelopes.addAll(const [
+  s.envelopes.addAll([
     Envelope(
         id: 'e1',
         name: 'Groceries',

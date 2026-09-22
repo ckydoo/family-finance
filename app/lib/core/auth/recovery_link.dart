@@ -68,8 +68,9 @@ RecoveryLink parseRecoveryLink(String url) {
   if (!looksOurs) return const RecoveryLink.none();
 
   final frag = u.fragment;
-  final fragParams =
-      frag.isEmpty ? <String>[] : Uri.splitQueryString(frag).entries;
+  final fragParams = frag.isEmpty
+      ? <MapEntry<String, String>>[]
+      : Uri.splitQueryString(frag).entries.toList();
   String? access;
   String? refresh;
   for (final e in fragParams) {

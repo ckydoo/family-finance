@@ -8,6 +8,7 @@ import '../models/models.dart' show InviteInfo;
 import '../state/app_state.dart';
 import '../utils/ids.dart';
 import 'outbox.dart';
+import '../observability/reporter.dart';
 import 'supabase_sync_client.dart';
 import 'sync_mappers.dart';
 
@@ -113,10 +114,16 @@ class SyncEngine {
   Future<int> parkedCount() => _outbox.countParked(maxAttempts);
 
   /// "Try again": clears the failure count so the next sync pushes it.
-  Future<void> retryParked(int rowId) => _outbox.resetAttempts(rowId);
+  Future<void> retryParked(int rowId) {
+    mhuriEvent('parked.retry', {'row': rowId});
+    return _outbox.resetAttempts(rowId);
+  }
 
   /// Explicit user discard of a parked change (confirmed in the UI).
-  Future<void> discardParked(int rowId) => _outbox.deleteRow(rowId);
+  Future<void> discardParked(int rowId) {
+    mhuriEvent('parked.discard', {'row': rowId});
+    return _outbox.deleteRow(rowId);
+  }
 
   // ── reinstall reconciliation (migration 012) ─────────────────────────────
 
@@ -437,6 +444,9 @@ class SyncEngine {
     }
     _busy = true;
     _setStatus(SyncStatus.syncing);
+    // Phase 4 #19: correlation id + duration for the sync-health events.
+    final run = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+    final sw = Stopwatch()..start();
     try {
       try {
         await _push();
@@ -455,16 +465,19 @@ class SyncEngine {
       _consecFail = 0;
       _nextPushOkAt = null;
       _setStatus(SyncStatus.idle);
+      mhuriEvent('sync.ok', {'run': run, 'ms': sw.elapsedMilliseconds});
     } on SyncException catch (e) {
       _registerFailure(
         e.message,
         e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
       );
       reportError?.call('sync', e, StackTrace.current);
+      mhuriEvent('sync.fail', {'run': run, 'kind': 'server'});
     } catch (e, st) {
       _registerFailure('Network error — will retry.', SyncStatus.offline);
       debugPrint('Mhuri sync offline: $e');
       reportError?.call('sync', e, st);
+      mhuriEvent('sync.fail', {'run': run, 'kind': 'offline'});
     } finally {
       _busy = false;
       await state.refreshPending();
@@ -681,6 +694,7 @@ class SyncEngine {
       }
       await _persistence.applyServerRows(entity, rows);
       state.applyPulled(entity, rows);
+      if (entity == 'shopping_list') await _captureDefaultList(rows);
     }
     if (maxCursor != null && maxCursor != since) {
       _cursor = maxCursor;

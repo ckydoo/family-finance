@@ -549,7 +549,7 @@
   "invitePending": "Invitaciones abiertas",
   "inviteNone": "No hay invitaciones abiertas.",
   "inviteHistory": "Invitaciones anteriores",
-  "inviteAcceptedLabel": "{code} — se unió",
+  "inviteAcceptedLabel": "{code} — se unió ({role})",
   "inviteRevoke": "Revocar",
   "inviteRevokeBody": "¿Revocar la invitación {code}? Ya no podrán unirse con ella.",
   "inviteFailed": "No se pudo crear la invitación — revisa tu conexión e inténtalo otra vez.",
@@ -633,5 +633,7 @@
   "setupEnterJoin": "Escribe tu nombre y el código de invitación.",
   "avatarError": "No se pudo actualizar la foto. Prueba otra.",
   "invitesLoadFailed": "No se pudieron cargar las invitaciones. Desliza para actualizar.",
-  "filterAll": "Todo ({n})"
+  "filterAll": "Todo ({n})",
+  "envLabel": "Entorno",
+  "syncStateNeedsSetup": "Configura tu familia para sincronizar"
 }

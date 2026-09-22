@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'core/auth/auth_controller.dart';
@@ -11,6 +12,7 @@ import 'core/models/models.dart' show Role;
 import 'core/state/app_state.dart';
 import 'core/sync/supabase_sync_client.dart';
 import 'core/sync/sync_engine.dart';
+import 'core/observability/reporter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/motion.dart';
 import 'core/money/money.dart';
@@ -52,6 +54,11 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     _auth = widget.auth ?? AuthController(env: env);
     _state = AppState(db: widget.db, env: env, auth: _auth);
 
+    // #1 recovery + invite deep links, and the resume-your-reset banner.
+    // Fire-and-forget: they only subscribe listeners / read local kv.
+    unawaited(_initRecoveryLinks());
+    unawaited(_checkPendingReset());
+
     // M5: bridge reminder plans to the OS notification scheduler.
     var permissionAsked = false;
     _state.reminderHook = (plan) {
@@ -87,11 +94,13 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         // 401 mid-session → force one token refresh, retry once (#8).
         retryAuth: () async => await _auth.refreshAccessToken() != null,
       );
-      // M7: pluggable error reporting — point at Sentry/Crashlytics later
-      // (optional SENTRY_DSN env stays post-8).
-      SyncEngine.reportError = (where, err, st) {
-        debugPrint('Mhuri sync[$where]: $err');
-      };
+      // Phase 4 #19: one observability seam — errors AND sync-health
+      // events flow through the active reporter. Swapping in Sentry or
+      // Crashlytics later = implement MhuriReporter, assign activeReporter
+      // here. Never log secrets/amounts (enforced in reporter.dart).
+      activeReporter = const DebugReporter();
+      SyncEngine.reportError =
+          (where, err, st) => activeReporter?.error(where, err, st);
       _state.attachSync(engine);
       _engine = engine;
       engine.start();

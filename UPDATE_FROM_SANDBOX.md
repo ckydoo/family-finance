@@ -135,7 +135,7 @@ scripts just automate that (and protect `.env`).
 - **The onboarding switches are REAL policy now** (migration `011_role_enforcement_audit.sql`): a `role_perm(space, key, default)` helper lets RLS read `family_space.settings->role_permissions` at query time. Defaults mirror the onboarding map exactly, so existing families see no change until an owner flips a switch.
 - **What RLS now enforces**: teen transactions (default ON) and kid transactions (default OFF) on transaction insert/update; budget visibility (envelope_read) and wallet visibility (account_read) per child_budget/teen_budget/child_wallet/teen_wallet. Before this, tx_write allowed teens always and kids never — the switches promised things the server forbade; that inconsistency is gone.
 - **Audit completion (#9)**: trigger-written activity_log rows — `tx.create` (transaction insert), `goal.contribute` (goal_tx insert), `request.approve` / `request.decline` (kid_request state change, actor = decided_by). Appended, never blocking; hash columns remain placeholders (no tamper-evidence claim).
-- **Smoke suite: 24 checks green** (6 new: teen tx allowed-by-default AND audited; kid tx refused by default; owner flips child_transactions ON → kid can transact; teen_transactions OFF → teen refused; child_budget OFF → kid sees no envelopes while owner still does; approval lands in the audit trail). The enforcement tests run as the real `authenticated` role — postgres would have bypassed RLS.
+- **Smoke suite: 25 checks green** (7 new: teen tx allowed-by-default AND audited; kid tx refused by default; owner flips child_transactions ON → kid can transact; teen_transactions OFF → teen refused; child_budget OFF → kid sees no envelopes while owner still does; approval lands in the audit trail). The enforcement tests run as the real `authenticated` role — postgres would have bypassed RLS.
 - **Client**: engine pulls family settings on full sync (`_pullFamilySettings`) → `AppState.applyRolePermissions` + `perm()` getters with identical defaults (kidCanTransact / teenCanTransact / kidCanSeeBudget / teenCanSeeBudget); Teen Zone's envelope peek now honours `teenCanSeeBudget`. UI + RLS agree; server remains the boundary.
 - Disposition: no per-mutation snackbar guard added in AppState — the kid/teen shells have no direct transaction entry (kids act through requests, which stay allowed); RLS is the hard boundary and sync surfaces rejections honestly. Documented here as the deliberate choice.
 - USER ACTION: run **migration 011** in the SQL editor.
@@ -170,3 +170,40 @@ scripts just automate that (and protect `.env`).
 - **REAL BUGS FIXED (caught by the rewritten static scanner)**: `test/recovery_link_test.dart` + `test/recovery_password_test.dart` had corrupted JWT fixture strings (missing `}'`/`')`) — the string swallowed the rest of each file; they would have failed compilation on your machine. The old balance scanner missed these (weak quote/interpolation tracking); the new one handles `${…}` nesting correctly. Gate: **93 files, 0 problems**.
 - Haptics: warning haptic added on delete-confirm press. Reduced-motion/motion rules verified previously (unchanged).
 - Backend untouched — 27/27 stands. **No new migration.**
+
+## Phase 4 — production hardening (2026-09-23)
+- **#17 Environments**: `ENV=dev|staging|prod` in `.env` (or `--dart-define=MHURI_ENV=...`), shown in Settings - Sync & data ("Environment" row). Guard: a **prod build pointing at a staging URL refuses to start**. `app/.env.example` added (real `.env` stays gitignored). Observability never logs amounts or secrets (enforced in the reporter).
+- **#18 CI completion** (`ci.yml`): `dart format` gate (advisory - see your actions), **secret scanning** (PAT/service-key/private-key patterns across the last 30 commits), **Android debug build**, **iOS build on manual workflow_dispatch** (macOS runners cost 10x; dispatch when you want the check). **Branch protection is a GitHub setting for you** (Settings, Branches, require `ci` checks on main).
+- **#19 Observability**: one seam - `lib/core/observability/reporter.dart` (`MhuriReporter`, `activeReporter`, `mhuriEvent`, defensive `redactFields`). Sync engine now emits `sync.ok {run, ms}`, `sync.fail {run, kind}`, `parked.retry/discard`; deletion emits `account.delete.requested {role}` (no identifiers). Swapping in Sentry/Crashlytics later = implement `MhuriReporter` + assign `activeReporter` - zero call-site changes. Audited: **no debugPrint anywhere logs amounts/tokens/emails**.
+- **#20 Backups**: `backend/scripts/backup.sh` (Supabase CLI or pg_dump) + `backend/BACKUP_RESTORE.md` - PITR enable, weekly dump cadence, and a **restore drill** verified by the repo's own 27-check smoke suite. Drill table included - execute once and fill the date.
+- **#21 Privacy + store**: `PRIVACY_POLICY.md` (every datum enumerated: email, name, optional photo, financial rows, kid profiles - no ads/analytics/trackers; RLS family scoping; the real deletion paths) + `STORE_LISTING.md` (Play Data-Safety answers mapped to code, rating Q&A, screenshot list, pre-submission QA checklist).
+- Backend SQL untouched this round (backup.sh is machine-side). Smoke still 27/27. **No new migration.**
+
+### YOUR ACTIONS (Phase 4)
+1. **Staging project** (#17): create a second Supabase project, run migrations 001-012 there (same order), put its URL/key in `.env` with `ENV=staging`. Test destructive things THERE.
+2. **PITR** (#20): Dashboard - Database - Backups - enable (plan-permitting); else run the weekly dump.
+3. **Restore drill once** (#20): follow `backend/BACKUP_RESTORE.md` section 2 against a scratch project; record date + result in its table.
+4. **`dart format .` once locally**, then delete `continue-on-error` from the format step in `ci.yml` to make the gate enforce.
+5. **Branch protection**: require the CI status checks on main (Settings - Branches).
+6. Optional: Sentry DSN into `.env` `SENTRY_DSN=` + a `MhuriReporter` impl (seam ready).
+7. Before store submission: fill the bracketed contact email in `PRIVACY_POLICY.md`, host it publicly, work through `STORE_LISTING.md`.
+
+## Compiler-error round (2026-09-23, from YOUR flutter test run)
+Thank you — the real compiler caught what static bracket-checks cannot. ALL of it fixed:
+
+**Compile errors**
+- `supabase_sync_client.dart` — `await _headers()` inside NON-async `() =>` closures (patchRow + rpc): headers now hoisted to a local before the call.
+- `recovery_link.dart` — `frag ? <String>[] : Map.entries` typed Object: now a typed `List<MapEntry<String,String>>` both branches.
+- `test/seed.dart` — `const [Envelope(...)]` but Envelope has a mutable field: `const` dropped (Goal IS const — left as-is).
+- `members_screen.dart` delete-progress dialog — `r.ok` on a `bool` (deleteAccount returns Future<bool>): now `pop(r)`.
+- `sync_screen.dart` — `fmtSyncTime` → existing `_fmt`; `Colors.orange.sh900` → `.shade900`; status switch now covers `SyncStatus.needsSetup` (new key `syncStateNeedsSetup` x6).
+- `inviteAcceptedLabel` — my generated signature said (code, role) but the ARB text only had {code}: ARB now "{code} — joined ({role})" in all six languages (the tile was designed to show the role).
+
+**ARBITRARY l10n AUDIT (the big one)**: every parameterized key's placeholder ORDER in the text vs the generated signature vs the call site. Found and fixed 11 misordered signatures (mChoresLine, requestTitle, proposalTitle, proposalSub, circleSub, declineBody, usesPct, envelopeRemaining, envelopeWillExceed, overBudgetBody, memberPot) and 3 call sites that would have shown SWAPPED VALUES ("400.00 has Groceries remaining"). Types were all Object — no compiler catches this; new permanent gate `tools/l10n_check.py` does. Cross-locale placeholder parity enforced (sn/nd approvedReq now include {amount}).
+
+**Runtime regressions found while sweeping** (no compiler would ever flag these)
+- `_initRecoveryLinks()` / `_checkPendingReset()` were NEVER CALLED - password-recovery deep links AND invite QR/WhatsApp links were dead at runtime. Now started in app initState.
+- `_captureDefaultList()` never called - joiners never learned the family's default shopping list. Now wired into the shopping_list header pull.
+- three dead private methods confirmed used or removed where superseded.
+
+**Your actions**: `git pull`, `flutter pub get`, `flutter test`. If your flutter regenerates l10n from ARB (generate: true), it now agrees with the committed generated files exactly - same placeholder names, same order. Backend untouched: smoke still 27/27, no migration.

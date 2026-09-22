@@ -40,11 +40,11 @@ This file lists ONLY what is still missing, per the agreed 9/10 plan, tagged
 
 | # | Gap | Where | Notes |
 |---|-----|-------|-------|
-| 17 | Environments dev/staging/prod | **(B)** | One Supabase project today. Second (staging) project + env config; never destructive-test prod. |
-| 18 | CI completion | (B) | Have: migration chain + analyze/test. Add: `flutter format` gate, secret scanning, android/ios build jobs, Actions enabled on GitHub + branch protection. |
-| 19 | Observability | (B+F) | `SyncEngine.reportError` hook → debugPrint only. Wire Sentry/crashlytics, sync-health events, correlation IDs, deletion audit trail; never log secrets/amounts. |
-| 20 | Backups + restore drill | (B) | Supabase PITR/exports enabled; DOCUMENTED restore drill executed once. |
-| 21 | Privacy docs + store QA | (F/docs) | Privacy policy (data collected: email, avatars, financial rows — family-scoped RLS), data-safety forms, store listing screenshots. |
+| 17 | Environments dev/staging/prod | **(B)** | ✅ APP-SIDE DONE 2026-09-23: ENV/MHURI_ENV config + Settings row + prod-vs-staging startup guard + .env.example. Your side: staging project + migration chain there. |
+| 18 | CI completion | (B) | ✅ DONE 2026-09-23: format gate (advisory until one local `dart format .`), secret scanning, Android debug build, iOS build on manual dispatch. Your side: branch protection. |
+| 19 | Observability | (B+F) | ✅ SEAM DONE 2026-09-23: MhuriReporter + sync.ok/sync.fail/parked/account.delete events with run-id correlation; redaction enforced; zero amount/secret logging verified. Sentry/Crashlytics = implement the interface when you have a DSN (optional). |
+| 20 | Backups + restore drill | (B) | ✅ SCRIPTED + DOCUMENTED 2026-09-23 (backup.sh; drill verified via the 27-check smoke). Your side: enable PITR, run the drill ONCE, record it. |
+| 21 | Privacy docs + store QA | (F/docs) | ✅ DRAFTED 2026-09-23: PRIVACY_POLICY.md + STORE_LISTING.md (Data-Safety answers from code, QA checklist). Your side: contact email, host policy, screenshots, submit. |
 
 ## Critical path (recommended build order)
 
@@ -54,6 +54,6 @@ This file lists ONLY what is still missing, per the agreed 9/10 plan, tagged
 4. ✅ **#6 Role enforcement + #9 audit** — DONE 2026-09-22.
 5. ✅ **#8 Sync reliability** — DONE 2026-09-22. **Phase 2 core complete** (#5 invitations, #6 roles, #7 transfer, #8 sync, #9 audit). Remaining from Phase 2: #10 deletion UX polish + the 10 real-device scenarios.
 6. ✅ **Phase 3 (#10–#16)** — DONE 2026-09-22 (device-session leftovers: AA render check, sn/nd fluent review, fr/pt overflow).
-7. **#17–#21 Phase 4** release engineering.
+7. ✅ **Phase 4 (#17–#21)** — DONE 2026-09-23 app/script/doc-side (your actions in UPDATE_FROM_SANDBOX: staging project, PITR + drill, format flip, branch protection, store console).
 
 Rough sizing in sandbox sessions: #1 ≈1, #2 ≈1, #5+#7 ≈2, #6+#9 ≈1, #8 ≈1–2, Phase 3 ≈3–4, Phase 4 ≈2. Each round ships with migrations called out for your SQL-editor run + a PAT push at the end, as usual.

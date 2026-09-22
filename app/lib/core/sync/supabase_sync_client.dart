@@ -114,10 +114,11 @@ class SupabaseSyncClient {
   Future<void> patchRow(
       String table, String id, Map<String, Object?> values) async {
     if (values.isEmpty) return;
+    final h = await _headers();
     final r = await _call(() => _client.patch(
       Uri.parse('$_base/rest/v1/$table?id=eq.$id'),
       headers: {
-        ...(await _headers()),
+        ...h,
         'Prefer': 'return=minimal',
       },
       body: jsonEncode(values),
@@ -129,9 +130,10 @@ class SupabaseSyncClient {
 
   /// Calls a SECURITY DEFINER RPC (create_space / join_space).
   Future<dynamic> rpc(String fn, Map<String, Object?> args) async {
+    final h = await _headers();
     final r = await _call(() => _client.post(
       Uri.parse('$_base/rest/v1/rpc/$fn'),
-      headers: await _headers(),
+      headers: h,
       body: jsonEncode(args),
     ));
     if (r.statusCode < 200 || r.statusCode >= 300) {

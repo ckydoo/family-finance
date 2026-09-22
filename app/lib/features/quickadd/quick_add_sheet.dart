@@ -147,8 +147,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 title: Text(l.overBudgetTitle),
                 content: Text(
                   l.overBudgetBody(
-                    Money(overMinor, envelope.limit.currency).text,
                     envelope.name,
+                    Money(overMinor, envelope.limit.currency).text,
                   ),
                 ),
                 actions: [
@@ -489,9 +489,9 @@ class _EnvelopeLimitNotice extends StatelessWidget {
     final isOver = projected < 0;
     final amount = Money(projected.abs(), remaining.currency).text;
     final text = isOver
-        ? l.envelopeWillExceed(amount, envelope.name)
+        ? l.envelopeWillExceed(envelope.name, amount)
         : entered == null
-            ? l.envelopeRemaining(amount, envelope.name)
+            ? l.envelopeRemaining(envelope.name, amount)
             : l.envelopeWillLeave(amount, envelope.name);
     final color = isOver ? context.expenseRed : context.inkSoft;
 

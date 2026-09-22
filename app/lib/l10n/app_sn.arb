@@ -354,7 +354,7 @@
   "circleTitle": "Denderedzwa rekuchengetedza — Kutenderera {round} pa{total}",
   "postedSnack": "{name} yanyorwa ✓ — bhuku ravandudzwa",
   "starsGiven": "{stars} zvinotora zvapihwa vana!",
-  "approvedReq": "Zvabvumirwa ✓ — zvedzerwa ku{name}",
+  "approvedReq": "Zvabvumirwa ✓ — {amount} zvedzerwa ku{name}",
   "declineBody": "{reason}\n\nKubva mubhuku: {env}",
   "approvedProp": "Zvabvumirwa ✓ — {amount} zvanyorwa mu{env}",
   "sentKid": "\"{name}\" zvatumirwa kumhamha na babha",
@@ -549,7 +549,7 @@
   "invitePending": "Mikoko iripo",
   "inviteNone": "Hapana mikoko iripo.",
   "inviteHistory": "Mikoko yapera",
-  "inviteAcceptedLabel": "{code} — apinda",
+  "inviteAcceptedLabel": "{code} — apinda ({role})",
   "inviteRevoke": "Kanzura",
   "inviteRevokeBody": "Kanzura kukoka {code}? Havazokwanisa kujoina nayo.",
   "inviteFailed": "Kukoka hakugadzirike — tarisa network uyedze zvakare.",
@@ -633,5 +633,7 @@
   "setupEnterJoin": "Isa zita raunodawo nekodi yekukoka.",
   "avatarError": "Ifoto yakundikana kuchinjwa. Edzai imwe.",
   "invitesLoadFailed": "Makota hakuna kuwana. Dhonza zvekare.",
-  "filterAll": "Zvose ({n})"
+  "filterAll": "Zvose ({n})",
+  "envLabel": "Nzvimbo",
+  "syncStateNeedsSetup": "Gadzira mhuri yako yekubatanidza"
 }

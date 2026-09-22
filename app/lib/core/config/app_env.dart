@@ -19,7 +19,16 @@ class AppEnv {
     this.sentryDsn,
     this.rateApiUrl,
     this.configError,
+    this.environment = 'dev',
   });
+
+  /// Which environment this build targets: `dev` (default) | `staging` |
+  /// `prod`. Sources: `--dart-define=MHURI_ENV=…` > `.env` `ENV=` > dev.
+  /// Never destructive-test against prod — run migrations/experiments on
+  /// the staging project first (see UPDATE_FROM_SANDBOX #17).
+  final String environment;
+
+  bool get isProd => environment == 'prod';
 
   final String? supabaseUrl;
   final String? supabaseAnonKey;
@@ -47,23 +56,49 @@ class AppEnv {
     try {
       env = AppEnv.parse(await rootBundle.loadString('.env'));
     } catch (_) {}
-    if (env.isConfigured) return env;
 
     const dUrl = String.fromEnvironment('MHURI_SUPABASE_URL');
     const dKey = String.fromEnvironment('MHURI_SUPABASE_ANON_KEY');
+    const dEnv = String.fromEnvironment('MHURI_ENV');
+
+    var url = env.supabaseUrl;
+    var key = env.supabaseAnonKey;
+    var envName = env.environment;
     if (dUrl.isNotEmpty && dKey.isNotEmpty) {
+      url = dUrl;
+      key = dKey;
+    }
+    if (dEnv.isNotEmpty) envName = dEnv;
+
+    // #17 guard: a prod build must never quietly point at the staging
+    // project (destructive testing happens on staging only).
+    if (envName == 'prod' && (url?.contains('staging') ?? false)) {
       return AppEnv(
-        supabaseUrl: dUrl,
-        supabaseAnonKey: dKey,
+        environment: envName,
         fcmProjectId: env.fcmProjectId,
         sentryDsn: env.sentryDsn,
         rateApiUrl: env.rateApiUrl,
+        configError:
+            'This prod build points at a staging URL — refusing to start. '
+            'Fix ENV/MHURI_ENV or SUPABASE_URL.',
+      );
+    }
+
+    if ((url?.isNotEmpty ?? false) && (key?.isNotEmpty ?? false)) {
+      return AppEnv(
+        supabaseUrl: url,
+        supabaseAnonKey: key,
+        fcmProjectId: env.fcmProjectId,
+        sentryDsn: env.sentryDsn,
+        rateApiUrl: env.rateApiUrl,
+        environment: envName,
       );
     }
     return AppEnv(
       fcmProjectId: env.fcmProjectId,
       sentryDsn: env.sentryDsn,
       rateApiUrl: env.rateApiUrl,
+      environment: envName,
       configError: 'No server connection in this build. Rebuild with '
           'an app/.env file containing SUPABASE_URL and SUPABASE_ANON_KEY, '
           'or use --dart-define=MHURI_SUPABASE_URL=… and '
@@ -96,6 +131,7 @@ class AppEnv {
       fcmProjectId: map['FCM_PROJECT_ID'],
       sentryDsn: map['SENTRY_DSN'],
       rateApiUrl: map['RATE_API_URL'],
+      environment: (map['ENV'] ?? 'dev').toLowerCase(),
     );
   }
 }

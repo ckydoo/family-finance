@@ -354,7 +354,7 @@
   "circleTitle": "Isigqi sokulondoloza — Isigaba {round} esi{total}",
   "postedSnack": "{name} kubhaliwe ✓ — ikhava ivuselelwe",
   "starsGiven": "{stars} izigqi zinikezwe izingane!",
-  "approvedReq": "Kuvunyelwe ✓ — kengezwe ku{name}",
+  "approvedReq": "Kuvunyelwe ✓ — {amount} kengezwe ku{name}",
   "declineBody": "{reason}\n\nEsikhaveni: {env}",
   "approvedProp": "Kuvunyelwe ✓ — {amount} kubhaliwe ku{env}",
   "sentKid": "\"{name}\" kuthunyelwe ku mama no baba",
@@ -549,7 +549,7 @@
   "invitePending": "Izimemo ezivulekile",
   "inviteNone": "Azikho izimemo ezivulekile.",
   "inviteHistory": "Izimemo zangaphambili",
-  "inviteAcceptedLabel": "{code} — ungene",
+  "inviteAcceptedLabel": "{code} — ungene ({role})",
   "inviteRevoke": "Khansela",
   "inviteRevokeBody": "Khansela isimemo {code}? Angeke bangena ngeso.",
   "inviteFailed": "Isimemo asihlanganiswanga — bhheka uxhumano uzame futhi.",
@@ -633,5 +633,7 @@
   "setupEnterJoin": "Faka igama lakho nekhodi yesimemo.",
   "avatarError": "Ifoto ayiphumelelanga ukutshintshwa. Zamanini enye.",
   "invitesLoadFailed": "Iimvito azifunyanisanga. Zama kwakhona.",
-  "filterAll": "Zonke ({n})"
+  "filterAll": "Zonke ({n})",
+  "envLabel": "Indawo",
+  "syncStateNeedsSetup": "Hlela umndeni wakho ukuxhumana"
 }
