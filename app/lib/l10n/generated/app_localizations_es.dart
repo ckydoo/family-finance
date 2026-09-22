@@ -316,8 +316,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Introduce un teléfono válido (p. ej. +44 7700 900123).';
 
   @override
-
-  @override
   String get quickAddTitle => 'Añadir rápido';
 
   @override
@@ -426,8 +424,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get membersInviteHint =>
       'Comparte el código o escanea para invitar a un familiar';
-
-  @override
 
   @override
   String get setCurrency => 'Moneda y tasas';
@@ -1131,8 +1127,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inviteTitle => 'Invitar a un familiar';
 
   @override
-
-  @override
   String get editProfile => 'Editar perfil';
 
   @override
@@ -1220,86 +1214,92 @@ class AppLocalizationsEs extends AppLocalizations {
   String get obDone => 'Empecemos';
 
   @override
-  String get setupChoiceTitle => "Configura tu familia";
+  String get setupChoiceTitle => 'Configura tu familia';
 
   @override
-  String get setupChoiceBody => "Mhuri Hub funciona para una familia, juntos. Crea la tuya o únete a la que perteneces.";
+  String get setupChoiceBody =>
+      'Mhuri Hub funciona para una familia, juntos. Crea la tuya o únete a la que perteneces.';
 
   @override
-  String get setupCreateCard => "Crear una familia";
+  String get setupCreateCard => 'Crear una familia';
 
   @override
-  String get setupCreateCardBody => "Ponle nombre, elige el tipo de hogar e invita a los tuyos.";
+  String get setupCreateCardBody =>
+      'Ponle nombre, elige el tipo de hogar e invita a los tuyos.';
 
   @override
-  String get setupJoinCard => "Unirse con un código";
+  String get setupJoinCard => 'Unirse con un código';
 
   @override
-  String get setupJoinCardBody => "Alguien te invitó: introduce su código familiar para unirte.";
+  String get setupJoinCardBody =>
+      'Alguien te invitó: introduce su código familiar para unirte.';
 
   @override
-  String get createFamilyCta => "Crear familia";
+  String get createFamilyCta => 'Crear familia';
 
   @override
-  String get joinFamilyCta => "Unirse a la familia";
+  String get joinFamilyCta => 'Unirse a la familia';
 
   @override
-  String get familyNameLabel => "Nombre de la familia";
+  String get familyNameLabel => 'Nombre de la familia';
 
   @override
-  String get familyNameHint => "p. ej. La familia Marufu";
+  String get familyNameHint => 'p. ej. La familia Marufu';
 
   @override
-  String get householdLabel => "¿Qué tipo de familia?";
+  String get householdLabel => '¿Qué tipo de familia?';
 
   @override
-  String get hhCouple => "Pareja con hijos";
+  String get hhCouple => 'Pareja con hijos';
 
   @override
-  String get hhSingle => "Padre/madre soltero";
+  String get hhSingle => 'Padre/madre soltero';
 
   @override
-  String get hhExtended => "Familia extendida";
+  String get hhExtended => 'Familia extendida';
 
   @override
-  String get hhBlended => "Familia ensamblada";
+  String get hhBlended => 'Familia ensamblada';
 
   @override
-  String get hhPartners => "Pareja sin hijos";
+  String get hhPartners => 'Pareja sin hijos';
 
   @override
-  String get hhSolo => "Solo yo por ahora";
+  String get hhSolo => 'Solo yo por ahora';
 
   @override
-  String get hhOther => "Otro";
+  String get hhOther => 'Otro';
 
   @override
-  String get joinCodeLabel => "Código de invitación";
+  String get joinCodeLabel => 'Código de invitación';
 
   @override
-  String get skipForNow => "Omitir por ahora";
+  String get skipForNow => 'Omitir por ahora';
 
   @override
-  String get setupInviteTitle => "Invita a los tuyos";
+  String get setupInviteTitle => 'Invita a los tuyos';
 
   @override
-  String get setupWorking => "Preparando todo…";
+  String get setupWorking => 'Preparando todo…';
 
   @override
-  String get noEnvelopesYet => "Aún no hay sobres: crea el primero desde la pestaña Presupuestos.";
+  String get noEnvelopesYet =>
+      'Aún no hay sobres: crea el primero desde la pestaña Presupuestos.';
 
   @override
-  String get noActivityYet => "Nada registrado todavía. Toca + para añadir tu primera transacción.";
+  String get noActivityYet =>
+      'Nada registrado todavía. Toca + para añadir tu primera transacción.';
 
   @override
-  String get setupBanner => "Termina la configuración: crea tu familia o únete con un código";
+  String get setupBanner =>
+      'Termina la configuración: crea tu familia o únete con un código';
 
   @override
-  String get setupBannerCta => "Configurar";
+  String get setupBannerCta => 'Configurar';
 
   @override
-  String get deleteTypeHint => "Escribe DELETE para confirmar";
+  String get deleteTypeHint => 'Escribe DELETE para confirmar';
 
   @override
-  String get deletePermanently => "Eliminar permanentemente";
+  String get deletePermanently => 'Eliminar permanentemente';
 }

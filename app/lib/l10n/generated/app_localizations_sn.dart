@@ -312,8 +312,6 @@ class AppLocalizationsSn extends AppLocalizations {
       'Pinda nhare inoshanda (somuenzaniso +44 7700 900123).';
 
   @override
-
-  @override
   String get quickAddTitle => 'Wedzera nyore';
 
   @override
@@ -422,8 +420,6 @@ class AppLocalizationsSn extends AppLocalizations {
   @override
   String get membersInviteHint =>
       'Govaneka kodhi kana scan kuvaka muridzi wemhuri';
-
-  @override
 
   @override
   String get setCurrency => 'Mari & mitauro';
@@ -1125,8 +1121,6 @@ class AppLocalizationsSn extends AppLocalizations {
   String get inviteTitle => 'Koka muridzi wemhuri';
 
   @override
-
-  @override
   String get editProfile => 'Chinja profile';
 
   @override
@@ -1214,86 +1208,92 @@ class AppLocalizationsSn extends AppLocalizations {
   String get obDone => 'Ngatangei';
 
   @override
-  String get setupChoiceTitle => "Gadzirisa mhuri yako";
+  String get setupChoiceTitle => 'Gadzirisa mhuri yako';
 
   @override
-  String get setupChoiceBody => "Mhuri Hub inoshanda nemhuri imwe, pamwechete. Vhaka yako, kana ujoina iyo unoidiwewo.";
+  String get setupChoiceBody =>
+      'Mhuri Hub inoshanda nemhuri imwe, pamwechete. Vhaka yako, kana ujoina iyo unoidiwewo.';
 
   @override
-  String get setupCreateCard => "Vhaka mhuri";
+  String get setupCreateCard => 'Vhaka mhuri';
 
   @override
-  String get setupCreateCardBody => "Pazita zita, sarudza rudzi rwemhuri, ukozonhora vanhu vako.";
+  String get setupCreateCardBody =>
+      'Pazita zita, sarudza rudzi rwemhuri, ukozonhora vanhu vako.';
 
   @override
-  String get setupJoinCard => "Pinda nencode";
+  String get setupJoinCard => 'Pinda nencode';
 
   @override
-  String get setupJoinCardBody => "Mumwe vakakokorodza iwe — nyora code yemhuri yavo joina.";
+  String get setupJoinCardBody =>
+      'Mumwe vakakokorodza iwe — nyora code yemhuri yavo joina.';
 
   @override
-  String get createFamilyCta => "Vhaka mhuri";
+  String get createFamilyCta => 'Vhaka mhuri';
 
   @override
-  String get joinFamilyCta => "Pinda mumhuri";
+  String get joinFamilyCta => 'Pinda mumhuri';
 
   @override
-  String get familyNameLabel => "Zita remhuri";
+  String get familyNameLabel => 'Zita remhuri';
 
   @override
-  String get familyNameHint => "somuenzaniso: Mhuri yaMarufu";
+  String get familyNameHint => 'somuenzaniso: Mhuri yaMarufu';
 
   @override
-  String get householdLabel => "Mhuri yakadini?";
+  String get householdLabel => 'Mhuri yakadini?';
 
   @override
-  String get hhCouple => "Vaviri navana";
+  String get hhCouple => 'Vaviri navana';
 
   @override
-  String get hhSingle => "Mubereki wega";
+  String get hhSingle => 'Mubereki wega';
 
   @override
-  String get hhExtended => "Mhuri huru";
+  String get hhExtended => 'Mhuri huru';
 
   @override
-  String get hhBlended => "Mhuri mivanhu";
+  String get hhBlended => 'Mhuri mivanhu';
 
   @override
-  String get hhPartners => "Vaviri chete";
+  String get hhPartners => 'Vaviri chete';
 
   @override
-  String get hhSolo => "Inini ndoga parizvino";
+  String get hhSolo => 'Inini ndoga parizvino';
 
   @override
-  String get hhOther => "Zvimwe";
+  String get hhOther => 'Zvimwe';
 
   @override
-  String get joinCodeLabel => "Kodhi yekukokorodza";
+  String get joinCodeLabel => 'Kodhi yekukokorodza';
 
   @override
-  String get skipForNow => "Iraska parizvino";
+  String get skipForNow => 'Iraska parizvino';
 
   @override
-  String get setupInviteTitle => "Kokorodza vanhu vako";
+  String get setupInviteTitle => 'Kokorodza vanhu vako';
 
   @override
-  String get setupWorking => "Kugadzirwa zviri kuita…";
+  String get setupWorking => 'Kugadzirwa zviri kuita…';
 
   @override
-  String get noEnvelopesYet => "Hapana bhajeti dziri pozvino — vhaka yekutanga kubva kuBudgets tab.";
+  String get noEnvelopesYet =>
+      'Hapana bhajeti dziri pozvino — vhaka yekutanga kubva kuBudgets tab.';
 
   @override
-  String get noActivityYet => "Hapana chanyorwa zvasvino. Dzvanya + kunyora transaction yekutanga.";
+  String get noActivityYet =>
+      'Hapana chanyorwa zvasvino. Dzvanya + kunyora transaction yekutanga.';
 
   @override
-  String get setupBanner => "Pedzisa kugadzirisa: vhaka mhuri yako kana ujoin nencode";
+  String get setupBanner =>
+      'Pedzisa kugadzirisa: vhaka mhuri yako kana ujoin nencode';
 
   @override
-  String get setupBannerCta => "Gadzirisa";
+  String get setupBannerCta => 'Gadzirisa';
 
   @override
-  String get deleteTypeHint => "Nyora DELETE kuti ivhure";
+  String get deleteTypeHint => 'Nyora DELETE kuti ivhure';
 
   @override
-  String get deletePermanently => "Dzima zvachose";
+  String get deletePermanently => 'Dzima zvachose';
 }

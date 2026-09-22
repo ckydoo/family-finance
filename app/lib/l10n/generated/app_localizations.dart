@@ -2236,60 +2236,172 @@ abstract class AppLocalizations {
   /// **'Let\'s get started'**
   String get obDone;
 
+  /// No description provided for @setupChoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your family'**
   String get setupChoiceTitle;
 
+  /// No description provided for @setupChoiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mhuri Hub works for one family, together. Create yours, or join the one you belong to.'**
   String get setupChoiceBody;
 
+  /// No description provided for @setupCreateCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a family'**
   String get setupCreateCard;
 
+  /// No description provided for @setupCreateCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Name it, pick your household type, invite your people.'**
   String get setupCreateCardBody;
 
+  /// No description provided for @setupJoinCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Join with a code'**
   String get setupJoinCard;
 
+  /// No description provided for @setupJoinCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone invited you — enter their family code to join them.'**
   String get setupJoinCardBody;
 
+  /// No description provided for @createFamilyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Create family'**
   String get createFamilyCta;
 
+  /// No description provided for @joinFamilyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Join family'**
   String get joinFamilyCta;
 
+  /// No description provided for @familyNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Family name'**
   String get familyNameLabel;
 
+  /// No description provided for @familyNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. The Marufu Family'**
   String get familyNameHint;
 
+  /// No description provided for @householdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What kind of family?'**
   String get householdLabel;
 
+  /// No description provided for @hhCouple.
+  ///
+  /// In en, this message translates to:
+  /// **'Couple with kids'**
   String get hhCouple;
 
+  /// No description provided for @hhSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single parent'**
   String get hhSingle;
 
+  /// No description provided for @hhExtended.
+  ///
+  /// In en, this message translates to:
+  /// **'Extended family'**
   String get hhExtended;
 
+  /// No description provided for @hhBlended.
+  ///
+  /// In en, this message translates to:
+  /// **'Blended family'**
   String get hhBlended;
 
+  /// No description provided for @hhPartners.
+  ///
+  /// In en, this message translates to:
+  /// **'Partners, no kids'**
   String get hhPartners;
 
+  /// No description provided for @hhSolo.
+  ///
+  /// In en, this message translates to:
+  /// **'Just me for now'**
   String get hhSolo;
 
+  /// No description provided for @hhOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
   String get hhOther;
 
+  /// No description provided for @joinCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code'**
   String get joinCodeLabel;
 
+  /// No description provided for @skipForNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
   String get skipForNow;
 
+  /// No description provided for @setupInviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite your people'**
   String get setupInviteTitle;
 
+  /// No description provided for @setupWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting things up…'**
   String get setupWorking;
 
+  /// No description provided for @noEnvelopesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No envelopes yet — create your first one from the Budgets tab to start tracking spending.'**
   String get noEnvelopesYet;
 
+  /// No description provided for @noActivityYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded yet. Tap + to add your first transaction.'**
   String get noActivityYet;
 
+  /// No description provided for @setupBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish setting up: create your family or join with a code'**
   String get setupBanner;
 
+  /// No description provided for @setupBannerCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
   String get setupBannerCta;
 
+  /// No description provided for @deleteTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type DELETE to confirm'**
   String get deleteTypeHint;
 
+  /// No description provided for @deletePermanently.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
   String get deletePermanently;
 }
 

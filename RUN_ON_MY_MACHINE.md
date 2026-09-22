@@ -100,10 +100,9 @@ Then Settings → Reminders → "Send a test notification" proves the chain.
 2. **SQL Editor → New query → paste the whole of `backend/schema.sql` → Run.**
    Expect: success, no errors. (20 tables, RLS policies, triggers.)
 3. **Project Settings → API**: copy the Project URL and the `anon` key.
-4. In `app/`: `cp .env.example .env`, fill in `SUPABASE_URL` and
-   `SUPABASE_ANON_KEY`, then **uncomment** the `- .env` line under
-   `assets:` in `pubspec.yaml`. (Or skip files entirely — see
-   "GO LIVE ON A DEVICE".)
+4. In `app/`: `cp .env.example .env`, then fill in `SUPABASE_URL` and
+   `SUPABASE_ANON_KEY`. The ignored file is already included under `assets:`
+   in `pubspec.yaml`.
 5. Auth is **email + password** (Supabase GoTrue, already wired). If
    signups demand confirmation, add an SMTP provider under
    Authentication → SMTP so the inbox mail actually arrives.
@@ -141,11 +140,11 @@ Also verify: kid claims chore on B → parent confirms on A → stars move.
 
 The app is live-only — there is no demo mode. It needs your Supabase
 connection at build time; a build without one shows a setup error screen.
-Three ways (pick one):
+Two ways (pick one):
 
-**Option A — constants (simplest):** paste your Project URL + anon key into
-`kSupabaseUrl` / `kSupabaseAnonKey` in `app/lib/core/config/app_env.dart`,
-then just `flutter run`. Both values are public-by-design (RLS protects data).
+**Option A — .env asset (local development):** `cd app && cp .env.example
+.env`, fill it in, then build. The file is already declared in pubspec and is
+ignored by git.
 
 **Option B — build flags:**
 ```
@@ -153,9 +152,6 @@ flutter run \
   --dart-define=MHURI_SUPABASE_URL=https://<your-ref>.supabase.co \
   --dart-define=MHURI_SUPABASE_ANON_KEY=<your-anon-key>
 ```
-
-**Option C — .env asset:** `cd app && cp .env.example .env`, fill it in,
-uncomment `- .env` under `assets:` in pubspec.yaml, build.
 
 **Verify:** login screen appears (not a seeded family). Sign up with a real
 email, create the family, record one transaction — then check Supabase →

@@ -73,11 +73,6 @@ flutter:
           weight: 800
   assets:
     - assets/branding/
-    # Server connection (the app has no demo mode — it is always live).
-    # Three ways to configure, in precedence order:
-    #   1. --dart-define=MHURI_SUPABASE_URL=… MHURI_SUPABASE_ANON_KEY=…
-    #   2. this .env asset: create it from .env.example, then uncomment:
-    # - .env
-    #   3. kSupabaseUrl / kSupabaseAnonKey constants in
-    #      lib/core/config/app_env.dart (no build flags needed)
-    # - .env
+    # Local server configuration. The real file is ignored by git; create it
+    # from .env.example. Never put a Supabase service-role key in this asset.
+    - .env

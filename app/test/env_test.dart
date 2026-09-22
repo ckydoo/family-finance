@@ -37,14 +37,6 @@ SUPABASE_ANON_KEY=k
     expect(env.isConfigured, isTrue);
   });
 
-  test('load() with no asset, defines or constants reports a setup error', () {
-    // In the test environment there is no .env asset and no dart-defines,
-    // and kSupabaseUrl/kSupabaseAnonKey ship empty — exactly the misconfigured
-    // build main() must catch.
-    expect(AppEnv.kSupabaseUrl, isEmpty);
-    expect(AppEnv.kSupabaseAnonKey, isEmpty);
-  });
-
   test('isConfigured requires BOTH the url and the key', () {
     expect(
       AppEnv.parse('SUPABASE_URL=https://x.supabase.co\n').isConfigured,

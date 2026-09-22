@@ -34,7 +34,7 @@ without touching feature code.
 | I — Reports | 🟡 **report card** (income vs spent, saved, envelope-health ring, cash-leak %, top envelopes) — share-as-PDF in Phase 2 |
 | J — Sync/settings | ✅ real outbox + server sync, pull-to-refresh, language picker (6 languages), elder text scale |
 | Persistence (M1) | ✅ **local SQLite (sqflite, zero-codegen)** — every mutation writes through; app restarts keep all data |
-| Auth & env (M2) | ✅ email + password login (hand-written GoTrue REST), session restore, hashed PINs, login gate; connection via dart-defines / `.env` asset / constants — live-only, no fallback |
+| Auth & env (M2) | ✅ email + password login (hand-written GoTrue REST), session restore, hashed PINs, login gate; connection via ignored `.env` asset or CI dart-defines — live-only, no fallback |
 | Sync (M3) | ✅ outbox + pull-cursor engine (hand-written PostgREST), family create/join by invite code, live mutation queues, Home sync banner is real — server SQL in `../backend/migrations/` |
 | Completeness (M4) | ✅ onboarding, recurring expenses with Post/Skip review, payday-aligned cycles + rollover carry math, Family Meeting screen, CSV export, empty/loading states |
 | Notifications (M5) | ✅ device-local reminders: bills 3-day, envelope 80%/empty, kid requests, savings-circle Sunday, goal milestones, meeting eve, Sunday digest — quiet hours + per-category prefs in Settings |
@@ -175,7 +175,7 @@ lib/
     widgets/                   TxTile, RingProgress
     db/app_database.dart       local SQLite schema (hand-written, no codegen)
     db/persistence.dart        mappers + seed/load/upserts for every entity
-    config/app_env.dart        server-connection config (dart-defines/.env/constants)
+    config/app_env.dart        server-connection config (.env/dart-defines)
     auth/auth_service.dart     auth models + service interface (Supabase impl)
     auth/supabase_auth_service.dart  hand-written GoTrue REST client (OTP)
     auth/auth_controller.dart  session lifecycle for the UI

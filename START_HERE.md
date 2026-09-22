@@ -17,17 +17,15 @@ shared across devices. There is no demo mode.
 - A Supabase project with the backend installed (see `backend/README.md` + run migrations `001`–`004`)
 - Internet for the first `flutter pub get`
 
-## 2. Connect it to your Supabase (one of three ways)
+## 2. Connect it to your Supabase
 
-1. **Constants (no flags, no files):** paste your Project URL + anon key
-   into `kSupabaseUrl` / `kSupabaseAnonKey` in
-   `app/lib/core/config/app_env.dart`. Both values are public-by-design.
-2. **Build flags:**
+1. **Local development:** copy `app/.env.example` to `app/.env` and fill in
+   `SUPABASE_URL` and `SUPABASE_ANON_KEY`. The file is ignored by git and is
+   already included in Flutter's asset list.
+2. **CI/release build flags:**
    `flutter run --dart-define=MHURI_SUPABASE_URL=… --dart-define=MHURI_SUPABASE_ANON_KEY=…`
-3. **Asset file:** copy `app/.env.example` → `app/.env`, fill it in, and
-   uncomment the `- .env` line under `assets:` in `pubspec.yaml`.
 
-A build with none of these shows a setup error screen — it never runs
+A build with neither source shows a setup error screen — it never runs
 "offline pretend" mode.
 
 ## 3. Run it (3 commands)

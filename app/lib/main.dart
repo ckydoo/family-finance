@@ -8,7 +8,7 @@ import 'core/db/app_database.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Server connection (see AppEnv): dart-defines > .env asset > constants.
+  // Server connection (see AppEnv): ignored .env asset, then dart-defines.
   // A build with no connection shows the setup screen below — it never
   // runs as anything other than the real app.
   final env = await AppEnv.load();

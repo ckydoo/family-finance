@@ -313,8 +313,6 @@ class AppLocalizationsNd extends AppLocalizations {
       'Faka inombolo esebenzayo (isb. +44 7700 900123).';
 
   @override
-
-  @override
   String get quickAddTitle => 'Engeza okusheshayo';
 
   @override
@@ -423,8 +421,6 @@ class AppLocalizationsNd extends AppLocalizations {
   @override
   String get membersInviteHint =>
       'Yabelana ngekhodi noma skanela ubize umndeni';
-
-  @override
 
   @override
   String get setCurrency => 'Imali & izinga';
@@ -1127,8 +1123,6 @@ class AppLocalizationsNd extends AppLocalizations {
   String get inviteTitle => 'Memela ilunga lomndeni';
 
   @override
-
-  @override
   String get editProfile => 'Hlela iphrofayili';
 
   @override
@@ -1215,86 +1209,92 @@ class AppLocalizationsNd extends AppLocalizations {
   String get obDone => 'Masiqalise';
 
   @override
-  String get setupChoiceTitle => "Hlela umndeni wakho";
+  String get setupChoiceTitle => 'Hlela umndeni wakho';
 
   @override
-  String get setupChoiceBody => "I-Mhuri Hub isebenza nomndeni owodwa, ndawonye. Yakha lowakho, noma joyina lowo owungulowo.";
+  String get setupChoiceBody =>
+      'I-Mhuri Hub isebenza nomndeni owodwa, ndawonye. Yakha lowakho, noma joyina lowo owungulowo.';
 
   @override
-  String get setupCreateCard => "Yakha umndeni";
+  String get setupCreateCard => 'Yakha umndeni';
 
   @override
-  String get setupCreateCardBody => "Nika igama, khetha uhlobo lomndeni, memela abantu bakho.";
+  String get setupCreateCardBody =>
+      'Nika igama, khetha uhlobo lomndeni, memela abantu bakho.';
 
   @override
-  String get setupJoinCard => "Ngena ngekholodi";
+  String get setupJoinCard => 'Ngena ngekholodi';
 
   @override
-  String get setupJoinCardBody => "Umuntu ukumemele — faza ikholodi yomndeni wakhe ujoyine.";
+  String get setupJoinCardBody =>
+      'Umuntu ukumemele — faza ikholodi yomndeni wakhe ujoyine.';
 
   @override
-  String get createFamilyCta => "Yakha umndeni";
+  String get createFamilyCta => 'Yakha umndeni';
 
   @override
-  String get joinFamilyCta => "Joyina umndeni";
+  String get joinFamilyCta => 'Joyina umndeni';
 
   @override
-  String get familyNameLabel => "Igama lomndeni";
+  String get familyNameLabel => 'Igama lomndeni';
 
   @override
-  String get familyNameHint => "isb. Umndeni kaMarufu";
+  String get familyNameHint => 'isb. Umndeni kaMarufu';
 
   @override
-  String get householdLabel => "Yimuphi uhlobo lomndeni?";
+  String get householdLabel => 'Yimuphi uhlobo lomndeni?';
 
   @override
-  String get hhCouple => "Abashadile nabantwana";
+  String get hhCouple => 'Abashadile nabantwana';
 
   @override
-  String get hhSingle => "Umzali oyedwa";
+  String get hhSingle => 'Umzali oyedwa';
 
   @override
-  String get hhExtended => "Umndeni omkhulu";
+  String get hhExtended => 'Umndeni omkhulu';
 
   @override
-  String get hhBlended => "Umndeni ohlangene";
+  String get hhBlended => 'Umndeni ohlangene';
 
   @override
-  String get hhPartners => "Abashadile, ngabantwana";
+  String get hhPartners => 'Abashadile, ngabantwana';
 
   @override
-  String get hhSolo => "Mina yedwa okwesikhashana";
+  String get hhSolo => 'Mina yedwa okwesikhashana';
 
   @override
-  String get hhOther => "Okunye";
+  String get hhOther => 'Okunye';
 
   @override
-  String get joinCodeLabel => "Ikholodi yememo";
+  String get joinCodeLabel => 'Ikholodi yememo';
 
   @override
-  String get skipForNow => "Yeqela okwesikhashana";
+  String get skipForNow => 'Yeqela okwesikhashana';
 
   @override
-  String get setupInviteTitle => "Memela abantu bakho";
+  String get setupInviteTitle => 'Memela abantu bakho';
 
   @override
-  String get setupWorking => "Kulungisa konke…";
+  String get setupWorking => 'Kulungisa konke…';
 
   @override
-  String get noEnvelopesYet => "Ayikho imibhajeti okhona — yakha leyonqaba kuthebha leziBajeti.";
+  String get noEnvelopesYet =>
+      'Ayikho imibhajeti okhona — yakha leyonqaba kuthebha leziBajeti.';
 
   @override
-  String get noActivityYet => "Akukho okubhalwe okhona. Thelela + ukungeza itransaction yakho yokuqala.";
+  String get noActivityYet =>
+      'Akukho okubhalwe okhona. Thelela + ukungeza itransaction yakho yokuqala.';
 
   @override
-  String get setupBanner => "Gcwalisa ukulungisa: yakha umndeni wakho noma ngena ngekholodi";
+  String get setupBanner =>
+      'Gcwalisa ukulungisa: yakha umndeni wakho noma ngena ngekholodi';
 
   @override
-  String get setupBannerCta => "Hlela";
+  String get setupBannerCta => 'Hlela';
 
   @override
-  String get deleteTypeHint => "Bhala DELETE ukuqinisekise";
+  String get deleteTypeHint => 'Bhala DELETE ukuqinisekise';
 
   @override
-  String get deletePermanently => "Cisha kunaphakade";
+  String get deletePermanently => 'Cisha kunaphakade';
 }
