@@ -58,8 +58,15 @@ class AuthController extends ChangeNotifier {
     final r = await _service.signIn(email, password);
     _busy = false;
     if (r.ok) {
-      _session = await _service.restoreSession();
-      _session ??= AuthSession(userId: 'user', email: email);
+      // The service cached the session while persisting its tokens — use it
+      // directly. (Never fabricate one: a session without stored tokens sent
+      // empty JWTs to the server.)
+      _session = _service.session;
+      if (_session == null) {
+        _lastError = 'Sign-in could not be completed — try again.';
+        notifyListeners();
+        return false;
+      }
     } else {
       _lastError = r.error;
     }
@@ -81,14 +88,22 @@ class AuthController extends ChangeNotifier {
         notifyListeners();
         return false;
       }
-      _session = await _service.restoreSession();
-      _session ??= AuthSession(userId: 'user', email: email);
+      _session = _service.session;
+      if (_session == null) {
+        _lastError = 'Account created but sign-in could not be completed — '
+            'sign in with your new password.';
+        notifyListeners();
+        return false;
+      }
     } else {
       _lastError = r.error;
     }
     notifyListeners();
     return r.ok;
   }
+
+  /// Fresh access token for the sync layer (null when unrenewable).
+  Future<String?> refreshAccessToken() => _service.refreshAccessToken();
 
   Future<void> signOut() async {
     await _service.signOut();

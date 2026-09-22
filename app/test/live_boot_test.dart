@@ -18,6 +18,13 @@ import 'package:mhuri_money/core/db/app_database.dart';
 class FakeAuthService implements AuthService {
   AuthSession? _session;
 
+  @override
+  AuthSession? get session => _session;
+
+  @override
+  Future<String?> refreshAccessToken() async =>
+      _session == null ? null : 'fake-access-token';
+
   bool _valid(String email, String password) =>
       email.contains('@') && email.contains('.') && password.length >= 6;
 

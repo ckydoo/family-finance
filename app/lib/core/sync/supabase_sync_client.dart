@@ -28,9 +28,16 @@ class SupabaseSyncClient {
 
   Future<Map<String, String>> _headers() async {
     final token = await _tokenGet();
+    if (token == null || token.isEmpty) {
+      // Never send an empty credential (Supabase's gateway answers with a
+      // cryptic "Empty JWT is sent in Authorization header"). Fail with an
+      // actionable, auth-typed error the UI already maps to "sign in".
+      throw const SyncException(
+          401, 'Your session has expired — sign in again.');
+    }
     return {
       'apikey': _anonKey,
-      'Authorization': 'Bearer ${token ?? ''}',
+      'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
     };
   }

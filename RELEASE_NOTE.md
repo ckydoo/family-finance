@@ -1,1 +1,1 @@
-Demo mode removed completely: live-only app, three config paths, setup error screen instead of offline fiction
+Restore self-healing auth on the .env-asset config: no ghost sessions, no token wiping on transient refresh failures

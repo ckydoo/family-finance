@@ -48,6 +48,9 @@ class SupabaseAuthService implements AuthService {
       };
 
   @override
+  AuthSession? get session => _session;
+
+  @override
   Future<AuthResult> signIn(String email, String password) async {
     try {
       final r = await _client.post(
@@ -130,7 +133,10 @@ class SupabaseAuthService implements AuthService {
       return _session;
     }
 
-    // Try to refresh; if the refresh token is dead, clear and show login.
+    // Try to refresh; only a definite rejection (400/401 — dead refresh
+    // token) clears the session for a clean re-login. Transient failures
+    // (5xx, rate limits, offline bodies) MUST NOT wipe the stored tokens:
+    // that produced a "logged-in app with empty JWT" state.
     try {
       final r = await _client.post(
         Uri.parse('$_base/auth/v1/token?grant_type=refresh_token'),
@@ -150,7 +156,15 @@ class SupabaseAuthService implements AuthService {
           return _session;
         }
       }
-      await _clearTokens();
+      if (r.statusCode == 400 || r.statusCode == 401) {
+        await _clearTokens();
+        return _session;
+      }
+      // Transient server error: keep tokens, trust the stored identity.
+      if ((userId != null && userId.isNotEmpty)) {
+        _session ??= AuthSession(userId: userId, email: email ?? '');
+        return _session;
+      }
       return _session;
     } catch (_) {
       // Offline at startup with a stored session: trust it for now; the sync
@@ -160,6 +174,34 @@ class SupabaseAuthService implements AuthService {
         return _session;
       }
       return _session;
+    }
+  }
+
+  @override
+  Future<String?> refreshAccessToken() async {
+    final get = _kvGet;
+    if (get == null) return null;
+    final refresh = await get('auth_refresh_token');
+    if (refresh == null || refresh.isEmpty) return null;
+    try {
+      final r = await _client.post(
+        Uri.parse('$_base/auth/v1/token?grant_type=refresh_token'),
+        headers: _headers,
+        body: jsonEncode({'refresh_token': refresh}),
+      );
+      if (r.statusCode < 200 || r.statusCode >= 300) return null;
+      final body = jsonDecode(r.body) as Map<String, dynamic>;
+      final newAccess = body['access_token'] as String?;
+      if (newAccess == null || newAccess.isEmpty) return null;
+      final newRefresh = body['refresh_token'] as String? ?? refresh;
+      final uid = await get('auth_user_id') ?? 'user';
+      final em = await get('auth_email') ?? '';
+      _session = AuthSession(userId: uid, email: em);
+      await _persistTokens(
+          access: newAccess, refresh: newRefresh, userId: uid, email: em);
+      return newAccess;
+    } catch (_) {
+      return null;
     }
   }
 

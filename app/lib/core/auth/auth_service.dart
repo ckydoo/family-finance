@@ -33,12 +33,21 @@ class AuthResult {
 /// The one real implementation is `SupabaseAuthService`; this interface
 /// exists so tests can inject a deterministic fake without any network.
 abstract class AuthService {
+  /// The session cached in memory (non-null right after a successful
+  /// sign-in/sign-up, without touching the network).
+  AuthSession? get session;
+
   Future<AuthResult> signIn(String email, String password);
 
   Future<AuthResult> signUp(String email, String password);
 
   /// Returns a saved session at startup, or null (show login).
   Future<AuthSession?> restoreSession();
+
+  /// Best-effort fresh access token for the sync layer (null when the
+  /// session cannot be renewed — the caller must treat the user as signed
+  /// out rather than sending an empty credential).
+  Future<String?> refreshAccessToken();
 
   Future<void> signOut();
 

@@ -224,7 +224,23 @@ void main() {
       await db.raw.close();
     });
 
-    test('createSpace stores id/code, wipes local rows, pulls family data',
+    test('sync client refuses an empty token (never sends an empty JWT)',
+      () async {
+    final client = SupabaseSyncClient(
+      baseUrl: 'https://abcdefgh.supabase.co',
+      anonKey: 'anon-key',
+      tokenGet: () async => '',
+      client: server, // must never be reached
+    );
+    await expectLater(
+      client.rpc('create_space', {'p_name': 'X'}),
+      throwsA(isA<SyncException>()
+          .having((e) => e.statusCode, 'statusCode', 401)
+          .having((e) => e.message, 'message', contains('sign in again'))),
+    );
+  });
+
+  test('createSpace stores id/code, wipes local rows, pulls family data',
         () async {
       // One locally recorded envelope from before adoption (offline-first
       // start) — adoption wipes it so the family's server data takes over.

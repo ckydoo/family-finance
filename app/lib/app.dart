@@ -71,7 +71,12 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         client: SupabaseSyncClient(
           baseUrl: url!,
           anonKey: key ?? '',
-          tokenGet: () => db.kvGet('auth_access_token'),
+          tokenGet: () async {
+            final t = await db.kvGet('auth_access_token');
+            if (t != null && t.isNotEmpty) return t;
+            // Self-heal a wiped/expired access token from the refresh token.
+            return _auth.refreshAccessToken();
+          },
         ),
         database: db.raw,
         persistence: Persistence(db),

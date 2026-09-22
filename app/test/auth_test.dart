@@ -228,6 +228,81 @@ void main() {
       expect(kv['auth_refresh_token'], 'refresh-10');
     });
 
+    test('a TRANSIENT refresh failure keeps the stored session (no empty-JWT state)', () async {
+      // Stored session from a previous run.
+      kv['auth_access_token'] = 'access-1';
+      kv['auth_refresh_token'] = 'refresh-1';
+      kv['auth_user_id'] = 'uuid-7';
+      kv['auth_email'] = 'david@mhuri.app';
+
+      // Supabase hiccups (5xx) on the refresh grant.
+      client = FakeClient([const MapEntry(500, '{"error":"upstream unavailable"}')]);
+      service = SupabaseAuthService(
+        baseUrl: 'https://abcdefgh.supabase.co/',
+        anonKey: 'anon-key',
+        kvGet: (k) async => kv[k],
+        kvSet: (k, v) async => kv[k] = v,
+        client: client,
+      );
+
+      final s = await service.restoreSession();
+
+      // Session survives from the stored identity; tokens NOT wiped —
+      // wiping them here produced "logged-in app sending empty JWT".
+      expect(s, isNotNull);
+      expect(s!.userId, 'uuid-7');
+      expect(kv['auth_access_token'], 'access-1');
+      expect(kv['auth_refresh_token'], 'refresh-1');
+    });
+
+    test('a DEAD refresh token (400) clears tokens for a clean re-login', () async {
+      kv['auth_access_token'] = 'access-1';
+      kv['auth_refresh_token'] = 'refresh-dead';
+      kv['auth_user_id'] = 'uuid-7';
+      kv['auth_email'] = 'david@mhuri.app';
+
+      client = FakeClient([const MapEntry(400, '{"error":"Invalid Refresh Token"}')]);
+      service = SupabaseAuthService(
+        baseUrl: 'https://abcdefgh.supabase.co/',
+        anonKey: 'anon-key',
+        kvGet: (k) async => kv[k],
+        kvSet: (k, v) async => kv[k] = v,
+        client: client,
+      );
+
+      final s = await service.restoreSession();
+      expect(s, isNull);
+      expect(kv['auth_access_token'], '');
+      expect(kv['auth_refresh_token'], '');
+    });
+
+    test('refreshAccessToken() renews and persists the access token', () async {
+      kv['auth_access_token'] = 'access-1';
+      kv['auth_refresh_token'] = 'refresh-1';
+      kv['auth_user_id'] = 'uuid-7';
+      kv['auth_email'] = 'david@mhuri.app';
+
+      client = FakeClient([MapEntry(
+          200,
+          jsonEncode({
+            'access_token': 'access-9',
+            'refresh_token': 'refresh-9',
+          }))]);
+      service = SupabaseAuthService(
+        baseUrl: 'https://abcdefgh.supabase.co/',
+        anonKey: 'anon-key',
+        kvGet: (k) async => kv[k],
+        kvSet: (k, v) async => kv[k] = v,
+        client: client,
+      );
+
+      final token = await service.refreshAccessToken();
+      expect(token, 'access-9');
+      expect(kv['auth_access_token'], 'access-9');
+      expect(kv['auth_refresh_token'], 'refresh-9');
+      expect(service.session!.userId, 'uuid-7');
+    });
+
     test('signOut clears stored tokens (best-effort server call)', () async {
       client.responses
         ..clear()

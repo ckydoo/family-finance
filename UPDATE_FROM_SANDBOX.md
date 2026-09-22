@@ -70,6 +70,16 @@ scripts just automate that (and protect `.env`).
 
 ## Demo removal round (2026-09-22, unpushed)
 - Demo mode DELETED entirely: no EnvMode, no `DemoAuthService`, no `seed_data.dart`, no demo UI strings (login footer, members tip, invite note, settings mode card all removed). l10n 389 → **383 ×6**.
-- App is live-only: config via ignored `.env` asset or CI dart-defines; no connection → setup error screen (never offline fiction).
+- App is live-only: config via dart-defines > .env asset > `kSupabaseUrl/kSupabaseAnonKey` constants; no connection → setup error screen (never offline fiction).
 - First-boot legacy purge kept (`live_purged_v1`), no longer gated on env.
 - Tests: added `test/fake_auth.dart` + `test/seed.dart` (explicit test-only baseline); rewrote env/auth/onboarding/widget/persistence/flows/m4/sync tests for the live-only reality (lib_boot 9 tests; zero `DemoAuthService`/`seed_data` refs).
+
+## Empty-JWT fix (2026-09-22, unpushed)
+- Device error "Empty JWT is sent in Authorization header" on Create family — root cause: a failed post-signin token refresh WIPED stored tokens but left the session, so the app looked logged in and sent `Bearer ` + nothing.
+- Fixes: (1) controller uses the service-cached session — no second network call after sign-in, no fabricated sessions; (2) restoreSession only clears tokens on a definite 400/401 — transient 5xx keeps the login; (3) `refreshAccessToken()` + self-healing sync token closure; (4) sync client throws `SyncException(401, "Your session has expired — sign in again.")` instead of ever sending an empty credential.
+- Tests +4 (transient-keeps-session, dead-token-clears, refresh-renews, client empty-token guard). auth_test 15 → 18.
+
+## Repair after the configure merge (2026-09-22, unpushed)
+- The "configure"/merge round restored the .env-asset config (asset-first, constants path removed — kept, it's the right call) but accidentally reverted the empty-JWT auth fixes, leaving a hybrid that could not compile (controller used `service.session`; the interface getter was reverted away).
+- This round restores the full auth-fix set (session getter, soft-fail restoreSession, refreshAccessToken, self-healing token closure, empty-JWT client guard + tests) ON TOP of the asset-first config.
+
