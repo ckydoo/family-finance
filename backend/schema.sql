@@ -214,6 +214,7 @@ create table list_item (
   added_by uuid not null references user_profile(id),
   assigned_to uuid references user_profile(id) on delete set null,
   state text not null default 'tobuy' check (state in ('tobuy','incart','done')),
+  checked_out boolean not null default false,
   created_at timestamptz not null default now()
 );
 

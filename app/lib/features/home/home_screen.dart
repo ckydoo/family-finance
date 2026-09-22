@@ -13,6 +13,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/tx_tile.dart';
 import '../activity/activity_screen.dart';
+import '../budgets/budgets_screen.dart' show showEnvelopeDetailSheet;
 import '../members/members_screen.dart';
 import '../reports/reports_screen.dart';
 
@@ -32,8 +33,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final u = s.user;
     final hour = DateTime.now().hour;
     final l = AppLocalizations.of(context)!;
-    final greet =
-        hour < 12 ? l.greetingMorning : hour < 19 ? l.greetingAfternoon : l.greetingEvening;
+    final greet = hour < 12
+        ? l.greetingMorning
+        : hour < 19
+            ? l.greetingAfternoon
+            : l.greetingEvening;
 
     return SafeArea(
       // G10: the pool card compresses subtly as content scrolls under it.
@@ -44,297 +48,311 @@ class _HomeScreenState extends State<HomeScreen> {
           return false;
         },
         child: RefreshIndicator(
-        onRefresh: () => s.refresh(),
-        child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-        children: [
-          // ── Header ──────────────────────────────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+            onRefresh: () => s.refresh(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              children: [
+                // ── Header ──────────────────────────────────────────────────────
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '$greet, ${u.name}',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: context.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Family switcher: a visible, tappable pill — the
-                    // affordance was invisible as a bare avatar row.
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const MembersScreen(),
-                        ),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
-                        decoration: BoxDecoration(
-                          color: context.card,
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: context.hairline),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (var i = 0; i < s.members.take(5).length; i++)
-                              Transform.translate(
-                                offset: Offset(-6.0 * i, 0),
-                                child: CircleAvatar(
-                                  radius: 14,
-                                  backgroundColor: _avatarBg(s.members[i].role),
-                                  backgroundImage:
-                                      s.members[i].avatarUrl != null
-                                          ? NetworkImage(
-                                              s.members[i].avatarUrl!)
-                                          : null,
-                                  child: s.members[i].avatarUrl != null
-                                      ? null
-                                      : Icon(
-                                          iconForKey(s.members[i].emoji) ??
-                                              Icons.person,
-                                          size: 14,
-                                          color: context.ink,
-                                        ),
-                                ),
-                              ),
-                            const SizedBox(width: 2),
-                            Icon(Icons.person_add_alt_1,
-                                size: 15, color: context.primary),
-                            const SizedBox(width: 4),
-                            Text(
-                              AppLocalizations.of(context)!.familyCta,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: context.ink,
-                                fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$greet, ${u.name}',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: context.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Family switcher: a visible, tappable pill — the
+                          // affordance was invisible as a bare avatar row.
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const MembersScreen(),
                               ),
                             ),
-                            Icon(Icons.chevron_right,
-                                size: 16, color: context.inkSoft),
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+                              decoration: BoxDecoration(
+                                color: context.card,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: context.hairline),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  for (var i = 0;
+                                      i < s.members.take(5).length;
+                                      i++)
+                                    Transform.translate(
+                                      offset: Offset(-6.0 * i, 0),
+                                      child: CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor:
+                                            _avatarBg(s.members[i].role),
+                                        backgroundImage:
+                                            s.members[i].avatarUrl != null
+                                                ? NetworkImage(
+                                                    s.members[i].avatarUrl!)
+                                                : null,
+                                        child: s.members[i].avatarUrl != null
+                                            ? null
+                                            : Icon(
+                                                iconForKey(
+                                                        s.members[i].emoji) ??
+                                                    Icons.person,
+                                                size: 14,
+                                                color: context.ink,
+                                              ),
+                                      ),
+                                    ),
+                                  const SizedBox(width: 2),
+                                  Icon(Icons.person_add_alt_1,
+                                      size: 15, color: context.primary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    AppLocalizations.of(context)!.familyCta,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: context.ink,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Icon(Icons.chevron_right,
+                                      size: 16, color: context.inkSoft),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Report card: colorful badge — it leads to the app's charts,
+                    // so the button itself carries the chart colors.
+                    IconButton(
+                      tooltip: AppLocalizations.of(context)!.reportCard,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const ReportsScreen()),
+                      ),
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: context.card,
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(
+                              color: context.primarySoft, width: 1.4),
+                        ),
+                        child: _ReportsDonutGlyph(
+                          colors: [
+                            context.primary,
+                            context.accent,
+                            context.incomeGreen,
+                            context.expenseRed,
+                            context.primaryDark,
+                            const Color(0xFF7EC8F2),
+                            const Color(0xFFFF6B6B),
                           ],
                         ),
                       ),
                     ),
+                    IconButton(
+                      tooltip: AppLocalizations.of(context)!.remindersTitle,
+                      onPressed: () => showRemindersSheet(context),
+                      icon: Icon(Icons.notifications_none, color: context.ink),
+                    ),
                   ],
                 ),
-              ),
-              // Report card: colorful badge — it leads to the app's charts,
-              // so the button itself carries the chart colors.
-              IconButton(
-                tooltip: AppLocalizations.of(context)!.reportCard,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ReportsScreen()),
-                ),
-                icon: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: context.card,
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: context.primarySoft, width: 1.4),
-                  ),
-                  child: _ReportsDonutGlyph(
-                    colors: [
-                      context.primary,
-                      context.accent,
-                      context.incomeGreen,
-                      context.expenseRed,
-                      context.primaryDark,
-                      const Color(0xFF7EC8F2),
-                      const Color(0xFFFF6B6B),
-                    ],
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: AppLocalizations.of(context)!.remindersTitle,
-                onPressed: () => showRemindersSheet(context),
-                icon: Icon(Icons.notifications_none, color: context.ink),
-              ),
-            ],
-          ),
 
-          // ── Offline sync banner (outbox queue status) ─────────────────
-          if (s.pendingOps > 0) ...[
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () {
-                s.syncNow();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context)!.allSynced),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDF1DA),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.syncPill(s.pendingOps),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF8A6116),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 16),
-
-          // ── Family Pool ─────────────────────────────────────────────────
-          AnimatedScale(
-            scale: _poolCompact ? 0.97 : 1.0,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut,
-            child: const _PoolCard(),
-          ), // G10
-
-          const SizedBox(height: 16),
-
-          // ── Family-setup nudge (skip-for-now limbo) ────────────────────
-          if (!s.hasSpace)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Material(
-                color: context.card,
-                borderRadius: kBRadiusM,
-                child: InkWell(
-                  onTap: s.reopenFamilySetup,
-                  borderRadius: kBRadiusM,
-                  splashColor: context.primarySoft,
-                  highlightColor: context.primarySoft,
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      borderRadius: kBRadiusM,
-                      border: Border.all(color: context.primary, width: 1.2),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.family_restroom,
-                            size: 20, color: context.primary),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(context)!.setupBanner,
-                            style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: context.ink,
-                                height: 1.35),
-                          ),
+                // ── Offline sync banner (outbox queue status) ─────────────────
+                if (s.pendingOps > 0) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () {
+                      s.syncNow();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text(AppLocalizations.of(context)!.allSynced),
+                          behavior: SnackBarBehavior.floating,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(context)!.setupBannerCta,
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                              color: context.primary),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFDF1DA),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.syncPill(s.pendingOps),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF8A6116),
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          // ── Envelope chips (hidden until real envelopes exist) ──────────
-          if (s.envelopes.any((e) => !e.isPersonal)) ...[
-            SizedBox(
-              height: 122,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  for (final e in s.envelopes.where((e) => !e.isPersonal).take(4))
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: _EnvChip(e: e),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-
-                    if (s.pendingOps > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 2, bottom: 6),
-              child: Row(
-                children: [
-                  Icon(Icons.cloud_off, size: 13, color: context.inkFaint),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      l.syncPill(s.pendingOps),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: context.inkFaint,
                       ),
                     ),
                   ),
                 ],
-              ),
-            ),
 
-          // ── Recent activity ─────────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  AppLocalizations.of(context)!.recentActivity,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.ink),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ActivityScreen()),
-                ),
-                child: Text(AppLocalizations.of(context)!.seeAll),
-              ),
-            ],
-          ),
-          if (s.txs.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.card,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: context.hairline),
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.noActivityYet,
-                style: TextStyle(
-                    fontSize: 12.5, color: context.inkSoft, height: 1.4),
-              ),
-            ),
-          for (final t in s.txs.take(3))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: TxTile(tx: t),
-            ),
+                const SizedBox(height: 16),
 
-          const SizedBox(height: 8),
-          const SmartCard(),
-        ],
-      )),
+                // ── Family Pool ─────────────────────────────────────────────────
+                AnimatedScale(
+                  scale: _poolCompact ? 0.97 : 1.0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  child: const _PoolCard(),
+                ), // G10
+
+                const SizedBox(height: 16),
+
+                // ── Family-setup nudge (skip-for-now limbo) ────────────────────
+                if (!s.hasSpace)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Material(
+                      color: context.card,
+                      borderRadius: kBRadiusM,
+                      child: InkWell(
+                        onTap: s.reopenFamilySetup,
+                        borderRadius: kBRadiusM,
+                        splashColor: context.primarySoft,
+                        highlightColor: context.primarySoft,
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            borderRadius: kBRadiusM,
+                            border:
+                                Border.all(color: context.primary, width: 1.2),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.family_restroom,
+                                  size: 20, color: context.primary),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  AppLocalizations.of(context)!.setupBanner,
+                                  style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.ink,
+                                      height: 1.35),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                AppLocalizations.of(context)!.setupBannerCta,
+                                style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: context.primary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // ── Envelope chips (hidden until real envelopes exist) ──────────
+                if (s.envelopes.any((e) => !e.isPersonal)) ...[
+                  SizedBox(
+                    height: 122,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        for (final e
+                            in s.envelopes.where((e) => !e.isPersonal).take(4))
+                          Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: _EnvChip(e: e),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                if (s.pendingOps > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 6),
+                    child: Row(
+                      children: [
+                        Icon(Icons.cloud_off,
+                            size: 13, color: context.inkFaint),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            l.syncPill(s.pendingOps),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: context.inkFaint,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // ── Recent activity ─────────────────────────────────────────────
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        AppLocalizations.of(context)!.recentActivity,
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: context.ink),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const ActivityScreen()),
+                      ),
+                      child: Text(AppLocalizations.of(context)!.seeAll),
+                    ),
+                  ],
+                ),
+                if (s.txs.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.card,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: context.hairline),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.noActivityYet,
+                      style: TextStyle(
+                          fontSize: 12.5, color: context.inkSoft, height: 1.4),
+                    ),
+                  ),
+                for (final t in s.txs.take(3))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: TxTile(tx: t),
+                  ),
+
+                const SizedBox(height: 8),
+                const SmartCard(),
+              ],
+            )),
       ),
     );
   }
@@ -369,108 +387,114 @@ class _PoolCard extends StatelessWidget {
         splashColor: Colors.white24,
         highlightColor: Colors.white10,
         child: Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [context.primary, context.primaryDark],
-        ),
-        borderRadius: kBRadiusL,
-        boxShadow: [
-          BoxShadow(
-            color: context.primary.withValues(alpha: 0.28),
-            blurRadius: 26,
-            offset: const Offset(0, 10),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [context.primary, context.primaryDark],
+            ),
+            borderRadius: kBRadiusL,
+            boxShadow: [
+              BoxShadow(
+                color: context.primary.withValues(alpha: 0.28),
+                blurRadius: 26,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
+          child: Column(
             children: [
-              Expanded(
-                child: Text(
-                  AppLocalizations.of(context)!.familyPool,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.familyPool,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
+                  IconButton(
+                    tooltip: s.hideAmounts
+                        ? AppLocalizations.of(context)!.showAmountsTip
+                        : AppLocalizations.of(context)!.hideAmountsTip,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      s.setHideAmounts(!s.hideAmounts);
+                    },
+                    icon: Icon(
+                      s.hideAmounts ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white70,
+                      size: 19,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _amount(primary, '•••••', s.hideAmounts,
+                        s.displayCurrency.short),
+                  ),
+                  IconButton(
+                    tooltip: AppLocalizations.of(context)!.swapCurrency,
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      s.toggleDisplayCurrency();
+                    },
+                    icon: const Icon(Icons.swap_horiz, color: Colors.white),
+                  ),
+                  Expanded(
+                    child: _amount(secondary, '•••••', s.hideAmounts,
+                        s.displayCurrency.other.short),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(30),
                 ),
-              ),
-              IconButton(
-                tooltip: s.hideAmounts ? AppLocalizations.of(context)!.showAmountsTip : AppLocalizations.of(context)!.hideAmountsTip,
-                visualDensity: VisualDensity.compact,
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  s.setHideAmounts(!s.hideAmounts);
-                },
-                icon: Icon(
-                  s.hideAmounts ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.white70,
-                  size: 19,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _amount(primary, '•••••', s.hideAmounts, s.displayCurrency.short),
-              ),
-              IconButton(
-                tooltip: AppLocalizations.of(context)!.swapCurrency,
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  s.toggleDisplayCurrency();
-                },
-                icon: const Icon(Icons.swap_horiz, color: Colors.white),
-              ),
-              Expanded(
-                child: _amount(secondary, '•••••', s.hideAmounts, s.displayCurrency.other.short),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!
-                  .safeToSpend(s.hideAmounts ? '•••••' : s.safeToSpend.text),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 12.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Visible affordance: the whole card opens Reports (eye = hide/show only).
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
                 child: Text(
-                  AppLocalizations.of(context)!.viewDetails,
+                  AppLocalizations.of(context)!.safeToSpend(
+                      s.hideAmounts ? '•••••' : s.safeToSpend.text),
                   style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5,
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right, size: 16, color: Colors.white70),
+              const SizedBox(height: 12),
+              // Visible affordance: the whole card opens Reports (eye = hide/show only).
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      AppLocalizations.of(context)!.viewDetails,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right,
+                      size: 16, color: Colors.white70),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
         ),
       ),
     );
@@ -511,57 +535,69 @@ class _EnvChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final spent = s.spentOn(e);
-    final value =
-        e.limit.minor <= 0 ? 0.0 : spent.minor / e.limit.minor;
+    final value = e.limit.minor <= 0 ? 0.0 : spent.minor / e.limit.minor;
     final pace = s.paceOf(e);
 
-    return Container(
-      width: 150,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+    return Semantics(
+      button: true,
+      label: e.name,
+      child: Material(
         color: context.card,
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: const BoxDecoration(
-              color: Color(0xFFEDF4F1),
-              shape: BoxShape.circle,
+        child: InkWell(
+          onTap: () => showEnvelopeDetailSheet(context, e),
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
+            width: 150,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEDF4F1),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      iconForKey(e.emoji) ?? Icons.savings,
+                      size: 17,
+                      color: context.primaryDark,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    e.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: context.ink),
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: value.clamp(0.0, 1.0).toDouble(),
+                      minHeight: 6,
+                      backgroundColor: context.track,
+                      color: _paceColor(context, pace),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${(value.clamp(0.0, 1.5) * 100).round()}%',
+                    style: TextStyle(fontSize: 11, color: context.inkSoft),
+                  ),
+                ],
+              ),
             ),
-            alignment: Alignment.center,
-            child: Icon(
-              iconForKey(e.emoji) ?? Icons.savings,
-              size: 17,
-              color: context.primaryDark,
-            ),
           ),
-          const Spacer(),
-          Text(
-            e.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.ink),
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: value.clamp(0.0, 1.0).toDouble(),
-              minHeight: 6,
-              backgroundColor: context.track,
-              color: _paceColor(context, pace),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${(value.clamp(0.0, 1.5) * 100).round()}%',
-            style: TextStyle(fontSize: 11, color: context.inkSoft),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -592,10 +628,13 @@ class SmartCard extends StatelessWidget {
     }
     if (pending != null) {
       final kid = s.member(pending.kidId);
-      return _card(context,
+      return _card(
+        context,
         color: const Color(0xFFFBE7C6),
         icon: Icons.volunteer_activism,
-        title: AppLocalizations.of(context)!.requestTitle(kid?.name ?? AppLocalizations.of(context)!.yourChild, pending.amount.text),
+        title: AppLocalizations.of(context)!.requestTitle(
+            kid?.name ?? AppLocalizations.of(context)!.yourChild,
+            pending.amount.text),
         subtitle: pending.reason,
         actionLabel: AppLocalizations.of(context)!.review,
         onTap: () => _reviewRequest(context, s, pending!),
@@ -613,11 +652,14 @@ class SmartCard extends StatelessWidget {
     if (proposal != null) {
       final teen = s.member(proposal.teenId);
       final env = s.envelope(proposal.envelopeId);
-      return _card(context,
+      return _card(
+        context,
         color: const Color(0xFFDCEBFA),
         icon: Icons.confirmation_number,
-        title: AppLocalizations.of(context)!.proposalTitle(teen?.name ?? 'Zoe', proposal.amount.text),
-        subtitle: AppLocalizations.of(context)!.proposalSub(proposal.reason, env?.name ?? AppLocalizations.of(context)!.envelopeLabel),
+        title: AppLocalizations.of(context)!
+            .proposalTitle(teen?.name ?? 'Zoe', proposal.amount.text),
+        subtitle: AppLocalizations.of(context)!.proposalSub(proposal.reason,
+            env?.name ?? AppLocalizations.of(context)!.envelopeLabel),
         actionLabel: AppLocalizations.of(context)!.review,
         onTap: () => _reviewProposal(context, s, proposal!),
       );
@@ -626,11 +668,15 @@ class SmartCard extends StatelessWidget {
     // 1c. Recurring expense due soon (C7) — review, post or skip
     final dueRule = s.dueRecurring.isEmpty ? null : s.dueRecurring.first;
     if (dueRule != null) {
-      return _card(context,
+      return _card(
+        context,
         color: const Color(0xFFE8E4F7),
         icon: Icons.push_pin,
         title: '${dueRule.name} — ${dueRule.amount.text}',
-        subtitle: AppLocalizations.of(context)!.recDueSub(dueRule.nextDue.isBefore(DateTime.now()) ? AppLocalizations.of(context)!.dueNow : AppLocalizations.of(context)!.dueSoon),
+        subtitle: AppLocalizations.of(context)!.recDueSub(
+            dueRule.nextDue.isBefore(DateTime.now())
+                ? AppLocalizations.of(context)!.dueNow
+                : AppLocalizations.of(context)!.dueSoon),
         actionLabel: AppLocalizations.of(context)!.post,
         onTap: () {
           s.postRecurring(dueRule);
@@ -655,7 +701,8 @@ class SmartCard extends StatelessWidget {
       }
     }
     if (waiting != null) {
-      return _card(context,
+      return _card(
+        context,
         color: const Color(0xFFD9EDE8),
         icon: Icons.auto_awesome,
         title: AppLocalizations.of(context)!.choreDoneTitle(waiting.name),
@@ -667,7 +714,8 @@ class SmartCard extends StatelessWidget {
           celebrate(context); // G11: stars rain for the kid who did it
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(AppLocalizations.of(context)!.starsGiven(waiting.stars)),
+              content:
+                  Text(AppLocalizations.of(context)!.starsGiven(waiting.stars)),
               behavior: SnackBarBehavior.floating,
               action: SnackBarAction(
                 label: AppLocalizations.of(context)!.undo,
@@ -682,16 +730,18 @@ class SmartCard extends StatelessWidget {
     // 3. Savings circle turn — OPT-IN: hidden until the family turns
     // mukando on (Savings tab or Settings).
     if (!s.mukandoEnabled) return const SizedBox.shrink();
-    return _card(context,
+    return _card(
+      context,
       color: const Color(0xFFEFE3F7),
       icon: Icons.autorenew,
-      title:
-          AppLocalizations.of(context)!.circleTitle(s.circle.currentRound, s.circle.totalRounds),
-      subtitle: AppLocalizations.of(context)!.circleSub(s.circle.nextCollector, s.circle.contribution.text, s.circle.potSoFar.text),
+      title: AppLocalizations.of(context)!
+          .circleTitle(s.circle.currentRound, s.circle.totalRounds),
+      subtitle: AppLocalizations.of(context)!.circleSub(s.circle.nextCollector,
+          s.circle.contribution.text, s.circle.potSoFar.text),
       actionLabel: AppLocalizations.of(context)!.markCollected,
       onTap: () {
         HapticFeedback.lightImpact();
-          s.circleCollect();
+        s.circleCollect();
         celebrate(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -717,7 +767,8 @@ class SmartCard extends StatelessWidget {
               s.declineRequest(r);
               Navigator.pop(ctx);
             },
-            child: Text(AppLocalizations.of(context)!.notThisWeek, style: TextStyle(color: context.inkSoft)),
+            child: Text(AppLocalizations.of(context)!.notThisWeek,
+                style: TextStyle(color: context.inkSoft)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -731,7 +782,8 @@ class SmartCard extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    AppLocalizations.of(context)!.approvedReq(r.amount.text, kid?.name ?? AppLocalizations.of(context)!.yourChild),
+                    AppLocalizations.of(context)!.approvedReq(r.amount.text,
+                        kid?.name ?? AppLocalizations.of(context)!.yourChild),
                   ),
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -751,15 +803,18 @@ class SmartCard extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(AppLocalizations.of(context)!.proposalTitle(teen?.name ?? 'Zoe', p.amount.text)),
-        content: Text(AppLocalizations.of(context)!.declineBody(p.reason, env?.name ?? '-')),
+        title: Text(AppLocalizations.of(context)!
+            .proposalTitle(teen?.name ?? 'Zoe', p.amount.text)),
+        content: Text(AppLocalizations.of(context)!
+            .declineBody(p.reason, env?.name ?? '-')),
         actions: [
           TextButton(
             onPressed: () {
               s.declineProposal(p);
               Navigator.pop(ctx);
             },
-            child: Text(AppLocalizations.of(context)!.decline, style: TextStyle(color: context.inkSoft)),
+            child: Text(AppLocalizations.of(context)!.decline,
+                style: TextStyle(color: context.inkSoft)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -773,7 +828,10 @@ class SmartCard extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    AppLocalizations.of(context)!.approvedProp(p.amount.text, env?.name ?? AppLocalizations.of(context)!.envelopeLabel),
+                    AppLocalizations.of(context)!.approvedProp(
+                        p.amount.text,
+                        env?.name ??
+                            AppLocalizations.of(context)!.envelopeLabel),
                   ),
                   behavior: SnackBarBehavior.floating,
                 ),

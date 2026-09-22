@@ -1075,6 +1075,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get limitLabel => 'Límite';
 
   @override
+  String envelopeRemaining(Object amount, Object name) {
+    return 'A $name le quedan $amount';
+  }
+
+  @override
+  String envelopeWillLeave(Object amount, Object name) {
+    return 'Esto deja $amount en $name';
+  }
+
+  @override
+  String envelopeWillExceed(Object amount, Object name) {
+    return 'Esto deja $name $amount por encima del presupuesto';
+  }
+
+  @override
+  String get overBudgetTitle => 'Este sobre superará el presupuesto';
+
+  @override
+  String overBudgetBody(Object amount, Object name) {
+    return '$name superará el presupuesto en $amount. Aun así puedes registrar el gasto.';
+  }
+
+  @override
+  String get adjustAmount => 'Ajustar importe';
+
+  @override
+  String get logAnyway => 'Registrar de todos modos';
+
+  @override
+  String overBy(Object amount) {
+    return 'Excedido por $amount';
+  }
+
+  @override
+  String get overBudgetLabel => 'Sobre presupuesto';
+
+  @override
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Bote: $pot · $contribution × $count miembros';
   }
@@ -1399,4 +1436,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get photoSaved => 'Foto guardada — tu familia también la verá.';
+
+  @override
+  String get newSavingsGoal => 'Nueva meta de ahorro';
+
+  @override
+  String get createSavingsGoal => 'Crear meta de ahorro';
+
+  @override
+  String get goalName => 'Nombre de la meta';
+
+  @override
+  String get goalNameHint => 'Fondo de emergencia';
+
+  @override
+  String get targetAmount => 'Importe objetivo';
+
+  @override
+  String get createGoal => 'Crear meta';
+
+  @override
+  String get goalNameAmountFirst =>
+      'Añade un nombre y un objetivo mayor que cero.';
+
+  @override
+  String get shoppingLogged => 'Compra registrada';
+
+  @override
+  String get loggedItem => 'Registrado';
 }

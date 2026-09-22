@@ -1064,6 +1064,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get limitLabel => 'Limit';
 
   @override
+  String envelopeRemaining(Object amount, Object name) {
+    return '$name has $amount remaining';
+  }
+
+  @override
+  String envelopeWillLeave(Object amount, Object name) {
+    return 'This leaves $amount in $name';
+  }
+
+  @override
+  String envelopeWillExceed(Object amount, Object name) {
+    return 'This puts $name $amount over budget';
+  }
+
+  @override
+  String get overBudgetTitle => 'This envelope will be over budget';
+
+  @override
+  String overBudgetBody(Object amount, Object name) {
+    return '$name will be over by $amount. The expense can still be recorded.';
+  }
+
+  @override
+  String get adjustAmount => 'Adjust amount';
+
+  @override
+  String get logAnyway => 'Log anyway';
+
+  @override
+  String overBy(Object amount) {
+    return 'Over by $amount';
+  }
+
+  @override
+  String get overBudgetLabel => 'Over budget';
+
+  @override
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Pot so far: $pot · $contribution × $count members';
   }
@@ -1384,4 +1421,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoSaved => 'Photo saved — your family will see it too.';
+
+  @override
+  String get newSavingsGoal => 'New savings goal';
+
+  @override
+  String get createSavingsGoal => 'Create savings goal';
+
+  @override
+  String get goalName => 'Goal name';
+
+  @override
+  String get goalNameHint => 'Emergency fund';
+
+  @override
+  String get targetAmount => 'Target amount';
+
+  @override
+  String get createGoal => 'Create goal';
+
+  @override
+  String get goalNameAmountFirst =>
+      'Add a goal name and a target greater than zero.';
+
+  @override
+  String get shoppingLogged => 'Shopping logged';
+
+  @override
+  String get loggedItem => 'Logged';
 }

@@ -1071,6 +1071,43 @@ class AppLocalizationsNd extends AppLocalizations {
   String get limitLabel => 'Umkhawulo';
 
   @override
+  String envelopeRemaining(Object amount, Object name) {
+    return 'I-$name isele lo-$amount';
+  }
+
+  @override
+  String envelopeWillLeave(Object amount, Object name) {
+    return 'Lokhu kutshiya u-$amount ku-$name';
+  }
+
+  @override
+  String envelopeWillExceed(Object amount, Object name) {
+    return 'Lokhu kwenza i-$name yedlule ngo-$amount';
+  }
+
+  @override
+  String get overBudgetTitle => 'Imvilophu izadlula ibhajethi';
+
+  @override
+  String overBudgetBody(Object amount, Object name) {
+    return 'I-$name izadlula ngo-$amount. Izindleko zingabhalwa loba kunjalo.';
+  }
+
+  @override
+  String get adjustAmount => 'Lungisa imali';
+
+  @override
+  String get logAnyway => 'Bhala loba kunjalo';
+
+  @override
+  String overBy(Object amount) {
+    return 'Yedlule ngo-$amount';
+  }
+
+  @override
+  String get overBudgetLabel => 'Idlule ibhajethi';
+
+  @override
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Isigqi okwamanje: $pot · $contribution × $count abantu';
   }
@@ -1393,4 +1430,31 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get photoSaved => 'Isithombe sigciniwe — umndeni wakho uzosibona.';
+
+  @override
+  String get newSavingsGoal => 'Inhloso entsha yokonga';
+
+  @override
+  String get createSavingsGoal => 'Dala inhloso yokonga';
+
+  @override
+  String get goalName => 'Igama lenhloso';
+
+  @override
+  String get goalNameHint => 'Imali yezimo eziphuthumayo';
+
+  @override
+  String get targetAmount => 'Imali eqondiweyo';
+
+  @override
+  String get createGoal => 'Dala inhloso';
+
+  @override
+  String get goalNameAmountFirst => 'Faka igama lenhloso lemali edlula iqanda.';
+
+  @override
+  String get shoppingLogged => 'Ukuthenga kubhaliwe';
+
+  @override
+  String get loggedItem => 'Kubhaliwe';
 }

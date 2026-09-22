@@ -112,7 +112,8 @@ class Persistence {
       );
     }
     for (final t in s.txs) {
-      batch.insert('tx', _txRow(t), conflictAlgorithm: ConflictAlgorithm.replace);
+      batch.insert('tx', _txRow(t),
+          conflictAlgorithm: ConflictAlgorithm.replace);
     }
     for (final g in s.goals) {
       batch.insert(
@@ -192,13 +193,10 @@ class Persistence {
   // ── Load ───────────────────────────────────────────────────────────────
 
   Future<DbSnapshot> loadAll() async {
-    final accounts =
-        (await _d.query('account')).map(_accountFrom).toList();
-    final envelopes =
-        (await _d.query('envelope')).map(_envelopeFrom).toList();
-    final txs = (await _d.query('tx', orderBy: 'when_ms DESC'))
-        .map(_txFrom)
-        .toList();
+    final accounts = (await _d.query('account')).map(_accountFrom).toList();
+    final envelopes = (await _d.query('envelope')).map(_envelopeFrom).toList();
+    final txs =
+        (await _d.query('tx', orderBy: 'when_ms DESC')).map(_txFrom).toList();
     final goals = (await _d.query('goal')).map(_goalFrom).toList();
     final goalTxs = (await _d.query('goal_tx', orderBy: 'at_ms ASC'))
         .map(_goalTxFrom)
@@ -207,17 +205,14 @@ class Persistence {
         .map(_itemFrom)
         .toList();
     final chores = (await _d.query('chore')).map(_choreFrom).toList();
-    final requests =
-        (await _d.query('kid_request')).map(_requestFrom).toList();
-    final proposals =
-        (await _d.query('proposal')).map(_proposalFrom).toList();
+    final requests = (await _d.query('kid_request')).map(_requestFrom).toList();
+    final proposals = (await _d.query('proposal')).map(_proposalFrom).toList();
     final earnings = (await _d.query('earning', orderBy: 'when_ms DESC'))
         .map(_earningFrom)
         .toList();
-    final recurring =
-        (await _d.query('recurring', orderBy: 'next_due_ms ASC'))
-            .map(_recurringFrom)
-            .toList();
+    final recurring = (await _d.query('recurring', orderBy: 'next_due_ms ASC'))
+        .map(_recurringFrom)
+        .toList();
 
     final mRows = await _d.query('circle', limit: 1);
     final circle =
@@ -263,47 +258,46 @@ class Persistence {
   Future<void> saveTx(Tx t) async =>
       _d.insert('tx', _txRow(t), conflictAlgorithm: ConflictAlgorithm.replace);
 
-  Future<void> saveEnvelope(Envelope e) async => _d.insert(
-      'envelope', _envelopeRow(e),
-      conflictAlgorithm: ConflictAlgorithm.replace);
+  Future<void> saveEnvelope(Envelope e) async =>
+      _d.insert('envelope', _envelopeRow(e),
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
   Future<void> saveGoalTx(GoalTx t, {String? serverId}) async =>
       _d.insert('goal_tx', _goalTxRow(t, serverId: serverId));
 
-  Future<void> saveListItem(ListItem i) async => _d.insert(
-      'list_item', _itemRow(i),
+  Future<void> saveListItem(ListItem i) async =>
+      _d.insert('list_item', _itemRow(i),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveChore(Chore c) async => _d.insert('chore', _choreRow(c),
       conflictAlgorithm: ConflictAlgorithm.replace);
 
-  Future<void> saveChore(Chore c) async => _d.insert(
-      'chore', _choreRow(c),
+  Future<void> saveRequest(KidRequest r) async =>
+      _d.insert('kid_request', _requestRow(r),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveProposal(Proposal p) async =>
+      _d.insert('proposal', _proposalRow(p),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveEarning(Earning e) async =>
+      _d.insert('earning', _earningRow(e),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveRecurring(RecurringRule r) async =>
+      _d.insert('recurring', _recurringRow(r),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveSavingsCircle(SavingsCircle m) async =>
+      _d.insert('circle', _circleRow(m),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveGoal(Goal g) async => _d.insert('goal', _goalRow(g),
       conflictAlgorithm: ConflictAlgorithm.replace);
 
-  Future<void> saveRequest(KidRequest r) async => _d.insert(
-      'kid_request', _requestRow(r),
-      conflictAlgorithm: ConflictAlgorithm.replace);
-
-  Future<void> saveProposal(Proposal p) async => _d.insert(
-      'proposal', _proposalRow(p),
-      conflictAlgorithm: ConflictAlgorithm.replace);
-
-  Future<void> saveEarning(Earning e) async => _d.insert(
-      'earning', _earningRow(e),
-      conflictAlgorithm: ConflictAlgorithm.replace);
-
-  Future<void> saveRecurring(RecurringRule r) async => _d.insert(
-      'recurring', _recurringRow(r),
-      conflictAlgorithm: ConflictAlgorithm.replace);
-
-  Future<void> saveSavingsCircle(SavingsCircle m) async => _d.insert(
-      'circle', _circleRow(m),
-      conflictAlgorithm: ConflictAlgorithm.replace);
-
-  Future<void> saveGoal(Goal g) async => _d.insert(
-      'goal', _goalRow(g),
-      conflictAlgorithm: ConflictAlgorithm.replace);
-
-  Future<void> saveKv(String k, String v) async => _d.insert('kv', {'k': k, 'v': v},
-      conflictAlgorithm: ConflictAlgorithm.replace);
+  Future<void> saveKv(String k, String v) async =>
+      _d.insert('kv', {'k': k, 'v': v},
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
   /// Server rows (already decode-ready JSON) upserted into local tables.
   /// goal_tx dedupes on server_id; everything else replaces by TEXT pk.
@@ -318,7 +312,8 @@ class Persistence {
           batch.insert('tx', _txRow(adapter.decode(row) as Tx),
               conflictAlgorithm: ConflictAlgorithm.replace);
         case 'envelope':
-          batch.insert('envelope', _envelopeRow(adapter.decode(row) as Envelope),
+          batch.insert(
+              'envelope', _envelopeRow(adapter.decode(row) as Envelope),
               conflictAlgorithm: ConflictAlgorithm.replace);
         case 'goal':
           batch.insert('goal', _goalRow(adapter.decode(row) as Goal),
@@ -346,13 +341,15 @@ class Persistence {
           batch.insert('earning', _earningRow(adapter.decode(row) as Earning),
               conflictAlgorithm: ConflictAlgorithm.replace);
         case 'recurring':
-          batch.insert('recurring', _recurringRow(adapter.decode(row) as RecurringRule),
+          batch.insert(
+              'recurring', _recurringRow(adapter.decode(row) as RecurringRule),
               conflictAlgorithm: ConflictAlgorithm.replace);
         case 'chore':
           batch.insert('chore', _choreRow(adapter.decode(row) as Chore),
               conflictAlgorithm: ConflictAlgorithm.replace);
         case 'mukando':
-          batch.insert('circle', _circleRow(adapter.decode(row) as SavingsCircle),
+          batch.insert(
+              'circle', _circleRow(adapter.decode(row) as SavingsCircle),
               conflictAlgorithm: ConflictAlgorithm.replace);
       }
     }
@@ -365,8 +362,17 @@ class Persistence {
   Future<void> wipeSynced() async {
     final batch = _d.batch();
     for (final t in [
-      'tx', 'envelope', 'goal', 'goal_tx', 'list_item',
-      'kid_request', 'proposal', 'earning', 'chore', 'recurring', 'circle',
+      'tx',
+      'envelope',
+      'goal',
+      'goal_tx',
+      'list_item',
+      'kid_request',
+      'proposal',
+      'earning',
+      'chore',
+      'recurring',
+      'circle',
     ]) {
       batch.delete(t);
     }
@@ -434,6 +440,7 @@ class Persistence {
         'currency': i.est.currency.name,
         'state': i.state.name,
         'added_by': i.addedById,
+        'checked_out': i.checkedOut ? 1 : 0,
       };
 
   Map<String, Object?> _choreRow(Chore c) => {
@@ -582,6 +589,7 @@ class Persistence {
         ),
         addedById: m['added_by'] as String,
         state: ItemState.values.byName(m['state'] as String),
+        checkedOut: (m['checked_out'] as int? ?? 0) == 1,
       );
 
   Chore _choreFrom(Map<String, Object?> m) => Chore(
@@ -633,8 +641,7 @@ class Persistence {
         ),
         totalRounds: m['total_rounds'] as int,
         currentRound: m['current_round'] as int,
-        order:
-            (jsonDecode(m['order_json'] as String) as List).cast<String>(),
+        order: (jsonDecode(m['order_json'] as String) as List).cast<String>(),
       );
 
   static SavingsCircle _fallbackSavingsCircle() => SavingsCircle(

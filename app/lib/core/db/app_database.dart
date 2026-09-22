@@ -44,8 +44,19 @@ class AppDatabase {
   /// the purge. Real adopted data is never present when this may run.
   Future<void> wipeUserData() async {
     for (final t in const [
-      'account', 'envelope', 'tx', 'goal', 'goal_tx', 'recurring', 'outbox',
-      'list_item', 'chore', 'kid_request', 'proposal', 'earning', 'circle',
+      'account',
+      'envelope',
+      'tx',
+      'goal',
+      'goal_tx',
+      'recurring',
+      'outbox',
+      'list_item',
+      'chore',
+      'kid_request',
+      'proposal',
+      'earning',
+      'circle',
       'kv',
     ]) {
       await raw.delete(t);
@@ -57,7 +68,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 3,
+        version: 4,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -163,7 +174,8 @@ class AppDatabase {
       est_minor INTEGER NOT NULL,
       currency TEXT NOT NULL,
       state TEXT NOT NULL,
-      added_by TEXT NOT NULL
+      added_by TEXT NOT NULL,
+      checked_out INTEGER NOT NULL DEFAULT 0
     )
     ''',
     '''
@@ -231,7 +243,7 @@ class AppDatabase {
   }
 
   /// Migrations. ALTERs are guarded — re-running is safe.
-  /// v2: sync columns + outbox · v3: recurring rules.
+  /// v2: sync columns + outbox · v3: recurring rules · v4: checkout guard.
   static Future<void> upgrade(Database d, int oldVersion) async {
     if (oldVersion >= 2 && oldVersion < 2) return;
     if (oldVersion < 2) {
@@ -246,6 +258,15 @@ class AppDatabase {
         } catch (_) {
           // column/index already exists — fine.
         }
+      }
+    }
+    if (oldVersion < 4) {
+      try {
+        await d.execute(
+          'ALTER TABLE list_item ADD COLUMN checked_out INTEGER NOT NULL DEFAULT 0',
+        );
+      } catch (_) {
+        // Column already exists — fine.
       }
     }
     await createSchema(d); // outbox & recurring are CREATE IF NOT EXISTS

@@ -231,6 +231,7 @@ class ListItem {
   final int qty;
   final Money est; // estimated unit price
   ItemState state;
+  bool checkedOut;
   final String addedById;
 
   ListItem({
@@ -240,6 +241,7 @@ class ListItem {
     required this.est,
     required this.addedById,
     this.state = ItemState.tobuy,
+    this.checkedOut = false,
   });
 }
 
@@ -311,7 +313,8 @@ class Earning {
 
 /// Savings circle (ROSCA — rotation savings). Records only — never holds
 /// the money (spec §4 E4).
-class SavingsCircle {  final String name;
+class SavingsCircle {
+  final String name;
   final Money contribution;
   final int totalRounds;
   int currentRound; // 1-based; rounds before this are collected

@@ -28,12 +28,25 @@ class SavingsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
             children: [
-              Text(
-                AppLocalizations.of(context)!.savingsTitle,
-                style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: context.ink),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.savingsTitle,
+                      style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: context.ink),
+                    ),
+                  ),
+                  if (familyGoals.isNotEmpty)
+                    IconButton(
+                      tooltip: AppLocalizations.of(context)!.newSavingsGoal,
+                      onPressed: () => _newGoalSheet(context),
+                      icon: Icon(Icons.add_circle,
+                          color: context.primary, size: 30),
+                    ),
+                ],
               ),
               const SizedBox(height: 16),
               if (familyGoals.isEmpty)
@@ -45,6 +58,20 @@ class SavingsScreen extends StatelessWidget {
                     subtitle: AppLocalizations.of(context)!.noGoalsHint,
                   ),
                 ),
+              if (familyGoals.isEmpty) ...[
+                ElevatedButton.icon(
+                  onPressed: () => _newGoalSheet(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primary,
+                    foregroundColor: context.onSolid,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: const StadiumBorder(),
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: Text(AppLocalizations.of(context)!.createSavingsGoal),
+                ),
+                const SizedBox(height: 12),
+              ],
               for (final g in familyGoals) ...[
                 GoalCard(goal: g),
                 const SizedBox(height: 12),
@@ -174,6 +201,135 @@ class SavingsScreen extends StatelessWidget {
                 ),
             ],
           )),
+    );
+  }
+
+  void _newGoalSheet(BuildContext context) {
+    final s = AppScope.of(context);
+    var goalName = '';
+    var targetText = '';
+    var currency = Currency.usd;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) => SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            decoration: BoxDecoration(
+              color: context.bg,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  child: Container(
+                    width: 42,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: context.track,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  AppLocalizations.of(context)!.newSavingsGoal,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: context.ink,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  autofocus: true,
+                  textInputAction: TextInputAction.next,
+                  onChanged: (value) => goalName = value,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.goalName,
+                    hintText: AppLocalizations.of(context)!.goalNameHint,
+                    filled: true,
+                    fillColor: context.card,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (value) => targetText = value,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.targetAmount,
+                    prefixText: '${currency.symbol} ',
+                    filled: true,
+                    fillColor: context.card,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('USD'),
+                      selected: currency == Currency.usd,
+                      onSelected: (_) =>
+                          setSheetState(() => currency = Currency.usd),
+                    ),
+                    ChoiceChip(
+                      label: const Text('ZiG'),
+                      selected: currency == Currency.zwg,
+                      onSelected: (_) =>
+                          setSheetState(() => currency = Currency.zwg),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    final parsed = double.tryParse(
+                      targetText.trim().replaceAll(',', ''),
+                    );
+                    if (goalName.trim().isEmpty ||
+                        parsed == null ||
+                        parsed <= 0) {
+                      ScaffoldMessenger.of(sheetContext).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context)!.goalNameAmountFirst,
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                    s.addGoal(
+                      name: goalName,
+                      target: Money.fromMajor(parsed, currency),
+                    );
+                    Navigator.pop(sheetContext);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primary,
+                    foregroundColor: context.onSolid,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Text(AppLocalizations.of(context)!.createGoal),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1077,6 +1077,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get limitLabel => 'Plafond';
 
   @override
+  String envelopeRemaining(Object amount, Object name) {
+    return 'Il reste $amount dans $name';
+  }
+
+  @override
+  String envelopeWillLeave(Object amount, Object name) {
+    return 'Il restera $amount dans $name';
+  }
+
+  @override
+  String envelopeWillExceed(Object amount, Object name) {
+    return 'Cela dépasse le budget de $name de $amount';
+  }
+
+  @override
+  String get overBudgetTitle => 'Cette enveloppe dépassera le budget';
+
+  @override
+  String overBudgetBody(Object amount, Object name) {
+    return '$name dépassera le budget de $amount. Tu peux quand même enregistrer la dépense.';
+  }
+
+  @override
+  String get adjustAmount => 'Modifier le montant';
+
+  @override
+  String get logAnyway => 'Enregistrer quand même';
+
+  @override
+  String overBy(Object amount) {
+    return 'Dépassé de $amount';
+  }
+
+  @override
+  String get overBudgetLabel => 'Budget dépassé';
+
+  @override
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Cagnotte : $pot · $contribution × $count membres';
   }
@@ -1402,4 +1439,32 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get photoSaved => 'Photo enregistrée — ta famille la verra aussi.';
+
+  @override
+  String get newSavingsGoal => 'Nouvel objectif d’épargne';
+
+  @override
+  String get createSavingsGoal => 'Créer un objectif d’épargne';
+
+  @override
+  String get goalName => 'Nom de l’objectif';
+
+  @override
+  String get goalNameHint => 'Fonds d’urgence';
+
+  @override
+  String get targetAmount => 'Montant cible';
+
+  @override
+  String get createGoal => 'Créer l’objectif';
+
+  @override
+  String get goalNameAmountFirst =>
+      'Ajoute un nom et un objectif supérieur à zéro.';
+
+  @override
+  String get shoppingLogged => 'Courses enregistrées';
+
+  @override
+  String get loggedItem => 'Enregistré';
 }

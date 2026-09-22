@@ -31,6 +31,11 @@ class _ListsScreenState extends State<ListsScreen> {
     final budgetUse = groceries != null && groceries.limit.minor > 0
         ? estUsd.minor / groceries.limit.inCurrency(Currency.usd, s.rate).minor
         : 0.0;
+    final hasUnloggedShopping = s.items.any(
+      (i) =>
+          !i.checkedOut &&
+          (i.state == ItemState.done || i.state == ItemState.incart),
+    );
 
     int count(ItemState st) => s.items.where((i) => i.state == st).length;
 
@@ -38,122 +43,129 @@ class _ListsScreenState extends State<ListsScreen> {
       child: Stack(
         children: [
           RefreshIndicator(
-        onRefresh: () => s.refresh(),
-        child:           ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 190),
-            children: [
-              Row(
+              onRefresh: () => s.refresh(),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 190),
                 children: [
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.shopping,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: context.ink,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: AppLocalizations.of(context)!.addItem,
-                    onPressed: () => _addSheet(context),
-                    icon: Icon(Icons.add_circle, color: context.primary, size: 30),
-                  ),
-                ],
-              ),
-              Text(
-                AppLocalizations.of(context)!.listSharedSub,
-                style: TextStyle(fontSize: 13, color: context.inkSoft),
-              ),
-              const SizedBox(height: 14),
-
-              // ── Filter chips ────────────────────────────────────────────
-              Wrap(
-                spacing: 8,
-                children: [
-                  ChoiceChip(
-                    label: Text('All (${s.items.length})'),
-                    selected: _filter == null,
-                    onSelected: (_) => setState(() => _filter = null),
-                  ),
-                  for (final st in ItemState.values)
-                    ChoiceChip(
-                      label: Text('${itemStateLabel(AppLocalizations.of(context)!, st)} (${count(st)})'),
-                      selected: _filter == st,
-                      onSelected: (_) => setState(() => _filter = st),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // ── Items ───────────────────────────────────────────────────
-              if (visible.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: context.card,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Center(
-                    child: Text(
-                      AppLocalizations.of(context)!.listEmptyAdd,
-                      style: TextStyle(color: context.inkSoft),
-                    ),
-                  ),
-                )
-              else
-                for (final item in visible) ...[
-                  _ItemRow(item: item),
-                  const SizedBox(height: 8),
-                ],
-
-              const SizedBox(height: 16),
-
-              // ── Estimate + budget check ─────────────────────────────────
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.card,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Est. total: ${estUsd.text} · ≈ ${estZwg.text}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: context.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      s.rateLabel,
-                      style: TextStyle(fontSize: 11, color: context.inkSoft),
-                    ),
-                    const SizedBox(height: 12),
-                    if (groceries != null) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: LinearProgressIndicator(
-                          value: budgetUse.clamp(0.0, 1.0).toDouble(),
-                          minHeight: 8,
-                          backgroundColor: context.track,
-                          color: budgetUse > 0.9 ? context.danger : context.primary,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          AppLocalizations.of(context)!.shopping,
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: context.ink,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        AppLocalizations.of(context)!.usesPct((budgetUse * 100).round(), groceries.name),
-                        style: TextStyle(fontSize: 12, color: context.inkSoft),
+                      IconButton(
+                        tooltip: AppLocalizations.of(context)!.addItem,
+                        onPressed: () => _addSheet(context),
+                        icon: Icon(Icons.add_circle,
+                            color: context.primary, size: 30),
                       ),
                     ],
-                  ],
-                ),
-              ),
-            ],
-          )),
+                  ),
+                  Text(
+                    AppLocalizations.of(context)!.listSharedSub,
+                    style: TextStyle(fontSize: 13, color: context.inkSoft),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── Filter chips ────────────────────────────────────────────
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: Text('All (${s.items.length})'),
+                        selected: _filter == null,
+                        onSelected: (_) => setState(() => _filter = null),
+                      ),
+                      for (final st in ItemState.values)
+                        ChoiceChip(
+                          label: Text(
+                              '${itemStateLabel(AppLocalizations.of(context)!, st)} (${count(st)})'),
+                          selected: _filter == st,
+                          onSelected: (_) => setState(() => _filter = st),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── Items ───────────────────────────────────────────────────
+                  if (visible.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: context.card,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Center(
+                        child: Text(
+                          AppLocalizations.of(context)!.listEmptyAdd,
+                          style: TextStyle(color: context.inkSoft),
+                        ),
+                      ),
+                    )
+                  else
+                    for (final item in visible) ...[
+                      _ItemRow(item: item),
+                      const SizedBox(height: 8),
+                    ],
+
+                  const SizedBox(height: 16),
+
+                  // ── Estimate + budget check ─────────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.card,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Est. total: ${estUsd.text} · ≈ ${estZwg.text}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: context.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          s.rateLabel,
+                          style:
+                              TextStyle(fontSize: 11, color: context.inkSoft),
+                        ),
+                        const SizedBox(height: 12),
+                        if (groceries != null) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(5),
+                            child: LinearProgressIndicator(
+                              value: budgetUse.clamp(0.0, 1.0).toDouble(),
+                              minHeight: 8,
+                              backgroundColor: context.track,
+                              color: budgetUse > 0.9
+                                  ? context.danger
+                                  : context.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            AppLocalizations.of(context)!.usesPct(
+                                (budgetUse * 100).round(), groceries.name),
+                            style:
+                                TextStyle(fontSize: 12, color: context.inkSoft),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              )),
 
           // ── Finish shopping button ──────────────────────────────────────
           Positioned(
@@ -161,30 +173,20 @@ class _ListsScreenState extends State<ListsScreen> {
             right: 20,
             bottom: 24,
             child: ElevatedButton.icon(
-              onPressed: () {
-                final anyChecked = s.items.any(
-                  (i) =>
-                      i.state == ItemState.done || i.state == ItemState.incart,
-                );
-                if (!anyChecked) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(AppLocalizations.of(context)!.tickFirst),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                  return;
-                }
-                final total = s.finishShopping();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.loggedTo(total.text, 'Groceries'),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              onPressed: hasUnloggedShopping
+                  ? () {
+                      final total = s.finishShopping();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context)!
+                                .loggedTo(total.text, 'Groceries'),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.primary,
                 foregroundColor: context.onSolid,
@@ -194,7 +196,9 @@ class _ListsScreenState extends State<ListsScreen> {
               ),
               icon: const Icon(Icons.receipt_long),
               label: Text(
-                AppLocalizations.of(context)!.finishShop,
+                hasUnloggedShopping
+                    ? AppLocalizations.of(context)!.finishShop
+                    : AppLocalizations.of(context)!.shoppingLogged,
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
@@ -260,7 +264,8 @@ class _ListsScreenState extends State<ListsScreen> {
                           labelText: 'Qty',
                           filled: true,
                           fillColor: context.card,
-                          border: OutlineInputBorder(borderSide: BorderSide.none),
+                          border:
+                              OutlineInputBorder(borderSide: BorderSide.none),
                         ),
                       ),
                     ),
@@ -273,10 +278,12 @@ class _ListsScreenState extends State<ListsScreen> {
                           decimal: true,
                         ),
                         decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)!.estPrice(cur.symbol),
+                          labelText: AppLocalizations.of(context)!
+                              .estPrice(cur.symbol),
                           filled: true,
                           fillColor: context.card,
-                          border: const OutlineInputBorder(borderSide: BorderSide.none),
+                          border: const OutlineInputBorder(
+                              borderSide: BorderSide.none),
                         ),
                       ),
                     ),
@@ -307,7 +314,8 @@ class _ListsScreenState extends State<ListsScreen> {
                     if (n.isEmpty || p == null) {
                       ScaffoldMessenger.of(sheetCtx).showSnackBar(
                         SnackBar(
-                          content: Text(AppLocalizations.of(context)!.namePriceFirst),
+                          content: Text(
+                              AppLocalizations.of(context)!.namePriceFirst),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -378,7 +386,7 @@ class _ItemRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '×${item.qty} · ${item.est.text} each · '
-                  '${itemStateLabel(AppLocalizations.of(context)!, item.state)} · by ${addedBy?.name ?? 'family'}',
+                  '${item.checkedOut ? AppLocalizations.of(context)!.loggedItem : itemStateLabel(AppLocalizations.of(context)!, item.state)} · by ${addedBy?.name ?? 'family'}',
                   style: TextStyle(fontSize: 12, color: context.inkSoft),
                 ),
               ],

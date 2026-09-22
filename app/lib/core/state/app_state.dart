@@ -267,6 +267,10 @@ class AppState extends ChangeNotifier {
     if (_store != null) _fire(_store!.saveGoalTx(t));
   }
 
+  void _persistGoal(Goal g) {
+    if (_store != null) _fire(_store!.saveGoal(g));
+  }
+
   void _persistItem(ListItem i) {
     if (_store != null) _fire(_store!.saveListItem(i));
   }
@@ -1188,11 +1192,19 @@ class AppState extends ChangeNotifier {
 
   // ── Pool & cycle math ─────────────────────────────────────────────────────
 
-  /// Family Pool = sum of tagged account balances shown in [c] (spec §7.2).
+  /// Family Pool = opening/tagged account balances plus the transaction
+  /// ledger. Income adds to available family money; expenses reduce it.
+  ///
+  /// Transactions are the only way the current UI changes money, so ignoring
+  /// them made the pool stay at zero while Recent activity showed otherwise.
   Money poolCombined(Currency c) {
     var sum = 0;
     for (final a in accounts) {
       sum += a.balance.inCurrency(c, rate).minor;
+    }
+    for (final t in txs) {
+      final amount = t.amount.inCurrency(c, rate).minor;
+      sum += t.type == TxType.income ? amount : -amount;
     }
     return Money(sum, c);
   }
@@ -1269,7 +1281,7 @@ class AppState extends ChangeNotifier {
   Money spentOn(Envelope e) => _spentInCycle(e, cycleStart, nextCycleStart);
 
   Money remainingOn(Envelope e) =>
-      Money(e.limit.minor - spentOn(e).minor, e.limit.currency);
+      Money(effectiveLimit(e).minor - spentOn(e).minor, e.limit.currency);
 
   void addEnvelope({
     required String name,
@@ -1418,7 +1430,14 @@ class AppState extends ChangeNotifier {
   }
 
   void advanceItem(ListItem item) {
-    item.state = item.state.next;
+    if (item.checkedOut && item.state == ItemState.done) {
+      // Explicitly moving a purchased item back to "to buy" starts a new
+      // shopping cycle and makes it eligible for checkout again.
+      item.checkedOut = false;
+      item.state = ItemState.tobuy;
+    } else {
+      item.state = item.state.next;
+    }
     _persistItem(item);
     _queue('list_item', item);
     pendingOps++;
@@ -1430,9 +1449,11 @@ class AppState extends ChangeNotifier {
   Money finishShopping() {
     var sum = 0;
     for (final i in items) {
-      if (i.state == ItemState.done || i.state == ItemState.incart) {
+      if (!i.checkedOut &&
+          (i.state == ItemState.done || i.state == ItemState.incart)) {
         sum += i.est.inCurrency(Currency.usd, rate).minor * i.qty;
         i.state = ItemState.done;
+        i.checkedOut = true;
         _persistItem(i);
         _queue('list_item', i);
       }
@@ -1478,6 +1499,25 @@ class AppState extends ChangeNotifier {
       }
     }
     return Money(sum, g.target.currency);
+  }
+
+  void addGoal({
+    required String name,
+    required Money target,
+    String emoji = 'goal',
+  }) {
+    final goal = Goal(
+      id: _seq('g'),
+      name: name.trim(),
+      emoji: emoji,
+      target: target,
+    );
+    goals.insert(0, goal);
+    _persistGoal(goal);
+    _queue('goal', goal);
+    pendingOps++;
+    _resyncReminders();
+    notifyListeners();
   }
 
   void contribute(Goal g, Money amount) {

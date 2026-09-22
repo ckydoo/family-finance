@@ -208,6 +208,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'currency': i.est.currency.short,
         'added_by': i.addedById,
         'state': i.state.name,
+        'checked_out': i.checkedOut,
       };
     },
     decode: (j) => ListItem(
@@ -217,6 +218,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       est: _moneyOf(j, 'est_price_minor', 'currency'),
       addedById: j['added_by'] as String? ?? 'unknown',
       state: ItemState.values.byName(j['state'] as String? ?? 'tobuy'),
+      checkedOut: j['checked_out'] as bool? ?? false,
     ),
   ),
   // kid_request covers BOTH kid money requests and teen proposals — the

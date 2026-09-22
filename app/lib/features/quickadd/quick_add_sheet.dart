@@ -110,6 +110,93 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     }
   }
 
+  Money? _enteredExpense(AppState s) {
+    final amount = _parsedAmount;
+    final envelope = _envelope;
+    if (_type != TxType.expense || amount == null || envelope == null) {
+      return null;
+    }
+    return Money.fromMajor(amount, _cur)
+        .inCurrency(envelope.limit.currency, s.rate);
+  }
+
+  Future<void> _save(AppState s, AppLocalizations l) async {
+    final amt = _parsedAmount;
+    if (amt == null || _member == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.enterAmountFirst),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final envelope = _type == TxType.expense ? _envelope : null;
+    final entered = _enteredExpense(s);
+    if (envelope != null && entered != null) {
+      final remaining = s.remainingOn(envelope);
+      final overMinor = entered.minor - remaining.minor;
+      if (overMinor > 0) {
+        FocusManager.instance.primaryFocus?.unfocus();
+        final logAnyway = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                icon: Icon(Icons.warning_amber_rounded,
+                    color: dialogContext.danger),
+                title: Text(l.overBudgetTitle),
+                content: Text(
+                  l.overBudgetBody(
+                    Money(overMinor, envelope.limit.currency).text,
+                    envelope.name,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: Text(l.adjustAmount),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: dialogContext.danger,
+                      foregroundColor: dialogContext.onSolid,
+                    ),
+                    child: Text(l.logAnyway),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+        if (!logAnyway || !mounted) return;
+      }
+    }
+
+    final note = _note.text.trim().isEmpty
+        ? (_type == TxType.income ? l.income : l.expense)
+        : _note.text.trim();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final savedOffline = l.savedOffline;
+    _saved = true;
+    navigator.pop();
+    s.addTx(
+      type: _type,
+      amount: Money.fromMajor(amt, _cur),
+      memberId: _member!.id,
+      method: _method,
+      note: note,
+      envelopeId: envelope?.id,
+    );
+    HapticFeedback.mediumImpact();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(savedOffline),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -119,8 +206,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        if (!await _confirmDiscard() && mounted) {
-          Navigator.of(context).pop();
+        final navigator = Navigator.of(context);
+        if (!await _confirmDiscard() && navigator.mounted) {
+          navigator.pop();
         }
       },
       child: Scaffold(
@@ -134,8 +222,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               child: Row(
                 children: [
                   IconButton(
-                    tooltip: MaterialLocalizations.of(context)
-                        .closeButtonTooltip,
+                    tooltip:
+                        MaterialLocalizations.of(context).closeButtonTooltip,
                     onPressed: _close,
                     icon: const Icon(Icons.close_rounded),
                     color: context.inkSoft,
@@ -202,8 +290,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       color: context.inkSoft),
                   filled: true,
                   fillColor: context.card,
-                  border:
-                      const OutlineInputBorder(borderSide: BorderSide.none),
+                  border: const OutlineInputBorder(borderSide: BorderSide.none),
                   hintText: '0.00',
                 ),
                 onChanged: (_) => setState(() {}),
@@ -228,8 +315,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       _parsedAmount == null
                           ? ''
                           : '≈ ${Money.fromMajor(_parsedAmount!, _cur).converted(s.rate).text}',
-                      style:
-                          TextStyle(fontSize: 12.5, color: context.inkSoft),
+                      style: TextStyle(fontSize: 12.5, color: context.inkSoft),
                     ),
                   ),
                 ],
@@ -248,9 +334,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   ),
                   child: Text(l.noEnvelopesYet,
                       style: TextStyle(
-                          fontSize: 12.5,
-                          color: context.inkSoft,
-                          height: 1.4)),
+                          fontSize: 12.5, color: context.inkSoft, height: 1.4)),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -279,6 +363,13 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                if (_envelope case final envelope?)
+                  _EnvelopeLimitNotice(
+                    envelope: envelope,
+                    remaining: s.remainingOn(envelope),
+                    entered: _enteredExpense(s),
+                  ),
+                const SizedBox(height: 8),
               ],
 
               // Who
@@ -342,8 +433,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     labelText: l.noteHint,
                     filled: true,
                     fillColor: context.card,
-                    border:
-                        OutlineInputBorder(borderSide: BorderSide.none),
+                    border: OutlineInputBorder(borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -360,42 +450,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
               child: ElevatedButton(
-                onPressed: () {
-                  final amt = _parsedAmount;
-                  if (amt == null || _member == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l.enterAmountFirst),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    return;
-                  }
-                  final note = _note.text.trim().isEmpty
-                      ? (_type == TxType.income ? l.income : l.expense)
-                      : _note.text.trim();
-                  final messenger = ScaffoldMessenger.of(context);
-                  final savedOffline = l.savedOffline;
-                  final navigator = Navigator.of(context);
-                  _saved = true; // never ask to discard after a save
-                  navigator.pop();
-                  s.addTx(
-                    type: _type,
-                    amount: Money.fromMajor(amt, _cur),
-                    memberId: _member!.id,
-                    method: _method,
-                    note: note,
-                    envelopeId:
-                        _type == TxType.expense ? _envelope?.id : null,
-                  );
-                  HapticFeedback.mediumImpact();
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(savedOffline),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onPressed: () => _save(s, l),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.primary,
                   foregroundColor: context.onSolid,
@@ -404,13 +459,68 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 ),
                 child: Text(
                   l.save,
-                  style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EnvelopeLimitNotice extends StatelessWidget {
+  const _EnvelopeLimitNotice({
+    required this.envelope,
+    required this.remaining,
+    required this.entered,
+  });
+
+  final Envelope envelope;
+  final Money remaining;
+  final Money? entered;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final projected =
+        entered == null ? remaining.minor : remaining.minor - entered!.minor;
+    final isOver = projected < 0;
+    final amount = Money(projected.abs(), remaining.currency).text;
+    final text = isOver
+        ? l.envelopeWillExceed(amount, envelope.name)
+        : entered == null
+            ? l.envelopeRemaining(amount, envelope.name)
+            : l.envelopeWillLeave(amount, envelope.name);
+    final color = isOver ? context.expenseRed : context.inkSoft;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isOver ? context.dangerSoft : context.primarySoft,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isOver
+                ? Icons.warning_amber_rounded
+                : Icons.account_balance_wallet_outlined,
+            size: 18,
+            color: isOver ? context.expenseRed : context.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: color),
+            ),
+          ),
+        ],
       ),
     );
   }

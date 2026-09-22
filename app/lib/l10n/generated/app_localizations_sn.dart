@@ -1069,6 +1069,43 @@ class AppLocalizationsSn extends AppLocalizations {
   String get limitLabel => 'Mulingo';
 
   @override
+  String envelopeRemaining(Object amount, Object name) {
+    return '$name yasara ne$amount';
+  }
+
+  @override
+  String envelopeWillLeave(Object amount, Object name) {
+    return 'Izvi zvinosiya $amount mu$name';
+  }
+
+  @override
+  String envelopeWillExceed(Object amount, Object name) {
+    return 'Izvi zvinoita kuti $name ipfuure ne$amount';
+  }
+
+  @override
+  String get overBudgetTitle => 'Envelope iyi ichapfuura bhajeti';
+
+  @override
+  String overBudgetBody(Object amount, Object name) {
+    return '$name ichapfuura ne$amount. Mari yakashandiswa inogona kuramba ichinyorwa.';
+  }
+
+  @override
+  String get adjustAmount => 'Gadzirisa mari';
+
+  @override
+  String get logAnyway => 'Nyora zvakadaro';
+
+  @override
+  String overBy(Object amount) {
+    return 'Yapfuura ne$amount';
+  }
+
+  @override
+  String get overBudgetLabel => 'Yapfuura bhajeti';
+
+  @override
   String memberPot(Object contribution, Object count, Object pot) {
     return 'Mari yausvika: $pot · $contribution × $count vanhu';
   }
@@ -1391,4 +1428,32 @@ class AppLocalizationsSn extends AppLocalizations {
   @override
   String get photoSaved =>
       'Mufananidzo wachengetwa — mhuri yacho ichaiona zvakare.';
+
+  @override
+  String get newSavingsGoal => 'Chinangwa chitsva chekuchengetedza';
+
+  @override
+  String get createSavingsGoal => 'Gadzira chinangwa chekuchengetedza';
+
+  @override
+  String get goalName => 'Zita rechinangwa';
+
+  @override
+  String get goalNameHint => 'Mari yenjodzi';
+
+  @override
+  String get targetAmount => 'Mari yechinangwa';
+
+  @override
+  String get createGoal => 'Gadzira chinangwa';
+
+  @override
+  String get goalNameAmountFirst =>
+      'Isa zita rechinangwa nemari inodarika zero.';
+
+  @override
+  String get shoppingLogged => 'Kutenga kwanyorwa';
+
+  @override
+  String get loggedItem => 'Zvanyorwa';
 }

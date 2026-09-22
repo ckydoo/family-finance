@@ -12,6 +12,17 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/tx_tile.dart';
 import 'recurring_ui.dart';
 
+void showEnvelopeDetailSheet(BuildContext context, Envelope envelope) {
+  final state = AppScope.of(context);
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _EnvelopeDetail(e: envelope, s: state),
+  );
+}
+
 /// Envelope budgets (spec Module D, screen §7.3).
 class BudgetsScreen extends StatelessWidget {
   const BudgetsScreen({super.key});
@@ -296,8 +307,12 @@ class _EnvelopeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final spent = s.spentOn(e);
+    final effectiveLimit = s.effectiveLimit(e);
+    final remaining = s.remainingOn(e);
     final pace = s.paceOf(e);
-    final value = e.limit.minor <= 0 ? 0.0 : (spent.minor / e.limit.minor);
+    final value =
+        effectiveLimit.minor <= 0 ? 0.0 : (spent.minor / effectiveLimit.minor);
+    final over = remaining.minor < 0;
 
     return InkWell(
       onTap: () => _openDetail(context),
@@ -361,8 +376,15 @@ class _EnvelopeCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${spent.text} of ${e.limit.text}',
-                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    over
+                        ? AppLocalizations.of(context)!.overBy(
+                            Money(-remaining.minor, remaining.currency).text)
+                        : '${spent.text} of ${effectiveLimit.text}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: over ? context.expenseRed : context.inkSoft,
+                      fontWeight: over ? FontWeight.w700 : FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ClipRRect(
@@ -371,7 +393,8 @@ class _EnvelopeCard extends StatelessWidget {
                       value: value.clamp(0.0, 1.0).toDouble(),
                       minHeight: 7,
                       backgroundColor: context.track,
-                      color: _paceColor(context, pace),
+                      color:
+                          over ? context.expenseRed : _paceColor(context, pace),
                     ),
                   ),
                 ],
@@ -386,13 +409,7 @@ class _EnvelopeCard extends StatelessWidget {
   }
 
   void _openDetail(BuildContext context) {
-    final s = AppScope.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _EnvelopeDetail(e: e, s: s),
-    );
+    showEnvelopeDetailSheet(context, e);
   }
 }
 
@@ -413,7 +430,7 @@ class _PaceChip extends StatelessWidget {
           const Color(0xFFFBE7C6)
         ),
       Pace.over => (
-          AppLocalizations.of(context)!.chipReached,
+          AppLocalizations.of(context)!.overBudgetLabel,
           const Color(0xFFF9E0DF)
         ),
     };
@@ -475,6 +492,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
     final e = widget.e;
     final spent = s.spentOn(e);
     final remaining = s.remainingOn(e);
+    final effectiveLimit = s.effectiveLimit(e);
     final inEnvelope =
         s.txs.where((t) => t.envelopeId == e.id).take(4).toList();
 
@@ -531,8 +549,17 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             Row(
               children: [
                 _stat(AppLocalizations.of(context)!.spentLabel, spent.text),
-                _stat(AppLocalizations.of(context)!.remaining, remaining.text),
-                _stat(AppLocalizations.of(context)!.limitLabel, e.limit.text),
+                _stat(
+                  remaining.minor < 0
+                      ? AppLocalizations.of(context)!.overBudgetLabel
+                      : AppLocalizations.of(context)!.remaining,
+                  remaining.minor < 0
+                      ? Money(-remaining.minor, remaining.currency).text
+                      : remaining.text,
+                  danger: remaining.minor < 0,
+                ),
+                _stat(AppLocalizations.of(context)!.limitLabel,
+                    effectiveLimit.text),
               ],
             ),
             const SizedBox(height: 18),
@@ -726,7 +753,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
     );
   }
 
-  Widget _stat(String label, String value) => Expanded(
+  Widget _stat(String label, String value, {bool danger = false}) => Expanded(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           padding: const EdgeInsets.all(12),
@@ -746,7 +773,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13.5,
-                    color: context.ink,
+                    color: danger ? context.expenseRed : context.ink,
                   ),
                 ),
               ),

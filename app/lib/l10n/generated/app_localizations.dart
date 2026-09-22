@@ -1978,6 +1978,60 @@ abstract class AppLocalizations {
   /// **'Limit'**
   String get limitLabel;
 
+  /// No description provided for @envelopeRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has {amount} remaining'**
+  String envelopeRemaining(Object amount, Object name);
+
+  /// No description provided for @envelopeWillLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'This leaves {amount} in {name}'**
+  String envelopeWillLeave(Object amount, Object name);
+
+  /// No description provided for @envelopeWillExceed.
+  ///
+  /// In en, this message translates to:
+  /// **'This puts {name} {amount} over budget'**
+  String envelopeWillExceed(Object amount, Object name);
+
+  /// No description provided for @overBudgetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This envelope will be over budget'**
+  String get overBudgetTitle;
+
+  /// No description provided for @overBudgetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will be over by {amount}. The expense can still be recorded.'**
+  String overBudgetBody(Object amount, Object name);
+
+  /// No description provided for @adjustAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust amount'**
+  String get adjustAmount;
+
+  /// No description provided for @logAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Log anyway'**
+  String get logAnyway;
+
+  /// No description provided for @overBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Over by {amount}'**
+  String overBy(Object amount);
+
+  /// No description provided for @overBudgetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Over budget'**
+  String get overBudgetLabel;
+
   /// No description provided for @memberPot.
   ///
   /// In en, this message translates to:
@@ -2571,6 +2625,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo saved — your family will see it too.'**
   String get photoSaved;
+
+  /// No description provided for @newSavingsGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'New savings goal'**
+  String get newSavingsGoal;
+
+  /// No description provided for @createSavingsGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Create savings goal'**
+  String get createSavingsGoal;
+
+  /// No description provided for @goalName.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal name'**
+  String get goalName;
+
+  /// No description provided for @goalNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency fund'**
+  String get goalNameHint;
+
+  /// No description provided for @targetAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Target amount'**
+  String get targetAmount;
+
+  /// No description provided for @createGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Create goal'**
+  String get createGoal;
+
+  /// No description provided for @goalNameAmountFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a goal name and a target greater than zero.'**
+  String get goalNameAmountFirst;
+
+  /// No description provided for @shoppingLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping logged'**
+  String get shoppingLogged;
+
+  /// No description provided for @loggedItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged'**
+  String get loggedItem;
 }
 
 class _AppLocalizationsDelegate

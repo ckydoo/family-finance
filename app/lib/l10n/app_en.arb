@@ -748,6 +748,15 @@
   "watch": "Watch",
   "spentLabel": "Spent",
   "limitLabel": "Limit",
+  "envelopeRemaining": "{name} has {amount} remaining",
+  "envelopeWillLeave": "This leaves {amount} in {name}",
+  "envelopeWillExceed": "This puts {name} {amount} over budget",
+  "overBudgetTitle": "This envelope will be over budget",
+  "overBudgetBody": "{name} will be over by {amount}. The expense can still be recorded.",
+  "adjustAmount": "Adjust amount",
+  "logAnyway": "Log anyway",
+  "overBy": "Over by {amount}",
+  "overBudgetLabel": "Over budget",
   "memberPot": "Pot so far: {pot} · {contribution} × {count} members",
   "@memberPot": {
     "placeholder": {
@@ -861,5 +870,14 @@
   "removePhoto": "Remove photo",
   "photoUploading": "Uploading photo…",
   "photoFailed": "Could not upload the photo — check your connection and try again.",
-  "photoSaved": "Photo saved — your family will see it too."
+  "photoSaved": "Photo saved — your family will see it too.",
+  "newSavingsGoal": "New savings goal",
+  "createSavingsGoal": "Create savings goal",
+  "goalName": "Goal name",
+  "goalNameHint": "Emergency fund",
+  "targetAmount": "Target amount",
+  "createGoal": "Create goal",
+  "goalNameAmountFirst": "Add a goal name and a target greater than zero.",
+  "shoppingLogged": "Shopping logged",
+  "loggedItem": "Logged"
 }
