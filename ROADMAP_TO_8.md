@@ -498,3 +498,9 @@ Sprint C (skip-limbo banner, RPC display names, P4 sync details).
 - Settings mode card (live/demo + config error) — l10n 386 → **389** ×6.
 - live_boot_test 8 → **10** (legacy purge fires / adopted install survives).
 
+## Demo removal (2026-09-22) — "remove it completely"
+- Deleted: `EnvMode`, `AppEnv.fallback`, `DemoAuthService`, `seed_data.dart` (451 lines), demo UI strings (loginFooter, membersDemoTip, inviteDemoNote, mode* card), all demo kv/mode branches.
+- Boot contract: config = dart-defines > .env asset > committed constants; unconfigured build → `MhuriSetupErrorApp` (no silent fallback). `AppEnv.isConfigured` replaces `isLive`; AppState boots empty always.
+- Factory default Kids-Mode exit PIN 1234 kept (documented; parent sets a real PIN).
+- Tests carry their own baseline now: `test/fake_auth.dart`, `test/seed.dart` (explicit, test-only); all 22 test files compile against the live-only API.
+

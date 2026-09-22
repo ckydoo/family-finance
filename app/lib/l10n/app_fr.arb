@@ -117,7 +117,6 @@
   "loginVerify": "Vérifier et se connecter",
   "loginChangeNumber": "Changer de numéro",
   "loginBadPhone": "Entrez un numéro valide (ex. +44 7700 900123).",
-  "loginFooter": "Démo : connecte-toi avec n’importe quel e-mail et mot de passe (6+ caractères).",
   "quickAddTitle": "Ajout rapide",
   "expense": "Dépense",
   "envelopeLabel": "Enveloppe",
@@ -151,7 +150,6 @@
   "familyTitle": "Famille",
   "membersDesc": "Couple + enfants · le mois commence le 1er",
   "membersInviteHint": "Partagez le code ou scannez pour inviter un proche",
-  "membersDemoTip": "Astuce démo : utilisez « Voir comme » pour changer de profil. Les enfants ouvrent un mode scellé.",
   "setCurrency": "Devise et taux",
   "setCurrencySub": "USD principal · ZiG secondaire · {rate}",
   "setPrivacy": "Confidentialité",
@@ -406,7 +404,6 @@
   "copyInvite": "Copier le code d'invitation",
   "copied": "Copié ✓",
   "inviteTitle": "Inviter un membre de la famille",
-  "inviteDemoNote": "Le mode démo vient avec une famille d'exemple. En mode live, votre code d'invitation vit ici — partagez-le et la famille rejoint votre espace.",
   "editProfile": "Modifier le profil",
   "editProfileSub": "Nom et avatar de ce membre",
   "photoNote": "Les photos de profil arrivent avec la synchro familiale. Les avatars sont déjà actifs.",
@@ -461,8 +458,5 @@
   "setupBanner": "Termine la configuration : crée ta famille ou rejoins-en une avec un code",
   "setupBannerCta": "Configurer",
   "deleteTypeHint": "Tape DELETE pour confirmer",
-  "deletePermanently": "Supprimer définitivement",
-  "modeLive": "En direct — synchronisé avec votre espace familial",
-  "modeDemo": "Mode démo — famille d’exemple, rien ne se synchronise",
-  "modeDemoHint": "Créez app/.env à partir de .env.example (ajoutez vos clés Supabase) puis recompilez pour passer en direct."
+  "deletePermanently": "Supprimer définitivement"
 }

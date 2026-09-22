@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/auth/auth_controller.dart';
 import 'package:mhuri_money/core/auth/auth_service.dart';
@@ -10,13 +8,48 @@ import 'package:mhuri_money/core/sync/sync_mappers.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:mhuri_money/core/db/app_database.dart';
 
-/// REAL-DATA GUARANTEE (live mode): a fresh install boots EMPTY — no seeded
-/// demo family, no fiction. Identity is bootstrapped only by adopting a
-/// family space (create/join). Demo mode keeps its fixtures for tests.
-///
-/// Sprint A: the local owner's id IS the server identity (auth.users id), so
-/// pushed rows satisfy their user_profile FKs, and the family roster can be
-/// pulled and merged with real names.
+/// REAL-DATA GUARANTEE: the app is live-only — a fresh install boots EMPTY,
+/// no fixtures anywhere. Identity is bootstrapped only by adopting a family
+/// space (create/join). The fake auth below is a deterministic test double
+/// for the AuthService interface (no network).
+
+/// Deterministic AuthService double: any well-formed email + 6+ char
+/// password signs in as a fixed test identity (mirrors the real contract).
+class FakeAuthService implements AuthService {
+  AuthSession? _session;
+
+  bool _valid(String email, String password) =>
+      email.contains('@') && email.contains('.') && password.length >= 6;
+
+  @override
+  Future<AuthResult> signIn(String email, String password) async {
+    if (!_valid(email, password)) {
+      return const AuthResult.failure(
+          'Enter a valid email and a password of at least 6 characters.');
+    }
+    _session = const AuthSession(userId: 'test-user-1', email: email);
+    return const AuthResult.success();
+  }
+
+  @override
+  Future<AuthResult> signUp(String email, String password) async =>
+      signIn(email, password);
+
+  @override
+  Future<AuthSession?> restoreSession() async => _session;
+
+  @override
+  Future<void> signOut() async {
+    _session = null;
+  }
+
+  @override
+  Future<AuthResult> deleteAccount() async {
+    _session = null;
+    return const AuthResult.success();
+  }
+}
+
 void main() {
   setUpAll(() {
     sqfliteFfiInit();
@@ -30,11 +63,10 @@ void main() {
       onCreate: (d, v) async => await AppDatabase.createSchema(d),
     );
     final env = AppEnv.parse(
-      'APP_ENV=live\n'
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
       'SUPABASE_ANON_KEY=k\n',
     );
-    final auth = AuthController(env: env, service: DemoAuthService())
+    final auth = AuthController(env: env, service: FakeAuthService())
       ..signIn('tendi@mhuri.app', '123456');
     final s = AppState(db: AppDatabase.wrap(raw), env: env, auth: auth);
     await s.ready();
@@ -45,11 +77,10 @@ void main() {
   /// legacy-purge scenarios). Untyped raw on purpose — ffi Database type.
   Future<(AppState, AuthController)> stateOn(raw) async {
     final env = AppEnv.parse(
-      'APP_ENV=live\n'
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
       'SUPABASE_ANON_KEY=k\n',
     );
-    final auth = AuthController(env: env, service: DemoAuthService())
+    final auth = AuthController(env: env, service: FakeAuthService())
       ..signIn('tendi@mhuri.app', '123456');
     final s = AppState(db: AppDatabase.wrap(raw), env: env, auth: auth);
     await s.ready();
@@ -65,21 +96,20 @@ void main() {
       onCreate: (d, v) async => await AppDatabase.createSchema(d),
     );
     final env = AppEnv.parse(
-      'APP_ENV=live\n'
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
       'SUPABASE_ANON_KEY=k\n',
     );
-    final auth = AuthController(env: env, service: DemoAuthService())
+    final auth = AuthController(env: env, service: FakeAuthService())
       ..signIn('tendi@mhuri.app', '123456');
     final s = AppState(db: AppDatabase.wrap(raw), env: env, auth: auth);
     await s.ready();
     return (s, auth, raw);
   }
 
-  test('live fresh boot contains ZERO demo data', () async {
+  test('live fresh boot contains ZERO seeded data', () async {
     final (s, _) = await liveState();
 
-    // No demo family, no demo members, no demo content.
+    // No seeded family, no members, no content.
     expect(s.space.name, isNot(contains('Taylor')));
     expect(s.members, isEmpty);
     expect(s.envelopes, isEmpty);
@@ -96,7 +126,8 @@ void main() {
   test('adopting a space bootstraps the owner with the SERVER identity id',
       () async {
     final (s, auth) = await liveState();
-    final session = await auth.restoreSession();
+    await auth.restore();
+    final session = auth.session;
     expect(session, isNotNull);
 
     s.onSpaceAdopted(spaceName: 'The Marufu Family');
@@ -161,12 +192,6 @@ void main() {
     expect(s.user.name, 'tendi'); // local display name kept
     expect(s.members.any((m) => m.id == 'uuid-mai' && m.name == 'Mai'),
         isTrue);
-  });
-
-  test('demo mode keeps its fixtures (tests + demo builds)', () async {
-    final s = AppState(); // no db, demo env
-    expect(s.members, isNotEmpty);
-    expect(s.envelopes, isNotEmpty);
   });
 
   test('applyEnvelopeLinks mirrors server links, persists, skips no-ops',

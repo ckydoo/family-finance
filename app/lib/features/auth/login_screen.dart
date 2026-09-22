@@ -4,7 +4,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-/// Email + password login (live mode only — demo never shows this screen).
+/// Email + password login against the family's Supabase project.
 /// Two modes: sign in, or create account. When Supabase has "Confirm email"
 /// enabled, sign-up returns a "check your inbox" state instead of a session.
 const String kDefaultCountryCode = '263'; // kept for reference — auth is
@@ -280,13 +280,6 @@ class _LoginScreenState extends State<LoginScreen> {
               },
             ),
             const SizedBox(height: 32),
-            Center(
-              child: Text(
-                AppLocalizations.of(context)!.loginFooter,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11.5, color: context.inkSoft),
-              ),
-            ),
           ],
         ),
       ),

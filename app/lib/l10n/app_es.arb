@@ -117,7 +117,6 @@
   "loginVerify": "Verificar e iniciar sesión",
   "loginChangeNumber": "Cambiar número",
   "loginBadPhone": "Introduce un teléfono válido (p. ej. +44 7700 900123).",
-  "loginFooter": "Modo demo: entra con cualquier correo y contraseña (6+ caracteres).",
   "quickAddTitle": "Añadir rápido",
   "expense": "Gasto",
   "envelopeLabel": "Sobre",
@@ -151,7 +150,6 @@
   "familyTitle": "Familia",
   "membersDesc": "Pareja + niños · el mes empieza el 1",
   "membersInviteHint": "Comparte el código o escanea para invitar a un familiar",
-  "membersDemoTip": "Consejo demo: usa \"Ver como\" para cambiar de perfil. Los niños entran en un modo sellado.",
   "setCurrency": "Moneda y tasas",
   "setCurrencySub": "USD principal · ZiG secundaria · {rate}",
   "setPrivacy": "Privacidad",
@@ -406,7 +404,6 @@
   "copyInvite": "Copiar código de invitación",
   "copied": "Copiado ✓",
   "inviteTitle": "Invitar a un familiar",
-  "inviteDemoNote": "El modo demo trae una familia de ejemplo. En modo live tu código de invitación vive aquí — compártelo y la familia se une a tu espacio.",
   "editProfile": "Editar perfil",
   "editProfileSub": "Nombre y avatar de este miembro",
   "photoNote": "Las fotos de perfil llegan con la sincronización familiar. Los avatares ya están activos.",
@@ -461,8 +458,5 @@
   "setupBanner": "Termina la configuración: crea tu familia o únete con un código",
   "setupBannerCta": "Configurar",
   "deleteTypeHint": "Escribe DELETE para confirmar",
-  "deletePermanently": "Eliminar permanentemente",
-  "modeLive": "En vivo — sincronizado con tu espacio familiar",
-  "modeDemo": "Modo demo — familia de ejemplo, nada se sincroniza",
-  "modeDemoHint": "Crea app/.env desde .env.example (añade tus claves de Supabase) y recompila para pasar a en vivo."
+  "deletePermanently": "Eliminar permanentemente"
 }

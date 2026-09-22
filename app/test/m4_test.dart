@@ -5,6 +5,8 @@ import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'seed.dart';
+
 /// M4: cycle math, recurring review flow, onboarding/settings persistence,
 /// and CSV export failing soft outside a device.
 void main() {
@@ -50,6 +52,7 @@ void main() {
 
     test('rollover envelope gains carry when the previous cycle was clean', () {
       final s = AppState();
+      seedMemory(s);
       s.setMonthStartDay(1);
       // Deterministic: pretend nothing was ever spent.
       s.txs.clear();

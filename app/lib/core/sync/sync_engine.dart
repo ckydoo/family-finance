@@ -148,7 +148,7 @@ class SyncEngine {
   // ── family bootstrap (create / join) ────────────────────────────────────
 
   /// Creates a family space. Wipes this device's synced tables first so the
-  /// demo seed never leaks into the family's server data.
+  /// device-local rows never leak into the family's server data.
   Future<bool> createSpace(String name,
       {String household = 'couple_kids'}) async {
     try {

@@ -117,7 +117,6 @@
   "loginVerify": "Simbirurira & pinda",
   "loginChangeNumber": "Chinja nhare",
   "loginBadPhone": "Pinda nhare inoshanda (somuenzaniso +44 7700 900123).",
-  "loginFooter": "Demo: pinda mukati nechero email nemusteri (6+ mavara).",
   "quickAddTitle": "Wedzera nyore",
   "expense": "Kubhadhara",
   "envelopeLabel": "Mabhuku",
@@ -151,7 +150,6 @@
   "familyTitle": "Mhuri",
   "membersDesc": "Vabereki nevana · mwedzi unotanga musi wekutanga",
   "membersInviteHint": "Govaneka kodhi kana scan kuvaka muridzi wemhuri",
-  "membersDemoTip": "Demo: shandisa \"View as\" kushandura profile. Vana vanopinda munzvimbo yakavharwa.",
   "setCurrency": "Mari & mitauro",
   "setCurrencySub": "USD utungamiri · ZiG chipiri · {rate}",
   "setPrivacy": "Kuvanzika",
@@ -406,7 +404,6 @@
   "copyInvite": "Kopkodhi yekukoka",
   "copied": "Yakopiwa ✓",
   "inviteTitle": "Koka muridzi wemhuri",
-  "inviteDemoNote": "Demo inouya nemhuri yemuenzaniso. Mulive kodhi yekukoka inogara pano — igovane nemhuri ipinde munzvimbo yako.",
   "editProfile": "Chinja profile",
   "editProfileSub": "Zita nemufananidzo weuyu member",
   "photoNote": "Mifananidzo yeprofile inouya nekuendanisa kwemhuri. Zvivanhu zviri po zvino.",
@@ -461,8 +458,5 @@
   "setupBanner": "Pedzisa kugadzirisa: vhaka mhuri yako kana ujoin nencode",
   "setupBannerCta": "Gadzirisa",
   "deleteTypeHint": "Nyora DELETE kuti ivhure",
-  "deletePermanently": "Dzima zvachose",
-  "modeLive": "Live — inofambidzana nenzvimbo yemhuri yako",
-  "modeDemo": "Demo mode — mhuri yemuenzaniso, hapana chinofambidzana",
-  "modeDemoHint": "Gadzira app/.env kubva ku .env.example (wedzera Supabase keys dzako) wobva wazvitangazve kuenda live."
+  "deletePermanently": "Dzima zvachose"
 }

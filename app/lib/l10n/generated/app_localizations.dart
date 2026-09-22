@@ -664,12 +664,6 @@ abstract class AppLocalizations {
   /// **'Enter a valid phone number (e.g. +44 7700 900123).'**
   String get loginBadPhone;
 
-  /// No description provided for @loginFooter.
-  ///
-  /// In en, this message translates to:
-  /// **'Demo build: any email + any password (6+ characters) signs you in.'**
-  String get loginFooter;
-
   /// No description provided for @quickAddTitle.
   ///
   /// In en, this message translates to:
@@ -867,12 +861,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share the code or scan to invite a family member'**
   String get membersInviteHint;
-
-  /// No description provided for @membersDemoTip.
-  ///
-  /// In en, this message translates to:
-  /// **'Demo tip: use \"View as\" to switch profiles. Kids open a sealed mode automatically.'**
-  String get membersDemoTip;
 
   /// No description provided for @setCurrency.
   ///
@@ -2086,12 +2074,6 @@ abstract class AppLocalizations {
   /// **'Invite a family member'**
   String get inviteTitle;
 
-  /// No description provided for @inviteDemoNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Demo mode comes with a seeded family. In live mode your invite code lives here — share it and the family joins your space.'**
-  String get inviteDemoNote;
-
   /// No description provided for @editProfile.
   ///
   /// In en, this message translates to:
@@ -2301,9 +2283,6 @@ abstract class AppLocalizations {
   String get noEnvelopesYet;
 
   String get noActivityYet;
-  String get modeLive;
-  String get modeDemo;
-  String get modeDemoHint;
 
   String get setupBanner;
 

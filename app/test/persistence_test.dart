@@ -5,10 +5,12 @@ import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'seed.dart';
+
 /// M1 DoD: "restart the app → everything is still there."
 ///
 /// Simulates two app launches over one database:
-///   1. First launch on a fresh DB → demo seed is written through.
+///   1. First launch on a fresh DB → the seeded test baseline loads.
 ///   2. Mutations (move money, expense, item, chore, request, goal…).
 ///   3. Second launch → every mutation survived the "restart".
 ///
@@ -31,20 +33,21 @@ void main() {
       ),
     );
     db = AppDatabase.wrap(raw);
+    await seedDb(db.raw);
   });
 
   tearDown(() async {
     await db.raw.close();
   });
 
-  test('first launch seeds the demo family into the database', () async {
+  test('first launch loads the baseline; a fresh DB boots empty', () async {
     final first = AppState(db: db);
     await first.ready();
 
-    expect(first.envelopes.length, 8);
-    expect(first.txs.length, greaterThan(10));
+    expect(first.envelopes.length, 4); // the seeded test baseline
+    expect(first.txs, isEmpty); // the app itself ships with ZERO rows
 
-    // Seeded state is durable: a "second launch" sees the same family.
+    // Baseline is durable: a "second launch" sees the same family.
     final second = AppState(db: db);
     await second.ready();
     expect(second.envelopes.length, first.envelopes.length);

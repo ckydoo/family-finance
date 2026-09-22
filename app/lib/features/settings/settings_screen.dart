@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/notifications/notifier.dart';
-import '../../core/config/app_env.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/notifications/reminders.dart';
 import '../../core/state/app_state.dart';
@@ -11,62 +10,6 @@ import '../../core/theme/app_theme.dart';
 /// Settings (spec §7 Settings: notifications J3, month start, data).
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  @override
-  /// Demo-vs-live status card. A device left in demo mode shows exactly why,
-  /// so a build that was never pointed at Supabase can't pass as live.
-  Widget _modeCard(BuildContext context, AppEnv env) {
-    final t = AppLocalizations.of(context)!;
-    final live = env.isLive;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: context.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.hairline),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            live ? Icons.verified_user_outlined : Icons.cloud_off_outlined,
-            size: 20,
-            color: live ? context.primary : context.inkSoft,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  live ? t.modeLive : t.modeDemo,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: context.ink,
-                  ),
-                ),
-                if (!live) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    t.modeDemoHint,
-                    style: TextStyle(fontSize: 11.5, color: context.inkSoft),
-                  ),
-                ],
-                if (!live && env.configError != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    env.configError!,
-                    style: TextStyle(fontSize: 11.5, color: context.danger),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget build(BuildContext context) {
     final s = AppScope.of(context);

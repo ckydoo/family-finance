@@ -73,10 +73,11 @@ flutter:
           weight: 800
   assets:
     - assets/branding/
-    # M2: to go live, EITHER create .env from .env.example and uncomment the
-    # line below, OR build with --dart-define (no pubspec change needed):
-    #   flutter run \
-    #     --dart-define=MHURI_APP_ENV=live \
-    #     --dart-define=MHURI_SUPABASE_URL=https://<ref>.supabase.co \
-    #     --dart-define=MHURI_SUPABASE_ANON_KEY=<anon-key>
+    # Server connection (the app has no demo mode — it is always live).
+    # Three ways to configure, in precedence order:
+    #   1. --dart-define=MHURI_SUPABASE_URL=… MHURI_SUPABASE_ANON_KEY=…
+    #   2. this .env asset: create it from .env.example, then uncomment:
+    # - .env
+    #   3. kSupabaseUrl / kSupabaseAnonKey constants in
+    #      lib/core/config/app_env.dart (no build flags needed)
     # - .env

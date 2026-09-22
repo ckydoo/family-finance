@@ -313,8 +313,6 @@ class AppLocalizationsNd extends AppLocalizations {
       'Faka inombolo esebenzayo (isb. +44 7700 900123).';
 
   @override
-  String get loginFooter =>
-      'Demo: ngena nanye i-imeyili nepasiwedi (ubude obungu-6 noma ngaphezulu).';
 
   @override
   String get quickAddTitle => 'Engeza okusheshayo';
@@ -427,8 +425,6 @@ class AppLocalizationsNd extends AppLocalizations {
       'Yabelana ngekhodi noma skanela ubize umndeni';
 
   @override
-  String get membersDemoTip =>
-      'Icebo: sebenzisa \"View as\" ukushintsha iphrofayili. Izingane zingena endaweni evalwe.';
 
   @override
   String get setCurrency => 'Imali & izinga';
@@ -1131,8 +1127,6 @@ class AppLocalizationsNd extends AppLocalizations {
   String get inviteTitle => 'Memela ilunga lomndeni';
 
   @override
-  String get inviteDemoNote =>
-      'I-demo iza nomndeni omkhombiselwe. Ku-live ikhodi yakho yesimemo ihlala lapha — yabelana ngayo umndeni unge esikhaleni sakho.';
 
   @override
   String get editProfile => 'Hlela iphrofayili';
@@ -1291,9 +1285,6 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get noActivityYet => "Akukho okubhalwe okhona. Thelela + ukungeza itransaction yakho yokuqala.";
-  String get modeLive => "Live — ihambisana ngesikhala somndeni wakho";
-  String get modeDemo => "Demo mode — umndeni wesiboniso, akukho okuhambisanyo";
-  String get modeDemoHint => "Yakha app/.env esuka ku .env.example (ngeza amakihi akho e-Supabase) uphinde wakhe ukuthi live.";
 
   @override
   String get setupBanner => "Gcwalisa ukulungisa: yakha umndeni wakho noma ngena ngekholodi";

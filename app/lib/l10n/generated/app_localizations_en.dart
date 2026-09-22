@@ -312,8 +312,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter a valid phone number (e.g. +44 7700 900123).';
 
   @override
-  String get loginFooter =>
-      'Demo build: any email + any password (6+ characters) signs you in.';
 
   @override
   String get quickAddTitle => 'Quick add';
@@ -425,8 +423,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Share the code or scan to invite a family member';
 
   @override
-  String get membersDemoTip =>
-      'Demo tip: use \"View as\" to switch profiles. Kids open a sealed mode automatically.';
 
   @override
   String get setCurrency => 'Currency & rates';
@@ -1124,8 +1120,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inviteTitle => 'Invite a family member';
 
   @override
-  String get inviteDemoNote =>
-      'Demo mode comes with a seeded family. In live mode your invite code lives here — share it and the family joins your space.';
 
   @override
   String get editProfile => 'Edit profile';
@@ -1284,9 +1278,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noActivityYet => "Nothing recorded yet. Tap + to add your first transaction.";
-  String get modeLive => "Live — synced to your family space";
-  String get modeDemo => "Demo mode — sample family, nothing syncs";
-  String get modeDemoHint => "Create app/.env from .env.example (add your Supabase keys) and rebuild to go live.";
 
   @override
   String get setupBanner => "Finish setting up: create your family or join with a code";

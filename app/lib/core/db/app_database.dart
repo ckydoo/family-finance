@@ -8,7 +8,7 @@ import 'package:sqflite/sqflite.dart';
 /// can be written and statically verified without a Dart toolchain.
 ///
 /// `open()` returns null on any failure and the app silently falls back to
-/// in-memory demo mode, so a broken DB can never crash the app.
+/// null, so main() can show the setup screen instead of crashing.
 class AppDatabase {
   final Database raw;
 
@@ -39,7 +39,7 @@ class AppDatabase {
   }
 
   /// One-time legacy purge (first live boot): a device upgraded from a
-  /// pre-live build carries demo fixtures + stale markers in its local db.
+  /// earlier build carries stale rows + markers in its local db.
   /// Deletes every user row — kv included; the caller immediately re-flags
   /// the purge. Real adopted data is never present when this may run.
   Future<void> wipeUserData() async {
@@ -63,7 +63,7 @@ class AppDatabase {
       );
       return AppDatabase._(db);
     } catch (_) {
-      // No database available (tests, web, storage error) → demo mode.
+      // No database available (tests, web, storage error) → null.
       return null;
     }
   }

@@ -315,8 +315,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loginBadPhone => 'Entrez un numéro valide (ex. +44 7700 900123).';
 
   @override
-  String get loginFooter =>
-      'Démo : connecte-toi avec n’importe quel e-mail et mot de passe (6+ caractères).';
 
   @override
   String get quickAddTitle => 'Ajout rapide';
@@ -430,8 +428,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Partagez le code ou scannez pour inviter un proche';
 
   @override
-  String get membersDemoTip =>
-      'Astuce démo : utilisez « Voir comme » pour changer de profil. Les enfants ouvrent un mode scellé.';
 
   @override
   String get setCurrency => 'Devise et taux';
@@ -1138,8 +1134,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inviteTitle => 'Inviter un membre de la famille';
 
   @override
-  String get inviteDemoNote =>
-      'Le mode démo vient avec une famille d\'exemple. En mode live, votre code d\'invitation vit ici — partagez-le et la famille rejoint votre espace.';
 
   @override
   String get editProfile => 'Modifier le profil';
@@ -1300,9 +1294,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noActivityYet => "Rien d’enregistré pour l’instant. Touchez + pour ajouter ta première opération.";
-  String get modeLive => "En direct — synchronisé avec votre espace familial";
-  String get modeDemo => "Mode démo — famille d’exemple, rien ne se synchronise";
-  String get modeDemoHint => "Créez app/.env à partir de .env.example (ajoutez vos clés Supabase) puis recompilez pour passer en direct.";
 
   @override
   String get setupBanner => "Termine la configuration : crée ta famille ou rejoins-en une avec un code";

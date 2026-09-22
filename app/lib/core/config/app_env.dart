@@ -1,16 +1,21 @@
 import 'package:flutter/services.dart' show rootBundle;
 
-/// App environment contract (M2).
+/// Server connection config (M2 → live-only).
 ///
-/// Reads the optional `.env` bundled as a flutter asset (see pubspec.yaml —
-/// the asset lines ship commented out; uncomment them after creating your
-/// `.env` from `.env.example`). Missing `.env`, or an invalid one, always
-/// means: offline demo mode, exactly as the app has always behaved.
-enum EnvMode { demo, live }
-
+/// The app is always a real client of the family's Supabase project —
+/// config decides WHERE to connect, nothing else.
+/// Sources, in precedence order:
+///   1. `--dart-define=MHURI_SUPABASE_URL=… MHURI_SUPABASE_ANON_KEY=…`
+///   2. `.env` bundled as a flutter asset (see pubspec.yaml)
+///   3. the committed constants below — paste your project's values here
+///      once and `flutter run` / `flutter build apk` just work (both values
+///      are public-by-design: the anon key is a browser/mobile key whose
+///      power is bounded by row-level security on the server).
+///
+/// A build with NO source for these values shows a setup error screen at
+/// startup — it never falls back to any offline fiction.
 class AppEnv {
   const AppEnv({
-    required this.mode,
     this.supabaseUrl,
     this.supabaseAnonKey,
     this.fcmProjectId,
@@ -19,46 +24,68 @@ class AppEnv {
     this.configError,
   });
 
-  /// No `.env` found — pure demo mode.
-  const AppEnv.fallback() : this(mode: EnvMode.demo);
+  /// Paste your Supabase project's values here to bake the connection into
+  /// every build (Project Settings → API in the Supabase dashboard).
+  static const String kSupabaseUrl = '';
+  static const String kSupabaseAnonKey = '';
 
-  final EnvMode mode;
   final String? supabaseUrl;
   final String? supabaseAnonKey;
 
-  /// Optional extras (used in later milestones).
+  /// Optional extras (used by later milestones).
   final String? fcmProjectId;
   final String? sentryDsn;
   final String? rateApiUrl;
 
-  /// Non-null when `.env` asked for live mode but keys were missing — the app
-  /// fell back to demo and this message should be surfaced in settings.
+  /// Non-null when the build has no usable server connection — main() shows
+  /// a setup error screen with this message instead of the app.
   final String? configError;
 
-  /// Live mode only ever engages with a complete config. Never otherwise.
-  bool get isLive =>
-      mode == EnvMode.live &&
+  /// True when the app can reach its family server. There is no third state:
+  /// an unconfigured build refuses to start the app shell.
+  bool get isConfigured =>
       (supabaseUrl?.isNotEmpty ?? false) &&
       (supabaseAnonKey?.isNotEmpty ?? false);
 
-  /// Loads `.env` from the asset bundle. Any problem → try the
-  /// `--dart-define` overrides (MHURI_APP_ENV / MHURI_SUPABASE_URL /
-  /// MHURI_SUPABASE_ANON_KEY), then demo fallback. A build with neither
-  /// source is demo by design — never half-configured.
+  /// Loads the connection config: `.env` asset → dart-defines → constants.
+  /// Nothing to read anywhere → [configError] is set and main() shows the
+  /// setup screen. Any problem reading `.env` is simply "no .env".
   static Future<AppEnv> load() async {
+    var env = const AppEnv();
     try {
-      final raw = await rootBundle.loadString('.env');
-      return AppEnv.parse(raw);
+      env = AppEnv.parse(await rootBundle.loadString('.env'));
     } catch (_) {}
-    const dartEnv = String.fromEnvironment('MHURI_APP_ENV');
-    if (dartEnv.isNotEmpty) {
-      return AppEnv.parse(
-        'APP_ENV=$dartEnv\n'
-        'SUPABASE_URL=${const String.fromEnvironment('MHURI_SUPABASE_URL')}\n'
-        'SUPABASE_ANON_KEY=${const String.fromEnvironment('MHURI_SUPABASE_ANON_KEY')}\n',
+    if (env.isConfigured) return env;
+
+    const dUrl = String.fromEnvironment('MHURI_SUPABASE_URL');
+    const dKey = String.fromEnvironment('MHURI_SUPABASE_ANON_KEY');
+    if (dUrl.isNotEmpty && dKey.isNotEmpty) {
+      return AppEnv(
+        supabaseUrl: dUrl,
+        supabaseAnonKey: dKey,
+        fcmProjectId: env.fcmProjectId,
+        sentryDsn: env.sentryDsn,
+        rateApiUrl: env.rateApiUrl,
       );
     }
-    return const AppEnv.fallback();
+    if (kSupabaseUrl.isNotEmpty && kSupabaseAnonKey.isNotEmpty) {
+      return AppEnv(
+        supabaseUrl: kSupabaseUrl,
+        supabaseAnonKey: kSupabaseAnonKey,
+        fcmProjectId: env.fcmProjectId,
+        sentryDsn: env.sentryDsn,
+        rateApiUrl: env.rateApiUrl,
+      );
+    }
+    return AppEnv(
+      fcmProjectId: env.fcmProjectId,
+      sentryDsn: env.sentryDsn,
+      rateApiUrl: env.rateApiUrl,
+      configError: 'No server connection in this build. Rebuild with '
+          '--dart-define=MHURI_SUPABASE_URL=… MHURI_SUPABASE_ANON_KEY=… '
+          '(or bundle a .env, or fill kSupabaseUrl/kSupabaseAnonKey in '
+          'lib/core/config/app_env.dart).',
+    );
   }
 
   /// Parser kept deliberately simple: KEY=VALUE lines, `#` comments, optional
@@ -80,24 +107,12 @@ class AppEnv {
       map[k] = v;
     }
 
-    final wantsLive = (map['APP_ENV'] ?? 'demo').trim().toLowerCase() == 'live';
-    final url = map['SUPABASE_URL'];
-    final key = map['SUPABASE_ANON_KEY'];
-
-    String? error;
-    if (wantsLive && ((url?.isEmpty ?? true) || (key?.isEmpty ?? true))) {
-      error = 'APP_ENV=live but SUPABASE_URL / SUPABASE_ANON_KEY are missing '
-          '— running in demo mode instead.';
-    }
-
     return AppEnv(
-      mode: error == null && wantsLive ? EnvMode.live : EnvMode.demo,
-      supabaseUrl: url,
-      supabaseAnonKey: key,
+      supabaseUrl: map['SUPABASE_URL'],
+      supabaseAnonKey: map['SUPABASE_ANON_KEY'],
       fcmProjectId: map['FCM_PROJECT_ID'],
       sentryDsn: map['SENTRY_DSN'],
       rateApiUrl: map['RATE_API_URL'],
-      configError: error,
     );
   }
 }

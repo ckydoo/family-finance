@@ -312,8 +312,6 @@ class AppLocalizationsSn extends AppLocalizations {
       'Pinda nhare inoshanda (somuenzaniso +44 7700 900123).';
 
   @override
-  String get loginFooter =>
-      'Demo: pinda mukati nechero email nemusteri (6+ mavara).';
 
   @override
   String get quickAddTitle => 'Wedzera nyore';
@@ -426,8 +424,6 @@ class AppLocalizationsSn extends AppLocalizations {
       'Govaneka kodhi kana scan kuvaka muridzi wemhuri';
 
   @override
-  String get membersDemoTip =>
-      'Demo: shandisa \"View as\" kushandura profile. Vana vanopinda munzvimbo yakavharwa.';
 
   @override
   String get setCurrency => 'Mari & mitauro';
@@ -1129,8 +1125,6 @@ class AppLocalizationsSn extends AppLocalizations {
   String get inviteTitle => 'Koka muridzi wemhuri';
 
   @override
-  String get inviteDemoNote =>
-      'Demo inouya nemhuri yemuenzaniso. Mulive kodhi yekukoka inogara pano — igovane nemhuri ipinde munzvimbo yako.';
 
   @override
   String get editProfile => 'Chinja profile';
@@ -1290,9 +1284,6 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get noActivityYet => "Hapana chanyorwa zvasvino. Dzvanya + kunyora transaction yekutanga.";
-  String get modeLive => "Live — inofambidzana nenzvimbo yemhuri yako";
-  String get modeDemo => "Demo mode — mhuri yemuenzaniso, hapana chinofambidzana";
-  String get modeDemoHint => "Gadzira app/.env kubva ku .env.example (wedzera Supabase keys dzako) wobva wazvitangazve kuenda live.";
 
   @override
   String get setupBanner => "Pedzisa kugadzirisa: vhaka mhuri yako kana ujoin nencode";

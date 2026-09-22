@@ -18,7 +18,7 @@ void main() {
     });
   });
 
-  group('Conversion (demo rate 15.27)', () {
+  group('Conversion (default rate 15.27)', () {
     const rate = 15.27;
 
     test('USD → ZiG', () {

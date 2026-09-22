@@ -6,7 +6,7 @@ import 'auth_service.dart';
 
 /// Optional key-value hooks so the service can persist tokens without
 /// depending on the database layer. Backed by the `kv` table on device,
-/// in-memory maps in tests/demo.
+/// in-memory maps in tests.
 typedef KvGetter = Future<String?> Function(String key);
 typedef KvSetter = Future<void> Function(String key, String value);
 

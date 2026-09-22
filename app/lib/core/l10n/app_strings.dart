@@ -5,7 +5,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../models/models.dart';
 import '../state/app_state.dart';
 
-/// Lightweight demo localization for EN / SN / ND (spec J6).
+/// Lightweight localization fallback for EN / SN / ND (spec J6).
 ///
 /// This is a deliberate stop-gap: Phase 2 migrates to the official
 /// `flutter gen-l10n` toolchain with `.arb` files under `lib/l10n/`

@@ -21,8 +21,9 @@ import 'features/shell/adult_shell.dart';
 import 'features/teen/teen_zone.dart';
 
 /// Root widget. Owns the [AppState] and [AuthController] and exposes state to
-/// the whole tree via [AppScope]. All parameters optional: `flutter test` and
-/// demo builds pass nothing and get the classic offline demo experience.
+/// the whole tree via [AppScope]. Production (main) always passes a working
+/// local database + configured env; widget tests may pass nothing (an empty
+/// unconfigured app — no sync, no fixtures).
 class MhuriMoneyApp extends StatefulWidget {
   const MhuriMoneyApp({super.key, this.db, this.env, this.auth});
 
@@ -38,15 +39,15 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     with WidgetsBindingObserver {
   late final AppState _state;
   late final AuthController _auth;
-  late final bool _live;
+  late final bool _configured;
   SyncEngine? _engine;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final env = widget.env ?? const AppEnv.fallback();
-    _live = env.isLive;
+    final env = widget.env ?? const AppEnv();
+    _configured = env.isConfigured;
     _auth = widget.auth ?? AuthController(env: env);
     _state = AppState(db: widget.db, env: env, auth: _auth);
 
@@ -61,11 +62,11 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       Notifier.apply(plan);
     };
 
-    // M3: live mode + local database → real two-phone sync.
+    // M3: configured connection + local database → real two-phone sync.
     final db = widget.db;
     final url = env.supabaseUrl;
     final key = env.supabaseAnonKey;
-    if (_live && db != null && (url?.isNotEmpty ?? false)) {
+    if (_configured && db != null && (url?.isNotEmpty ?? false)) {
       final engine = SyncEngine(
         client: SupabaseSyncClient(
           baseUrl: url!,
@@ -101,7 +102,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     }
     // Premium pass: back in the foreground → pull the family's changes now
     // (narrows the 45s poll window to ~0 for the "just opened the app" case).
-    if (state == AppLifecycleState.resumed && _live && _auth.isLoggedIn) {
+    if (state == AppLifecycleState.resumed && _configured && _auth.isLoggedIn) {
       _engine?.syncNow();
       _state.refreshPending();
     }
@@ -149,7 +150,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
             home: AnimatedBuilder(
               animation: _auth,
               builder: (context, _) {
-                // Hydration splash: local database is loading (demo boots fast).
+                // Hydration splash: local database is loading.
                 if (_state.hydrating) {
                   return const _Splash();
                 }
@@ -157,15 +158,14 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 if (_state.lastError != null) {
                   return _ErrorPane(onRetry: () => _state.refresh());
                 }
-                // First run starts at Authentication in BOTH modes (demo login
-                // = any phone + code 1234). After verifying once, launches go
-                // straight in via the restored session.
+                // First run starts at Authentication. After verifying once,
+                // launches go straight in via the restored session.
                 if (!_auth.isLoggedIn) {
                   return LoginScreen(auth: _auth);
                 }
-                // First-run family setup (live mode only; skip writes kv):
-                // create a family or join one — that IS the onboarding.
-                if (_live && _auth.isLoggedIn && !_state.onboardingComplete) {
+                // First-run family setup (skip writes kv): create a family
+                // or join one — that IS the onboarding.
+                if (_auth.isLoggedIn && !_state.onboardingComplete) {
                   return FamilySetupScreen(state: _state);
                 }
                 return const RoleGate();

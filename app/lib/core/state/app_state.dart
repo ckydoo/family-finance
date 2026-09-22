@@ -8,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 import '../auth/auth_controller.dart';
 import '../auth/pin_store.dart';
 import '../config/app_env.dart';
-import '../data/seed_data.dart';
 import '../db/app_database.dart';
 import '../db/persistence.dart';
 import '../sync/sync_engine.dart';
@@ -32,52 +31,28 @@ enum Pace { onTrack, watch, over }
 
 /// Single source of truth. M1: every mutation writes through to the local
 /// SQLite database (fire-and-forget, errors never crash the app); on startup
-/// the stored state replaces the in-memory seed. Pass `db: null` (or use no
-/// database) and the app runs exactly as the pure in-memory demo — this is
-/// what widget tests and offline-demo mode rely on.
+/// the stored state replaces the in-memory defaults.
 class AppState extends ChangeNotifier {
   AppState({this.db, AppEnv? env, this.auth})
-      : env = env ?? const AppEnv.fallback() {
-    if (env?.isLive ?? false) {
-      // LIVE: real-data boot. Empty until the family is adopted
-      // (FamilySetup → create/join → server pull fills everything). No demo
-      // fiction ever exists in a live build.
-      space = const FamilySpace(name: 'My family');
-      members = [];
-      accounts = [];
-      envelopes = [];
-      txs = [];
-      goals = [];
-      goalTxs = [];
-      items = [];
-      chores = [];
-      requests = [];
-      proposals = [];
-      earnings = [];
-      circle = _neutralCircle;
-      recurring = [];
-      stars = 0;
-      _user = _placeholderUser;
-    } else {
-      // DEMO/TEST: the seeded showcase family (fixture — never ships live).
-      final b = seedData();
-      space = b.space;
-      members = b.members;
-      accounts = b.accounts;
-      envelopes = b.envelopes;
-      txs = b.txs;
-      goals = b.goals;
-      goalTxs = b.goalTxs;
-      items = b.items;
-      chores = b.chores;
-      requests = b.requests;
-      proposals = b.proposals;
-      earnings = b.earnings;
-      circle = b.circle;
-      recurring = b.recurring;
-      txs.sort((a, b2) => b2.when.compareTo(a.when));
-      _user = members.first;
-    }
+      : env = env ?? const AppEnv() {
+    // Real-data boot (the only boot). Empty until the family is adopted
+    // (FamilySetup → create/join → server pull fills everything).
+    space = const FamilySpace(name: 'My family');
+    members = [];
+    accounts = [];
+    envelopes = [];
+    txs = [];
+    goals = [];
+    goalTxs = [];
+    items = [];
+    chores = [];
+    requests = [];
+    proposals = [];
+    earnings = [];
+    circle = _neutralCircle;
+    recurring = [];
+    stars = 0;
+    _user = _placeholderUser;
     hydrating = db != null;
     if (db != null) {
       _store = Persistence(db!);
@@ -97,24 +72,25 @@ class AppState extends ChangeNotifier {
   static const Member _placeholderUser =
       Member(id: 'me', name: 'Me', emoji: 'person', role: Role.owner);
 
-  /// Null → pure in-memory demo/test mode. Non-null → persist + hydrate.
+  /// Null → in-memory only (production always opens the local db; only
+  /// exotic test setups pass null). Non-null → persist + hydrate.
   final AppDatabase? db;
 
-  /// Environment + session (M2). Demo mode: env.isLive == false, auth unused.
+  /// Server connection config + auth entry point (M2).
   final AppEnv env;
   final AuthController? auth;
 
   /// Hashed PINs (Kids Mode exit, kid profiles).
   late final PinStore pinStore = PinStore(kvGet: db?.kvGet, kvSet: db?.kvSet);
 
-  /// Sync engine (M3) — attached by app.dart in live mode; null in demo/tests.
+  /// Sync engine (M3) — attached by app.dart; null until then.
   SyncEngine? sync;
   Persistence? _store;
   Future<void>? _hydrationFuture;
   final List<Future<void>> _writes = <Future<void>>[];
 
   /// Device-local family identity. Adopted/renamed by FamilySetup and
-  /// hydrated from kv (members_v1 / space_name) — NOT demo seed data.
+  /// hydrated from kv (members_v1 / space_name) — never fixtures.
   late FamilySpace space;
   late final List<Member> members;
   late final List<Account> accounts;
@@ -134,15 +110,15 @@ class AppState extends ChangeNotifier {
       const Member(id: 'x', name: 'x', emoji: 'person', role: Role.adult);
   Currency displayCurrency = Currency.usd;
 
-  /// Demo FX rate (USD → ZiG). In production: a daily central-bank snapshot,
+  /// Default FX rate (USD → ZiG). In production: a daily central-bank snapshot,
   /// a server cron, with the user's parallel-rate profile (spec §5.1).
   double rate = 15.27;
   String get rateLabel => 'rate ${rate.toStringAsFixed(2)} · daily reference';
 
-  int pendingOps = 0; // offline "changes waiting to sync" demo counter
+  int pendingOps = 0; // offline "changes waiting to sync" counter
   int stars = 24; // the kids' stars
 
-  /// Demo localization (EN / SN / ND). Phase 2 migrates to flutter gen-l10n;
+  /// Lightweight localization fallback (EN / SN / ND). Phase 2 migrates to flutter gen-l10n;
   /// see lib/core/l10n/app_strings.dart.
   String localeCode = 'en';
 
@@ -211,7 +187,7 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
-  /// First kid jar (works for demo seeds *and* live-mode synced families).
+  /// First kid jar (works for synced families).
   Goal? get kidJarGoal {
     for (final g in goals) {
       if (g.isKidJar) return g;
@@ -228,7 +204,7 @@ class AppState extends ChangeNotifier {
   }
 
   // ── Sync getters for UI ────────────────────────────────────────────────
-  bool get isLive => env.isLive;
+  bool get isLive => env.isConfigured;
   bool get hasSpace => sync?.spaceId != null;
   String? get spaceName => sync?.spaceName;
   String? get inviteCode => sync?.inviteCode;
@@ -239,7 +215,7 @@ class AppState extends ChangeNotifier {
   // ── Persistence plumbing (M1) ─────────────────────────────────────────────
 
   /// Completes when the startup hydrate (load stored state, or seed a fresh
-  /// database) has finished. Resolves immediately in demo mode.
+  /// database) has finished.
   Future<void> ready() => _hydrationFuture ?? Future<void>.value();
 
   /// Pull-to-refresh / retry. After the first successful load this is SOFT:
@@ -319,13 +295,13 @@ class AppState extends ChangeNotifier {
   Future<void> _hydrate() async {
     final store = _store!;
     try {
-      // GO-LIVE GUARD (one-time): devices upgraded from pre-live builds carry
-      // demo fixtures + stale markers (onboarding_done, outbox, demo_auth kv)
-      // in their local db. On the first live boot we wipe user data so the
-      // app starts truly empty. Never fires once real adoption/session
-      // markers exist (members_v1 / space_name / auth_user_id) — a family
-      // adopted on live is never touched.
-      if (env.isLive && (await db?.kvGet('live_purged_v1') ?? '') == '') {
+      // GO-LIVE GUARD (one-time): devices upgraded from early builds carry
+      // stale markers (onboarding_done, outbox, legacy kv) in their local
+      // db. On the first boot we wipe leftover user data so the app starts
+      // truly empty. Never fires once real adoption/session markers exist
+      // (members_v1 / space_name / auth_user_id) — a real family is never
+      // touched.
+      if ((await db?.kvGet('live_purged_v1') ?? '') == '') {
         final v1 = await db?.kvGet('members_v1');
         final sn = await db?.kvGet('space_name');
         final aid = await db?.kvGet('auth_user_id');
@@ -549,7 +525,7 @@ class AppState extends ChangeNotifier {
   }
 
   /// Small local note storage (Family Meeting notes, etc.) — kv-backed,
-  /// demo-safe, device-local.
+  /// fire-and-forget, device-local.
   void saveLocalNote(String key, String value) {
     _persistKv(key, value);
     notifyListeners();
@@ -751,14 +727,14 @@ class AppState extends ChangeNotifier {
   /// enqueue never throws into the caller's flow).
   void _queue(String entity, Object domain) {
     final e = sync;
-    if (e == null || !env.isLive) return;
+    if (e == null || !env.isConfigured) return;
     e.enqueue(entity, domain).then((_) => refreshPending());
   }
 
   /// Engine wiped local synced tables after adopting a family space — the
   /// in-memory image follows so the UI is honest until the first pull lands.
   /// Called by the sync engine after create_space / join_space. Clears all
-  /// synced data (demo seed included) and bootstraps the REAL device-local
+  /// synced data and bootstraps the REAL device-local
   /// family identity: one owner member derived from the signed-in email.
   void onSpaceAdopted({String? spaceName}) {
     txs.clear();
@@ -1098,7 +1074,7 @@ class AppState extends ChangeNotifier {
 
   void syncNow() {
     final e = sync;
-    if (e != null && env.isLive) {
+    if (e != null && env.isConfigured) {
       e.syncNow();
       return;
     }

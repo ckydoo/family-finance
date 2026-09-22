@@ -93,7 +93,7 @@ class Persistence {
     return e > 0 || t > 0;
   }
 
-  /// Writes the current in-memory state (the seeded demo family on first run)
+  /// Writes the current in-memory state to the local database
   /// into a fresh database. One transaction — all or nothing.
   Future<void> seedAll(AppState s) async {
     final batch = _d.batch();
@@ -360,7 +360,7 @@ class Persistence {
   }
 
   /// Clears the synced entity set (used when adopting a family space, so the
-  /// demo seed never leaks into the family's server data). Local-only data —
+  /// local-only rows never leak into the family's server data). Local-only data —
   /// accounts, chores, savings circles, kv — is kept.
   Future<void> wipeSynced() async {
     final batch = _d.batch();

@@ -5,7 +5,9 @@ import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-/// M7 — the five core demo flows (START_HERE's spine), end to end through
+import 'seed.dart';
+
+/// M7 — the five core family flows (START_HERE's spine), end to end through
 /// real AppState + SQLite:
 ///   1. money in & out → envelopes + pool
 ///   2. goal contribution → milestone nudge
@@ -36,6 +38,7 @@ void main() {
   Future<AppState> fresh() async {
     final s = AppState(db: db);
     await s.ready();
+    seedMemory(s);
     return s;
   }
 

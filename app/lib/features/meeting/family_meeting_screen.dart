@@ -28,7 +28,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
 
   void _saveNote(AppState s) {
     final stamp = DateTime.now().toIso8601String().substring(0, 10);
-    // kv persist via the state's store (fire-and-forget, demo-safe).
+    // kv persist via the state's store (fire-and-forget).
     s.saveLocalNote('meeting_note_$stamp', _note.text.trim());
     setState(() => _saved = true);
   }

@@ -6,10 +6,8 @@ import 'supabase_auth_service.dart';
 
 /// Owns the auth session for the app shell. The login screen talks to this;
 /// app.dart listens to it and swaps between LoginScreen and the role shells.
-///
-/// Live mode → SupabaseAuthService (email + password via GoTrue).
-/// Demo mode → DemoAuthService (only used if a test or demo build shows the
-/// gate — normally demo restores its kv session without the login screen).
+/// Sessions are real Supabase GoTrue sessions (email + password); tests may
+/// inject a fake [AuthService].
 class AuthController extends ChangeNotifier {
   final KvGetter? _kvGet;
   final KvSetter? _kvSet;
@@ -22,14 +20,12 @@ class AuthController extends ChangeNotifier {
   })  : _kvGet = kvGet,
         _kvSet = kvSet,
         _service = service ??
-            (env.isLive
-                ? SupabaseAuthService(
-                    baseUrl: env.supabaseUrl!,
-                    anonKey: env.supabaseAnonKey!,
-                    kvGet: kvGet,
-                    kvSet: kvSet,
-                  )
-                : DemoAuthService());
+            SupabaseAuthService(
+              baseUrl: env.supabaseUrl!,
+              anonKey: env.supabaseAnonKey!,
+              kvGet: kvGet,
+              kvSet: kvSet,
+            );
 
   final AppEnv env;
   final AuthService _service;
@@ -48,18 +44,8 @@ class AuthController extends ChangeNotifier {
   bool get needsConfirmation => _needsConfirmation;
   bool get busy => _busy;
 
-  /// Called once at startup: restores a stored session or null. In demo
-  /// mode the session is a kv marker (the email) so the login gate shows on
-  /// first run only — after verifying once, launches go straight in.
+  /// Called once at startup: restores the stored session or null (login).
   Future<void> restore() async {
-    if (!env.isLive) {
-      final e = await _kvGet?.call('demo_auth') ?? '';
-      if (e.isNotEmpty) {
-        _session = AuthSession(userId: 'demo_user', email: e);
-      }
-      notifyListeners();
-      return;
-    }
     _session = await _service.restoreSession();
     notifyListeners();
   }
@@ -74,7 +60,6 @@ class AuthController extends ChangeNotifier {
     if (r.ok) {
       _session = await _service.restoreSession();
       _session ??= AuthSession(userId: 'user', email: email);
-      if (!env.isLive) await _kvSet?.call('demo_auth', email);
     } else {
       _lastError = r.error;
     }
@@ -98,7 +83,6 @@ class AuthController extends ChangeNotifier {
       }
       _session = await _service.restoreSession();
       _session ??= AuthSession(userId: 'user', email: email);
-      if (!env.isLive) await _kvSet?.call('demo_auth', email);
     } else {
       _lastError = r.error;
     }
@@ -108,7 +92,6 @@ class AuthController extends ChangeNotifier {
 
   Future<void> signOut() async {
     await _service.signOut();
-    if (!env.isLive) await _kvSet?.call('demo_auth', '');
     _session = null;
     _lastError = null;
     _needsConfirmation = false;
@@ -126,7 +109,6 @@ class AuthController extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    if (!env.isLive) await _kvSet?.call('demo_auth', '');
     _session = null;
     notifyListeners();
     return true;

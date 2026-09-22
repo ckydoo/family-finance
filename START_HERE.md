@@ -1,10 +1,12 @@
 # 🚀 START HERE — Run Mhuri Hub on your device
 
-**Family finance management · offline-first demo · USD + ZiG · Envelopes ·
+**Family finance management · live + offline-first · USD + ZiG · Envelopes ·
 Savings circles · Shopping lists · Teen Zone · Kids Mode**
 
 This folder contains everything: the product spec, UI mockups, the Flutter
-app source, and the Supabase backend schema.
+app source, and the Supabase backend schema. The app is a real client of
+your Supabase project — every account is a real login, every family is
+shared across devices. There is no demo mode.
 
 ---
 
@@ -12,9 +14,23 @@ app source, and the Supabase backend schema.
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.19+ → check with `flutter doctor`
 - A phone with USB debugging enabled (**Android is easiest**) *or* an Android emulator / iOS simulator
+- A Supabase project with the backend installed (see `backend/README.md` + run migrations `001`–`004`)
 - Internet for the first `flutter pub get`
 
-## 2. Run it (3 commands)
+## 2. Connect it to your Supabase (one of three ways)
+
+1. **Constants (no flags, no files):** paste your Project URL + anon key
+   into `kSupabaseUrl` / `kSupabaseAnonKey` in
+   `app/lib/core/config/app_env.dart`. Both values are public-by-design.
+2. **Build flags:**
+   `flutter run --dart-define=MHURI_SUPABASE_URL=… --dart-define=MHURI_SUPABASE_ANON_KEY=…`
+3. **Asset file:** copy `app/.env.example` → `app/.env`, fill it in, and
+   uncomment the `- .env` line under `assets:` in `pubspec.yaml`.
+
+A build with none of these shows a setup error screen — it never runs
+"offline pretend" mode.
+
+## 3. Run it (3 commands)
 
 ```bash
 cd mhuri-money/app
@@ -28,7 +44,7 @@ flutter pub get
 flutter run
 ```
 
-Run the tests too (should pass: money rules + boot smoke test):
+Run the tests too (they build their own local data; nothing external):
 
 ```bash
 flutter test
@@ -38,27 +54,22 @@ flutter test
 > output back to me and I'll fix it — different Flutter versions occasionally
 > have small API differences.
 
-## 3. The 5-minute demo script
+## 4. First real run
 
 | # | Do this | You'll see |
 |---|---|---|
-| 1 | Open the app | **Home** — Family Pool in USD & ZiG, safe-to-spend, envelope chips |
-| 2 | Tap **⇄** on the pool card | Display currency swaps USD ⇄ ZiG |
-| 3 | **Budgets** tab → open *Transport* | Envelope detail → **Move money** from Emergency buffer, give a reason |
-| 4 | Tap the amber **＋** button | Quick add → type an amount in **ZiG** → see ≈ USD preview → pick envelope → Save |
-| 5 | Look at Home again | "⏳ 1 change waiting to sync" banner → tap it to "sync" (offline-first demo) |
-| 6 | **Lists** tab → tick items → **Finish shopping** | The checked items become one expense; the Groceries envelope bar jumps |
-| 7 | **Savings** tab | Goals with rings + **Savings circle — Round 4 of 8** card → "Mark this round collected" |
-| 8 | Tap the 📊 icon (top right) | **Report card** — envelope health ring, cash-leak %, where money went |
-| 9 | Tap the **avatar stack → Family** | Members & roles. Tap **View as → Zoe** (teen) |
-| 10 | Teen Zone | 50% savings match, earnings chart → **Log earning**, then **Propose expense** |
-| 11 | Back to Family → **View as → Leo** (kid) | Sealed **Kids Mode** (yellow) — do a chore, then **Ask Mom/Dad for money** |
-| 12 | Family → View as → David, enter PIN **1234** | The Home **smart card** now shows the requests → **Approve** both |
-| 13 | Family → **Language** → chiShona | Reopen Teen Zone / Report card → translated labels (demo scope) |
+| 1 | Open the app | **Login** — create an account (email + password, confirm via inbox) |
+| 2 | Family setup | **Create a family** (you're the owner) or **join with a code** from the owner |
+| 3 | Add a real envelope | Budgets → new envelope, e.g. *Groceries* |
+| 4 | Tap the amber **＋** | Quick add → real amount in **USD or ZiG** → pick envelope → Save |
+| 5 | Second phone, second account | Join with the code → same family, same envelopes, same budget truth |
+| 6 | **Lists** → tick items → **Finish shopping** | One expense posted to the Groceries envelope |
+| 7 | Settings → **Language** | English, chiShona, isiNdebele, Español, Français, Português |
 
-**Demo PIN to exit Kids Mode: `1234`**
+Kids Mode exit PIN: factory default `1234` until a parent sets a real one
+(Family → kid profile).
 
-## 4. What's in this folder
+## 5. What's in this folder
 
 ```
 mhuri-money/
@@ -68,18 +79,19 @@ mhuri-money/
 ├── mockups/               5 high-fidelity concept screens
 ├── app/                   the Flutter app (run this)
 │   ├── lib/               ~5,500 lines of Dart
-│   ├── test/              money rules + boot smoke test
+│   ├── test/              money rules, sync, persistence + screen smoke tests
 │   └── README.md          deep dive: structure, spec-traceability, next steps
 └── backend/
     ├── schema.sql         Supabase schema — 21 tables, role-based row security
-    └── README.md          10-minute backend setup (when you're ready to sync)
+    └── README.md          10-minute backend setup
 ```
 
-## 5. Known demo limitations (by design — Phase 1 not started)
+## 6. Current limitations (by design)
 
-- Data **persists on-device** (M1 ✅); login + `.env` live-mode (M2 ✅); **two-phone family sync is built (M3 ✅)** — activate by running the two SQL files on Supabase + filling `.env` (see `backend/README.md`)
-- One shared demo family; "View as" simulates the other members
-- Reminders are device-local (bills, budgets, kids, goals, savings circle, meeting, weekly digest — set them up in Settings); server push comes later · receipts/OCR & PDF share: post-8 backlog · recurring expenses are review-based by design
-- The app speaks 6 languages — English, chiShona, isiNdebele, Español, Français, Português. Change it in Settings (⚙ on the Family tab). Translations would love a native-speaker review.
+- Reminders are device-local (bills, budgets, kids, goals, savings circle, meeting, weekly digest — set them up in Settings); server push comes later
+- Receipts/OCR & PDF share: post-8 backlog · recurring expenses are review-based by design
+- Accounts are device-local "records only" per spec §5
+- FX rate: server snapshot (run migration 004 + seed a `rate_snapshot` row) or a custom rate in Settings
+- Translations would love a native-speaker review
 
 Everything else on the roadmap is in `PRODUCT_SPEC.md` §11.

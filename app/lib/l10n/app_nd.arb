@@ -117,7 +117,6 @@
   "loginVerify": "Qinisekisa & ngena",
   "loginChangeNumber": "Shintsha inombolo",
   "loginBadPhone": "Faka inombolo esebenzayo (isb. +44 7700 900123).",
-  "loginFooter": "Demo: ngena nanye i-imeyili nepasiwedi (ubude obungu-6 noma ngaphezulu).",
   "quickAddTitle": "Engeza okusheshayo",
   "expense": "Isabelomali",
   "envelopeLabel": "Ikhava",
@@ -151,7 +150,6 @@
   "familyTitle": "Umndeni",
   "membersDesc": "Abazali nezingane · inyanga iqala ngo-1",
   "membersInviteHint": "Yabelana ngekhodi noma skanela ubize umndeni",
-  "membersDemoTip": "Icebo: sebenzisa \"View as\" ukushintsha iphrofayili. Izingane zingena endaweni evalwe.",
   "setCurrency": "Imali & izinga",
   "setCurrencySub": "USD eyinhloko · ZiG yesibili · {rate}",
   "setPrivacy": "Okuyimfihlo",
@@ -406,7 +404,6 @@
   "copyInvite": "Kopisha ikhodi yesimemo",
   "copied": "Kukopishiwe ✓",
   "inviteTitle": "Memela ilunga lomndeni",
-  "inviteDemoNote": "I-demo iza nomndeni omkhombiselwe. Ku-live ikhodi yakho yesimemo ihlala lapha — yabelana ngayo umndeni unge esikhaleni sakho.",
   "editProfile": "Hlela iphrofayili",
   "editProfileSub": "Igama nesithombe salendlu",
   "photoNote": "Izithombe zephrofayili ziza nohlanganiselo lomndeni. Ama-avatar asekwilapha.",
@@ -461,8 +458,5 @@
   "setupBanner": "Gcwalisa ukulungisa: yakha umndeni wakho noma ngena ngekholodi",
   "setupBannerCta": "Hlela",
   "deleteTypeHint": "Bhala DELETE ukuqinisekise",
-  "deletePermanently": "Cisha kunaphakade",
-  "modeLive": "Live — ihambisana ngesikhala somndeni wakho",
-  "modeDemo": "Demo mode — umndeni wesiboniso, akukho okuhambisanyo",
-  "modeDemoHint": "Yakha app/.env esuka ku .env.example (ngeza amakihi akho e-Supabase) uphinde wakhe ukuthi live."
+  "deletePermanently": "Cisha kunaphakade"
 }

@@ -1,1 +1,1 @@
-Go-live: device builds read .env or dart-defines, first live boot purges legacy demo data, Settings sync-mode card
+Demo mode removed completely: live-only app, three config paths, setup error screen instead of offline fiction

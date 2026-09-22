@@ -124,7 +124,6 @@
   "loginVerify": "Verify & sign in",
   "loginChangeNumber": "Change number",
   "loginBadPhone": "Enter a valid phone number (e.g. +44 7700 900123).",
-  "loginFooter": "Demo build: any email + any password (6+ characters) signs you in.",
   "quickAddTitle": "Quick add",
   "expense": "Expense",
   "envelopeLabel": "Envelope",
@@ -189,7 +188,6 @@
   "familyTitle": "Family",
   "membersDesc": "Couple + kids · month starts on the 1st",
   "membersInviteHint": "Share the code or scan to invite a family member",
-  "membersDemoTip": "Demo tip: use \"View as\" to switch profiles. Kids open a sealed mode automatically.",
   "setCurrency": "Currency & rates",
   "setCurrencySub": "USD primary · ZiG secondary · {rate}",
   "@setCurrencySub": {
@@ -781,7 +779,6 @@
   "copyInvite": "Copy invite code",
   "copied": "Copied ✓",
   "inviteTitle": "Invite a family member",
-  "inviteDemoNote": "Demo mode comes with a seeded family. In live mode your invite code lives here — share it and the family joins your space.",
   "editProfile": "Edit profile",
   "editProfileSub": "Name and avatar for this member",
   "photoNote": "Profile photos arrive with family sync. Avatars are live now.",
@@ -836,8 +833,5 @@
   "setupBanner": "Finish setting up: create your family or join with a code",
   "setupBannerCta": "Set up",
   "deleteTypeHint": "Type DELETE to confirm",
-  "deletePermanently": "Delete permanently",
-  "modeLive": "Live — synced to your family space",
-  "modeDemo": "Demo mode — sample family, nothing syncs",
-  "modeDemoHint": "Create app/.env from .env.example (add your Supabase keys) and rebuild to go live."
+  "deletePermanently": "Delete permanently"
 }

@@ -129,7 +129,7 @@ Color _roleBg(Role role) => switch (role) {
       Role.viewer => const Color(0xFFEFE3F7),
     };
 
-/// Members, roles and the demo "View as" switcher (spec §3, §7.10).
+/// Members, roles and the "View as" profile switcher (spec §3, §7.10).
 class MembersScreen extends StatelessWidget {
   const MembersScreen({super.key});
 
@@ -235,17 +235,6 @@ class MembersScreen extends StatelessWidget {
               label: Text(AppLocalizations.of(context)!.inviteTitle),
             ),
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDF1DA),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.membersDemoTip,
-                style: TextStyle(fontSize: 12.5, color: Color(0xFF8A6116)),
-              ),
-            ),
             const SizedBox(height: 16),
 
             // ── Settings stubs ────────────────────────────────────────────
@@ -958,7 +947,7 @@ class MembersScreen extends StatelessWidget {
                     fontSize: 12.5, color: context.inkSoft, height: 1.4),
               ),
               const SizedBox(height: 14),
-              if (s.isLive && code.isNotEmpty) ...[
+              if (code.isNotEmpty) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 18),
@@ -1000,12 +989,7 @@ class MembersScreen extends StatelessWidget {
                   icon: const Icon(Icons.copy, size: 18),
                   label: Text(l.copyInvite),
                 ),
-              ] else
-                Text(
-                  l.inviteDemoNote,
-                  style: TextStyle(
-                      fontSize: 13, color: context.inkSoft, height: 1.4),
-                ),
+              ],
             ],
           ),
         ),
@@ -1397,9 +1381,8 @@ class _MemberRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final isMe = s.user.id == m.id;
-    // Profile switching is for everyone (live included) — it previews that
-    // member's view; Kids Mode stays PIN-sealed.
-    final canDemo = true;
+    // Profile switching previews that member's view; Kids Mode stays
+    // PIN-sealed.
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1466,7 +1449,7 @@ class _MemberRow extends StatelessWidget {
                 child: Icon(Icons.edit, size: 18, color: context.primary),
               ),
             ),
-          if (canDemo && !isMe)
+          if (!isMe)
             OutlinedButton(
               onPressed: () {
                 final navigator = Navigator.of(context);

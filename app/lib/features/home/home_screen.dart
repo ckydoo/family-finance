@@ -153,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          // ── Offline sync banner (demo of the outbox queue) ─────────────
+          // ── Offline sync banner (outbox queue status) ─────────────────
           if (s.pendingOps > 0) ...[
             const SizedBox(height: 8),
             GestureDetector(
@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 16),
 
           // ── Family-setup nudge (skip-for-now limbo) ────────────────────
-          if (s.env.isLive && !s.hasSpace)
+          if (!s.hasSpace)
             Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Material(

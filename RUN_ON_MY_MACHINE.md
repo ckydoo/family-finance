@@ -15,7 +15,7 @@ Paste me the output at every 📋 marker — I fix anything that flags, same ses
 
 ---
 
-## Step 1 — First boot, demo mode (no accounts, no internet needed)
+## Step 1 — First boot (needs your Supabase connection — the app is live-only)
 
 ```bash
 cd mhuri-money/app
@@ -23,11 +23,16 @@ flutter pub get        # also auto-runs flutter gen-l10n (generates lib/l10n/gen
 flutter run
 ```
 
-**Expect:** branded splash → the seeded demo family (Taylor) → Home with
-envelopes, smart cards, stars. No login screen — demo never logs in.
+**Expect:** branded splash → **Login** (email + password). No seeded family —
+the app boots empty until you sign up and create/join a family.
 
-Try: quick-add an expense → pull-to-refresh → switch language (Family tab →
-Settings → language row) → Kids Mode (exit PIN **1234**) → Teen Zone.
+If you see a dark "setup needed" screen instead, the build has no Supabase
+connection — see "GO LIVE ON A DEVICE" at the bottom for the three ways to
+provide it.
+
+Try after signing in: create a family → add an envelope → quick-add an
+expense → switch language (Family tab → Settings) → Kids Mode (exit PIN
+**1234** until a parent sets a real one) → Teen Zone.
 
 📋 If `flutter gen-l10n` or anything here errors — paste me the full output.
 
@@ -95,19 +100,14 @@ Then Settings → Reminders → "Send a test notification" proves the chain.
 2. **SQL Editor → New query → paste the whole of `backend/schema.sql` → Run.**
    Expect: success, no errors. (20 tables, RLS policies, triggers.)
 3. **Project Settings → API**: copy the Project URL and the `anon` key.
-4. In `app/`:
-   - `cp .env.example .env` and fill in:
-     ```
-     APP_ENV=live
-     SUPABASE_URL=https://xxxx.supabase.co
-     SUPABASE_ANON_KEY=eyJ...
-     ```
-   - `pubspec.yaml`: **uncomment** the `- .env` line under `assets:`
-     (it is commented on purpose for demo mode).
-5. Phone login: Supabase Dashboard → **Authentication → Providers → Phone**.
-   For real SMS you add a Twilio/MessageBird account; Supabase's built-in
-   test provider works for first smoke tests (rate-limited).
-6. `flutter run` again — you should now get the **phone login screen**.
+4. In `app/`: `cp .env.example .env`, fill in `SUPABASE_URL` and
+   `SUPABASE_ANON_KEY`, then **uncomment** the `- .env` line under
+   `assets:` in `pubspec.yaml`. (Or skip files entirely — see
+   "GO LIVE ON A DEVICE".)
+5. Auth is **email + password** (Supabase GoTrue, already wired). If
+   signups demand confirmation, add an SMTP provider under
+   Authentication → SMTP so the inbox mail actually arrives.
+6. `flutter run` again — sign up and create your family.
 
 📋 Paste me anything that errors — especially the SQL run and first login.
 
@@ -137,34 +137,31 @@ Also verify: kid claims chore on B → parent confirms on A → stars move.
 
 ---
 
-## GO LIVE ON A DEVICE (read this before testing with real users)
+## GO LIVE ON A DEVICE
 
-The app ships in **offline demo mode** by design: without its config it shows
-the sample family and never calls the network. Supabase migrations alone do
-NOT connect an app build to your backend — the build needs the Supabase URL
-and anon key bundled. Two ways, pick one:
+The app is live-only — there is no demo mode. It needs your Supabase
+connection at build time; a build without one shows a setup error screen.
+Three ways (pick one):
 
-**Option A — `.env` asset (persistent)**
-1. `cd app && cp .env.example .env`
-2. Edit `.env`: set `APP_ENV=live`, paste `SUPABASE_URL=` and
-   `SUPABASE_ANON_KEY=` from Supabase → Project Settings → API.
-3. In `app/pubspec.yaml`, uncomment the `- .env` line under `assets:`.
-4. `flutter run` (or `flutter build apk`).
+**Option A — constants (simplest):** paste your Project URL + anon key into
+`kSupabaseUrl` / `kSupabaseAnonKey` in `app/lib/core/config/app_env.dart`,
+then just `flutter run`. Both values are public-by-design (RLS protects data).
 
-**Option B — dart-defines (no file, great for quick device tests)**
+**Option B — build flags:**
 ```
 flutter run \
-  --dart-define=MHURI_APP_ENV=live \
   --dart-define=MHURI_SUPABASE_URL=https://<your-ref>.supabase.co \
   --dart-define=MHURI_SUPABASE_ANON_KEY=<your-anon-key>
 ```
 
-**Upgrading a phone that ran the old demo build?** Uninstall first (or clear
-app storage). If you can't, the app now self-heals: the first live boot wipes
-leftover local demo rows once (`live_purged_v1` guard) and restarts
-onboarding — real adopted families are never touched.
+**Option C — .env asset:** `cd app && cp .env.example .env`, fill it in,
+uncomment `- .env` under `assets:` in pubspec.yaml, build.
 
-**Verify you're live:** Settings → top card. It must say
-"Live — synced to your family space". If it says "Demo mode", the build has
-no config (that card exists precisely so this can't sneak up on you again).
+**Verify:** login screen appears (not a seeded family). Sign up with a real
+email, create the family, record one transaction — then check Supabase →
+Table Editor: the row is in the `transaction` table. Migrations 001–004 must
+have run (004 = RLS, required for all pulls).
 
+**Upgrading a phone that had old data?** Uninstall first (or clear storage);
+if you can't, the first boot self-heals by wiping leftover local rows once
+(`live_purged_v1` guard) and real adopted families are never touched.

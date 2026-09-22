@@ -21,7 +21,7 @@ class PinStore {
   final KvGetter? _get;
   final KvSetter? _set;
 
-  /// In-memory fallback for demo mode without a database and for tests.
+  /// In-memory fallback for tests (production always has a database).
   final Map<String, String> _memory = {};
 
   static const parentKey = 'pin_parent';
@@ -60,8 +60,8 @@ class PinStore {
   }
 
   /// Verifies a PIN. If no PIN was ever set:
-  ///  * for the parent key, the demo default `1234` is accepted (so today's
-  ///    demo flow keeps working until the parent sets a real PIN);
+  ///  * for the parent key, the factory default `1234` is accepted until
+  ///    the parent sets a real PIN;
   ///  * for kid profiles, no PIN means the profile simply opens (nothing to
   ///    protect yet — parents opt in by setting one).
   Future<bool> verifyPin(String memberId, String pin) async {

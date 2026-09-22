@@ -5,6 +5,8 @@ import 'package:mhuri_money/core/auth/auth_controller.dart';
 import 'package:mhuri_money/core/auth/auth_service.dart';
 import 'package:mhuri_money/core/config/app_env.dart';
 
+import 'fake_auth.dart';
+
 /// Proves the first-run gate end-to-end (live mode):
 ///   sign in → family setup (welcome → create/join choice) → Skip → Home.
 /// The create/join engine paths are covered by the sync tests (create_space /
@@ -12,18 +14,14 @@ import 'package:mhuri_money/core/config/app_env.dart';
 /// Flag persistence is covered in m4_test.
 void main() {
   Future<AuthController> signedInAuth(AppEnv env) async {
-    final auth = AuthController(env: env, service: DemoAuthService());
+    final auth = AuthController(env: env, service: FakeAuthService());
     await auth.signIn('david@mhuri.app', '123456');
     return auth;
   }
 
   testWidgets('live first run: sign in → family setup → skip → Home',
       (tester) async {
-    final env = AppEnv.parse(
-      'APP_ENV=live\n'
-      'SUPABASE_URL=https://abcdefgh.supabase.co\n'
-      'SUPABASE_ANON_KEY=k\n',
-    );
+    final env = testEnv();
     final auth = await signedInAuth(env);
 
     await tester.pumpWidget(MhuriMoneyApp(env: env, auth: auth));
@@ -49,11 +47,7 @@ void main() {
 
   testWidgets('create path shows name + household type + working CTA',
       (tester) async {
-    final env = AppEnv.parse(
-      'APP_ENV=live\n'
-      'SUPABASE_URL=https://abcdefgh.supabase.co\n'
-      'SUPABASE_ANON_KEY=k\n',
-    );
+    final env = testEnv();
     final auth = await signedInAuth(env);
 
     await tester.pumpWidget(MhuriMoneyApp(env: env, auth: auth));
@@ -71,11 +65,7 @@ void main() {
   });
 
   testWidgets('join path shows the invite-code field', (tester) async {
-    final env = AppEnv.parse(
-      'APP_ENV=live\n'
-      'SUPABASE_URL=https://abcdefgh.supabase.co\n'
-      'SUPABASE_ANON_KEY=k\n',
-    );
+    final env = testEnv();
     final auth = await signedInAuth(env);
 
     await tester.pumpWidget(MhuriMoneyApp(env: env, auth: auth));

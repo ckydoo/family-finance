@@ -68,3 +68,9 @@ scripts just automate that (and protect `.env`).
 - Settings shows a sync-mode status card (live vs demo + config error), l10n +3 ×6 → **389**.
 - Tests 8 → **10** (purge fires on legacy db; adopted install untouched).
 
+## Demo removal round (2026-09-22, unpushed)
+- Demo mode DELETED entirely: no EnvMode, no `DemoAuthService`, no `seed_data.dart`, no demo UI strings (login footer, members tip, invite note, settings mode card all removed). l10n 389 → **383 ×6**.
+- App is live-only: config via dart-defines > .env asset > `kSupabaseUrl/kSupabaseAnonKey` constants; no connection → setup error screen (never offline fiction).
+- First-boot legacy purge kept (`live_purged_v1`), no longer gated on env.
+- Tests: added `test/fake_auth.dart` + `test/seed.dart` (explicit test-only baseline); rewrote env/auth/onboarding/widget/persistence/flows/m4/sync tests for the live-only reality (lib_boot 9 tests; zero `DemoAuthService`/`seed_data` refs).
+

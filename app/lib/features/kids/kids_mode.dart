@@ -14,7 +14,7 @@ import '../../core/widgets/ring_progress.dart';
 
 /// Sealed, playful shell for kids 6–12 (spec Module G, §7.8).
 /// No family balances, no real money movement — jar, stars, chores, wishes.
-/// Exit requires the parent PIN (demo: 1234).
+/// Exit requires the parent PIN (factory default: 1234 until changed).
 class KidsMode extends StatelessWidget {
   const KidsMode({super.key});
 

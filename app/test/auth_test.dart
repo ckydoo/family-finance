@@ -11,6 +11,8 @@ import 'package:mhuri_money/core/auth/pin_store.dart';
 import 'package:mhuri_money/core/auth/supabase_auth_service.dart';
 import 'package:mhuri_money/core/config/app_env.dart';
 
+import 'fake_auth.dart';
+
 /// Queues canned responses; records every request so tests can assert the
 /// exact endpoints and payloads the hand-written GoTrue client produces.
 class FakeClient extends http.BaseClient {
@@ -33,10 +35,10 @@ class FakeClient extends http.BaseClient {
 http.Request _reqOf(http.BaseRequest r) => r as http.Request;
 
 void main() {
-  group('DemoAuthService', () {
+  group('FakeAuthService (contract of the real GoTrue service)', () {
     test('bad input fails, valid email+password signs in, signOut clears',
         () async {
-      final auth = DemoAuthService();
+      final auth = FakeAuthService();
       expect((await auth.signIn('david@mhuri.app', '123')).ok, isFalse);
       expect((await auth.signIn('no-email', '123456')).ok, isFalse);
       final ok = await auth.signIn('david@mhuri.app', '123456');
@@ -48,8 +50,8 @@ void main() {
       expect(await auth.restoreSession(), isNull);
     });
 
-    test('signUp succeeds without confirmation in demo', () async {
-      final auth = DemoAuthService();
+    test('signUp succeeds and signs straight in (no confirmation)', () async {
+      final auth = FakeAuthService();
       final r = await auth.signUp('mai@mhuri.app', '123456');
       expect(r.ok, isTrue);
       expect(r.needsConfirmation, isFalse);
@@ -57,7 +59,7 @@ void main() {
     });
 
     test('deleteAccount clears the active session', () async {
-      final auth = DemoAuthService();
+      final auth = FakeAuthService();
       await auth.signIn('david@mhuri.app', '123456');
 
       expect((await auth.deleteAccount()).ok, isTrue);
@@ -66,10 +68,10 @@ void main() {
   });
 
   group('AuthController', () {
-    test('demo flow: signIn sets a session, signOut clears it', () async {
+    test('sign-in flow: bad input fails, good input sets a session, signOut clears it', () async {
       final c = AuthController(
-        env: AppEnv.parse('APP_ENV=demo'),
-        service: DemoAuthService(),
+        env: testEnv(),
+        service: FakeAuthService(),
       );
       await c.restore();
       expect(c.isLoggedIn, isFalse);
@@ -86,8 +88,8 @@ void main() {
 
     test('deleteAccount clears the controller session', () async {
       final c = AuthController(
-        env: AppEnv.parse('APP_ENV=demo'),
-        service: DemoAuthService(),
+        env: testEnv(),
+        service: FakeAuthService(),
       );
       expect(await c.signIn('david@mhuri.app', '123456'), isTrue);
 

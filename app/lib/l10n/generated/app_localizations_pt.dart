@@ -314,8 +314,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Introduza um telefone válido (ex.: +44 7700 900123).';
 
   @override
-  String get loginFooter =>
-      'Demonstração: entra com qualquer e-mail e palavra-passe (6+ caracteres).';
 
   @override
   String get quickAddTitle => 'Adicionar rápido';
@@ -428,8 +426,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Partilhe o código ou leia para convidar um familiar';
 
   @override
-  String get membersDemoTip =>
-      'Dica demo: use \"Ver como\" para trocar de perfil. As crianças entram num modo selado.';
 
   @override
   String get setCurrency => 'Moeda e taxas';
@@ -1133,8 +1129,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inviteTitle => 'Convidar um familiar';
 
   @override
-  String get inviteDemoNote =>
-      'O modo demo vem com uma família de exemplo. No modo live o seu código de convite vive aqui — partilhe-o e a família entra no seu espaço.';
 
   @override
   String get editProfile => 'Editar perfil';
@@ -1294,9 +1288,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get noActivityYet => "Nada registado ainda. Toque + para adicionar a tua primeira transação.";
-  String get modeLive => "Ao vivo — sincronizado com o seu espaço familiar";
-  String get modeDemo => "Modo demo — família de exemplo, nada sincroniza";
-  String get modeDemoHint => "Crie app/.env a partir de .env.example (adicione as suas chaves do Supabase) e recompile para ficar ao vivo.";
 
   @override
   String get setupBanner => "Termina a configuração: cria a tua família ou entra com um código";

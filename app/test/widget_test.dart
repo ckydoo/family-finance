@@ -5,8 +5,10 @@ import 'package:mhuri_money/core/auth/auth_controller.dart';
 import 'package:mhuri_money/core/auth/auth_service.dart';
 import 'package:mhuri_money/core/config/app_env.dart';
 
+import 'fake_auth.dart';
+
 void main() {
-  testWidgets('app boots to the adult Home screen (demo mode)', (tester) async {
+  testWidgets('a bare build boots to the adult Home screen (empty state)', (tester) async {
     await tester.pumpWidget(const MhuriMoneyApp());
     await tester.pumpAndSettle();
 
@@ -20,15 +22,11 @@ void main() {
 
   testWidgets('live mode without a session shows the login gate',
       (tester) async {
-    final env = AppEnv.parse(
-      'APP_ENV=live\n'
-      'SUPABASE_URL=https://abcdefgh.supabase.co\n'
-      'SUPABASE_ANON_KEY=k\n',
-    );
+    final env = testEnv();
     await tester.pumpWidget(
       MhuriMoneyApp(
         env: env,
-        auth: AuthController(env: env, service: DemoAuthService()),
+        auth: AuthController(env: env, service: FakeAuthService()),
       ),
     );
     await tester.pumpAndSettle();

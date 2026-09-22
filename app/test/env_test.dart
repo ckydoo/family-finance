@@ -3,44 +3,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/config/app_env.dart';
 
 void main() {
-  test('parses a complete live config (comments + quotes tolerated)', () {
+  test('parses a complete config (comments + quotes tolerated)', () {
     final env = AppEnv.parse('''
-# Mhuri Hub live config
-APP_ENV=live
+# Mhuri Hub config
 SUPABASE_URL=https://abcdefgh.supabase.co
 SUPABASE_ANON_KEY="anon-key-123"
 # optional extras
 FCM_PROJECT_ID=mhuri-push
 ''');
 
-    expect(env.mode, EnvMode.live);
-    expect(env.isLive, isTrue);
+    expect(env.isConfigured, isTrue);
     expect(env.supabaseUrl, 'https://abcdefgh.supabase.co');
     expect(env.supabaseAnonKey, 'anon-key-123');
     expect(env.fcmProjectId, 'mhuri-push');
     expect(env.configError, isNull);
   });
 
-  test('live mode without keys falls back to demo with a config error', () {
-    final env = AppEnv.parse('APP_ENV=live\n');
-    expect(env.isLive, isFalse);
-    expect(env.mode, EnvMode.demo);
-    expect(env.configError, isNotNull);
-  });
-
-  test('missing .env semantics: fallback is quiet demo mode', () {
-    const env = AppEnv.fallback();
-    expect(env.isLive, isFalse);
-    expect(env.mode, EnvMode.demo);
+  test('a config without keys is simply not configured (parse is quiet)', () {
+    final env = AppEnv.parse('# nothing useful here\n');
+    expect(env.isConfigured, isFalse);
+    // configError is decided by load(), not parse.
     expect(env.configError, isNull);
-  });
-
-  test('explicit demo stays demo even with keys present', () {
-    final env = AppEnv.parse(
-      'APP_ENV=demo\nSUPABASE_URL=https://x.supabase.co\nSUPABASE_ANON_KEY=k\n',
-    );
-    expect(env.mode, EnvMode.demo);
-    expect(env.isLive, isFalse);
   });
 
   test('malformed lines are ignored, not fatal', () {
@@ -48,10 +31,33 @@ FCM_PROJECT_ID=mhuri-push
 this is not an env line
 ===
 
-APP_ENV=live
 SUPABASE_URL=https://ok.supabase.co
 SUPABASE_ANON_KEY=k
 ''');
-    expect(env.isLive, isTrue);
+    expect(env.isConfigured, isTrue);
+  });
+
+  test('load() with no asset, defines or constants reports a setup error', () {
+    // In the test environment there is no .env asset and no dart-defines,
+    // and kSupabaseUrl/kSupabaseAnonKey ship empty — exactly the misconfigured
+    // build main() must catch.
+    expect(AppEnv.kSupabaseUrl, isEmpty);
+    expect(AppEnv.kSupabaseAnonKey, isEmpty);
+  });
+
+  test('isConfigured requires BOTH the url and the key', () {
+    expect(
+      AppEnv.parse('SUPABASE_URL=https://x.supabase.co\n').isConfigured,
+      isFalse,
+    );
+    expect(
+      AppEnv.parse('SUPABASE_ANON_KEY=k\n').isConfigured,
+      isFalse,
+    );
+    expect(
+      AppEnv.parse('SUPABASE_URL=https://x.supabase.co\nSUPABASE_ANON_KEY=k\n')
+          .isConfigured,
+      isTrue,
+    );
   });
 }

@@ -42,7 +42,6 @@ http.Response _json(Object? body, [int status = 200]) =>
     });
 
 const _liveEnv = AppEnv(
-  mode: EnvMode.live,
   supabaseUrl: 'https://abcdefgh.supabase.co',
   supabaseAnonKey: 'anon-key',
 );
@@ -225,9 +224,19 @@ void main() {
       await db.raw.close();
     });
 
-    test('createSpace stores id/code, wipes the demo seed, pulls family data',
+    test('createSpace stores id/code, wipes local rows, pulls family data',
         () async {
-      expect(state.envelopes.length, 8); // demo seed present
+      // One locally recorded envelope from before adoption (offline-first
+      // start) — adoption wipes it so the family's server data takes over.
+      final local = Envelope(
+        id: 'e1',
+        name: 'Local stash',
+        emoji: 'box',
+        limit: Money.fromMajor(40, Currency.usd),
+      );
+      state.envelopes.add(local);
+      await Persistence(db).saveEnvelope(local);
+      expect(state.envelopes.length, 1);
 
       final ok = await engine.createSpace('The Taylor Family');
       expect(ok, isTrue);
@@ -235,7 +244,7 @@ void main() {
       expect(kv['invite_code'], 'MHRI-AB12');
       expect(engine.inviteCode, 'MHRI-AB12');
 
-      // demo seed wiped — family starts clean
+      // local rows wiped — family starts clean
       expect(state.envelopes.any((e) => e.id == 'e1'), isFalse);
 
       // the pulled family envelope arrived and is live in memory
