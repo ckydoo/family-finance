@@ -122,11 +122,15 @@ class Member {
   final String emoji;
   final Role role;
 
+  /// Public URL of the member's profile picture (null → emoji fallback).
+  final String? avatarUrl;
+
   const Member({
     required this.id,
     required this.name,
     required this.emoji,
     required this.role,
+    this.avatarUrl,
   });
 }
 

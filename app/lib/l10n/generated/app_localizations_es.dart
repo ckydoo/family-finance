@@ -1302,4 +1302,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deletePermanently => 'Eliminar permanentemente';
+  String get errInviteCode => "Introduce el código de invitación del dueño de la familia — tiene el formato MHRI-4F2A.";
+  String get errFamilyNameTaken => "Ese nombre de familia ya está en uso — prueba con otro.";
+  String get authErrEmailNotConfirmed => "Revisa tu correo — toca primero el enlace de confirmación y luego inicia sesión.";
+  String get authErrBadCredentials => "El correo o la contraseña no son correctos.";
+  String get authErrAlreadyRegistered => "Ya existe una cuenta con este correo — inicia sesión.";
+  String get authErrRateLimited => "Demasiados intentos — espera un minuto y vuelve a probar.";
+  String get authErrNetwork => "Sin conexión — revisa tu internet e inténtalo de nuevo.";
+  String get authResend => "Reenviar correo de confirmación";
+  String get authResent => "Correo de confirmación enviado — revisa tu bandeja.";
+  String get mukandoOn => "Círculo de ahorros (mukando)";
+  String get mukandoEnableTitle => "Mukando — ahorros rotativos";
+  String get mukandoEnableSub => "Ahorra por turnos con tu familia. Apagado por defecto — actívalo si tu círculo hace rondas.";
+  String get mukandoEnableCta => "Activar mukando";
+  String get addPhoto => "Usar foto";
+  String get removePhoto => "Quitar foto";
+  String get photoUploading => "Subiendo foto…";
+  String get photoFailed => "No se pudo subir la foto — revisa tu conexión e inténtalo de nuevo.";
+  String get photoSaved => "Foto guardada — tu familia también la verá.";
+
 }

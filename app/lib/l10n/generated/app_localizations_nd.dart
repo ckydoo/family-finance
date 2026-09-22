@@ -1297,4 +1297,23 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get deletePermanently => 'Cisha kunaphakade';
+  String get errInviteCode => "Faka ikhodi yemenyu eyanikwa umnikazi womndeni — ifana le MHRI-4F2A.";
+  String get errFamilyNameTaken => "Igama leli lomndeni selisetshenzisiwe — zama elinye.";
+  String get authErrEmailNotConfirmed => "Hlola inboksi yakho — qala uthele isixhumanisi sokucacisa, ubuye ungene.";
+  String get authErrBadCredentials => "I-imeyili noma ipasiwedi ayilona lolona.";
+  String get authErrAlreadyRegistered => "I-akhawunti ngele-imeyili leli isenkhona — ngena ngayo.";
+  String get authErrRateLimited => "Kuzama okunengi — linda umzuzu uphinde uzame.";
+  String get authErrNetwork => "Ayikho i-intanethi — hlola uxhumano uphinde uzame.";
+  String get authResend => "Thumela kabusha i-imeyili yokucacisa";
+  String get authResent => "I-imeyili yokucacisa ithunyelwe — hlola inboksi yakho.";
+  String get mukandoOn => "Isiqutho sezokulondoloza (mukando)";
+  String get mukandoEnableTitle => "Mukando — izokulondoloza ezajikelezayo";
+  String get mukandoEnableSub => "Londoloza ngokulandelana nomndeni wakho. Kuvaliwe ngesikhathi sento — vula uma isiqutho sakho siyajika.";
+  String get mukandoEnableCta => "Vula i-mukando";
+  String get addPhoto => "Sebenzisa isithombe";
+  String get removePhoto => "Susa isithombe";
+  String get photoUploading => "Isithombe siyathunyelwa…";
+  String get photoFailed => "Isithombe asithunyelwanga — hlola uxhumano uphinde uzame.";
+  String get photoSaved => "Isithombe sigciniwe — umndeni wakho uzosibona.";
+
 }

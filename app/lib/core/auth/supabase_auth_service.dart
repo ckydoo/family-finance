@@ -59,7 +59,8 @@ class SupabaseAuthService implements AuthService {
         body: jsonEncode({'email': email, 'password': password}),
       );
       if (r.statusCode < 200 || r.statusCode >= 300) {
-        return AuthResult.failure(_errorMessage(r));
+        final e = _errorInfo(r);
+        return AuthResult.failure(e.$1, code: e.$2);
       }
       final session = _sessionFrom(r.body);
       if (session == null) {
@@ -68,7 +69,8 @@ class SupabaseAuthService implements AuthService {
       return AuthResult.success();
     } catch (_) {
       return const AuthResult.failure(
-          'Network error — check your connection and try again.');
+          'Network error — check your connection and try again.',
+          code: 'network');
     }
   }
 
@@ -81,7 +83,8 @@ class SupabaseAuthService implements AuthService {
         body: jsonEncode({'email': email, 'password': password}),
       );
       if (r.statusCode < 200 || r.statusCode >= 300) {
-        return AuthResult.failure(_errorMessage(r));
+        final e = _errorInfo(r);
+        return AuthResult.failure(e.$1, code: e.$2);
       }
       final body = jsonDecode(r.body) as Map<String, dynamic>;
       if (body['access_token'] is String &&
@@ -97,7 +100,23 @@ class SupabaseAuthService implements AuthService {
       return const AuthResult.failure('Sign-up failed — try again.');
     } catch (_) {
       return const AuthResult.failure(
-          'Network error — check your connection and try again.');
+          'Network error — check your connection and try again.',
+          code: 'network');
+    }
+  }
+
+  /// Re-sends the signup confirmation email (GoTrue /auth/v1/resend).
+  @override
+  Future<bool> resendConfirmation(String email) async {
+    try {
+      final r = await _client.post(
+        Uri.parse('$_base/auth/v1/resend'),
+        headers: _headers,
+        body: jsonEncode({'type': 'signup', 'email': email}),
+      );
+      return r.statusCode >= 200 && r.statusCode < 300;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -268,17 +287,59 @@ class SupabaseAuthService implements AuthService {
     await set('auth_refresh_token', '');
   }
 
-  String _errorMessage(http.Response r) {
+  /// Maps a GoTrue error response to (message, code) so the UI can explain
+  /// what actually happened — "confirm your email" says exactly that.
+  (String, String?) _errorInfo(http.Response r) {
+    String raw = '';
     try {
       final body = jsonDecode(r.body);
       if (body is Map<String, dynamic>) {
-        final msg = body['msg'] ??
-            body['error_description'] ??
-            body['message'] ??
-            body['error'];
-        if (msg is String && msg.isNotEmpty) return msg;
+        raw = (body['msg'] ??
+                body['error_description'] ??
+                body['message'] ??
+                body['error'] ??
+                '')
+            .toString();
       }
     } catch (_) {}
-    return 'Sign-in failed (HTTP ${r.statusCode}).';
+    final low = raw.toLowerCase();
+
+    if (low.contains('email_not_confirmed') || low.contains('not confirmed')) {
+      return (
+        'Check your inbox — tap the confirmation link first, then sign in.',
+        'email_not_confirmed'
+      );
+    }
+    if (low.contains('already registered') ||
+        low.contains('user_already_exists') ||
+        low.contains('already exists')) {
+      return (
+        'An account with this email already exists — sign in instead.',
+        'already_registered'
+      );
+    }
+    if (low.contains('rate limit') ||
+        low.contains('over_request') ||
+        r.statusCode == 429) {
+      return (
+        'Too many attempts — wait a minute and try again.',
+        'rate_limited'
+      );
+    }
+    if (low.contains('invalid login credentials') ||
+        low.contains('invalid_credentials')) {
+      return ('Email or password is wrong.', 'invalid_credentials');
+    }
+    if (low.contains('password should be') ||
+        low.contains('weak_password') ||
+        low.contains('signup requires a valid password')) {
+      return (raw.isEmpty ? 'Choose a stronger password.' : raw, 'weak_password');
+    }
+    if (raw.isEmpty) {
+      return ('Something went wrong ($r.statusCode). Try again.', null);
+    }
+    return (raw, null);
   }
+
+  String _errorMessage(http.Response r) => _errorInfo(r).$1;
 }

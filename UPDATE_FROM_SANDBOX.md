@@ -86,3 +86,12 @@ scripts just automate that (and protect `.env`).
 ## First-run design round (2026-09-22, docs only)
 - `FIRST_RUN_SPEC.md` written (9-step onboarding walk-through, nav untouched, accounts deferred, joiner branch, acceptance criteria). No code changes.
 
+## Profile photos + validation sweep round (2026-09-22, unpushed)
+- **Avatar upload**: `image_picker` dep (run `flutter pub get`), `avatar_service.dart` (Supabase storage `avatars` bucket, owner-only write, public read), Member.avatarUrl through model/JSON/roster mapper, photo picker + remove in the profile sheet, photo avatars in Home stack + Members lists, `engine.updateMyProfile` PATCH.
+- **Unique family names**: migration 005 (unique lower-index + `family_name_taken()` RPC + create_space raises FAMILY_NAME_TAKEN). Inline availability check in the create form; server is the enforce-backstop.
+- **Honest auth errors**: GoTrue failures mapped to codes (email_not_confirmed / invalid_credentials / already_registered / rate_limited / weak_password / network) → specific copy in the login screen + "Resend confirmation email" button (/auth/v1/resend).
+- **Mukando OPT-IN**: `mukando_enabled` kv (default OFF) — Home smart card hidden until enabled; Savings tab shows a "Turn on mukando" card; Settings has the switch. Choice persists.
+- **Validation sweep**: family name ≥2 chars + taken-check, join code required, auth codes above; existing guards confirmed (quick-add amount/member, envelope name/amount, goal/list snackbars).
+- l10n +18 ×6 → **401**; generated ×7 refreshed. Tests: live_boot 10→11 (mukando opt-in), auth_test +2 (code mapping, /resend), sync_test +3 (avatar mapper, name-taken, patchRow).
+- USER ACTIONS: `flutter pub get` (new dep) · run **migration 005** in Supabase.
+

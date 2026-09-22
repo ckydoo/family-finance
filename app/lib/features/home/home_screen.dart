@@ -89,12 +89,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: CircleAvatar(
                                   radius: 14,
                                   backgroundColor: _avatarBg(s.members[i].role),
-                                  child: Icon(
-                                    iconForKey(s.members[i].emoji) ??
-                                        Icons.person,
-                                    size: 14,
-                                    color: context.ink,
-                                  ),
+                                  backgroundImage:
+                                      s.members[i].avatarUrl != null
+                                          ? NetworkImage(
+                                              s.members[i].avatarUrl!)
+                                          : null,
+                                  child: s.members[i].avatarUrl != null
+                                      ? null
+                                      : Icon(
+                                          iconForKey(s.members[i].emoji) ??
+                                              Icons.person,
+                                          size: 14,
+                                          color: context.ink,
+                                        ),
                                 ),
                               ),
                             const SizedBox(width: 2),
@@ -672,7 +679,9 @@ class SmartCard extends StatelessWidget {
       );
     }
 
-    // 3. Savings circle turn
+    // 3. Savings circle turn — OPT-IN: hidden until the family turns
+    // mukando on (Savings tab or Settings).
+    if (!s.mukandoEnabled) return const SizedBox.shrink();
     return _card(context,
       color: const Color(0xFFEFE3F7),
       icon: Icons.autorenew,

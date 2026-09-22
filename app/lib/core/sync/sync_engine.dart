@@ -153,6 +153,10 @@ class SyncEngine {
       {String household = 'couple_kids'}) async {
     try {
       _setStatus(SyncStatus.syncing);
+      if (await client
+          .rpc('family_name_taken', {'p_name': name}) as bool) {
+        throw const SyncException(409, 'FAMILY_NAME_TAKEN');
+      }
       final result = await client
           .rpc('create_space', {'p_name': name, 'p_household': household});
       if (result is! Map) {
@@ -166,14 +170,46 @@ class SyncEngine {
       await _fullSync();
       return true;
     } on SyncException catch (e) {
-      _setStatus(
-        e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
-        e.message,
-      );
+      if (e.message.contains('FAMILY_NAME_TAKEN')) {
+        _setStatus(SyncStatus.error,
+            'FAMILY_NAME_TAKEN: That family name is already taken — try another.');
+      } else {
+        _setStatus(
+          e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
+          e.message,
+        );
+      }
       return false;
     } catch (e) {
       _setStatus(SyncStatus.offline, 'Network error — try again.');
       return false;
+    }
+  }
+
+  /// Inline availability check for the create-family form (005 RPC).
+  Future<bool> familyNameTaken(String name) async {
+    try {
+      return await client.rpc('family_name_taken', {'p_name': name}) as bool;
+    } catch (_) {
+      return false; // unreachable server → let create_space decide
+    }
+  }
+
+  /// Pushes the signed-in member's profile columns (avatar_url, name).
+  Future<void> updateMyProfile(Map<String, Object?> values) async {
+    final uid = await _kvGet.call('auth_user_id');
+    if (uid == null || uid.isEmpty || values.isEmpty) return;
+    try {
+      _setStatus(SyncStatus.syncing);
+      await client.patchRow('user_profile', uid, values);
+      _setStatus(SyncStatus.idle);
+    } on SyncException catch (e) {
+      _setStatus(
+        e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
+        e.message,
+      );
+    } catch (_) {
+      _setStatus(SyncStatus.offline, 'Network error — try again.');
     }
   }
 

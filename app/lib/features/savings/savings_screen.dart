@@ -18,6 +18,7 @@ class SavingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final l = AppLocalizations.of(context)!;
     final familyGoals = s.goals.where((g) => !g.isKidJar).toList();
     final kidGoals = s.goals.where((g) => g.isKidJar).toList();
     final m = s.circle;
@@ -64,8 +65,48 @@ class SavingsScreen extends StatelessWidget {
             const SizedBox(height: 12),
           ],
 
-          // ── Savings circle ─────────────────────────────────────────────────────
+          // ── Savings circle (OPT-IN — hidden until the family turns it on)
           const SizedBox(height: 8),
+          if (!s.mukandoEnabled)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: context.card,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: context.hairline),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.mukandoEnableTitle,
+                    style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                        color: context.ink),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l.mukandoEnableSub,
+                    style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => s.setMukandoEnabled(true),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.primary,
+                      side: BorderSide(color: context.primary),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: const StadiumBorder(),
+                    ),
+                    icon: const Icon(Icons.autorenew, size: 19),
+                    label: Text(l.mukandoEnableCta),
+                  ),
+                ],
+              ),
+            ),
+          if (s.mukandoEnabled)
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
@@ -174,6 +215,7 @@ class GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final l = AppLocalizations.of(context)!;
     final saved = s.savedOn(goal);
     final ratio =
         goal.target.minor <= 0 ? 0.0 : saved.minor / goal.target.minor;

@@ -432,6 +432,9 @@ List<Member> membersFromServer({
       name: nameOf(p).isEmpty ? 'Member' : nameOf(p),
       emoji: 'person',
       role: roleOf((m['role'] ?? 'adult').toString()),
+      avatarUrl: (p?['avatar_url'] ?? '').toString().isEmpty
+          ? null
+          : (p?['avatar_url']).toString(),
     );
     if (uid == meId) {
       me = member;

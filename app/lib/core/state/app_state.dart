@@ -163,6 +163,10 @@ class AppState extends ChangeNotifier {
   /// First-run onboarding finished (persisted in kv).
   bool onboardingComplete = false;
 
+  /// Mukando (savings circle) is OPT-IN: the Home card and the Savings
+  /// section only appear when the family chose to track rounds.
+  bool mukandoEnabled = false;
+
   Member get user => _user;
 
   Member? member(String id) {
@@ -327,6 +331,8 @@ class AppState extends ChangeNotifier {
           orElse: () => members.first,
         );
       }
+      final muk = await db?.kvGet('mukando_enabled');
+      mukandoEnabled = muk == '1';
       // FX precedence: user custom rate > last server snapshot > default.
       final custom = await db?.kvGet('custom_rate');
       if (custom == null || custom.isEmpty) {
@@ -778,7 +784,13 @@ class AppState extends ChangeNotifier {
 
   String _membersJson() => jsonEncode([
         for (final m in members)
-          {'id': m.id, 'name': m.name, 'emoji': m.emoji, 'role': m.role.name},
+          {
+            'id': m.id,
+            'name': m.name,
+            'emoji': m.emoji,
+            'role': m.role.name,
+            if (m.avatarUrl != null) 'avatar_url': m.avatarUrl,
+          },
       ]);
 
   /// Live-only: updates the space name after the engine fetched it (join
@@ -823,6 +835,39 @@ class AppState extends ChangeNotifier {
     if ((v - rate).abs() < 0.0001) return;
     rate = v;
     _persistKv('server_rate', v.toStringAsFixed(4));
+    notifyListeners();
+  }
+
+  /// Mukando opt-in switch (Home card + Savings section + Settings).
+  void setMukandoEnabled(bool v) {
+    if (mukandoEnabled == v) return;
+    mukandoEnabled = v;
+    _persistKv('mukando_enabled', v ? '1' : '0');
+    notifyListeners();
+  }
+
+  /// Updates MY profile picture (device-local immediately, server push via
+  /// the sync engine). Empty url clears the photo.
+  void setMyAvatar(String url) {
+    final u = _user;
+    final clean = url.trim();
+    _user = Member(
+      id: u.id,
+      name: u.name,
+      emoji: u.emoji,
+      role: u.role,
+      avatarUrl: clean.isEmpty ? null : clean,
+    );
+    for (var i = 0; i < members.length; i++) {
+      if (members[i].id == u.id) {
+        members[i] = _user;
+        break;
+      }
+    }
+    _persistKv('members_v1', _membersJson());
+    sync?.updateMyProfile({
+      'avatar_url': clean.isEmpty ? null : clean,
+    });
     notifyListeners();
   }
 
@@ -878,6 +923,7 @@ class AppState extends ChangeNotifier {
               name: j['name'] as String? ?? 'Member',
               emoji: j['emoji'] as String? ?? 'person',
               role: Role.values.byName(j['role'] as String? ?? 'adult'),
+              avatarUrl: j['avatar_url'] as String?,
             ),
         ]);
     } catch (_) {

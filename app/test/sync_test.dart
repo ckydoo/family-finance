@@ -224,7 +224,70 @@ void main() {
       await db.raw.close();
     });
 
-    test('sync client refuses an empty token (never sends an empty JWT)',
+    test('membersFromServer carries avatar_url into the member', () {
+    final roster = membersFromServer(
+      membershipRows: [
+        {'space_id': 'sp', 'user_id': 'u1', 'role': 'owner'},
+      ],
+      profileRows: [
+        {
+          'id': 'u1',
+          'name': 'Tendi',
+          'email': 'tendi@mhuri.app',
+          'avatar_url': 'https://abcdefgh.supabase.co/storage/v1/object/public/avatars/u1/avatar.jpg',
+        },
+      ],
+      meId: 'u1',
+    );
+    expect(roster.single.avatarUrl, contains('/avatars/u1/'));
+  });
+
+  test('createSpace refuses a taken family name with a clear error', () async {
+    server = FakeServer((request) async {
+      if (request.url.path.startsWith('/rest/v1/rpc/family_name_taken')) {
+        return _json(true);
+      }
+      return _json(null, 201);
+    });
+    engine = SyncEngine(
+      client: SupabaseSyncClient(
+        baseUrl: 'https://abcdefgh.supabase.co',
+        anonKey: 'anon-key',
+        tokenGet: () async => 'test-token',
+        client: server,
+      ),
+      database: db.raw,
+      persistence: Persistence(db),
+      state: state,
+      kvGet: (k) async => kv[k],
+      kvSet: (k, v) async => kv[k] = v,
+    );
+    state.attachSync(engine);
+    final ok = await engine.createSpace('Chikangaiso');
+    expect(ok, isFalse);
+    expect(engine.lastError, contains('FAMILY_NAME_TAKEN'));
+  });
+
+  test('patchRow PATCHes user_profile by id', () async {
+    server = FakeServer((request) async {
+      if (request.method == 'PATCH' &&
+          request.url.path == '/rest/v1/user_profile') {
+        expect(request.url.query, contains('id=eq.u-9'));
+        return _json(null, 204);
+      }
+      return _json(null, 400);
+    });
+    final client = SupabaseSyncClient(
+      baseUrl: 'https://abcdefgh.supabase.co',
+      anonKey: 'anon-key',
+      tokenGet: () async => 'test-token',
+      client: server,
+    );
+    await client.patchRow(
+        'user_profile', 'u-9', {'avatar_url': 'https://x/a.jpg'});
+  });
+
+  test('sync client refuses an empty token (never sends an empty JWT)',
       () async {
     final client = SupabaseSyncClient(
       baseUrl: 'https://abcdefgh.supabase.co',

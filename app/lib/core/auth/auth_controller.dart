@@ -32,12 +32,17 @@ class AuthController extends ChangeNotifier {
 
   AuthSession? _session;
   String? _lastError;
+  String? _lastErrorCode;
   bool _needsConfirmation = false;
   bool _busy = false;
 
   AuthSession? get session => _session;
   bool get isLoggedIn => _session != null;
   String? get lastError => _lastError;
+
+  /// Machine-readable reason for [lastError] (email_not_confirmed,
+  /// invalid_credentials, already_registered, rate_limited, network…).
+  String? get lastErrorCode => _lastErrorCode;
 
   /// True after a sign-up that requires email confirmation — the login screen
   /// shows "check your inbox" and returns to sign-in mode.
@@ -52,6 +57,7 @@ class AuthController extends ChangeNotifier {
 
   Future<bool> signIn(String email, String password) async {
     _lastError = null;
+    _lastErrorCode = null;
     _needsConfirmation = false;
     _busy = true;
     notifyListeners();
@@ -69,6 +75,7 @@ class AuthController extends ChangeNotifier {
       }
     } else {
       _lastError = r.error;
+      _lastErrorCode = r.code;
     }
     notifyListeners();
     return r.ok;
@@ -76,6 +83,7 @@ class AuthController extends ChangeNotifier {
 
   Future<bool> signUp(String email, String password) async {
     _lastError = null;
+    _lastErrorCode = null;
     _needsConfirmation = false;
     _busy = true;
     notifyListeners();
@@ -97,10 +105,15 @@ class AuthController extends ChangeNotifier {
       }
     } else {
       _lastError = r.error;
+      _lastErrorCode = r.code;
     }
     notifyListeners();
     return r.ok;
   }
+
+  /// Re-sends the signup confirmation email (email-confirmation providers).
+  Future<bool> resendConfirmation(String email) =>
+      _service.resendConfirmation(email);
 
   /// Fresh access token for the sync layer (null when unrenewable).
   Future<String?> refreshAccessToken() => _service.refreshAccessToken();
@@ -109,6 +122,7 @@ class AuthController extends ChangeNotifier {
     await _service.signOut();
     _session = null;
     _lastError = null;
+    _lastErrorCode = null;
     _needsConfirmation = false;
     notifyListeners();
   }

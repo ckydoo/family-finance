@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/auth/pin_store.dart';
@@ -9,8 +10,47 @@ import '../../core/money/money.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
+import '../../core/sync/avatar_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
+
+Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
+  final l = AppLocalizations.of(sheetCtx)!;
+  final messenger = ScaffoldMessenger.of(sheetCtx);
+  try {
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, maxWidth: 720, imageQuality: 72);
+    if (picked == null) return;
+    messenger.showSnackBar(SnackBar(
+        content: Text(l.photoUploading), behavior: SnackBarBehavior.floating));
+    final bytes = await picked.readAsBytes();
+    final ext = picked.name.toLowerCase().endsWith('.png') ? 'png' : 'jpg';
+    final url = s.env.supabaseUrl;
+    final key = s.env.supabaseAnonKey;
+    if (url == null || key == null || s.user.id.isEmpty) {
+      throw AvatarException(l.photoFailed);
+    }
+    final uploader = AvatarUploader(
+      baseUrl: url,
+      anonKey: key,
+      tokenGet: () async {
+        final t = await s.db?.kvGet('auth_access_token');
+        return (t != null && t.isNotEmpty) ? t : s.auth?.refreshAccessToken();
+      },
+    );
+    final publicUrl = await uploader.upload(
+        bytes: bytes, userId: s.user.id, ext: ext);
+    s.setMyAvatar(publicUrl);
+    messenger.showSnackBar(SnackBar(
+        content: Text(l.photoSaved), behavior: SnackBarBehavior.floating));
+  } on AvatarException catch (e) {
+    messenger.showSnackBar(SnackBar(
+        content: Text(e.message), behavior: SnackBarBehavior.floating));
+  } catch (_) {
+    messenger.showSnackBar(SnackBar(
+        content: Text(l.photoFailed), behavior: SnackBarBehavior.floating));
+  }
+}
 
 void _editProfileSheet(BuildContext context, AppState s, Member m) {
   final l = AppLocalizations.of(context)!;
@@ -95,9 +135,38 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
                 ],
               ),
               const SizedBox(height: 10),
-              Text(
-                l.photoNote,
-                style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _pickAndUploadPhoto(context, s),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.primary,
+                        side: BorderSide(color: context.primary),
+                        minimumSize: const Size.fromHeight(44),
+                        shape: const StadiumBorder(),
+                      ),
+                      icon: const Icon(Icons.photo_outlined, size: 18),
+                      label: Text(l.addPhoto),
+                    ),
+                  ),
+                  if (m.avatarUrl != null) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        s.setMyAvatar('');
+                        Navigator.pop(ctx);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.expenseRed,
+                        side: BorderSide(color: context.expenseRed),
+                        minimumSize: const Size.fromHeight(44),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: Text(l.removePhoto),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 14),
               FilledButton(
@@ -1066,8 +1135,11 @@ class MembersScreen extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: _roleBg(m.role),
-        child:
-            Icon(iconForKey(m.emoji) ?? Icons.person, size: 20, color: ctx.ink),
+        backgroundImage: m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
+        child: m.avatarUrl != null
+            ? null
+            : Icon(iconForKey(m.emoji) ?? Icons.person,
+                size: 20, color: ctx.ink),
       ),
       title: Text(
         m.name,
@@ -1395,11 +1467,15 @@ class _MemberRow extends StatelessWidget {
           CircleAvatar(
             radius: 22,
             backgroundColor: _roleBg(m.role),
-            child: Icon(
-              iconForKey(m.emoji) ?? Icons.person,
-              size: 20,
-              color: context.ink,
-            ),
+            backgroundImage:
+                m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
+            child: m.avatarUrl != null
+                ? null
+                : Icon(
+                    iconForKey(m.emoji) ?? Icons.person,
+                    size: 20,
+                    color: context.ink,
+                  ),
           ),
           const SizedBox(width: 12),
           Expanded(

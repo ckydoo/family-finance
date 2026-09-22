@@ -35,6 +35,9 @@ class FakeAuthService implements AuthService {
   Future<AuthSession?> restoreSession() async => _session;
 
   @override
+  Future<bool> resendConfirmation(String email) async => true;
+
+  @override
   Future<void> signOut() async {
     _session = null;
   }

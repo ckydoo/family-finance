@@ -1,1 +1,1 @@
-Restore self-healing auth on the .env-asset config: no ghost sessions, no token wiping on transient refresh failures
+Profile photos, opt-in mukando, unique family names, plain-language auth errors

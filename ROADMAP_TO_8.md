@@ -521,3 +521,9 @@ Sprint C (skip-limbo banner, RPC display names, P4 sync details).
 - New Home card: "Upcoming bills" read from existing recurring rules.
 - Pending user approval → then a build sprint (acceptance criteria in the spec).
 
+## Profile photos + validation round (2026-09-22)
+- Avatars end-to-end (storage bucket, upload, roster pull, UI) — migration 005 required.
+- Family names unique server-side + inline check (user rule: no two families with the same name).
+- Auth errors speak plainly (codes → copy → resend-confirmation action).
+- Mukando is now opt-in (Home card + Savings section gated; Settings switch) — was wrongly default-on.
+

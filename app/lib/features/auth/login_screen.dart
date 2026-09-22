@@ -34,6 +34,20 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  String? _errorCode;
+  bool _resent = false;
+  bool _busySendResend = false;
+
+  /// Server/auth failures mapped to honest, specific copy — never a riddle.
+  String _mappedError(AppLocalizations l) => switch (_errorCode) {
+        'email_not_confirmed' => l.authErrEmailNotConfirmed,
+        'invalid_credentials' => l.authErrBadCredentials,
+        'already_registered' => l.authErrAlreadyRegistered,
+        'rate_limited' => l.authErrRateLimited,
+        'network' => l.authErrNetwork,
+        _ => _error ?? '',
+      };
+
   bool get _validEmail =>
       RegExp(r'^\S+@\S+\.\S+').hasMatch(_email.text.trim());
 
@@ -60,7 +74,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     if (ok) {
       // Success: AuthController notifies, the gate in app.dart swaps screens.
-      setState(() => _error = null);
+      setState(() {
+        _error = null;
+        _errorCode = null;
+      });
     } else if (_createMode && widget.auth.needsConfirmation) {
       setState(() {
         _confirmSent = true;
@@ -70,7 +87,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       setState(() {
         _error = widget.auth.lastError;
+        _errorCode = widget.auth.lastErrorCode;
         _confirmSent = false;
+        _resent = false;
       });
     }
   }
@@ -234,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            if (_error != null)
+            if (_error != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -242,10 +261,41 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Text(
-                  _error!,
+                  _mappedError(l),
                   style: TextStyle(fontSize: 12.5, color: context.expenseRed),
                 ),
               ),
+              if (_errorCode == 'email_not_confirmed' ||
+                  _confirmSent ||
+                  _resent) ...[
+                const SizedBox(height: 8),
+                Center(
+                  child: TextButton(
+                    onPressed: _busySendResend
+                        ? null
+                        : () async {
+                            setState(() => _busySendResend = true);
+                            final ok = await widget.auth
+                                .resendConfirmation(_email.text.trim());
+                            if (!mounted) return;
+                            setState(() {
+                              _busySendResend = false;
+                              _resent = ok;
+                            });
+                            if (mounted && ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(l.authResent),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                    child: Text(l.authResend),
+                  ),
+                ),
+              ],
+            ],
             const SizedBox(height: 16),
             AnimatedBuilder(
               animation: widget.auth,

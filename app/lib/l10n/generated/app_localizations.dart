@@ -2403,6 +2403,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete permanently'**
   String get deletePermanently;
+  String get errInviteCode;
+  String get errFamilyNameTaken;
+  String get authErrEmailNotConfirmed;
+  String get authErrBadCredentials;
+  String get authErrAlreadyRegistered;
+  String get authErrRateLimited;
+  String get authErrNetwork;
+  String get authResend;
+  String get authResent;
+  String get mukandoOn;
+  String get mukandoEnableTitle;
+  String get mukandoEnableSub;
+  String get mukandoEnableCta;
+  String get addPhoto;
+  String get removePhoto;
+  String get photoUploading;
+  String get photoFailed;
+  String get photoSaved;
 }
 
 class _AppLocalizationsDelegate

@@ -303,6 +303,45 @@ void main() {
       expect(service.session!.userId, 'uuid-7');
     });
 
+    test('signIn maps each GoTrue failure to an honest code', () async {
+      final cases = [
+        (const MapEntry(400, '{"error":"email_not_confirmed"}'),
+            'email_not_confirmed'),
+        (const MapEntry(400, '{"error":"Invalid login credentials"}'),
+            'invalid_credentials'),
+        (const MapEntry(422, '{"error":"User already registered"}'),
+            'already_registered'),
+        (const MapEntry(429, '{"error":"over_request_rate_limit"}'),
+            'rate_limited'),
+      ];
+      for (final (response, expectedCode) in cases) {
+        client = FakeClient([response]);
+        service = SupabaseAuthService(
+          baseUrl: 'https://abcdefgh.supabase.co/',
+          anonKey: 'anon-key',
+          kvGet: (k) async => kv[k],
+          kvSet: (k, v) async => kv[k] = v,
+          client: client,
+        );
+        final r = await service.signIn('david@mhuri.app', 'wrong');
+        expect(r.ok, isFalse, reason: expectedCode);
+        expect(r.code, expectedCode, reason: expectedCode);
+      }
+    });
+
+    test('resendConfirmation posts to /auth/v1/resend', () async {
+      client = FakeClient([const MapEntry(200, '{}')]);
+      service = SupabaseAuthService(
+        baseUrl: 'https://abcdefgh.supabase.co/',
+        anonKey: 'anon-key',
+        kvGet: (k) async => kv[k],
+        kvSet: (k, v) async => kv[k] = v,
+        client: client,
+      );
+      expect(await service.resendConfirmation('david@mhuri.app'), isTrue);
+      expect(client.sent.single.url.path, '/auth/v1/resend');
+    });
+
     test('signOut clears stored tokens (best-effort server call)', () async {
       client.responses
         ..clear()

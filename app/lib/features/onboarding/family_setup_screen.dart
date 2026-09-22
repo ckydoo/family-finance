@@ -77,6 +77,18 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       _error = null;
     });
     final engine = widget.state.sync;
+
+    // Inline availability check: the user learns the name is taken BEFORE
+    // hitting create (server also enforces it — migration 005).
+    if (engine != null && await engine.familyNameTaken(_name.text.trim())) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = l.errFamilyNameTaken;
+      });
+      return;
+    }
+
     final ok = await engine
         ?.createSpace(_name.text.trim(), household: _household) ??
         false;
@@ -85,12 +97,19 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     if (ok) {
       _go(_Step.invite);
     } else {
-      setState(() => _error =
-          engine?.lastError ?? AppLocalizations.of(context)!.savedOffline);
+      final raw = engine?.lastError;
+      setState(() => _error = (raw != null && raw.contains('FAMILY_NAME_TAKEN'))
+          ? l.errFamilyNameTaken
+          : (raw ?? AppLocalizations.of(context)!.savedOffline));
     }
   }
 
   Future<void> _join() async {
+    final l = AppLocalizations.of(context)!;
+    if (_code.text.trim().isEmpty) {
+      setState(() => _error = l.errInviteCode);
+      return;
+    }
     final engine = widget.state.sync;
     setState(() {
       _busy = true;

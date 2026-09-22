@@ -1296,4 +1296,23 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get deletePermanently => 'Dzima zvachose';
+  String get errInviteCode => "Isa mukava yekukoka wakapihwa nemuridzi wemhuri — inoita se MHRI-4F2A.";
+  String get errFamilyNameTaken => "Zita iri remhuri ramboshandiswa — dzimba zita rimwe.";
+  String get authErrEmailNotConfirmed => "Tarisa inbox yako — tanga wapurufira chinongedzo chekusimbisa, wopinda.";
+  String get authErrBadCredentials => "Email kana password haina kunaka.";
+  String get authErrAlreadyRegistered => "Akaundi ine email iyi yambokuiripo — pinda napo.";
+  String get authErrRateLimited => "Kuedza kwawandisa — mira miniti woedza zvakare.";
+  String get authErrNetwork => "Hana internet — tarisa network woedza zvakare.";
+  String get authResend => "Tumira zvakare email yekusimbisa";
+  String get authResent => "Email yekusimbisa yatumirwa — tarisa inbox yako.";
+  String get mukandoOn => "Denderedzwa rechikafu (mukando)";
+  String get mukandoEnableTitle => "Mukando — chikafu chinodenderedzwa";
+  String get mukandoEnableSub => "Chengetedza nemhuri yako nemaficha. Yakavharwa nekumashure — vhavhurai kana denderedzwa rinowedzera.";
+  String get mukandoEnableCta => "Vhura mukando";
+  String get addPhoto => "Shandisa mufananidzo";
+  String get removePhoto => "Bvisa mufananidzo";
+  String get photoUploading => "Kuri kuiswa mufananidzo…";
+  String get photoFailed => "Mufananidzo haukwanise kuiswa — tarisa network woedza zvakare.";
+  String get photoSaved => "Mufananidzo wachengetwa — mhuri yacho ichaiona zvakare.";
+
 }

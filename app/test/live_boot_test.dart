@@ -46,6 +46,9 @@ class FakeAuthService implements AuthService {
   Future<AuthSession?> restoreSession() async => _session;
 
   @override
+  Future<bool> resendConfirmation(String email) async => true;
+
+  @override
   Future<void> signOut() async {
     _session = null;
   }
@@ -306,6 +309,21 @@ void main() {
     final leftover =
         await raw.query('tx', where: 'id = ?', whereArgs: ['legacy-t1']);
     expect(leftover, isEmpty);
+  });
+
+  test('mukando is OPT-IN: off by default, toggle persists', () async {
+    final (s, _, raw) = await liveStateRaw();
+    expect(s.mukandoEnabled, isFalse); // never forced on the family
+
+    s.setMukandoEnabled(true);
+    expect(s.mukandoEnabled, isTrue);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    final kv =
+        (await raw.query('kv', where: 'k = ?', whereArgs: ['mukando_enabled'])).single;
+    expect(kv['v'], '1'); // choice survives a restart
+
+    s.setMukandoEnabled(false);
+    expect(s.mukandoEnabled, isFalse);
   });
 
   test('go-live purge never touches a real adopted install', () async {

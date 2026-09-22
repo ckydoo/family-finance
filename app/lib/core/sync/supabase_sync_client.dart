@@ -94,6 +94,23 @@ class SupabaseSyncClient {
     return [];
   }
 
+  /// PATCHes columns of one row (e.g. user_profile avatar/name).
+  Future<void> patchRow(
+      String table, String id, Map<String, Object?> values) async {
+    if (values.isEmpty) return;
+    final r = await _client.patch(
+      Uri.parse('$_base/rest/v1/$table?id=eq.$id'),
+      headers: {
+        ...(await _headers()),
+        'Prefer': 'return=minimal',
+      },
+      body: jsonEncode(values),
+    );
+    if (r.statusCode < 200 || r.statusCode >= 300) {
+      throw SyncException(r.statusCode, _msg(r));
+    }
+  }
+
   /// Calls a SECURITY DEFINER RPC (create_space / join_space).
   Future<dynamic> rpc(String fn, Map<String, Object?> args) async {
     final r = await _client.post(

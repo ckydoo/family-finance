@@ -109,6 +109,20 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 8),
+              SwitchListTile(
+                value: s.mukandoEnabled,
+                onChanged: (v) => s.setMukandoEnabled(v),
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.autorenew),
+                title: Text(
+                  AppLocalizations.of(context)!.mukandoOn,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: context.ink,
+                  ),
+                ),
+              ),
               _header(context, Icons.calendar_month_outlined,
                   AppLocalizations.of(context)!.monthCycle),
               ListTile(
