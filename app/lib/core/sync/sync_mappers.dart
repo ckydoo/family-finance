@@ -209,6 +209,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'added_by': i.addedById,
         'state': i.state.name,
         'checked_out': i.checkedOut,
+        'deleted_at': i.deletedAt?.toUtc().toIso8601String(),
       };
     },
     decode: (j) => ListItem(
@@ -219,6 +220,30 @@ final kSyncAdapters = <String, SyncAdapter>{
       addedById: j['added_by'] as String? ?? 'unknown',
       state: ItemState.values.byName(j['state'] as String? ?? 'tobuy'),
       checkedOut: j['checked_out'] as bool? ?? false,
+      deletedAt: _iso(j['deleted_at']),
+    ),
+  ),
+  // Shopping-list HEADER — must sync so every device knows the list exists
+  // (its id stamps item pushes; created by create_space server-side).
+  'shopping_list': SyncAdapter(
+    entity: 'shopping_list',
+    table: 'shopping_list',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final l = d as ShoppingListHeader;
+      return {
+        'id': l.id,
+        'space_id': ctx.spaceId,
+        'name': l.name,
+        'status': l.status,
+        'deleted_at': l.deletedAt?.toUtc().toIso8601String(),
+      };
+    },
+    decode: (j) => ShoppingListHeader(
+      id: j['id'] as String,
+      name: j['name'] as String? ?? 'Shopping list',
+      status: j['status'] as String? ?? 'active',
+      deletedAt: _iso(j['deleted_at']),
     ),
   ),
   // kid_request covers BOTH kid money requests and teen proposals — the
@@ -393,9 +418,11 @@ final kSyncAdapters = <String, SyncAdapter>{
   ),
 };
 
-/// Pull order: envelopes/goals before their children.
+/// Pull order: envelopes/goals before their children; the shopping-list
+/// header before its items (joiners learn the list id first).
 const kPullOrder = [
-  'envelope', 'goal', 'tx', 'goal_tx', 'list_item', 'kid_request', 'earning',
+  'envelope', 'goal', 'shopping_list', 'tx', 'goal_tx', 'list_item',
+  'kid_request', 'earning',
   'recurring', 'chore', 'mukando', // circle last — cheapest, header-only
 ];
 

@@ -1011,7 +1011,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get signOut => 'Phuma';
 
   @override
-  String get viewAs => 'Bheka nje';
+  String get viewAs => 'Bheka nje…';
 
   @override
   String cashShare(Object pct) {
@@ -1245,7 +1245,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get passwordResetSent =>
-      'I-imeyili yokutshintsha ipasiwedi ithunyelwe — hlola inboksi yakho.';
+      'Imeyili yokulungisa ipasiwedi ithunyelwe — vula ilinkhi kulefonha, uhlelo luzogcwalisela.';
 
   @override
   String get passwordResetFailed =>
@@ -1457,4 +1457,435 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get loggedItem => 'Kubhaliwe';
+
+  @override
+  String get syncDataTitle => 'Ukuxhumana & idatha';
+
+  @override
+  String get syncStateSyncing => 'Kuxhumana…';
+
+  @override
+  String get syncStateError => 'Kulindile ukuzama futhi';
+
+  @override
+  String get syncStateOffline => 'Awukho emoyeni — izinguquko zigcinwa lefonha';
+
+  @override
+  String get syncStateNeedsSignIn => 'Ngena ngemvume ukuze uxhumane';
+
+  @override
+  String get syncStateSaved => 'Kugcinwe lefonha';
+
+  @override
+  String get syncNowBtn => 'Xhumana khathesi';
+
+  @override
+  String get syncLastSync => 'Ukuxhumana okwedlule';
+
+  @override
+  String get syncNever => 'Akukalo';
+
+  @override
+  String get syncPendingLabel => 'Kulindile ukuxhumwa';
+
+  @override
+  String get syncUpToDate => 'Konke kugcinwe, kulungile';
+
+  @override
+  String get syncErrorLabel => 'Inkinga yokugcina';
+
+  @override
+  String get syncWhereTitle => 'Idatha yenu ilapha';
+
+  @override
+  String get syncConnectedTo => 'Ifu yomndeni:';
+
+  @override
+  String get syncNotConnected => 'Le lfona kuphela — ifu yomndeni ayikaxhumekile.';
+
+  @override
+  String get syncBackupNote => 'Ayikho i-backup edinga ukuvulwa. Zonke izinguquko ziyagcinwa lefonha masinyane futhi ziyaxhumana nefu yomndeni uma unethiwekhi. Khipha i-CSV ngezansi noma nini uthole ikhophi oyilawulayo.';
+
+  @override
+  String get previewExit => 'Phuma';
+
+  @override
+  String previewBanner(Object name) {
+    return 'Uhlole njengo$name';
+  }
+
+  @override
+  String get resetTitle => 'Khetha ipasiwedi entsha';
+
+  @override
+  String get resetSubtitle => 'Ungene ngomqondiso wokulungisa — manje khetha ipasiwedi entsha.';
+
+  @override
+  String get resetNewLabel => 'Ipayiwedi entsha';
+
+  @override
+  String get resetConfirmLabel => 'Qinisekisa ipayiwedi entsha';
+
+  @override
+  String get resetMismatch => 'Izipasiwedi ezimbili azifani';
+
+  @override
+  String get resetRuleLength => 'Okungani okungu-8 noma ngaphezulu';
+
+  @override
+  String get resetRuleMix => 'Inezinhlamvu nenombolo';
+
+  @override
+  String get resetRuleHint => 'Sebenzisa okungani okungu-8 noma ngaphezulu okunezinhlamvu nenombolo.';
+
+  @override
+  String get resetCta => 'Guqula ipasiwedi';
+
+  @override
+  String get resetSuccess => 'Ipayiwedi iguqulwe — ngena ngaleyakho entsha';
+
+  @override
+  String get resetShow => 'Veza nomcowe ipasiwedi';
+
+  @override
+  String get resetExpiredTitle => 'Le link liphelelwe yisikhathi';
+
+  @override
+  String get resetExpiredBody => 'Amalinka okulungisa asebenza kanye kuphela ngesikhathi esifushana. Thumela entsha futhi uzame.';
+
+  @override
+  String get resetSendNew => 'Thumela link entsha';
+
+  @override
+  String get listDelete => 'Susa into';
+
+  @override
+  String listDeleted(Object name) {
+    return '"$name" likhishwe ohlwini';
+  }
+
+  @override
+  String get roleAdult => 'Omdala';
+
+  @override
+  String get roleTeen => 'Lijaha/Intombazane';
+
+  @override
+  String get roleViewer => 'Um-bukeli';
+
+  @override
+  String get inviteCode => 'Ikhodi yesimemo';
+
+  @override
+  String get inviteTitle => 'Menyukela umndeni';
+
+  @override
+  String get inviteHowTo => 'Uyakha i-akhawunti nge-imeyili yakhe, bese afaka lekhodi ukuba ajoyine umndeni wakho.';
+
+  @override
+  String get inviteNew => 'Isimemo esisha';
+
+  @override
+  String get inviteEmailOptional => 'I-imeyili yabo (ngokukhetha — bona kuphela bangayisebenzisa)';
+
+  @override
+  String get inviteCreate => 'Yenza isimemo';
+
+  @override
+  String get inviteCreated => 'Bonisa le khowudi noma i-QR kubo';
+
+  @override
+  String get inviteScanHint => 'Bhalansa i-QR ngekhamera yabo, noma betha ilinkhi — livula lohlelo lukulungele ukungena.';
+
+  @override
+  String get inviteShare => 'Thumela';
+
+  @override
+  String get inviteShareText => 'Ngenani nomndeni wethu ku-Mhuri Hub — isimemo sakho:';
+
+  @override
+  String get invitePending => 'Izimemo ezivulekile';
+
+  @override
+  String get inviteNone => 'Azikho izimemo ezivulekile.';
+
+  @override
+  String get inviteHistory => 'Izimemo zangaphambili';
+
+  @override
+  String get inviteRevoke => 'Khansela';
+
+  @override
+  String get inviteFailed => 'Isimemo asihlanganiswanga — bhheka uxhumano uzame futhi.';
+
+  @override
+  String get inviteTooMany => 'Kunezimemo ezi-5 ezingakasebenziswanga — khansela eyodwa kuqala.';
+
+  @override
+  String get inviteOwnerOnly => 'Umnikhi kuphela ulawula izimemo.';
+
+  @override
+  String get inviteAlreadyInFamily => 'Usengumndeni — izimemo zingokungena komndeni omusha.';
+
+  @override
+  String get makeOwner => 'Yenza umnikhi';
+
+  @override
+  String get makeOwnerFailed => 'Ukudluliselwa kwembusa kwehlulekile — bhheka uxhumano uzame futhi.';
+
+  @override
+  String get roleParent => 'Umzali';
+
+  @override
+  String get roleChild => 'Ingane';
+
+  @override
+  String inviteAcceptedLabel(Object code, Object role) {
+    return '$code — ungene';
+  }
+
+  @override
+  String makeOwnerBody(Object name) {
+    return 'Yenza u$name abe yindlovukazi yomndeni? Uba yilungu elivamile, yena ulawula izimemo nezilungiselelo.';
+  }
+
+  @override
+  String makeOwnerDone(Object name) {
+    return '$name unguvikazi womndeni manje';
+  }
+
+  @override
+  String inviteRevokeBody(Object code) {
+    return 'Khansela isimemo $code? Angeke bangena ngeso.';
+  }
+
+  @override
+  String inviteLinkReady(Object code) {
+    return 'Isimemo $code silindile — ngena umndeni ngezansi.';
+  }
+
+  @override
+  String get syncProblemsTitle => 'Izingququko ezidinga wena';
+
+  @override
+  String get syncProblemsBody => 'Lezingququko azifikanga efu yomndeni ngemizamo eminingana. Zame futhi, noma zishiye — akukho okukhishwa ngaphandle komyalo wakho.';
+
+  @override
+  String get syncRetryThis => 'Zame futhi';
+
+  @override
+  String get syncDiscardThis => 'Yekela';
+
+  @override
+  String get syncDiscardTitle => 'Yekela lentlelele?';
+
+  @override
+  String get syncKindTx => 'Isiphendimvu';
+
+  @override
+  String get syncKindEnvelope => 'Isabelomali';
+
+  @override
+  String get syncKindGoal => 'Inhloso yokugcina';
+
+  @override
+  String get syncKindItem => 'Into kohlu';
+
+  @override
+  String get syncKindRequest => 'Isicelo';
+
+  @override
+  String get syncKindOther => 'Ingququko';
+
+  @override
+  String syncDiscardBody(Object what) {
+    return '“$what” ihlala lefonha kuphela futhi ayisoze yafika efu yomndeni. Uyayekela?';
+  }
+
+  @override
+  String syncTries(Object tries) {
+    return '$tries imizamo';
+  }
+
+  @override
+  String get setupInviteCopied => 'Isimemo sikopishiwe.';
+
+  @override
+  String get setupBadEmail => 'Faka i-imeyili esebenzayo.';
+
+  @override
+  String get setupTagline => 'Umndeni oyedwa. Uhlelo olulodwa.';
+
+  @override
+  String get setupPhotoOptional => 'Faka isithombe (ngokukhetha)';
+
+  @override
+  String get setupHaveCode => 'Nginekhowudi yokungena';
+
+  @override
+  String get setupCreateInstead => 'Yenza umndeni omusha';
+
+  @override
+  String get setupCopy => 'Khopisha';
+
+  @override
+  String get setupScanToJoin => 'Bhalansa uze ungene';
+
+  @override
+  String get setupCreateTitle => 'Yenza umndeni wakho';
+
+  @override
+  String get setupCreateSub => 'Sitshela igama lomndeni wakho.';
+
+  @override
+  String get setupPreferredName => 'Igama o lithandaza';
+
+  @override
+  String get setupFamilyNameField => 'Igama lomndeni (isibonelo, oMoyo)';
+
+  @override
+  String get setupCurrency => 'Imali eyinhloko';
+
+  @override
+  String get setupJoinTitle => 'Ngena umndeni wakho';
+
+  @override
+  String get setupJoinSub => 'Sebenzisa ikhowudi obabelwe ngumndeni.';
+
+  @override
+  String get setupInviteTitle => 'Menyukela abantu';
+
+  @override
+  String get setupInviteSub => 'Uletsabo bonke emndenini oyedwa.';
+
+  @override
+  String get setupRoleSuggestion => 'Ilanga lifakwe njengesiphakamiso. Litsantsa kutakhiwelo kwefemeli bayishintsha.';
+
+  @override
+  String get setupSendInvite => 'Thumela isimemo';
+
+  @override
+  String get setupContinue => 'Qhubeka  →';
+
+  @override
+  String get setupInviteLater => 'Menyukela later';
+
+  @override
+  String get setupPermsTitle => 'Izimvume';
+
+  @override
+  String get setupPermsSub => 'Ukungena okufanele sekulungile. Ungakwazi ukukushintsha kwitakhiwelo yefemeli.';
+
+  @override
+  String get setupPermWallet => 'Bheka iwali yabo';
+
+  @override
+  String get setupPermTx => 'Bhala izenzo zabo';
+
+  @override
+  String get setupPermBudget => 'Bheka isabelomali somndeni';
+
+  @override
+  String get setupFinish => 'Qedza ukulungisa';
+
+  @override
+  String get deleteWhatTitle => 'Okwenzeka ususa i-akhawunti';
+
+  @override
+  String get deleteWhatOwner => 'Unguvikazi womndeni: yonke into yomndeni iyasuswa — ama-akhawunti, izabelomali, ezimali nohlu, kubo bonke. Akubuyi emuva.';
+
+  @override
+  String get deleteWhatMember => 'Uyaphuma emndenini. Ubulungu bakho buqala, isithombe ne-imeyili yakho kuyasuswa, izenzo zakho zangaphambili ziyeke zibonakala njengo “Former member”. Abanye bagcina nedatha yabo.';
+
+  @override
+  String get deleteWhatSessions => 'Ukungena ngemvume konke kuzofa kwenziwa.';
+
+  @override
+  String get deleteStepLeave => 'Kuphuma emndenini…';
+
+  @override
+  String get deleteStepAnonymize => 'Kukhipha igama lakho…';
+
+  @override
+  String get deleteStepSessions => 'Kehlakala ukungena…';
+
+  @override
+  String get deleteStepIdentity => 'Kususa i-akhawunti yakho…';
+
+  @override
+  String setupInviteText(Object family, Object code, Object role) {
+    return 'Ngena nomndeni ka$family ku-Mhuri Hub ngekhowudi $code. Ilanga eliphakamisiwe: $role.';
+  }
+
+  @override
+  String setupInviteSubject(Object family) {
+    return 'Ngena nomndeni ka$family ku-Mhuri Hub';
+  }
+
+  @override
+  String setupStepOf(Object n) {
+    return 'Isinyathelo $n sa3';
+  }
+
+  @override
+  String kidsGoalSaved(Object goal, Object pct) {
+    return 'Inhloso: $goal — $pct% kilondoloziwe';
+  }
+
+  @override
+  String kidsHi(Object name) {
+    return 'Sawubona $name!';
+  }
+
+  @override
+  String kidsWishItem(Object amount) {
+    return 'Ibhola — US$25 · kilondoloziwe $amount';
+  }
+
+  @override
+  String loginSentCode(Object phone) {
+    return 'Sithumele ikhodi ngeSMS ku$phone';
+  }
+
+  @override
+  String recSkipped(Object date) {
+    return 'Kweyekiwe — elandelayo: $date';
+  }
+
+  @override
+  String safeToSpend(Object amount) {
+    return 'Kuphephile ukusebenzisa namhlanje: $amount';
+  }
+
+  @override
+  String scheduledOn(Object from, Object to) {
+    return 'Kulungisiwe kule foni · amahla okuthula $from–$to';
+  }
+
+  @override
+  String setCurrencySub(Object rate) {
+    return 'USD eyinhloko · ZiG yesibili · $rate';
+  }
+
+  @override
+  String syncPill(Object count) {
+    return '{count, plural, other{$count utshintsho olugciniwele kwesi sixhobo — kuhlanganiswa xa kukho internet}}';
+  }
+
+  @override
+  String teenSplitHint(Object amount) {
+    return 'Ukwahlukaniswa kwe$amount okutholakele kule nyanga';
+  }
+
+  @override
+  String get discardChangesTitle => 'Yekela izingququko?';
+
+  @override
+  String get discardChangesBody => 'Ayikagciniwe. Phuma njani manje?';
+
+  @override
+  String get stay => 'Qhubeka usebenza';
+
+  @override
+  String get leave => 'Phuma';
 }

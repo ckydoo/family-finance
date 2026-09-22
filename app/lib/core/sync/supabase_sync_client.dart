@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -25,6 +26,21 @@ class SupabaseSyncClient {
   final String _anonKey;
   final Future<String?> Function() _tokenGet;
   final http.Client _client;
+
+  /// Hard ceiling on any REST call so a dead network can't hang a sync
+  /// forever — timeouts surface as a typed SyncException(0), which the
+  /// engine maps to the offline/error state like any other failure.
+  static const Duration _timeout = Duration(seconds: 20);
+
+  Future<http.Response> _call(Future<http.Response> Function() fn) async {
+    try {
+      return await fn().timeout(_timeout);
+    } on TimeoutException {
+      throw const SyncException(
+          0, 'Connection timed out — check your internet and try again.');
+    }
+  }
+
 
   Future<Map<String, String>> _headers() async {
     final token = await _tokenGet();
@@ -98,14 +114,14 @@ class SupabaseSyncClient {
   Future<void> patchRow(
       String table, String id, Map<String, Object?> values) async {
     if (values.isEmpty) return;
-    final r = await _client.patch(
+    final r = await _call(() => _client.patch(
       Uri.parse('$_base/rest/v1/$table?id=eq.$id'),
       headers: {
         ...(await _headers()),
         'Prefer': 'return=minimal',
       },
       body: jsonEncode(values),
-    );
+    ));
     if (r.statusCode < 200 || r.statusCode >= 300) {
       throw SyncException(r.statusCode, _msg(r));
     }
@@ -113,11 +129,11 @@ class SupabaseSyncClient {
 
   /// Calls a SECURITY DEFINER RPC (create_space / join_space).
   Future<dynamic> rpc(String fn, Map<String, Object?> args) async {
-    final r = await _client.post(
+    final r = await _call(() => _client.post(
       Uri.parse('$_base/rest/v1/rpc/$fn'),
       headers: await _headers(),
       body: jsonEncode(args),
-    );
+    ));
     if (r.statusCode < 200 || r.statusCode >= 300) {
       throw SyncException(r.statusCode, _msg(r));
     }

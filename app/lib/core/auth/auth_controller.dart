@@ -113,6 +113,26 @@ class AuthController extends ChangeNotifier {
   Future<bool> sendPasswordReset(String email) =>
       _service.sendPasswordReset(email);
 
+  /// Recovery step 2: with the session adopted from the reset link, set the
+  /// new password (PUT /auth/v1/user).
+  Future<AuthResult> updatePassword(String newPassword) =>
+      _service.updatePassword(newPassword);
+
+  /// Recovery step 1: the app opened the reset link — adopt the session it
+  /// carries so the user can pick a new password. The controller mirrors the
+  /// service session so the UI (and a mid-flow restart) knows we're signed
+  /// in with a recovery session.
+  Future<bool> adoptRecoverySession(
+      String accessToken, String refreshToken) async {
+    final ok =
+        await _service.adoptRecoverySession(accessToken, refreshToken);
+    if (ok) {
+      _session = _service.session;
+      notifyListeners();
+    }
+    return ok;
+  }
+
   /// Fresh access token for the sync layer (null when unrenewable).
   Future<String?> refreshAccessToken() => _service.refreshAccessToken();
 

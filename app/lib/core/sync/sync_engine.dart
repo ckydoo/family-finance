@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart' show Database;
 
 import '../db/persistence.dart';
+import '../models/models.dart' show InviteInfo;
 import '../state/app_state.dart';
 import '../utils/ids.dart';
 import 'outbox.dart';
@@ -29,6 +30,7 @@ class SyncEngine {
     required this.state,
     required Future<String?> Function(String key) kvGet,
     required Future<void> Function(String key, String value) kvSet,
+    this.retryAuth,
   })  : _persistence = persistence,
         _outbox = Outbox(database),
         _kvGet = kvGet,
@@ -40,6 +42,10 @@ class SyncEngine {
   final Future<String?> Function(String key) _kvGet;
   final Future<void> Function(String key, String value) _kvSet;
   final Outbox _outbox;
+
+  /// Forces a token refresh after a 401 and lets [syncNow] retry exactly
+  /// once before surfacing "sign in". Null (tests) = no retry.
+  final Future<bool> Function()? retryAuth;
 
   Timer? _timer;
   Timer? _debounce;
@@ -95,6 +101,48 @@ class SyncEngine {
   }
 
   Future<int> pendingCount() => _outbox.count();
+
+  // ── parked changes (never silently dropped) ──────────────────────────────
+  // A change that failed [maxAttempts] pushes is held back from auto-sync
+  // but stays in the outbox. Sync & data lists them with per-item retry
+  // and discard — discard is the ONLY way a row leaves besides success,
+  // and the UI confirms it first.
+
+  Future<List<OutboxOp>> parked() => _outbox.parked(maxAttempts);
+
+  Future<int> parkedCount() => _outbox.countParked(maxAttempts);
+
+  /// "Try again": clears the failure count so the next sync pushes it.
+  Future<void> retryParked(int rowId) => _outbox.resetAttempts(rowId);
+
+  /// Explicit user discard of a parked change (confirmed in the UI).
+  Future<void> discardParked(int rowId) => _outbox.deleteRow(rowId);
+
+  // ── reinstall reconciliation (migration 012) ─────────────────────────────
+
+  /// A reinstall (or second phone) has no local kv — no space_id, so the
+  /// app would show family setup and the member would have to re-enter a
+  /// code or (worse) create a duplicate family. The auth token alone
+  /// answers "am I still in a family?" via restore_my_space(); the match
+  /// is adopted and full-synced. Never re-creates, never duplicates.
+  Future<bool> restoreFamily() async {
+    if (_spaceId != null) return true;
+    try {
+      final r = await client.rpc('restore_my_space', {});
+      if (r is! Map || r['space_id'] == null) return false;
+      await _adoptSpace(
+        id: r['space_id'].toString(),
+        code: r['invite_code']?.toString(),
+        name: r['name']?.toString(),
+      );
+      await _fullSync();
+      state.markOnboardingRestored();
+      return true;
+    } catch (e) {
+      debugPrint('Mhuri restore error: $e');
+      return false;
+    }
+  }
 
   /// Debounced auto-sync after mutations.
   void schedule() {
@@ -218,6 +266,59 @@ class SyncEngine {
     }
   }
 
+  // ── invitations + ownership (migration 010) ──────────────────────────────
+
+  /// Creates a role-bound invite (server: owner-only, max 5 open, 7-day
+  /// expiry). Returns the code for the QR/share sheet.
+  Future<Map<String, String?>> createInvite(String role,
+      {String? email}) async {
+    final r = await client.rpc('create_invite', {
+      'p_role': role,
+      'p_email': email,
+    });
+    if (r is! Map) {
+      throw const SyncException(0, 'unexpected response from server');
+    }
+    return {'code': r['code']?.toString()};
+  }
+
+  /// Pending/accepted invites for the family (owner-read via RLS).
+  Future<List<InviteInfo>> listInvites() async {
+    final sid = _spaceId;
+    if (sid == null) return [];
+    final rows = await client.pullRows(
+      'family_invite',
+      orderCol: 'created_at',
+      ascending: false,
+      spaceId: sid,
+      spaceCol: 'space_id',
+      limit: 50,
+    );
+    DateTime? dt(Object? v) =>
+        v is String && v.isNotEmpty ? DateTime.tryParse(v) : null;
+    return [
+      for (final r in rows)
+        InviteInfo(
+          id: r['id'].toString(),
+          code: (r['code'] ?? '').toString(),
+          role: (r['role'] ?? 'adult').toString(),
+          email: r['email']?.toString(),
+          expiresAt: dt(r['expires_at']),
+          acceptedBy: r['accepted_by']?.toString(),
+          acceptedAt: dt(r['accepted_at']),
+          revokedAt: dt(r['revoked_at']),
+        ),
+    ];
+  }
+
+  Future<void> revokeInvite(String inviteId) =>
+      client.rpc('revoke_invite', {'p_id': inviteId});
+
+  /// Hands the family to another active member: roles swap, the family's
+  /// static code moves with it, audit row written (migration 010).
+  Future<void> transferOwnership(String newOwnerUserId) =>
+      client.rpc('transfer_ownership', {'p_new_owner': newOwnerUserId});
+
   /// Pushes the signed-in member's profile columns (avatar_url, name).
   Future<void> updateMyProfile(Map<String, Object?> values) async {
     final uid = await _kvGet.call('auth_user_id');
@@ -285,6 +386,10 @@ class SyncEngine {
       await _kvSet('space_name', name);
     }
     await _kvSet('space_id', id);
+    // Any list id from a previous family is void — the join path relearns it
+    // from the shopping_list header pull; the create path sets it from the
+    // RPC result right after this.
+    await _kvSet('default_list_id', '');
     _cursor = null;
 
     // Fresh family start on this device: clear synced tables + outbox.
@@ -333,8 +438,18 @@ class SyncEngine {
     _busy = true;
     _setStatus(SyncStatus.syncing);
     try {
-      await _push();
-      await _pull(sid);
+      try {
+        await _push();
+        await _pull(sid);
+      } on SyncException catch (e) {
+        // Access token expired mid-session: force one refresh and retry the
+        // pass exactly once. Still 401 → rethrown → needsSignIn below.
+        if (!e.isAuthError || retryAuth == null) rethrow;
+        final refreshed = await retryAuth!();
+        if (!refreshed) rethrow;
+        await _push();
+        await _pull(sid);
+      }
       lastSyncAt = DateTime.now();
       await _kvSet('last_sync_ms', '${lastSyncAt!.millisecondsSinceEpoch}');
       _consecFail = 0;
@@ -503,6 +618,35 @@ class SyncEngine {
     }
   }
 
+  /// The owner's role switches (family_space.settings -> role_permissions)
+  /// drive the same gates in the UI that RLS enforces on the server.
+  Future<void> _pullFamilySettings() async {
+    final sid = _spaceId;
+    if (sid == null) return;
+    try {
+      final rows = await client.pullRows(
+        'family_space',
+        orderCol: 'created_at',
+        eqFilters: {'id': 'eq.$sid'},
+        limit: 1,
+      );
+      if (rows.isEmpty) return;
+      final settings = rows.first['settings'];
+      final perms = <String, bool>{};
+      if (settings is Map) {
+        final rp = settings['role_permissions'];
+        if (rp is Map) {
+          perms.addAll({
+            for (final e in rp.entries) e.key.toString(): '${e.value}' == 'true',
+          });
+        }
+      }
+      await state.applyRolePermissions(perms);
+    } catch (_) {
+      // Non-fatal — defaults keep the UI consistent with the server defaults.
+    }
+  }
+
   Future<void> _fullSync() async {
     _cursor = null;
     await _push();
@@ -510,6 +654,7 @@ class SyncEngine {
     await _pullEnvelopeLinks(); // budget attribution across devices
     await _pullRate(); // latest server FX snapshot (unless user override)
     await _pullMembers(); // family roster: real names for everyone
+    await _pullFamilySettings(); // owner's role switches → UI gates
     lastSyncAt = DateTime.now();
     await _kvSet('last_sync_ms', '${lastSyncAt!.millisecondsSinceEpoch}');
     _setStatus(SyncStatus.idle);
@@ -518,8 +663,7 @@ class SyncEngine {
 
   Future<void> _pullSince(String sid, String? since) async {
     var maxCursor = since;
-    for (final entity in kPullOrder) {
-      final adapter = kSyncAdapters[entity]!;
+    for (final entity in kPullOrder) {      final adapter = kSyncAdapters[entity]!;
       final rows = await client.pullRows(
         adapter.table,
         orderCol: 'updated_at',
@@ -543,8 +687,27 @@ class SyncEngine {
       await _kvSet('sync_cursor', maxCursor);
     }
   }
+
+  /// Joiners learn the family's default shopping list from the header pull
+  /// (creators get the id straight from the create_space RPC). Persisted so
+  /// every list_item push is stamped with the real list_id.
+  Future<void> _captureDefaultList(List<Map<String, Object?>> rows) async {
+    if (rows.isEmpty) return;
+    final current = await _kvGet('default_list_id');
+    if (current != null && current.isNotEmpty) return;
+    for (final r in rows) {
+      if (r['deleted_at'] != null) continue;
+      if ((r['status'] as String? ?? 'active') != 'active') continue;
+      final id = r['id']?.toString();
+      if (id != null && id.isNotEmpty) {
+        await _kvSet('default_list_id', id);
+        return;
+      }
+    }
+  }
 }
 
 /// Collision-resistant client id for rows without a natural key
 /// (goal_tx contributions): time-ordered, unique per device.
 String newClientId() => newUuid();
+

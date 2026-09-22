@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/ui.dart';
 import '../../core/money/money.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
@@ -158,6 +159,11 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
   var currency = Currency.usd;
   var rollover = Rollover.reset;
 
+  // Unsaved-changes guard: only fires when the user actually typed — an
+  // untouched sheet dismisses freely (standing UX rule).
+  var guardArmed = false;
+  void armGuard() => guardArmed = true;
+
   final result = await showModalBottomSheet<
       ({String name, double limit, Currency currency, Rollover rollover})>(
     context: context,
@@ -194,7 +200,23 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
                 IconButton(
                   tooltip:
                       MaterialLocalizations.of(sheetContext).closeButtonTooltip,
-                  onPressed: () => Navigator.pop(sheetContext),
+                  onPressed: () async {
+                    if (!guardArmed ||
+                        (name.text.trim().isEmpty &&
+                            limit.text.trim().isEmpty)) {
+                      Navigator.pop(sheetContext);
+                      return;
+                    }
+                    final leave = await confirmDialog(
+                      sheetContext,
+                      title: l.discardChangesTitle,
+                      body: l.discardChangesBody,
+                      confirmLabel: l.leave,
+                    );
+                    if (leave && sheetContext.mounted) {
+                      Navigator.pop(sheetContext);
+                    }
+                  },
                   icon: const Icon(Icons.close_rounded),
                 ),
               ],
@@ -203,6 +225,7 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
             TextField(
               controller: name,
               autofocus: true,
+              onChanged: (_) => armGuard(),
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
                 labelText: l.envelopeLabel,
@@ -214,6 +237,7 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
             const SizedBox(height: 12),
             TextField(
               controller: limit,
+              onChanged: (_) => armGuard(),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(

@@ -201,7 +201,8 @@ class Persistence {
     final goalTxs = (await _d.query('goal_tx', orderBy: 'at_ms ASC'))
         .map(_goalTxFrom)
         .toList();
-    final items = (await _d.query('list_item', orderBy: 'rowid DESC'))
+    final items = (await _d.query('list_item',
+            where: 'deleted_at IS NULL', orderBy: 'rowid DESC'))
         .map(_itemFrom)
         .toList();
     final chores = (await _d.query('chore')).map(_choreFrom).toList();
@@ -269,6 +270,13 @@ class Persistence {
       _d.insert('list_item', _itemRow(i),
           conflictAlgorithm: ConflictAlgorithm.replace);
 
+  /// Tombstone write: the row keeps its deleted_at locally (the sync push
+  /// carries the flag to every other device) but never loads again.
+  Future<void> deleteListItem(ListItem i) async {
+    await _d.insert('list_item', _itemRow(i),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   Future<void> saveChore(Chore c) async => _d.insert('chore', _choreRow(c),
       conflictAlgorithm: ConflictAlgorithm.replace);
 
@@ -326,7 +334,17 @@ class Persistence {
             conflictAlgorithm: ConflictAlgorithm.ignore, // unique server_id
           );
         case 'list_item':
-          batch.insert('list_item', _itemRow(adapter.decode(row) as ListItem),
+          final li = adapter.decode(row) as ListItem;
+          if (li.deletedAt != null) {
+            // Tombstone from another device — remove our local copy.
+            batch.delete('list_item', where: 'id = ?', whereArgs: [li.id]);
+          } else {
+            batch.insert('list_item', _itemRow(li),
+                conflictAlgorithm: ConflictAlgorithm.replace);
+          }
+        case 'shopping_list':
+          batch.insert('shopping_list',
+              _listRow(adapter.decode(row) as ShoppingListHeader),
               conflictAlgorithm: ConflictAlgorithm.replace);
         case 'kid_request':
           final d = adapter.decode(row);
@@ -366,6 +384,7 @@ class Persistence {
       'envelope',
       'goal',
       'goal_tx',
+      'shopping_list',
       'list_item',
       'kid_request',
       'proposal',
@@ -441,6 +460,14 @@ class Persistence {
         'state': i.state.name,
         'added_by': i.addedById,
         'checked_out': i.checkedOut ? 1 : 0,
+        'deleted_at': i.deletedAt?.toIso8601String(),
+      };
+
+  Map<String, Object?> _listRow(ShoppingListHeader l) => {
+        'id': l.id,
+        'name': l.name,
+        'status': l.status,
+        'deleted_at': l.deletedAt?.toIso8601String(),
       };
 
   Map<String, Object?> _choreRow(Chore c) => {
@@ -590,6 +617,9 @@ class Persistence {
         addedById: m['added_by'] as String,
         state: ItemState.values.byName(m['state'] as String),
         checkedOut: (m['checked_out'] as int? ?? 0) == 1,
+        deletedAt: m['deleted_at'] == null
+            ? null
+            : DateTime.parse(m['deleted_at'] as String),
       );
 
   Chore _choreFrom(Map<String, Object?> m) => Chore(

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 import 'auth_service.dart';
+import 'recovery_link.dart';
 
 /// Optional key-value hooks so the service can persist tokens without
 /// depending on the database layer. Backed by the `kv` table on device,
@@ -47,13 +49,27 @@ class SupabaseAuthService implements AuthService {
         'Content-Type': 'application/json',
       };
 
+  /// Hard ceiling on any GoTrue call so a dead network can't hang the
+  /// spinner forever. The generic catch at each call site already maps
+  /// thrown errors to the typed network failure.
+  static const Duration _timeout = Duration(seconds: 20);
+
+  Future<http.Response> _post(Uri url,
+      {Map<String, String>? headers, Object? body}) async {
+    try {
+      return await _post(url, headers: headers, body: body).timeout(_timeout);
+    } on TimeoutException {
+      throw Exception('Request timed out — check your internet connection.');
+    }
+  }
+
   @override
   AuthSession? get session => _session;
 
   @override
   Future<AuthResult> signIn(String email, String password) async {
     try {
-      final r = await _client.post(
+      final r = await _post(
         Uri.parse('$_base/auth/v1/token?grant_type=password'),
         headers: _headers,
         body: jsonEncode({'email': email, 'password': password}),
@@ -77,7 +93,7 @@ class SupabaseAuthService implements AuthService {
   @override
   Future<AuthResult> signUp(String email, String password) async {
     try {
-      final r = await _client.post(
+      final r = await _post(
         Uri.parse('$_base/auth/v1/signup'),
         headers: _headers,
         body: jsonEncode({'email': email, 'password': password}),
@@ -108,7 +124,7 @@ class SupabaseAuthService implements AuthService {
   @override
   Future<bool> resendConfirmation(String email) async {
     try {
-      final r = await _client.post(
+      final r = await _post(
         Uri.parse('$_base/auth/v1/resend'),
         headers: _headers,
         body: jsonEncode({'type': 'signup', 'email': email}),
@@ -124,15 +140,70 @@ class SupabaseAuthService implements AuthService {
   @override
   Future<bool> sendPasswordReset(String email) async {
     try {
-      final r = await _client.post(
-        Uri.parse('$_base/auth/v1/recover'),
-        headers: _headers,
+      // redirect_to is sent BOTH ways GoTrue accepts (query param + header);
+      // it must be allow-listed in Auth → URL Configuration or the email
+      // falls back to the Site URL and the app never opens.
+      final r = await _post(
+        Uri.parse('$_base/auth/v1/recover'
+            '?redirect_to=${Uri.encodeComponent(kRecoveryRedirect)}'),
+        headers: {..._headers, 'redirect_to': kRecoveryRedirect},
         body: jsonEncode({'email': email}),
       );
       return r.statusCode >= 200 && r.statusCode < 300;
     } catch (_) {
       return false;
     }
+  }
+
+  @override
+  Future<AuthResult> updatePassword(String newPassword) async {
+    final access = await _kvGet?.call('auth_access_token');
+    if (access == null || access.isEmpty) {
+      return const AuthResult.failure(
+          'This reset link has expired — request a new one.',
+          code: 'reset_expired');
+    }
+    try {
+      final response = await _post(
+        Uri.parse('$_base/auth/v1/user'),
+        headers: {..._headers, 'Authorization': 'Bearer $access'},
+        body: jsonEncode({'password': newPassword}),
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return const AuthResult.success();
+      }
+      if (response.statusCode == 401) {
+        // The recovery session from the (single-use) link is gone.
+        return const AuthResult.failure(
+            'This reset link has expired — request a new one.',
+            code: 'reset_expired');
+      }
+      final e = _errorInfo(response);
+      return AuthResult.failure(e.$1, code: e.$2);
+    } catch (_) {
+      return const AuthResult.failure(
+          'Network error — check your connection and try again.',
+          code: 'network');
+    }
+  }
+
+  @override
+  Future<bool> adoptRecoverySession(
+      String accessToken, String refreshToken) async {
+    final claims = claimsFromJwt(accessToken);
+    final uid = claims['sub'];
+    if (uid == null || uid.isEmpty) return false;
+    _session = AuthSession(userId: uid, email: claims['email'] ?? '');
+    await _persistTokens(
+      access: accessToken,
+      refresh: refreshToken,
+      userId: uid,
+      email: claims['email'] ?? '',
+    );
+    // Mark an in-flight password reset so a restart resumes the reset
+    // screen instead of dropping the user into the app.
+    await _kvSet?.call('pw_reset_pending', '1');
+    return true;
   }
 
   /// Parses tokens out of a GoTrue response body, caches the session and
@@ -171,7 +242,7 @@ class SupabaseAuthService implements AuthService {
     // (5xx, rate limits, offline bodies) MUST NOT wipe the stored tokens:
     // that produced a "logged-in app with empty JWT" state.
     try {
-      final r = await _client.post(
+      final r = await _post(
         Uri.parse('$_base/auth/v1/token?grant_type=refresh_token'),
         headers: _headers,
         body: jsonEncode({'refresh_token': refresh}),
@@ -217,7 +288,7 @@ class SupabaseAuthService implements AuthService {
     final refresh = await get('auth_refresh_token');
     if (refresh == null || refresh.isEmpty) return null;
     try {
-      final r = await _client.post(
+      final r = await _post(
         Uri.parse('$_base/auth/v1/token?grant_type=refresh_token'),
         headers: _headers,
         body: jsonEncode({'refresh_token': refresh}),
@@ -243,7 +314,7 @@ class SupabaseAuthService implements AuthService {
     final access = await _kvGet?.call('auth_access_token');
     try {
       if (access != null && access.isNotEmpty) {
-        await _client.post(
+        await _post(
           Uri.parse('$_base/auth/v1/logout?scope=global'),
           headers: {..._headers, 'Authorization': 'Bearer $access'},
         );
@@ -253,6 +324,7 @@ class SupabaseAuthService implements AuthService {
     }
     _session = null;
     await _clearTokens();
+    await _kvSet?.call('pw_reset_pending', '');
   }
 
   @override
@@ -263,7 +335,7 @@ class SupabaseAuthService implements AuthService {
           'Your session has expired. Sign in again.');
     }
     try {
-      final response = await _client.post(
+      final response = await _post(
         Uri.parse('$_base/rest/v1/rpc/delete_own_account'),
         headers: {..._headers, 'Authorization': 'Bearer $access'},
         body: '{}',
@@ -343,6 +415,15 @@ class SupabaseAuthService implements AuthService {
     if (low.contains('invalid login credentials') ||
         low.contains('invalid_credentials')) {
       return ('Email or password is wrong.', 'invalid_credentials');
+    }
+    if (low.contains('ownership_transfer_required')) {
+      // delete_own_account refuses while other members exist — the owner
+      // must hand the family to another adult first (migration 008 rule).
+      return (
+        'You are the family owner. Make another adult the owner first '
+        '(Family → their profile), then delete your account.',
+        'ownership_transfer_required'
+      );
     }
     if (low.contains('password should be') ||
         low.contains('weak_password') ||

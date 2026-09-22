@@ -41,6 +41,20 @@ class FakeAuthService implements AuthService {
   Future<bool> sendPasswordReset(String email) async => true;
 
   @override
+  Future<AuthResult> updatePassword(String newPassword) async {
+    if (_session == null) {
+      return const AuthResult.failure('No recovery session.', code: 'reset_expired');
+    }
+    return const AuthResult.success();
+  }
+
+  @override
+  Future<bool> adoptRecoverySession(String accessToken, String refreshToken) async {
+    _session = AuthSession(userId: 'test-user-1', email: 'reset@example.com');
+    return true;
+  }
+
+  @override
   Future<void> signOut() async {
     _session = null;
   }

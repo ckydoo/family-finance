@@ -1,14 +1,18 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/money/money.dart';
 import '../../core/state/app_state.dart';
 import '../../core/sync/avatar_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ui.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 /// First-run setup: identity/family → invitations → access review.
 class FamilySetupScreen extends StatefulWidget {
@@ -42,6 +46,34 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     'teen_transactions': true,
     'teen_budget': true,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    // Deep-linked invite (QR / WhatsApp link): prefill the join code so the
+    // new member only adds their name.
+    final db = widget.state.db;
+    if (db != null) {
+      unawaited(() async {
+        final c = await db.kvGet('pending_invite_code');
+        if (c != null && c.isNotEmpty && mounted) {
+          setState(() {
+            _joinCode.text = c;
+            _step = _Step.join;
+          });
+        }
+      }());
+    }
+    // Reinstall reconciliation (#8): the token alone may already answer
+    // "this device belongs to the Moyo family" — skip setup entirely.
+    final sync = widget.state.sync;
+    if (sync != null && !widget.state.hasSpace) {
+      unawaited(() async {
+        final ok = await sync.restoreFamily();
+        if (ok && mounted) setState(() {});
+      }());
+    }
+  }
 
   @override
   void dispose() {
@@ -171,29 +203,38 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   }
 
   String get _code => widget.state.inviteCode ?? '';
-  String get _inviteText =>
-      'Join ${_familyName.text.trim()} on Mhuri Hub with invite code $_code. '
-      'Suggested role: $_inviteRole.';
+
+  String _roleName(AppLocalizations l, String r) => switch (r) {
+        'Parent' => l.roleParent,
+        'Adult' => l.roleAdult,
+        'Teen' => l.roleTeen,
+        'Child' => l.roleChild,
+        _ => l.roleViewer,
+      };
+
+  String _inviteText(AppLocalizations l) => l.setupInviteText(
+      _familyName.text.trim(), _code, _roleName(l, _inviteRole));
 
   Future<void> _copyInvite() async {
     await Clipboard.setData(ClipboardData(text: _inviteText));
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Invite copied.')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context)!.setupInviteCopied)));
   }
 
   Future<void> _emailInvite() async {
+    final l = AppLocalizations.of(context)!;
     final email = _inviteEmail.text.trim();
     if (!RegExp(r'^\S+@\S+\.\S+').hasMatch(email)) {
-      setState(() => _error = 'Enter a valid email address.');
+      setState(() => _error = l.setupBadEmail);
       return;
     }
     final uri = Uri(
       scheme: 'mailto',
       path: email,
       queryParameters: {
-        'subject': 'Join ${_familyName.text.trim()} on Mhuri Hub',
-        'body': _inviteText,
+        'subject': l.setupInviteSubject(_familyName.text.trim()),
+        'body': _inviteText(l),
       },
     );
     if (!await launchUrl(uri)) await _copyInvite();
@@ -208,8 +249,32 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     await widget.state.completeOnboarding();
   }
 
+  /// Unsaved-changes guard: warn only when the user actually typed
+  /// something (standing UX rule) — leaving mid-setup with empty fields
+  /// stays friction-free.
+  Future<bool> _confirmLeave() async {
+    if (_personName.text.trim().isEmpty && _familyName.text.trim().isEmpty) {
+      return true;
+    }
+    final l = AppLocalizations.of(context)!;
+    final leave = await confirmDialog(
+      context,
+      title: l.discardChangesTitle,
+      body: l.discardChangesBody,
+      confirmLabel: l.leave,
+    );
+    return leave;
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final leave = await _confirmLeave();
+          if (leave && mounted) Navigator.of(context).pop();
+        },
+        child: Scaffold(
         backgroundColor: context.bg,
         body: SafeArea(
           child: Column(children: [
@@ -224,6 +289,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             ),
           ]),
         ),
+      ),
       );
 
   Widget _progress() => Padding(
@@ -243,7 +309,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             if (i < 3) const SizedBox(width: 6),
           ],
           const SizedBox(width: 14),
-          Text('Step $_stepNumber of 3',
+          Text(AppLocalizations.of(context)!.setupStepOf(_stepNumber),
               style: TextStyle(
                   color: context.inkSoft,
                   fontWeight: FontWeight.w700,
@@ -352,24 +418,26 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                   fontWeight: FontWeight.w800)),
         ),
         Center(
-            child: Text('One family. One plan.',
+            child: Text(AppLocalizations.of(context)!.setupTagline,
                 style: TextStyle(color: context.inkSoft, fontSize: 14))),
         Center(
           child: TextButton(
             onPressed: _pickPhoto,
-            child: const Text('Add profile photo (optional)'),
+            child: Text(AppLocalizations.of(context)!.setupPhotoOptional),
           ),
         ),
         const SizedBox(height: 22),
-        _title('Create your family', 'Tell us what your family calls you.'),
+        _title(AppLocalizations.of(context)!.setupCreateTitle,
+            AppLocalizations.of(context)!.setupCreateSub),
         const SizedBox(height: 16),
-        _field(_personName, 'Preferred name'),
+        _field(_personName, AppLocalizations.of(context)!.setupPreferredName),
         const SizedBox(height: 12),
-        _field(_familyName, 'Family name (for example, The Moyos)'),
+        _field(_familyName, AppLocalizations.of(context)!.setupFamilyNameField),
         const SizedBox(height: 12),
         DropdownButtonFormField<Currency>(
           initialValue: _currency,
-          decoration: const InputDecoration(labelText: 'Primary currency'),
+          decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.setupCurrency),
           items: [
             for (final currency in Currency.values)
               DropdownMenuItem(value: currency, child: Text(currency.long)),
@@ -384,29 +452,33 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
               _step = _Step.join;
               _error = null;
             }),
-            child: const Text('I have an invite code'),
+            child: Text(AppLocalizations.of(context)!.setupHaveCode),
           ),
         ),
-      ], _primary('Create family  →', _busy ? null : _create));
+      ], _primary(AppLocalizations.of(context)!.createFamilyCta,
+          _busy ? null : _create));
 
   Widget _joinStep() => _page([
-        _title('Join your family', 'Use the code shared by a family member.'),
+        _title(AppLocalizations.of(context)!.setupJoinTitle,
+            AppLocalizations.of(context)!.setupJoinSub),
         const SizedBox(height: 20),
         _field(_personName, 'Preferred name'),
         const SizedBox(height: 12),
-        _field(_joinCode, 'Invite code'),
+        _field(_joinCode, AppLocalizations.of(context)!.joinCodeLabel),
         if (_error != null) _errorBox(),
         TextButton.icon(
           onPressed: () => setState(() => _step = _Step.create),
           icon: const Icon(Icons.arrow_back),
-          label: const Text('Create a family instead'),
+          label: Text(AppLocalizations.of(context)!.setupCreateInstead),
         ),
-      ], _primary('Join family  →', _busy ? null : _join));
+      ], _primary(AppLocalizations.of(context)!.joinFamilyCta,
+          _busy ? null : _join));
 
   Widget _inviteStep() => _page(
           [
             _title(
-                'Invite members', 'Bring everyone into the same family space.'),
+                AppLocalizations.of(context)!.setupInviteTitle,
+                AppLocalizations.of(context)!.setupInviteSub),
             const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.all(14),
@@ -425,26 +497,34 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 TextButton.icon(
                     onPressed: _copyInvite,
                     icon: const Icon(Icons.copy, size: 18),
-                    label: const Text('Copy')),
+                    label: Text(AppLocalizations.of(context)!.setupCopy)),
               ]),
             ),
             const SizedBox(height: 16),
-            CustomPaint(
-              painter: _DashedPainter(color: context.inkSoft),
-              child: SizedBox(
-                height: 140,
-                width: double.infinity,
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.qr_code_2, size: 72, color: context.inkSoft),
-                      Text('Scan to join',
-                          style: TextStyle(color: context.inkSoft)),
-                    ]),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.hairline),
               ),
+              child: _code.isEmpty
+                  ? SizedBox(
+                      height: 140,
+                      child: Center(
+                        child: Text(
+                            AppLocalizations.of(context)!.setupScanToJoin,
+                            style: TextStyle(color: context.inkSoft)),
+                      ),
+                    )
+                  : QrImageView(
+                      data: 'mhuri://join?c=$_code',
+                      size: 140,
+                      backgroundColor: Colors.white,
+                    ),
             ),
             const SizedBox(height: 18),
-            _field(_inviteEmail, 'Email address',
+            _field(_inviteEmail, AppLocalizations.of(context)!.emailLabel,
                 keyboardType: TextInputType.emailAddress),
             const SizedBox(height: 10),
             Wrap(spacing: 7, runSpacing: 7, children: [
@@ -456,40 +536,41 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 'Viewer'
               ])
                 ChoiceChip(
-                  label: Text(role),
+                  label: Text(_roleName(AppLocalizations.of(context)!, role)),
                   selected: _inviteRole == role,
                   onSelected: (_) => setState(() => _inviteRole = role),
                 ),
             ]),
             const SizedBox(height: 6),
             Text(
-              'The role is included as a suggestion. Confirm it in Family settings after they join.',
+              AppLocalizations.of(context)!.setupRoleSuggestion,
               style: TextStyle(color: context.inkSoft, fontSize: 11.5),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: _emailInvite,
               icon: const Icon(Icons.mail_outline),
-              label: const Text('Send invite'),
+              label: Text(AppLocalizations.of(context)!.setupSendInvite),
             ),
             if (_error != null) _errorBox(),
           ],
           Column(children: [
-            _primary(
-                'Continue  →', () => setState(() => _step = _Step.permissions)),
+            _primary(AppLocalizations.of(context)!.setupContinue,
+                () => setState(() => _step = _Step.permissions)),
             TextButton(
                 onPressed: () => setState(() => _step = _Step.permissions),
-                child: const Text('Invite later')),
+                child: Text(AppLocalizations.of(context)!.setupInviteLater)),
           ]));
 
   Widget _permissionsStep() => _page([
-        _title('Set permissions',
-            'Recommended access is ready. You can change it later in Family settings.'),
+        _title(AppLocalizations.of(context)!.setupPermsTitle,
+            AppLocalizations.of(context)!.setupPermsSub),
         const SizedBox(height: 18),
-        _rolePermissions('Child', 'child'),
+        _rolePermissions(AppLocalizations.of(context)!.roleChild, 'child'),
         const SizedBox(height: 12),
-        _rolePermissions('Teen', 'teen'),
-      ], _primary('Finish setup', _busy ? null : _finish));
+        _rolePermissions(AppLocalizations.of(context)!.roleTeen, 'teen'),
+      ], _primary(AppLocalizations.of(context)!.setupFinish,
+          _busy ? null : _finish));
 
   Widget _rolePermissions(String title, String prefix) => Container(
         decoration: BoxDecoration(
@@ -500,9 +581,12 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           ListTile(
               title: Text(title,
                   style: const TextStyle(fontWeight: FontWeight.w800))),
-          _toggle(prefix, 'wallet', 'View own wallet'),
-          _toggle(prefix, 'transactions', 'Log transactions'),
-          _toggle(prefix, 'budget', 'View family budget'),
+          _toggle(prefix, 'wallet',
+              AppLocalizations.of(context)!.setupPermWallet),
+          _toggle(prefix, 'transactions',
+              AppLocalizations.of(context)!.setupPermTx),
+          _toggle(prefix, 'budget',
+              AppLocalizations.of(context)!.setupPermBudget),
         ]),
       );
 
@@ -525,27 +609,4 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       );
 }
 
-class _DashedPainter extends CustomPainter {
-  const _DashedPainter({required this.color});
-  final Color color;
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-          Offset.zero & size, const Radius.circular(16)));
-    for (final metric in path.computeMetrics()) {
-      for (double p = 0; p < metric.length; p += 14) {
-        canvas.drawPath(metric.extractPath(p, p + 8), paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedPainter oldDelegate) =>
-      oldDelegate.color != color;
-}

@@ -15,6 +15,7 @@ import 'core/theme/app_theme.dart';
 import 'core/widgets/motion.dart';
 import 'core/money/money.dart';
 import 'features/auth/login_screen.dart';
+import 'features/auth/reset_password_screen.dart';
 import 'features/kids/kids_mode.dart';
 import 'features/onboarding/family_setup_screen.dart';
 import 'features/shell/adult_shell.dart';
@@ -83,6 +84,8 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         state: _state,
         kvGet: db.kvGet,
         kvSet: db.kvSet,
+        // 401 mid-session → force one token refresh, retry once (#8).
+        retryAuth: () async => await _auth.refreshAccessToken() != null,
       );
       // M7: pluggable error reporting — point at Sentry/Crashlytics later
       // (optional SENTRY_DSN env stays post-8).
@@ -115,11 +118,93 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
 
   @override
   void dispose() {
+    _linkSub?.cancel();
     _engine?.dispose();
     _state.dispose();
     _auth.dispose();
     super.dispose();
   }
+
+  // ── password recovery deep links ──────────────────────────────────────────
+
+  Future<void> _initRecoveryLinks() async {
+    try {
+      final links = AppLinks();
+      _linkSub = links.uriLinkStream.listen(_onRecoveryLink);
+      final initial = await links.getInitialLink();
+      if (initial != null) _onRecoveryLink(initial);
+    } catch (_) {
+      // Deep links unavailable (unsupported platform/plugin) — password
+      // recovery still works through the ordinary sign-in path.
+    }
+  }
+
+  Future<void> _onRecoveryLink(Uri uri) async {
+    // Join links (QR / WhatsApp share): mhuri://join?c=MHRI-XXXXXX
+    final inviteCode = parseInviteCode(uri.toString());
+    if (inviteCode != null) {
+      final db = widget.db;
+      if (db != null) await db.kvSet('pending_invite_code', inviteCode);
+      final ctx = _navKey.currentContext;
+      if (ctx != null && mounted) {
+        if (!_auth.isLoggedIn || !_state.onboardingComplete) {
+          // Login / family setup will pick the code up from kv.
+          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+            content:
+                Text(AppLocalizations.of(ctx)!.inviteLinkReady(inviteCode)),
+            behavior: SnackBarBehavior.floating,
+          ));
+        } else {
+          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.of(ctx)!.inviteAlreadyInFamily),
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+      }
+      return;
+    }
+
+    final link = parseRecoveryLink(uri.toString());
+    if (!link.isRecovery) return; // some other deep link — not ours
+    final ctx = _navKey.currentContext;
+    if (ctx == null || !mounted) return;
+    final navigator = Navigator.of(ctx);
+    if (link.kind == RecoveryKind.tokens) {
+      final ok = await _auth.adoptRecoverySession(
+          link.accessToken!, link.refreshToken!);
+      if (!mounted) return;
+      // A broken token still gets a screen — the expired state with a
+      // "send a new link" action, never a dead end.
+      navigator.push(MaterialPageRoute<void>(
+        builder: (_) => ok
+            ? ResetPasswordScreen(auth: _auth, email: _auth.session?.email)
+            : _ResetExpired(_auth),
+      ));
+    } else {
+      // PKCE-style (?code=) link — cannot be exchanged by this client.
+      navigator.push(
+          MaterialPageRoute<void>(builder: (_) => _ResetExpired(_auth)));
+    }
+  }
+
+  /// Closed the app between the reset link and picking a new password?
+  /// Resume straight into the reset screen instead of dropping the user in.
+  Future<void> _checkPendingReset() async {
+    final db = widget.db;
+    if (db == null) return;
+    try {
+      final flag = await db.kvGet('pw_reset_pending');
+      final email = await db.kvGet('auth_email');
+      if ((flag ?? '').isNotEmpty && _auth.isLoggedIn) {
+        if (!mounted) return;
+        setState(() {
+          _resumeReset = true;
+          _pendingResetEmail = (email ?? '').isEmpty ? null : email;
+        });
+      }
+    } catch (_) {}
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +252,12 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 // launches go straight in via the restored session.
                 if (!_auth.isLoggedIn) {
                   return LoginScreen(auth: _auth);
+                }
+                // Closed the app mid-recovery? Finish choosing the new
+                // password before anything else.
+                if (_resumeReset) {
+                  return ResetPasswordScreen(
+                      auth: _auth, email: _pendingResetEmail);
                 }
                 // First-run family setup (skip writes kv): create a family
                 // or join one — that IS the onboarding.
@@ -341,5 +432,17 @@ class RoleGate extends StatelessWidget {
       Role.teen => const TeenZone(),
       _ => const AdultShell(),
     };
+  }
+}
+
+/// The reset link is dead (single-use already used, expired, or PKCE-style):
+/// show the honest expired state with a "send a new link" action.
+class _ResetExpired extends StatelessWidget {
+  const _ResetExpired();
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AppScope.of(context).auth;
+    return ResetPasswordScreen(auth: auth, startExpired: true);
   }
 }

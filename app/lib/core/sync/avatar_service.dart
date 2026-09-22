@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
@@ -36,16 +37,21 @@ class AvatarUploader {
       throw const AvatarException(
           'Your session has expired — sign in again.');
     }
-    final r = await _client.post(
-      Uri.parse('$_base/storage/v1/object/avatars/$userId/avatar.$ext'),
-      headers: {
-        'apikey': _anonKey,
-        'Authorization': 'Bearer $token',
-        'x-upsert': 'true',
-        'Content-Type': ext == 'png' ? 'image/png' : 'image/jpeg',
-      },
-      body: bytes,
-    );
+    final r = await _client
+        .post(
+          Uri.parse('$_base/storage/v1/object/avatars/$userId/avatar.$ext'),
+          headers: {
+            'apikey': _anonKey,
+            'Authorization': 'Bearer $token',
+            'x-upsert': 'true',
+            'Content-Type': ext == 'png' ? 'image/png' : 'image/jpeg',
+          },
+          body: bytes,
+        )
+        .timeout(const Duration(seconds: 60), onTimeout: () {
+      throw const AvatarException(
+          'Upload timed out — check your connection and try again.');
+    });
     if (r.statusCode < 200 || r.statusCode >= 300) {
       if (r.statusCode == 401 || r.statusCode == 403) {
         throw const AvatarException(

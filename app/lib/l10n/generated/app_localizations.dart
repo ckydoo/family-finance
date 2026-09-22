@@ -2726,4 +2726,391 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       'an issue with the localizations generation tool. Please file an issue '
       'on GitHub with a reproducible sample app and the gen-l10n configuration '
       'that was used.');
+
+  /// No description provided for @syncDataTitle.
+  String get syncDataTitle;
+
+  /// No description provided for @syncStateSyncing.
+  String get syncStateSyncing;
+
+  /// No description provided for @syncStateError.
+  String get syncStateError;
+
+  /// No description provided for @syncStateOffline.
+  String get syncStateOffline;
+
+  /// No description provided for @syncStateNeedsSignIn.
+  String get syncStateNeedsSignIn;
+
+  /// No description provided for @syncStateSaved.
+  String get syncStateSaved;
+
+  /// No description provided for @syncNowBtn.
+  String get syncNowBtn;
+
+  /// No description provided for @syncLastSync.
+  String get syncLastSync;
+
+  /// No description provided for @syncNever.
+  String get syncNever;
+
+  /// No description provided for @syncPendingLabel.
+  String get syncPendingLabel;
+
+  /// No description provided for @syncUpToDate.
+  String get syncUpToDate;
+
+  /// No description provided for @syncErrorLabel.
+  String get syncErrorLabel;
+
+  /// No description provided for @syncWhereTitle.
+  String get syncWhereTitle;
+
+  /// No description provided for @syncConnectedTo.
+  String get syncConnectedTo;
+
+  /// No description provided for @syncNotConnected.
+  String get syncNotConnected;
+
+  /// No description provided for @syncBackupNote.
+  String get syncBackupNote;
+
+  /// No description provided for @previewExit.
+  String get previewExit;
+
+  /// No description provided for @previewBanner.
+  String previewBanner(Object name);
+
+  /// No description provided for @resetTitle.
+  String get resetTitle;
+
+  /// No description provided for @resetSubtitle.
+  String get resetSubtitle;
+
+  /// No description provided for @resetNewLabel.
+  String get resetNewLabel;
+
+  /// No description provided for @resetConfirmLabel.
+  String get resetConfirmLabel;
+
+  /// No description provided for @resetMismatch.
+  String get resetMismatch;
+
+  /// No description provided for @resetRuleLength.
+  String get resetRuleLength;
+
+  /// No description provided for @resetRuleMix.
+  String get resetRuleMix;
+
+  /// No description provided for @resetRuleHint.
+  String get resetRuleHint;
+
+  /// No description provided for @resetCta.
+  String get resetCta;
+
+  /// No description provided for @resetSuccess.
+  String get resetSuccess;
+
+  /// No description provided for @resetShow.
+  String get resetShow;
+
+  /// No description provided for @resetExpiredTitle.
+  String get resetExpiredTitle;
+
+  /// No description provided for @resetExpiredBody.
+  String get resetExpiredBody;
+
+  /// No description provided for @resetSendNew.
+  String get resetSendNew;
+
+  /// No description provided for @listDelete.
+  String get listDelete;
+
+  /// No description provided for @listDeleted.
+  String listDeleted(Object name);
+
+  /// No description provided for @roleAdult.
+  String get roleAdult;
+
+  /// No description provided for @roleTeen.
+  String get roleTeen;
+
+  /// No description provided for @roleViewer.
+  String get roleViewer;
+
+  /// No description provided for @inviteCode.
+  String get inviteCode;
+
+  /// No description provided for @inviteTitle.
+  String get inviteTitle;
+
+  /// No description provided for @inviteHowTo.
+  String get inviteHowTo;
+
+  /// No description provided for @inviteNew.
+  String get inviteNew;
+
+  /// No description provided for @inviteEmailOptional.
+  String get inviteEmailOptional;
+
+  /// No description provided for @inviteCreate.
+  String get inviteCreate;
+
+  /// No description provided for @inviteCreated.
+  String get inviteCreated;
+
+  /// No description provided for @inviteScanHint.
+  String get inviteScanHint;
+
+  /// No description provided for @inviteShare.
+  String get inviteShare;
+
+  /// No description provided for @inviteShareText.
+  String get inviteShareText;
+
+  /// No description provided for @invitePending.
+  String get invitePending;
+
+  /// No description provided for @inviteNone.
+  String get inviteNone;
+
+  /// No description provided for @inviteHistory.
+  String get inviteHistory;
+
+  /// No description provided for @inviteRevoke.
+  String get inviteRevoke;
+
+  /// No description provided for @inviteFailed.
+  String get inviteFailed;
+
+  /// No description provided for @inviteTooMany.
+  String get inviteTooMany;
+
+  /// No description provided for @inviteOwnerOnly.
+  String get inviteOwnerOnly;
+
+  /// No description provided for @inviteAlreadyInFamily.
+  String get inviteAlreadyInFamily;
+
+  /// No description provided for @makeOwner.
+  String get makeOwner;
+
+  /// No description provided for @makeOwnerFailed.
+  String get makeOwnerFailed;
+
+  /// No description provided for @roleParent.
+  String get roleParent;
+
+  /// No description provided for @roleChild.
+  String get roleChild;
+
+  /// No description provided for @inviteAcceptedLabel.
+  String inviteAcceptedLabel(Object code, Object role);
+
+  /// No description provided for @makeOwnerBody.
+  String makeOwnerBody(Object name);
+
+  /// No description provided for @makeOwnerDone.
+  String makeOwnerDone(Object name);
+
+  /// No description provided for @inviteRevokeBody.
+  String inviteRevokeBody(Object code);
+
+  /// No description provided for @inviteLinkReady.
+  String inviteLinkReady(Object code);
+
+  /// No description provided for @syncProblemsTitle.
+  String get syncProblemsTitle;
+
+  /// No description provided for @syncProblemsBody.
+  String get syncProblemsBody;
+
+  /// No description provided for @syncRetryThis.
+  String get syncRetryThis;
+
+  /// No description provided for @syncDiscardThis.
+  String get syncDiscardThis;
+
+  /// No description provided for @syncDiscardTitle.
+  String get syncDiscardTitle;
+
+  /// No description provided for @syncKindTx.
+  String get syncKindTx;
+
+  /// No description provided for @syncKindEnvelope.
+  String get syncKindEnvelope;
+
+  /// No description provided for @syncKindGoal.
+  String get syncKindGoal;
+
+  /// No description provided for @syncKindItem.
+  String get syncKindItem;
+
+  /// No description provided for @syncKindRequest.
+  String get syncKindRequest;
+
+  /// No description provided for @syncKindOther.
+  String get syncKindOther;
+
+  /// No description provided for @syncDiscardBody.
+  String syncDiscardBody(Object what);
+
+  /// No description provided for @syncTries.
+  String syncTries(Object tries);
+
+  /// No description provided for @setupInviteCopied.
+  String get setupInviteCopied;
+
+  /// No description provided for @setupBadEmail.
+  String get setupBadEmail;
+
+  /// No description provided for @setupTagline.
+  String get setupTagline;
+
+  /// No description provided for @setupPhotoOptional.
+  String get setupPhotoOptional;
+
+  /// No description provided for @setupHaveCode.
+  String get setupHaveCode;
+
+  /// No description provided for @setupCreateInstead.
+  String get setupCreateInstead;
+
+  /// No description provided for @setupCopy.
+  String get setupCopy;
+
+  /// No description provided for @setupScanToJoin.
+  String get setupScanToJoin;
+
+  /// No description provided for @setupCreateTitle.
+  String get setupCreateTitle;
+
+  /// No description provided for @setupCreateSub.
+  String get setupCreateSub;
+
+  /// No description provided for @setupPreferredName.
+  String get setupPreferredName;
+
+  /// No description provided for @setupFamilyNameField.
+  String get setupFamilyNameField;
+
+  /// No description provided for @setupCurrency.
+  String get setupCurrency;
+
+  /// No description provided for @setupJoinTitle.
+  String get setupJoinTitle;
+
+  /// No description provided for @setupJoinSub.
+  String get setupJoinSub;
+
+  /// No description provided for @setupInviteTitle.
+  String get setupInviteTitle;
+
+  /// No description provided for @setupInviteSub.
+  String get setupInviteSub;
+
+  /// No description provided for @setupRoleSuggestion.
+  String get setupRoleSuggestion;
+
+  /// No description provided for @setupSendInvite.
+  String get setupSendInvite;
+
+  /// No description provided for @setupContinue.
+  String get setupContinue;
+
+  /// No description provided for @setupInviteLater.
+  String get setupInviteLater;
+
+  /// No description provided for @setupPermsTitle.
+  String get setupPermsTitle;
+
+  /// No description provided for @setupPermsSub.
+  String get setupPermsSub;
+
+  /// No description provided for @setupPermWallet.
+  String get setupPermWallet;
+
+  /// No description provided for @setupPermTx.
+  String get setupPermTx;
+
+  /// No description provided for @setupPermBudget.
+  String get setupPermBudget;
+
+  /// No description provided for @setupFinish.
+  String get setupFinish;
+
+  /// No description provided for @deleteWhatTitle.
+  String get deleteWhatTitle;
+
+  /// No description provided for @deleteWhatOwner.
+  String get deleteWhatOwner;
+
+  /// No description provided for @deleteWhatMember.
+  String get deleteWhatMember;
+
+  /// No description provided for @deleteWhatSessions.
+  String get deleteWhatSessions;
+
+  /// No description provided for @deleteStepLeave.
+  String get deleteStepLeave;
+
+  /// No description provided for @deleteStepAnonymize.
+  String get deleteStepAnonymize;
+
+  /// No description provided for @deleteStepSessions.
+  String get deleteStepSessions;
+
+  /// No description provided for @deleteStepIdentity.
+  String get deleteStepIdentity;
+
+  /// No description provided for @setupInviteText.
+  String setupInviteText(Object family, Object code, Object role);
+
+  /// No description provided for @setupInviteSubject.
+  String setupInviteSubject(Object family);
+
+  /// No description provided for @setupStepOf.
+  String setupStepOf(Object n);
+
+  /// No description provided for @kidsGoalSaved.
+  String kidsGoalSaved(Object goal, Object pct);
+
+  /// No description provided for @kidsHi.
+  String kidsHi(Object name);
+
+  /// No description provided for @kidsWishItem.
+  String kidsWishItem(Object amount);
+
+  /// No description provided for @loginSentCode.
+  String loginSentCode(Object phone);
+
+  /// No description provided for @recSkipped.
+  String recSkipped(Object date);
+
+  /// No description provided for @safeToSpend.
+  String safeToSpend(Object amount);
+
+  /// No description provided for @scheduledOn.
+  String scheduledOn(Object from, Object to);
+
+  /// No description provided for @setCurrencySub.
+  String setCurrencySub(Object rate);
+
+  /// No description provided for @syncPill.
+  String syncPill(Object count);
+
+  /// No description provided for @teenSplitHint.
+  String teenSplitHint(Object amount);
+
+  /// No description provided for @discardChangesTitle.
+  String get discardChangesTitle;
+
+  /// No description provided for @discardChangesBody.
+  String get discardChangesBody;
+
+  /// No description provided for @stay.
+  String get stay;
+
+  /// No description provided for @leave.
+  String get leave;
 }

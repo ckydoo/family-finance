@@ -1028,7 +1028,10 @@ class AppState extends ChangeNotifier {
         for (final row in rows) {
           final i = adapter.decode(row) as ListItem;
           items.removeWhere((x) => x.id == i.id);
-          items.insert(0, i);
+          if (i.deletedAt == null) {
+            // Tombstones stay out of memory — they were removed above.
+            items.insert(0, i);
+          }
           changed = true;
         }
       case 'kid_request':
@@ -1123,9 +1126,78 @@ class AppState extends ChangeNotifier {
   }
 
   void switchUser(Member m) {
+    // "Preview as…", not impersonation: the switch is labelled in the UI,
+    // a banner on Home always shows who is being previewed, and it resets
+    // on restart (never persisted). The real signed-in identity stays
+    // [_realUserId] so [exitPreview] always lands back on it.
+    _realUserId ??= _user.id;
+    _previewId = m.id;
     _user = m;
     notifyListeners();
   }
+
+  String? _realUserId;
+  String? _previewId;
+
+  /// True while the UI is previewing a member other than the signed-in user.
+  bool get isPreviewing {
+    final real = _realUserId ?? _user.id;
+    return _previewId != null && _previewId != real;
+  }
+
+  /// Leaves "Preview as…" mode and restores the signed-in member.
+  void exitPreview() {
+    if (!isPreviewing) return;
+    final me = members.firstWhere(
+      (m) => m.id == _realUserId,
+      orElse: () => _user,
+    );
+    _user = me;
+    _previewId = me.id;
+    notifyListeners();
+  }
+
+  /// Host of the configured sync endpoint (for the Sync & data screen).
+  String? get syncHost {
+    final u = env.supabaseUrl;
+    if (u == null || u.isEmpty) return null;
+    return Uri.tryParse(u)?.host;
+  }
+
+  /// Restore-after-reinstall: the engine recovered this device's family
+  /// from the auth token — the setup screen yields to the shell.
+  void markOnboardingRestored() {
+    onboardingComplete = true;
+    notifyListeners();
+  }
+
+  // ── Role switches (owner-controlled, enforced by RLS — migration 011) ──────
+
+  /// Mirror of family_space.settings -> role_permissions. Absent keys behave
+  /// exactly like the server defaults, so UI and RLS never disagree.
+  Map<String, bool> _rolePerms = {};
+
+  static const Map<String, bool> _permDefaults = {
+    'child_wallet': true,
+    'child_transactions': false,
+    'child_budget': true,
+    'teen_wallet': true,
+    'teen_transactions': true,
+    'teen_budget': true,
+  };
+
+  Future<void> applyRolePermissions(Map<String, bool> perms) async {
+    _rolePerms = perms;
+    notifyListeners();
+  }
+
+  bool perm(String key) =>
+      _rolePerms[key] ?? _permDefaults[key] ?? true;
+
+  bool get kidCanTransact => perm('child_transactions');
+  bool get teenCanTransact => perm('teen_transactions');
+  bool get kidCanSeeBudget => perm('child_budget');
+  bool get teenCanSeeBudget => perm('teen_budget');
 
   void toggleDisplayCurrency() {
     displayCurrency = displayCurrency.other;
@@ -1425,6 +1497,18 @@ class AppState extends ChangeNotifier {
     items.insert(0, i);
     _persistItem(i);
     _queue('list_item', i);
+    pendingOps++;
+    notifyListeners();
+  }
+
+  /// Removes an item everywhere: tombstone locally + sync flag — other
+  /// devices remove their copy when the tombstone arrives. Never a hard
+  /// delete (those cannot sync).
+  void deleteItem(ListItem item) {
+    item.deletedAt = DateTime.now();
+    items.removeWhere((x) => x.id == item.id);
+    _persistItem(item); // kept locally with the tombstone for the push
+    _queue('list_item', item);
     pendingOps++;
     notifyListeners();
   }

@@ -14,7 +14,8 @@ shared across devices. There is no demo mode.
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.19+ → check with `flutter doctor`
 - A phone with USB debugging enabled (**Android is easiest**) *or* an Android emulator / iOS simulator
-- A Supabase project with the backend installed (see `backend/README.md` + run migrations `001`–`006`)
+- A Supabase project with the backend installed (see `backend/README.md` + run the migration chain `000`–`008` in order; on an existing project that already ran 001–006, just run `007`–`012`)
+- In the Supabase dashboard: **Authentication → URL Configuration → Redirect URLs** → add `mhuri://reset-callback` (password recovery opens the app; without this the email link falls back to the Site URL)
 - Internet for the first `flutter pub get`
 
 ## 2. Connect it to your Supabase

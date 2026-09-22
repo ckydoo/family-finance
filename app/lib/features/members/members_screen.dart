@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/auth/auth_controller.dart';
 import '../../core/auth/pin_store.dart';
 import '../settings/settings_screen.dart';
+import '../settings/sync_screen.dart';
+import 'invite_screen.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/money/money.dart';
@@ -876,6 +879,70 @@ class MembersScreen extends StatelessWidget {
 
     final l = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
+
+    // Step 1 of 3 — what actually happens (owner and member differ; the
+    // server enforces the real rules, migration 008).
+    final proceed = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l.deleteWhatTitle,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              Text(
+                s.user.role == Role.owner
+                    ? l.deleteWhatOwner
+                    : l.deleteWhatMember,
+                style: TextStyle(
+                    fontSize: 13.5, color: context.ink, height: 1.45),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.logout, size: 16, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(l.deleteWhatSessions,
+                        style: TextStyle(
+                            fontSize: 12.5, color: context.inkSoft)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.danger,
+                    foregroundColor: context.onSolid,
+                  ),
+                  onPressed: () => Navigator.pop(sheetContext, true),
+                  child: Text(l.deletePermanently),
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(sheetContext, false),
+                  child: Text(MaterialLocalizations.of(sheetContext)
+                      .cancelButtonLabel),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ) ??
+        false;
+    if (!proceed) return;
+
     final typeCtrl = TextEditingController();
     // P5: destructive tier — typing DELETE + a button that stays disabled
     // until the exact word matches. Never pops on the happy path by accident.
@@ -930,7 +997,14 @@ class MembersScreen extends StatelessWidget {
         false;
 
     if (!confirmed) return;
-    final deleted = await auth.deleteAccount();
+    // Step 3 of 3 — progress while the server does the four phases; the
+    // dialog is not dismissible and pops with the outcome.
+    final deleted = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => _DeleteProgressDialog(auth: auth),
+        ) ??
+        false;
     if (deleted) {
       await s.clearLocalAccountData();
       return;
@@ -1407,7 +1481,23 @@ class MembersScreen extends StatelessWidget {
                   );
                 },
               ),
-              if (s.isLive && (s.inviteCode ?? '').isNotEmpty)
+              if (s.isLive && (s.inviteCode ?? '').isNotEmpty) ...[
+                ListTile(
+                  leading: Icon(Icons.person_add_alt, color: ctx.primary),
+                  title: Text(
+                    l.inviteTitle,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: ctx.ink),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const InviteScreen(),
+                    ));
+                  },
+                ),
                 ListTile(
                   leading: Icon(Icons.link, color: ctx.primary),
                   title: Text(
@@ -1429,13 +1519,22 @@ class MembersScreen extends StatelessWidget {
                     );
                   },
                 ),
+              ],
               ListTile(
-                enabled: false,
-                leading: const Icon(Icons.cloud_outlined),
+                leading: Icon(Icons.cloud_sync_outlined, color: ctx.primary),
                 title: Text(
-                  l.backupComing,
-                  style: TextStyle(fontSize: 14, color: ctx.inkSoft),
+                  l.syncDataTitle,
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: ctx.ink),
                 ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => const SyncScreen(),
+                  ));
+                },
               ),
             ],
           ),
@@ -1463,8 +1562,10 @@ class _MemberRow extends StatelessWidget {
         color: context.card,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Row(
+      child: Column(
         children: [
+          Row(
+            children: [
           CircleAvatar(
             radius: 22,
             backgroundColor: _roleBg(m.role),
@@ -1539,6 +1640,132 @@ class _MemberRow extends StatelessWidget {
                 shape: const StadiumBorder(),
               ),
               child: Text(AppLocalizations.of(context)!.viewAs),
+            ),
+          ],
+          ),
+          // Owner handing the family over (server: roles swap, the family
+          // code moves, audit row — migration 010).
+          if (!isMe && s.user.role == Role.owner && m.role == Role.adult)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _makeOwner(context, s, m),
+                  icon: const Icon(Icons.workspace_premium, size: 18),
+                  label: Text(AppLocalizations.of(context)!.makeOwner),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _makeOwner(
+      BuildContext context, AppState s, Member m) async {
+    final l = AppLocalizations.of(context)!;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.makeOwner),
+        content: Text(l.makeOwnerBody(m.name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l.makeOwner)),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await s.sync?.transferOwnership(m.id);
+      await s.refresh();
+      navigator.popUntil((r) => r.isFirst);
+      messenger.showSnackBar(SnackBar(
+        content: Text(l.makeOwnerDone(m.name)),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(l.makeOwnerFailed),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+}
+
+
+/// Step 3 of account deletion: shows the four server phases while the RPC
+/// runs (not dismissible), marks them done on completion, pops with the
+/// outcome. The server performs all phases in one call — the list explains
+/// what is happening, it does not fake per-step timing.
+class _DeleteProgressDialog extends StatefulWidget {
+  const _DeleteProgressDialog({required this.auth});
+
+  final AuthController auth;
+
+  @override
+  State<_DeleteProgressDialog> createState() => _DeleteProgressDialogState();
+}
+
+class _DeleteProgressDialogState extends State<_DeleteProgressDialog> {
+  bool _done = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _run();
+  }
+
+  Future<void> _run() async {
+    final r = await widget.auth.deleteAccount();
+    if (!mounted) return;
+    setState(() => _done = true);
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (!mounted) return;
+    Navigator.of(context).pop(r.ok);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final steps = [
+      l.deleteStepLeave,
+      l.deleteStepAnonymize,
+      l.deleteStepSessions,
+      l.deleteStepIdentity,
+    ];
+    return AlertDialog(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final step in steps)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  if (_done)
+                    const Icon(Icons.check_circle,
+                        size: 18, color: Colors.green)
+                  else
+                    const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child:
+                            CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                      child: Text(step,
+                          style: const TextStyle(fontSize: 13.5))),
+                ],
+              ),
             ),
         ],
       ),

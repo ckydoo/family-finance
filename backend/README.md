@@ -13,10 +13,12 @@ Phase-1 backend per **PRODUCT_SPEC.md §8 (Data Model) + §9 (Architecture) + §
 
 1. Create a project at [supabase.com](https://supabase.com) (region `af-south-1`
    is closest to Zimbabwe).
-2. SQL Editor → paste `schema.sql` → **Run**. (Idempotency: run on a fresh
-   project; for an existing one, wrap sections in migrations instead.)
-3. Auth → Providers → **Phone** (OTP). Add Email as a fallback for the beta.
-4. Uncomment the `storage.buckets` insert at the bottom of `schema.sql`.
+2. SQL Editor → run the migration chain IN ORDER: `migrations/000_baseline.sql`,
+   then `001` … `008`. Each file is a single paste-and-run. (schema.sql is a
+   human-readable reference of the end state — do NOT run it against the
+   database.) CI applies the same chain to a clean Postgres on every push.
+3. Auth → Providers → **Email** (email + password; no phone OTP).
+4. Storage → the `avatars` bucket is created by migration 005.
 5. Copy the project URL + anon key into the Flutter app (see *Wiring* below).
 
 ## Design decisions (why it looks like this)
@@ -27,7 +29,7 @@ Phase-1 backend per **PRODUCT_SPEC.md §8 (Data Model) + §9 (Architecture) + §
 | Text + CHECK enums instead of native enums | Cheap, safe migrations as the model evolves in beta |
 | `space_role()` SECURITY DEFINER helper | Avoids recursive RLS policy scans on `membership` |
 | Soft delete (`transaction.deleted_at`) | 7-day trash + audit trail (spec §3.4) |
-| `activity_log` with `prev_hash`/`hash` | Tamper-evident family activity feed; app verifies chain on read |
+| `activity_log` with `prev_hash`/`hash` | Audit trail of family events (create/join/leave + money moves as they get wired). Columns exist for hash-chaining, but rows are appended, not yet chained or verified — do not claim tamper-evidence until that ships |
 | Kids see only their own rows (`tx_read`, `req_read`) | Privacy by role enforced **server-side**, not just hidden in UI (spec §10) |
 | `rate_snapshot(day, source)` | RBZ daily rate history; monthly reports snapshot month-end rates and never re-value (spec §5.3) |
 

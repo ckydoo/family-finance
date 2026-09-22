@@ -52,6 +52,47 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
               children: [
+                // ── Preview banner ("Preview as…") ──────────────────────────
+                if (s.isPreviewing)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFDF3DC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE8D39A)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.visibility,
+                              size: 16, color: Color(0xFF8A6D1F)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .previewBanner(u.name),
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF6B5518),
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => s.exitPreview(),
+                            child: Text(
+                              AppLocalizations.of(context)!.previewExit,
+                              style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF8A6D1F)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 // ── Header ──────────────────────────────────────────────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

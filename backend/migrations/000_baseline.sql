@@ -1,12 +1,13 @@
 -- ============================================================================
--- ⚠ SUPERSEDED — DO NOT RUN THIS FILE AGAINST A DATABASE.
--- The authoritative chain is backend/migrations/001…008, applied in order
--- (CI applies them to a clean Postgres on every push to prove it works).
--- This file is kept as a human-readable reference of the CURRENT end state;
--- parts of it (e.g. the old global profile_read policy, the old
--- delete_own_account) are intentionally out of date. Change migrations, then
--- mirror the change here.
+-- 000_baseline.sql — TABLE BASELINE as a migration (the missing "from zero").
+-- Extracted verbatim from schema.sql (Phase 1 DDL): tables, indexes, base RLS.
+-- Outdated pieces it still contains (global profile_read, old
+-- delete_own_account) are deliberately left and are REPLACED by the end of
+-- the chain (002 replaces the function; 008 replaces the policy + function),
+-- so the end state after 000→008 is the hardened one. CI proves this on
+-- every push by applying 000→N to a clean Postgres.
 -- ============================================================================
+-- Mhuri Money — Supabase / PostgreSQL schema (Phase 1)
 -- Mhuri Money — Supabase / PostgreSQL schema (Phase 1)
 -- Maps to PRODUCT_SPEC.md §8 (Data Model) and §10 (Security, Privacy).
 --
@@ -209,9 +210,7 @@ create table shopping_list (
   linked_envelope_id uuid references envelope(id) on delete set null,
   status text not null default 'active' check (status in ('active','done')),
   template_of uuid references shopping_list(id) on delete set null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),  -- 009: pull cursor
-  deleted_at timestamptz                           -- 009: tombstone
+  created_at timestamptz not null default now()
 );
 
 create table list_item (
@@ -225,7 +224,6 @@ create table list_item (
   assigned_to uuid references user_profile(id) on delete set null,
   state text not null default 'tobuy' check (state in ('tobuy','incart','done')),
   checked_out boolean not null default false,
-  deleted_at timestamptz,                          -- 009: tombstone
   created_at timestamptz not null default now()
 );
 
@@ -301,18 +299,10 @@ create table activity_log (
   detail jsonb not null default '{}'::jsonb,
   at timestamptz not null default now(),
   prev_hash text,
-  hash text not null  -- placeholder until real chaining ships (011 note)
+  hash text not null
 );
 
 create index on activity_log (space_id, at desc);
-
--- family_invite (010): unique role-bound invites; owner-only RLS.
--- join_invite refuses every dead-code reason with the same INVALID_CODE.
--- transfer_ownership moves membership.invite_code (the family code) with
--- the crown. role_perm() (011) lets RLS read family_space.settings ->
--- role_permissions so the onboarding switches are real policy; audit
--- triggers append tx.create / goal.contribute / request.approve /
--- request.decline to activity_log.
 
 -- ── updated_at trigger ──────────────────────────────────────────────────────
 

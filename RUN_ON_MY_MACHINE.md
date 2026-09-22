@@ -155,8 +155,10 @@ flutter run \
 
 **Verify:** login screen appears (not a seeded family). Sign up with a real
 email, create the family, record one transaction — then check Supabase →
-Table Editor: the row is in the `transaction` table. Migrations 001–006 must
-have run (004 = RLS, required for all pulls).
+Table Editor: the row is in the `transaction` table. The full migration chain
+(000–008) must have run on the project (004 = RLS, required for all pulls;
+008 = family-scoped profiles + deletion rules). CI applies 000→008 to a clean
+Postgres on every push, so a fresh project is guaranteed reproducible.
 
 **Upgrading a phone that had old data?** Uninstall first (or clear storage);
 if you can't, the first boot self-heals by wiping leftover local rows once

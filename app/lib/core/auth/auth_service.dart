@@ -59,6 +59,14 @@ abstract class AuthService {
   /// Sends a password-recovery email for an existing account.
   Future<bool> sendPasswordReset(String email);
 
+  /// Changes the signed-in user's password (recovery flow, after the app
+  /// adopted the session from the reset link).
+  Future<AuthResult> updatePassword(String newPassword);
+
+  /// Adopts a session received through a password-reset deep link
+  /// (implicit flow): persists the tokens and becomes signed in.
+  Future<bool> adoptRecoverySession(String accessToken, String refreshToken);
+
   /// Best-effort fresh access token for the sync layer (null when the
   /// session cannot be renewed — the caller must treat the user as signed
   /// out rather than sending an empty credential).

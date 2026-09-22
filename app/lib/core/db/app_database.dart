@@ -68,7 +68,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 4,
+        version: 5,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -175,7 +175,16 @@ class AppDatabase {
       currency TEXT NOT NULL,
       state TEXT NOT NULL,
       added_by TEXT NOT NULL,
-      checked_out INTEGER NOT NULL DEFAULT 0
+      checked_out INTEGER NOT NULL DEFAULT 0,
+      deleted_at TEXT
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS shopping_list (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      deleted_at TEXT
     )
     ''',
     '''
@@ -243,7 +252,8 @@ class AppDatabase {
   }
 
   /// Migrations. ALTERs are guarded — re-running is safe.
-  /// v2: sync columns + outbox · v3: recurring rules · v4: checkout guard.
+  /// v2: sync columns + outbox · v3: recurring rules · v4: checkout guard ·
+  /// v5: shopping-list header table + item tombstones.
   static Future<void> upgrade(Database d, int oldVersion) async {
     if (oldVersion >= 2 && oldVersion < 2) return;
     if (oldVersion < 2) {
@@ -269,6 +279,13 @@ class AppDatabase {
         // Column already exists — fine.
       }
     }
-    await createSchema(d); // outbox & recurring are CREATE IF NOT EXISTS
+    if (oldVersion < 5) {
+      try {
+        await d.execute('ALTER TABLE list_item ADD COLUMN deleted_at TEXT');
+      } catch (_) {
+        // Column already exists — fine.
+      }
+    }
+    await createSchema(d); // shopping_list & others are CREATE IF NOT EXISTS
   }
 }

@@ -6,6 +6,8 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/notifications/reminders.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import 'sync_screen.dart';
+import '../../core/widgets/ui.dart';
 
 /// Settings (spec §7 Settings: notifications J3, month start, data).
 class SettingsScreen extends StatelessWidget {
@@ -254,12 +256,21 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
-                enabled: false,
-                leading: const Icon(Icons.cloud_outlined, size: 20),
+                leading: const Icon(Icons.cloud_sync_outlined, size: 20),
                 title: Text(
-                  AppLocalizations.of(context)!.backupComing,
-                  style: TextStyle(fontSize: 13, color: context.inkSoft),
+                  AppLocalizations.of(context)!.syncDataTitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: context.ink,
+                  ),
                 ),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => const SyncScreen(),
+                  ));
+                },
               ),
             ],
           ),
@@ -268,24 +279,8 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _header(BuildContext context, IconData icon, String text) => Padding(
-        padding: const EdgeInsets.only(top: 16, bottom: 4),
-        child: Row(
-          children: [
-            Icon(icon, size: 15, color: context.primaryDark),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: context.inkSoft,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
-      );
+  Widget _header(BuildContext context, IconData icon, String text) =>
+      SectionHeader(text, icon: icon);
 
   Widget _hourDropdown(
           {required int value, required ValueChanged<int> onChanged}) =>

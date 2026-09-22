@@ -305,8 +305,10 @@ class TeenZone extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // ── Envelope peek (parent-enabled visibility, H1) ─────────
-            if (schoolFees != null) ...[
+            // ── Envelope peek (parent-enabled visibility, H1) — the owner's
+            // switch is enforced server-side by RLS (migration 011); this
+            // keeps the UI in agreement.
+            if (s.teenCanSeeBudget && schoolFees != null) ...[
               _PeekCard(e: schoolFees),
               const SizedBox(height: 12),
             ],

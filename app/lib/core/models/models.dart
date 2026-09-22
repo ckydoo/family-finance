@@ -234,6 +234,10 @@ class ListItem {
   bool checkedOut;
   final String addedById;
 
+  /// Tombstone: when set, the item is deleted everywhere (sync carries the
+  /// flag; devices remove their local copy on pull).
+  DateTime? deletedAt;
+
   ListItem({
     required this.id,
     required this.name,
@@ -242,7 +246,58 @@ class ListItem {
     required this.addedById,
     this.state = ItemState.tobuy,
     this.checkedOut = false,
+    this.deletedAt,
   });
+}
+
+/// The shopping-list header (server `shopping_list`). Devices only need to
+/// know which list exists — the id stamps every item push (list_id) and the
+/// name feeds the Lists screen title.
+class ShoppingListHeader {
+  final String id;
+  final String name;
+  final String status; // 'active' | 'done'
+  final DateTime? deletedAt;
+
+  const ShoppingListHeader({
+    required this.id,
+    required this.name,
+    this.status = 'active',
+    this.deletedAt,
+  });
+
+  bool get isLive => deletedAt == null && status == 'active';
+}
+
+/// A pending/accepted family invite (server `family_invite`, migration 010).
+/// Owner-managed: role-bound, expiring, revocable, single-use.
+class InviteInfo {
+  final String id;
+  final String code;
+  final String role; // adult | co_parent | teen | kid | viewer
+  final String? email; // optional bind
+  final DateTime? expiresAt;
+  final String? acceptedBy;
+  final DateTime? acceptedAt;
+  final DateTime? revokedAt;
+
+  const InviteInfo({
+    required this.id,
+    required this.code,
+    required this.role,
+    this.email,
+    this.expiresAt,
+    this.acceptedBy,
+    this.acceptedAt,
+    this.revokedAt,
+  });
+
+  bool get isOpen =>
+      revokedAt == null && acceptedAt == null &&
+      (expiresAt == null || expiresAt!.isAfter(DateTime.now()));
+
+  /// Deep link the QR encodes and the share sheet hands to WhatsApp/SMS.
+  String get link => 'mhuri://join?c=$code';
 }
 
 class Chore {

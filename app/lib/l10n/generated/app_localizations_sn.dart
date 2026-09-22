@@ -1008,7 +1008,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get signOut => 'Buda';
 
   @override
-  String get viewAs => 'Tarisa se';
+  String get viewAs => 'Tarisa se…';
 
   @override
   String cashShare(Object pct) {
@@ -1244,7 +1244,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get passwordResetSent =>
-      'Email yekuchinja password yatumirwa — tarisa inbox yako.';
+      'Email yekudzorera password yatumirwa — vhura link pane foni ino, app inopedzesa.';
 
   @override
   String get passwordResetFailed =>
@@ -1456,4 +1456,435 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get loggedItem => 'Zvanyorwa';
+
+  @override
+  String get syncDataTitle => 'Kubatanidza & data';
+
+  @override
+  String get syncStateSyncing => 'Kubatanidza…';
+
+  @override
+  String get syncStateError => 'Kumirira kuyedza zvakare';
+
+  @override
+  String get syncStateOffline => 'Hatina network — shanduko dzinochengetwa pafone ino';
+
+  @override
+  String get syncStateNeedsSignIn => 'Pinda mukati kuti ubatanidze';
+
+  @override
+  String get syncStateSaved => 'Zvachengetwa pafone ino';
+
+  @override
+  String get syncNowBtn => 'Batanidza iye zvino';
+
+  @override
+  String get syncLastSync => 'Kubatanidza kwakapera';
+
+  @override
+  String get syncNever => 'Haisati yapera';
+
+  @override
+  String get syncPendingLabel => 'Kumirira kubatanidzwa';
+
+  @override
+  String get syncUpToDate => 'Zvose zvachengeteka, hapana chinosara';
+
+  @override
+  String get syncErrorLabel => 'Dambudziko rekupedzisira';
+
+  @override
+  String get syncWhereTitle => 'Kune kupi data yenyu iri';
+
+  @override
+  String get syncConnectedTo => 'Cloud yemhuri:';
+
+  @override
+  String get syncNotConnected => 'Foni ino chete — cloud yemhuri haisati yakabatanidzwa.';
+
+  @override
+  String get syncBackupNote => 'Hapana backup inofanira kubatidzwa. Shanduko dzese dzinochengetwa pafone yako panogumira uye dzinobatanidzwa kucloud yemhuri pavaine network. Dhawunirodha CSV pazasi nguva dzose kuti uve nekopi yaunotonga.';
+
+  @override
+  String get previewExit => 'Buda';
+
+  @override
+  String previewBanner(Object name) {
+    return 'Kutarisa sa$name';
+  }
+
+  @override
+  String get resetTitle => 'Sarudza password itsva';
+
+  @override
+  String get resetSubtitle => 'Wapinda mukati neiyo reset link — iye zvino sarudza password itsva.';
+
+  @override
+  String get resetNewLabel => 'Password itsva';
+
+  @override
+  String get resetConfirmLabel => 'Simudzira password itsva';
+
+  @override
+  String get resetMismatch => 'Mapassword maviri haafanani';
+
+  @override
+  String get resetRuleLength => 'Mavara 8 kana kupfuura';
+
+  @override
+  String get resetRuleMix => 'Iine mavara nenhamba';
+
+  @override
+  String get resetRuleHint => 'Shandisa mavara 8 kana kupfuura, iine tsamba nenhamba.';
+
+  @override
+  String get resetCta => 'Chinja password';
+
+  @override
+  String get resetSuccess => 'Password yachinjwa — pinda mukati neiyowo itsva';
+
+  @override
+  String get resetShow => 'Ratidza kana kuvanza password';
+
+  @override
+  String get resetExpiredTitle => 'Link iyi yapera';
+
+  @override
+  String get resetExpiredBody => 'Matanakuru ekudzorera anoshanda kamwe chete uye kwenguva pfupi. Tumira imwe itsva uyedze zvakare.';
+
+  @override
+  String get resetSendNew => 'Tumira link itsva';
+
+  @override
+  String get listDelete => 'Bvisa chinhu';
+
+  @override
+  String listDeleted(Object name) {
+    return '"$name" zvinobviswa panhandare';
+  }
+
+  @override
+  String get roleAdult => 'Mumwechete';
+
+  @override
+  String get roleTeen => 'Mukomana/Musikana';
+
+  @override
+  String get roleViewer => 'Muoneri';
+
+  @override
+  String get inviteCode => 'Kodi yekukoka';
+
+  @override
+  String get inviteTitle => 'Kukoka mhuri';
+
+  @override
+  String get inviteHowTo => 'Anovhaka account neemail yake, obva anyora code iyi kuti apinde mumhuri yako.';
+
+  @override
+  String get inviteNew => 'Kukoka kwitsva';
+
+  @override
+  String get inviteEmailOptional => 'Email yavo (kusaripo — ivo chete vanokwanisa kuishandisa)';
+
+  @override
+  String get inviteCreate => 'Gadzira kukoka';
+
+  @override
+  String get inviteCreated => 'Ratidza code iyi kana QR kwavari';
+
+  @override
+  String get inviteScanHint => 'Inotarisa QR nECamera yavo, kana kubaya link — inovhura app iyi yakagadzirira kujoina.';
+
+  @override
+  String get inviteShare => 'Tumira';
+
+  @override
+  String get inviteShareText => 'Joinawo mhuri yedu paMhuri Hub — kukoko kwako:';
+
+  @override
+  String get invitePending => 'Mikoko iripo';
+
+  @override
+  String get inviteNone => 'Hapana mikoko iripo.';
+
+  @override
+  String get inviteHistory => 'Mikoko yapera';
+
+  @override
+  String get inviteRevoke => 'Kanzura';
+
+  @override
+  String get inviteFailed => 'Kukoka hakugadzirike — tarisa network uyedze zvakare.';
+
+  @override
+  String get inviteTooMany => 'Kune mikoko 5 isati yashandiswa — kanzura imwe kutanga.';
+
+  @override
+  String get inviteOwnerOnly => 'Muridzi chete ndiye anotonga kukoka.';
+
+  @override
+  String get inviteAlreadyInFamily => 'Uri mumhuri yato — kukoka kunoshandiswa kujoina imwe itsva.';
+
+  @override
+  String get makeOwner => 'Ita muridzi';
+
+  @override
+  String get makeOwnerFailed => 'Kutamisa utongi hwakundikana — tarisa network uyedze zvakare.';
+
+  @override
+  String get roleParent => 'Mubereki';
+
+  @override
+  String get roleChild => 'Mwana';
+
+  @override
+  String inviteAcceptedLabel(Object code, Object role) {
+    return '$code — apinda';
+  }
+
+  @override
+  String makeOwnerBody(Object name) {
+    return 'Kuita $name muridzi wemhuri? Unova mumwechete wemba, ivo votonga kukoka nezvirongwa.';
+  }
+
+  @override
+  String makeOwnerDone(Object name) {
+    return '$name ndiye muridzi wemhuri iye zvino';
+  }
+
+  @override
+  String inviteRevokeBody(Object code) {
+    return 'Kanzura kukoka $code? Havazokwanisa kujoina nayo.';
+  }
+
+  @override
+  String inviteLinkReady(Object code) {
+    return 'Kukoka $code kunomirira — joina mhuri pazasi.';
+  }
+
+  @override
+  String get syncProblemsTitle => 'Shanduko dzinoda iwe';
+
+  @override
+  String get syncProblemsBody => 'Aya mashanduko akundikana kuwana cloud yemhuri pamwe mbiri. Zviedze zvakare, kana zvisiye — hapana chinobviswa pasina yakurarama.';
+
+  @override
+  String get syncRetryThis => 'Edza zvakare';
+
+  @override
+  String get syncDiscardThis => 'Siya';
+
+  @override
+  String get syncDiscardTitle => 'Kusiya shanduko iyi?';
+
+  @override
+  String get syncKindTx => 'Mutero';
+
+  @override
+  String get syncKindEnvelope => 'Bajeti';
+
+  @override
+  String get syncKindGoal => 'Chinangwa chekuchengetedza';
+
+  @override
+  String get syncKindItem => 'Chinhu pahandare';
+
+  @override
+  String get syncKindRequest => 'Chikumbiro';
+
+  @override
+  String get syncKindOther => 'Shanduko';
+
+  @override
+  String syncDiscardBody(Object what) {
+    return '“$what” inogara pafone ino chete uye haimbovawiri kucloud yemhuri. Kuisiya?';
+  }
+
+  @override
+  String syncTries(Object tries) {
+    return '$tries miedzo yadarara';
+  }
+
+  @override
+  String get setupInviteCopied => 'Kukoka kopukutwa.';
+
+  @override
+  String get setupBadEmail => 'Pinda email inoshanda.';
+
+  @override
+  String get setupTagline => 'Mhuri imwe. Hurongwa hwega.';
+
+  @override
+  String get setupPhotoOptional => 'Isa mufananidzo (kusaripo)';
+
+  @override
+  String get setupHaveCode => 'Ndine mukoko wekunyura';
+
+  @override
+  String get setupCreateInstead => 'Gadzira mhuri panyo';
+
+  @override
+  String get setupCopy => 'Kopukuta';
+
+  @override
+  String get setupScanToJoin => 'Tarisa QR unyure';
+
+  @override
+  String get setupCreateTitle => 'Gadzira mhuri yako';
+
+  @override
+  String get setupCreateSub => 'Taudza izvo mhuri yako inokucherezera nayo.';
+
+  @override
+  String get setupPreferredName => 'Zita raunofarira';
+
+  @override
+  String get setupFamilyNameField => 'Zita remhuri (somuenzaniso, VaMoyo)';
+
+  @override
+  String get setupCurrency => 'Mari huru';
+
+  @override
+  String get setupJoinTitle => 'Nyura mhuri yako';
+
+  @override
+  String get setupJoinSub => 'Shandisa mukoko wakapihwa nemhuri.';
+
+  @override
+  String get setupInviteTitle => 'Koka vanhu';
+
+  @override
+  String get setupInviteSub => 'Unesa vese mumusha wemhuri imwechete.';
+
+  @override
+  String get setupRoleSuggestion => 'Basa ririmo sechokwadi. Ritsangiridze mune Family settings vapedze kupinda.';
+
+  @override
+  String get setupSendInvite => 'Tumira kukoko';
+
+  @override
+  String get setupContinue => 'Enderera  →';
+
+  @override
+  String get setupInviteLater => 'Kukoka gare gare';
+
+  @override
+  String get setupPermsTitle => 'Mvumo';
+
+  @override
+  String get setupPermsSub => 'Kupinda kunokurudzirwa kwagadzirira. Unokwanisa kuichinja mune Family settings.';
+
+  @override
+  String get setupPermWallet => 'Ona wallet yavo';
+
+  @override
+  String get setupPermTx => 'Nyora zvavashandisa';
+
+  @override
+  String get setupPermBudget => 'Ona bajeti yemhuri';
+
+  @override
+  String get setupFinish => 'Pedza kugadzirira';
+
+  @override
+  String get deleteWhatTitle => 'Zvinaitika paunodzima';
+
+  @override
+  String get deleteWhatOwner => 'Uri muridzi wemhuri: mhuri yose inodzimwa — akonti nebajeti nezvitengeso nemaList, kune vese. Izvi hazingadzokisi.';
+
+  @override
+  String get deleteWhatMember => 'Unobuda mumhuri. Uhava hwako hunopera, mufananidzo nemail yako zvino bviswa, zvityo zvako zvichagara zvichionekwa se “Former member”. Vamwe vose vanoona data yavo.';
+
+  @override
+  String get deleteWhatSessions => 'Kupinda kwese pamafoni ese kunobuda.';
+
+  @override
+  String get deleteStepLeave => 'Kubuda mumhuri…';
+
+  @override
+  String get deleteStepAnonymize => 'Kubvisa zita rako…';
+
+  @override
+  String get deleteStepSessions => 'Kudzikisa mapindo…';
+
+  @override
+  String get deleteStepIdentity => 'Kudzima akonti yako…';
+
+  @override
+  String setupInviteText(Object family, Object code, Object role) {
+    return 'Joinawo $family paMhuri Hub nemukoko $code. Basa rakakurudzirwa: $role.';
+  }
+
+  @override
+  String setupInviteSubject(Object family) {
+    return 'Joinawo $family paMhuri Hub';
+  }
+
+  @override
+  String setupStepOf(Object n) {
+    return 'Danho $n pa3';
+  }
+
+  @override
+  String kidsGoalSaved(Object goal, Object pct) {
+    return 'Chinangwa: $goal — $pct% zvakachengetedzwa';
+  }
+
+  @override
+  String kidsHi(Object name) {
+    return 'Mhoro $name!';
+  }
+
+  @override
+  String kidsWishItem(Object amount) {
+    return 'Bhora — US$25 · zvakachengetedzwa $amount';
+  }
+
+  @override
+  String loginSentCode(Object phone) {
+    return 'Takatumira kodhi neSMS ku$phone';
+  }
+
+  @override
+  String recSkipped(Object date) {
+    return 'Damburwa — inotevera: $date';
+  }
+
+  @override
+  String safeToSpend(Object amount) {
+    return 'Zvakanaka kushandisa nhasi: $amount';
+  }
+
+  @override
+  String scheduledOn(Object from, Object to) {
+    return 'Zvakarongwa pane iri foni · nguva yerudo $from–$to';
+  }
+
+  @override
+  String setCurrencySub(Object rate) {
+    return 'USD utungamiri · ZiG chipiri · $rate';
+  }
+
+  @override
+  String syncPill(Object count) {
+    return '{count, plural, other{$count zvichinjika zvakachengetedzwa pane yambuyariro — zvinoenderana paunenge une internet}}';
+  }
+
+  @override
+  String teenSplitHint(Object amount) {
+    return 'Kukamurwa kwe$amount zvakawanikwa mwedzi iyi';
+  }
+
+  @override
+  String get discardChangesTitle => 'Kusiya shanduko?';
+
+  @override
+  String get discardChangesBody => 'Haisati yachengetedzwa. Buda zvino?';
+
+  @override
+  String get stay => 'Ramba uchishanda';
+
+  @override
+  String get leave => 'Buda';
 }

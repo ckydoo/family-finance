@@ -400,6 +400,26 @@ class _ItemRow extends StatelessWidget {
               color: done ? context.inkSoft : context.ink,
             ),
           ),
+          const SizedBox(width: 4),
+          // Delete: tombstones everywhere — removed on this phone and on
+          // every family device at the next sync.
+          IconButton(
+            tooltip: AppLocalizations.of(context)!.listDelete,
+            icon: Icon(Icons.close, size: 18, color: context.inkSoft),
+            padding: const EdgeInsets.all(8),
+            constraints:
+                const BoxConstraints(minWidth: 44, minHeight: 44),
+            onPressed: () {
+              final s2 = AppScope.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+              s2.deleteItem(item);
+              messenger.showSnackBar(SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.listDeleted(item.name)),
+                behavior: SnackBarBehavior.floating,
+              ));
+            },
+          ),
         ],
       ),
     );

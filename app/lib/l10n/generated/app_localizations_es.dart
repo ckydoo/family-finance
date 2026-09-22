@@ -1014,7 +1014,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signOut => 'Cerrar sesión';
 
   @override
-  String get viewAs => 'Ver como';
+  String get viewAs => 'Ver como…';
 
   @override
   String cashShare(Object pct) {
@@ -1250,7 +1250,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get passwordResetSent =>
-      'Correo para restablecer la contraseña enviado — revisa tu bandeja.';
+      'Email de restablecimiento enviado — abre el enlace en este teléfono y la app terminará el cambio.';
 
   @override
   String get passwordResetFailed =>
@@ -1464,4 +1464,435 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get loggedItem => 'Registrado';
+
+  @override
+  String get syncDataTitle => 'Sincronización y datos';
+
+  @override
+  String get syncStateSyncing => 'Sincronizando…';
+
+  @override
+  String get syncStateError => 'Esperando para reintentar';
+
+  @override
+  String get syncStateOffline => 'Sin conexión — los cambios se guardan en este teléfono';
+
+  @override
+  String get syncStateNeedsSignIn => 'Inicia sesión para sincronizar';
+
+  @override
+  String get syncStateSaved => 'Guardado en este teléfono';
+
+  @override
+  String get syncNowBtn => 'Sincronizar ahora';
+
+  @override
+  String get syncLastSync => 'Última sincronización';
+
+  @override
+  String get syncNever => 'Todavía no';
+
+  @override
+  String get syncPendingLabel => 'Pendiente de sincronizar';
+
+  @override
+  String get syncUpToDate => 'Todo guardado y al día';
+
+  @override
+  String get syncErrorLabel => 'Último problema';
+
+  @override
+  String get syncWhereTitle => 'Dónde viven tus datos';
+
+  @override
+  String get syncConnectedTo => 'Nube familiar:';
+
+  @override
+  String get syncNotConnected => 'Solo este dispositivo — aún no hay nube familiar conectada.';
+
+  @override
+  String get syncBackupNote => 'No hay ninguna copia de seguridad aparte que activar. Cada cambio se guarda en este teléfono en el momento en que lo haces y se sincroniza con la nube familiar siempre que tengas datos. Exporta un CSV abajo cuando quieras para una copia que controlas.';
+
+  @override
+  String get previewExit => 'Salir';
+
+  @override
+  String previewBanner(Object name) {
+    return 'Viendo como $name';
+  }
+
+  @override
+  String get resetTitle => 'Elige una contraseña nueva';
+
+  @override
+  String get resetSubtitle => 'Iniciaste sesión desde el enlace de restablecimiento — ahora elige una contraseña nueva.';
+
+  @override
+  String get resetNewLabel => 'Contraseña nueva';
+
+  @override
+  String get resetConfirmLabel => 'Confirma la contraseña nueva';
+
+  @override
+  String get resetMismatch => 'Las dos contraseñas no coinciden';
+
+  @override
+  String get resetRuleLength => 'Al menos 8 caracteres';
+
+  @override
+  String get resetRuleMix => 'Con una letra y un número';
+
+  @override
+  String get resetRuleHint => 'Usa al menos 8 caracteres, con una letra y un número.';
+
+  @override
+  String get resetCta => 'Cambiar contraseña';
+
+  @override
+  String get resetSuccess => 'Contraseña cambiada — inicia sesión con la nueva';
+
+  @override
+  String get resetShow => 'Mostrar u ocultar la contraseña';
+
+  @override
+  String get resetExpiredTitle => 'Este enlace ha caducado';
+
+  @override
+  String get resetExpiredBody => 'Los enlaces de restablecimiento funcionan una sola vez y por poco tiempo. Envía uno nuevo e inténtalo otra vez.';
+
+  @override
+  String get resetSendNew => 'Enviar un enlace nuevo';
+
+  @override
+  String get listDelete => 'Eliminar artículo';
+
+  @override
+  String listDeleted(Object name) {
+    return '"$name" eliminado de la lista';
+  }
+
+  @override
+  String get roleAdult => 'Adulto';
+
+  @override
+  String get roleTeen => 'Adolescente';
+
+  @override
+  String get roleViewer => 'Observador';
+
+  @override
+  String get inviteCode => 'Código de invitación';
+
+  @override
+  String get inviteTitle => 'Invitar a la familia';
+
+  @override
+  String get inviteHowTo => 'Crea una cuenta con su correo y luego introduce este código para unirse a tu familia.';
+
+  @override
+  String get inviteNew => 'Nueva invitación';
+
+  @override
+  String get inviteEmailOptional => 'Su email (opcional — solo esa persona podrá usarla)';
+
+  @override
+  String get inviteCreate => 'Crear invitación';
+
+  @override
+  String get inviteCreated => 'Muéstrales este código o QR';
+
+  @override
+  String get inviteScanHint => 'Escanean el QR con la cámara o tocan el enlace — abre la app lista para unirse.';
+
+  @override
+  String get inviteShare => 'Compartir';
+
+  @override
+  String get inviteShareText => 'Únete a nuestra familia en Mhuri Hub — tu invitación:';
+
+  @override
+  String get invitePending => 'Invitaciones abiertas';
+
+  @override
+  String get inviteNone => 'No hay invitaciones abiertas.';
+
+  @override
+  String get inviteHistory => 'Invitaciones anteriores';
+
+  @override
+  String get inviteRevoke => 'Revocar';
+
+  @override
+  String get inviteFailed => 'No se pudo crear la invitación — revisa tu conexión e inténtalo otra vez.';
+
+  @override
+  String get inviteTooMany => 'Ya hay 5 invitaciones abiertas — revoca una primero.';
+
+  @override
+  String get inviteOwnerOnly => 'Solo el dueño de la familia gestiona invitaciones.';
+
+  @override
+  String get inviteAlreadyInFamily => 'Ya perteneces a una familia — las invitaciones son para unirte a una nueva.';
+
+  @override
+  String get makeOwner => 'Hacer dueño';
+
+  @override
+  String get makeOwnerFailed => 'No se pudo transferir la propiedad — revisa tu conexión e inténtalo otra vez.';
+
+  @override
+  String get roleParent => 'Padre/Madre';
+
+  @override
+  String get roleChild => 'Niño/a';
+
+  @override
+  String inviteAcceptedLabel(Object code, Object role) {
+    return '$code — se unió';
+  }
+
+  @override
+  String makeOwnerBody(Object name) {
+    return '¿Hacer de $name el dueño de la familia? Pasas a ser un miembro adulto más y esa persona gestiona invitaciones y ajustes.';
+  }
+
+  @override
+  String makeOwnerDone(Object name) {
+    return '$name ya es el dueño de la familia';
+  }
+
+  @override
+  String inviteRevokeBody(Object code) {
+    return '¿Revocar la invitación $code? Ya no podrán unirse con ella.';
+  }
+
+  @override
+  String inviteLinkReady(Object code) {
+    return 'La invitación $code te espera — únete a la familia abajo.';
+  }
+
+  @override
+  String get syncProblemsTitle => 'Cambios que te necesitan';
+
+  @override
+  String get syncProblemsBody => 'Estos cambios no llegaron a la nube familiar tras varios intentos. Reinténtalos o descártalos — nada se elimina sin tu confirmación.';
+
+  @override
+  String get syncRetryThis => 'Reintentar';
+
+  @override
+  String get syncDiscardThis => 'Descartar';
+
+  @override
+  String get syncDiscardTitle => '¿Descartar este cambio?';
+
+  @override
+  String get syncKindTx => 'Gasto';
+
+  @override
+  String get syncKindEnvelope => 'Presupuesto';
+
+  @override
+  String get syncKindGoal => 'Meta de ahorro';
+
+  @override
+  String get syncKindItem => 'Artículo';
+
+  @override
+  String get syncKindRequest => 'Solicitud';
+
+  @override
+  String get syncKindOther => 'Cambio';
+
+  @override
+  String syncDiscardBody(Object what) {
+    return '“$what” queda solo en este teléfono y nunca llegará a la nube familiar. ¿Descartarlo?';
+  }
+
+  @override
+  String syncTries(Object tries) {
+    return '$tries intentos hasta ahora';
+  }
+
+  @override
+  String get setupInviteCopied => 'Invitación copiada.';
+
+  @override
+  String get setupBadEmail => 'Introduce un email válido.';
+
+  @override
+  String get setupTagline => 'Una familia. Un plan.';
+
+  @override
+  String get setupPhotoOptional => 'Añadir foto de perfil (opcional)';
+
+  @override
+  String get setupHaveCode => 'Tengo un código de invitación';
+
+  @override
+  String get setupCreateInstead => 'Crear una familia';
+
+  @override
+  String get setupCopy => 'Copiar';
+
+  @override
+  String get setupScanToJoin => 'Escanear para unirse';
+
+  @override
+  String get setupCreateTitle => 'Crea tu familia';
+
+  @override
+  String get setupCreateSub => 'Dinos cómo te llama tu familia.';
+
+  @override
+  String get setupPreferredName => 'Nombre preferido';
+
+  @override
+  String get setupFamilyNameField => 'Nombre de familia (por ejemplo, los Moyo)';
+
+  @override
+  String get setupCurrency => 'Moneda principal';
+
+  @override
+  String get setupJoinTitle => 'Únete a tu familia';
+
+  @override
+  String get setupJoinSub => 'Usa el código que te compartió un familiar.';
+
+  @override
+  String get setupInviteTitle => 'Invitar miembros';
+
+  @override
+  String get setupInviteSub => 'Trae a todos al mismo espacio familiar.';
+
+  @override
+  String get setupRoleSuggestion => 'El rol va como sugerencia. Confírmalo en los ajustes de Familia cuando se unan.';
+
+  @override
+  String get setupSendInvite => 'Enviar invitación';
+
+  @override
+  String get setupContinue => 'Continuar  →';
+
+  @override
+  String get setupInviteLater => 'Invitar más tarde';
+
+  @override
+  String get setupPermsTitle => 'Permisos';
+
+  @override
+  String get setupPermsSub => 'El acceso recomendado está listo. Puedes cambiarlo después en los ajustes de Familia.';
+
+  @override
+  String get setupPermWallet => 'Ver su billetera';
+
+  @override
+  String get setupPermTx => 'Registrar transacciones';
+
+  @override
+  String get setupPermBudget => 'Ver el presupuesto familiar';
+
+  @override
+  String get setupFinish => 'Terminar configuración';
+
+  @override
+  String get deleteWhatTitle => 'Qué pasa al eliminar tu cuenta';
+
+  @override
+  String get deleteWhatOwner => 'Eres el dueño de la familia: se elimina todo el espacio familiar — cuentas, presupuestos, transacciones y listas, para todos. No se puede deshacer.';
+
+  @override
+  String get deleteWhatMember => 'Sales de la familia. Tu membresía termina, tu foto y email se eliminan, y tus transacciones pasadas quedan como “Former member”. Los demás conservan sus datos.';
+
+  @override
+  String get deleteWhatSessions => 'Todas las sesiones en todos los dispositivos se cierran.';
+
+  @override
+  String get deleteStepLeave => 'Saliendo de la familia…';
+
+  @override
+  String get deleteStepAnonymize => 'Quitando tus datos personales…';
+
+  @override
+  String get deleteStepSessions => 'Cerrando sesiones…';
+
+  @override
+  String get deleteStepIdentity => 'Eliminando tu cuenta…';
+
+  @override
+  String setupInviteText(Object family, Object code, Object role) {
+    return 'Únete a $family en Mhuri Hub con el código $code. Rol sugerido: $role.';
+  }
+
+  @override
+  String setupInviteSubject(Object family) {
+    return 'Únete a $family en Mhuri Hub';
+  }
+
+  @override
+  String setupStepOf(Object n) {
+    return 'Paso $n de 3';
+  }
+
+  @override
+  String kidsGoalSaved(Object goal, Object pct) {
+    return 'Meta: $goal — $pct% ahorrado';
+  }
+
+  @override
+  String kidsHi(Object name) {
+    return '¡Hola $name!';
+  }
+
+  @override
+  String kidsWishItem(Object amount) {
+    return 'Pelota — US$25 · ahorrado $amount';
+  }
+
+  @override
+  String loginSentCode(Object phone) {
+    return 'Enviamos un código por SMS al $phone';
+  }
+
+  @override
+  String recSkipped(Object date) {
+    return 'Omitido — próximo: $date';
+  }
+
+  @override
+  String safeToSpend(Object amount) {
+    return 'Seguro para gastar hoy: $amount';
+  }
+
+  @override
+  String scheduledOn(Object from, Object to) {
+    return 'Programados en este dispositivo · horas de silencio $from–$to';
+  }
+
+  @override
+  String setCurrencySub(Object rate) {
+    return 'USD principal · ZiG secundaria · $rate';
+  }
+
+  @override
+  String syncPill(Object count) {
+    return '{count, plural, =1{1 cambio guardado en este dispositivo — se sincroniza al haber internet} other{$count cambios guardados en este dispositivo — se sincronizan al haber internet}}';
+  }
+
+  @override
+  String teenSplitHint(Object amount) {
+    return 'Reparto sugerido de $amount ganado este mes';
+  }
+
+  @override
+  String get discardChangesTitle => '¿Descartar cambios?';
+
+  @override
+  String get discardChangesBody => 'Aún no se ha guardado. ¿Salir igualmente?';
+
+  @override
+  String get stay => 'Seguir editando';
+
+  @override
+  String get leave => 'Salir';
 }
