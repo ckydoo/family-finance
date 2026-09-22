@@ -512,3 +512,12 @@ Sprint C (skip-limbo banner, RPC display names, P4 sync details).
 - Config direction (user): `.env` asset is primary; dart-defines for CI; constants path removed. Kept.
 - Restored: auth_service interface additions, SupabaseAuthService session getter + transient-failure-safe restore + refreshAccessToken, controller no-ghost paths, sync client empty-credential guard, self-healing tokenGet, 4 regression tests.
 
+## First-run spec (2026-09-22) — DESIGN ONLY, no code yet
+- User's 9-step first-time flow reviewed → spec written at `FIRST_RUN_SPEC.md`.
+- Locked: bottom nav unchanged (Home | Budgets | Lists | Savings | Family + ＋); flow is a walk-through ending in the existing tabs.
+- Mandatory path = 4 inputs: Welcome → Account (name/email/password) → Create/Join → Money in. Invite (WhatsApp share), spending plan (+ optional due dates = bills), payoff screen are optional.
+- Step 7 "Add Accounts" DEFERRED to v2 (recommendation adopted): step 6 already seeds the pool; balances stay device-local records per spec §5.
+- Joiner branch: creator answers money questions; joiners land on Home via sync (5/6/8 skipped).
+- New Home card: "Upcoming bills" read from existing recurring rules.
+- Pending user approval → then a build sprint (acceptance criteria in the spec).
+

@@ -83,3 +83,6 @@ scripts just automate that (and protect `.env`).
 - The "configure"/merge round restored the .env-asset config (asset-first, constants path removed — kept, it's the right call) but accidentally reverted the empty-JWT auth fixes, leaving a hybrid that could not compile (controller used `service.session`; the interface getter was reverted away).
 - This round restores the full auth-fix set (session getter, soft-fail restoreSession, refreshAccessToken, self-healing token closure, empty-JWT client guard + tests) ON TOP of the asset-first config.
 
+## First-run design round (2026-09-22, docs only)
+- `FIRST_RUN_SPEC.md` written (9-step onboarding walk-through, nav untouched, accounts deferred, joiner branch, acceptance criteria). No code changes.
+
