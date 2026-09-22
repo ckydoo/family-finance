@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart' show rootBundle;
-
+///this is the config file
 /// Server connection config (M2 → live-only).
 ///
 /// The app is always a real client of the family's Supabase project —
