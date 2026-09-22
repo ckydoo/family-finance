@@ -460,4 +460,12 @@
   "skipForNow": "Iraska parizvino",
   "setupInviteTitle": "Kokorodza vanhu vako",
   "setupWorking": "Kugadzirwa zviri kuita…"
+,
+  "noEnvelopesYet": "Hapana bhajeti dziri pozvino — vhaka yekutanga kubva kuBudgets tab.",
+  "noActivityYet": "Hapana chanyorwa zvasvino. Dzvanya + kunyora transaction yekutanga."
+,
+  "setupBanner": "Pedzisa kugadzirisa: vhaka mhuri yako kana ujoin nencode",
+  "setupBannerCta": "Gadzirisa",
+  "deleteTypeHint": "Nyora DELETE kuti ivhure",
+  "deletePermanently": "Dzima zvachose"
 }

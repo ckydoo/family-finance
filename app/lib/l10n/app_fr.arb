@@ -460,4 +460,12 @@
   "skipForNow": "Passer pour l’instant",
   "setupInviteTitle": "Invite les tiens",
   "setupWorking": "On prépare tout…"
+,
+  "noEnvelopesYet": "Pas encore d’enveloppes — crée la première depuis l’onglet Budgets.",
+  "noActivityYet": "Rien d’enregistré pour l’instant. Touchez + pour ajouter ta première opération."
+,
+  "setupBanner": "Termine la configuration : crée ta famille ou rejoins-en une avec un code",
+  "setupBannerCta": "Configurer",
+  "deleteTypeHint": "Tape DELETE pour confirmer",
+  "deletePermanently": "Supprimer définitivement"
 }

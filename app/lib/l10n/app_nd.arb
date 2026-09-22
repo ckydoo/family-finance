@@ -460,4 +460,12 @@
   "skipForNow": "Yeqela okwesikhashana",
   "setupInviteTitle": "Memela abantu bakho",
   "setupWorking": "Kulungisa konke…"
+,
+  "noEnvelopesYet": "Ayikho imibhajeti okhona — yakha leyonqaba kuthebha leziBajeti.",
+  "noActivityYet": "Akukho okubhalwe okhona. Thelela + ukungeza itransaction yakho yokuqala."
+,
+  "setupBanner": "Gcwalisa ukulungisa: yakha umndeni wakho noma ngena ngekholodi",
+  "setupBannerCta": "Hlela",
+  "deleteTypeHint": "Bhala DELETE ukuqinisekise",
+  "deletePermanently": "Cisha kunaphakade"
 }

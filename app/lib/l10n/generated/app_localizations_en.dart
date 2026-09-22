@@ -1278,4 +1278,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setupWorking => "Setting things up…";
+
+  @override
+  String get noEnvelopesYet => "No envelopes yet — create your first one from the Budgets tab to start tracking spending.";
+
+  @override
+  String get noActivityYet => "Nothing recorded yet. Tap + to add your first transaction.";
+
+  @override
+  String get setupBanner => "Finish setting up: create your family or join with a code";
+
+  @override
+  String get setupBannerCta => "Set up";
+
+  @override
+  String get deleteTypeHint => "Type DELETE to confirm";
+
+  @override
+  String get deletePermanently => "Delete permanently";
 }

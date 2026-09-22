@@ -460,4 +460,12 @@
   "skipForNow": "Omitir por ahora",
   "setupInviteTitle": "Invita a los tuyos",
   "setupWorking": "Preparando todo…"
+,
+  "noEnvelopesYet": "Aún no hay sobres: crea el primero desde la pestaña Presupuestos.",
+  "noActivityYet": "Nada registrado todavía. Toca + para añadir tu primera transacción."
+,
+  "setupBanner": "Termina la configuración: crea tu familia o únete con un código",
+  "setupBannerCta": "Configurar",
+  "deleteTypeHint": "Escribe DELETE para confirmar",
+  "deletePermanently": "Eliminar permanentemente"
 }

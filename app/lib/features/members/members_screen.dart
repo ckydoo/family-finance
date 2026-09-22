@@ -815,26 +815,58 @@ class MembersScreen extends StatelessWidget {
 
     final l = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
+    final typeCtrl = TextEditingController();
+    // P5: destructive tier — typing DELETE + a button that stays disabled
+    // until the exact word matches. Never pops on the happy path by accident.
     final confirmed = await showDialog<bool>(
           context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text(l.deleteAccountTitle),
-            content: Text(l.deleteAccountBody),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: Text(
-                    MaterialLocalizations.of(dialogContext).cancelButtonLabel),
+          builder: (dialogContext) => StatefulBuilder(
+            builder: (dialogContext, setDialog) => AlertDialog(
+              title: Text(l.deleteAccountTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.deleteAccountBody,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: context.inkSoft,
+                          height: 1.4)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: typeCtrl,
+                    autofocus: true,
+                    onChanged: (_) => setDialog(() {}),
+                    decoration: InputDecoration(
+                      hintText: l.deleteTypeHint,
+                      filled: true,
+                      fillColor: context.card,
+                      border:
+                          OutlineInputBorder(borderSide: BorderSide.none),
+                    ),
+                  ),
+                ],
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.danger,
-                  foregroundColor: context.onSolid,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: Text(
+                      MaterialLocalizations.of(dialogContext).cancelButtonLabel),
                 ),
-                child: Text(l.deleteAccountConfirm),
-              ),
-            ],
+                FilledButton(
+                  onPressed: typeCtrl.text.trim() == 'DELETE'
+                      ? () => Navigator.pop(dialogContext, true)
+                      : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.danger,
+                    foregroundColor: context.onSolid,
+                    disabledBackgroundColor:
+                        context.danger.withValues(alpha: 0.5),
+                  ),
+                  child: Text(l.deletePermanently),
+                ),
+              ],
+            ),
           ),
         ) ??
         false;

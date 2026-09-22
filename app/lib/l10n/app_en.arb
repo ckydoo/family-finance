@@ -835,4 +835,12 @@
   "skipForNow": "Skip for now",
   "setupInviteTitle": "Invite your people",
   "setupWorking": "Setting things up…"
+,
+  "noEnvelopesYet": "No envelopes yet — create your first one from the Budgets tab to start tracking spending.",
+  "noActivityYet": "Nothing recorded yet. Tap + to add your first transaction."
+,
+  "setupBanner": "Finish setting up: create your family or join with a code",
+  "setupBannerCta": "Set up",
+  "deleteTypeHint": "Type DELETE to confirm",
+  "deletePermanently": "Delete permanently"
 }

@@ -199,22 +199,71 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 16),
 
-          // ── Envelope chips ──────────────────────────────────────────────
-          SizedBox(
-            height: 122,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                for (final e in s.envelopes.where((e) => !e.isPersonal).take(4))
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: _EnvChip(e: e),
+          // ── Family-setup nudge (skip-for-now limbo) ────────────────────
+          if (s.env.isLive && !s.hasSpace)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Material(
+                color: context.card,
+                borderRadius: kBRadiusM,
+                child: InkWell(
+                  onTap: s.reopenFamilySetup,
+                  borderRadius: kBRadiusM,
+                  splashColor: context.primarySoft,
+                  highlightColor: context.primarySoft,
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: kBRadiusM,
+                      border: Border.all(color: context.primary, width: 1.2),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.family_restroom,
+                            size: 20, color: context.primary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            AppLocalizations.of(context)!.setupBanner,
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: context.ink,
+                                height: 1.35),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppLocalizations.of(context)!.setupBannerCta,
+                          style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: context.primary),
+                        ),
+                      ],
+                    ),
                   ),
-              ],
+                ),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 8),
+          // ── Envelope chips (hidden until real envelopes exist) ──────────
+          if (s.envelopes.any((e) => !e.isPersonal)) ...[
+            SizedBox(
+              height: 122,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final e in s.envelopes.where((e) => !e.isPersonal).take(4))
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: _EnvChip(e: e),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
 
                     if (s.pendingOps > 0)
             Padding(
@@ -254,6 +303,21 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          if (s.txs.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.card,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: context.hairline),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.noActivityYet,
+                style: TextStyle(
+                    fontSize: 12.5, color: context.inkSoft, height: 1.4),
+              ),
+            ),
           for (final t in s.txs.take(3))
             Padding(
               padding: const EdgeInsets.only(bottom: 10),

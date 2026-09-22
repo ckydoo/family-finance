@@ -2297,6 +2297,18 @@ abstract class AppLocalizations {
   String get setupInviteTitle;
 
   String get setupWorking;
+
+  String get noEnvelopesYet;
+
+  String get noActivityYet;
+
+  String get setupBanner;
+
+  String get setupBannerCta;
+
+  String get deleteTypeHint;
+
+  String get deletePermanently;
 }
 
 class _AppLocalizationsDelegate

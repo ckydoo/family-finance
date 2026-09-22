@@ -1284,4 +1284,22 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get setupWorking => "Kugadzirwa zviri kuita…";
+
+  @override
+  String get noEnvelopesYet => "Hapana bhajeti dziri pozvino — vhaka yekutanga kubva kuBudgets tab.";
+
+  @override
+  String get noActivityYet => "Hapana chanyorwa zvasvino. Dzvanya + kunyora transaction yekutanga.";
+
+  @override
+  String get setupBanner => "Pedzisa kugadzirisa: vhaka mhuri yako kana ujoin nencode";
+
+  @override
+  String get setupBannerCta => "Gadzirisa";
+
+  @override
+  String get deleteTypeHint => "Nyora DELETE kuti ivhure";
+
+  @override
+  String get deletePermanently => "Dzima zvachose";
 }

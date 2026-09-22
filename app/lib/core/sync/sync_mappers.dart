@@ -393,3 +393,55 @@ const kPullOrder = [
   'envelope', 'goal', 'tx', 'goal_tx', 'list_item', 'kid_request', 'earning',
   'recurring', 'chore', 'mukando', // circle last — cheapest, header-only
 ];
+
+/// ── Family identity (live) ─────────────────────────────────────────────────
+/// Maps server [membership] + [user_profile] rows into the app's local member
+/// list. The signed-in user's id IS their server identity (auth.users id), so
+/// every pushed row references a real user_profile — no FK rejections.
+List<Member> membersFromServer({
+  required List<Map<String, Object?>> membershipRows,
+  required List<Map<String, Object?>> profileRows,
+  required String meId,
+}) {
+  String nameOf(Map<String, Object?>? p) {
+    if (p == null) return '';
+    final n = (p['name'] ?? '').toString();
+    if (n.isNotEmpty && n != 'Member') return n;
+    final e = (p['email'] ?? '').toString();
+    if (e.contains('@')) return e.split('@').first;
+    return n == 'Member' ? '' : n;
+  }
+
+  final profiles = {for (final p in profileRows) p['id'].toString(): p};
+  Role roleOf(String raw) => switch (raw) {
+        'owner' => Role.owner,
+        'teen' => Role.teen,
+        'kid' => Role.kid,
+        'viewer' => Role.viewer,
+        // 'adult' and 'co_parent' both map to the app's adult role.
+        _ => Role.adult,
+      };
+
+  final out = <Member>[];
+  Member? me;
+  for (final m in membershipRows) {
+    final uid = m['user_id'].toString();
+    final p = profiles[uid];
+    final member = Member(
+      id: uid,
+      name: nameOf(p).isEmpty ? 'Member' : nameOf(p),
+      emoji: 'person',
+      role: roleOf((m['role'] ?? 'adult').toString()),
+    );
+    if (uid == meId) {
+      me = member;
+    } else {
+      out.add(member);
+    }
+  }
+  // Me first, then the rest alphabetically — stable list for the UI.
+  final meMember = me ??
+      Member(id: meId, name: 'Me', emoji: 'person', role: Role.owner);
+  out.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  return [meMember, ...out];
+}

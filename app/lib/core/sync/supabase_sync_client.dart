@@ -57,17 +57,24 @@ class SupabaseSyncClient {
     String? sinceIso,
     String? spaceId,
     String? spaceCol,
+    Map<String, String>? eqFilters,
+    bool ascending = true,
     int limit = 500,
   }) async {
     var url = '$_base/rest/v1/$table'
         '?select=*'
-        '&order=$orderCol.asc'
+        '&order=$orderCol.${ascending ? 'asc' : 'desc'}'
         '&limit=$limit';
     if (sinceIso != null && sinceIso.isNotEmpty) {
       url += '&$orderCol=gt.$sinceIso';
     }
     if (spaceCol != null && spaceId != null && spaceId.isNotEmpty) {
       url += '&$spaceCol=eq.$spaceId';
+    }
+    if (eqFilters != null) {
+      for (final e in eqFilters.entries) {
+        url += '&${e.key}=${e.value}';
+      }
     }
     final r = await _client.get(Uri.parse(url), headers: await _headers());
     if (r.statusCode < 200 || r.statusCode >= 300) {

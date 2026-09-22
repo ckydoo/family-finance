@@ -231,7 +231,30 @@ class SyncEngine {
     // Fresh family start on this device: clear synced tables + outbox.
     await _persistence.wipeSynced();
     await _outbox.clear();
-    state.onSpaceAdopted();
+    state.onSpaceAdopted(spaceName: name);
+
+    // Join path: the RPC returns only the id — fetch the family's real name
+    // (best effort; the UI falls back to the placeholder until this lands).
+    if (name == null) {
+      try {
+        final rows = await client.pullRows(
+          'family_space',
+          orderCol: 'created_at',
+          eqFilters: {'id': 'eq.$id'},
+          limit: 1,
+        );
+        if (rows.isNotEmpty) {
+          final fetched = (rows.first['name'] ?? '').toString();
+          if (fetched.isNotEmpty) {
+            spaceName = fetched;
+            await _kvSet('space_name', fetched);
+            state.adoptSpaceName(fetched);
+          }
+        }
+      } catch (_) {
+        // Offline/name unavailable — placeholder stays; next full sync retries.
+      }
+    }
   }
 
   // ── the sync loop ───────────────────────────────────────────────────────
@@ -311,6 +334,25 @@ class SyncEngine {
       try {
         await client.pushRows(adapter.table, [for (final o in entry.value) o.payload]);
         doneRowIds.addAll(entry.value.map((o) => o.rowId));
+        // Sprint B: budget attribution rides with transaction pushes — the
+        // server models it as the envelope_tx junction (no envelope_id col).
+        if (entry.key == 'tx') {
+          final byId = {for (final t in state.txs) t.id: t};
+          final links = <Map<String, Object?>>[
+            for (final o in entry.value)
+              if (byId[o.payload['id']]?.envelopeId case final envId?
+                  when envId.isNotEmpty)
+                {
+                  'envelope_id': envId,
+                  'transaction_id': o.payload['id'],
+                  'allocated_minor': byId[o.payload['id']]!.amount.minor,
+                  'currency': byId[o.payload['id']]!.amount.currency.name,
+                },
+          ];
+          if (links.isNotEmpty) {
+            await client.pushRows('envelope_tx', links);
+          }
+        }
       } on SyncException {
         allOk = false;
       }
@@ -326,10 +368,88 @@ class SyncEngine {
   Future<void> _pull(String sid) => _pullSince(sid, _cursor);
 
   /// Full resync (right after adopting a space): forget the cursor, pull all.
+  /// Pulls the envelope_tx junction and mirrors it into local tx.envelopeId,
+  /// so budget attribution follows the family across devices. Full-refresh
+  /// semantics: the server is the truth for links (upserts are idempotent,
+  /// conflicts are rare single-field edits).
+  Future<void> _pullEnvelopeLinks() async {
+    try {
+      final envIds = state.envelopes.map((e) => e.id).toList();
+      if (envIds.isEmpty) return;
+      final rows = await client.pullRows(
+        'envelope_tx',
+        orderCol: 'envelope_id',
+        eqFilters: {'envelope_id': 'in.(${envIds.join(',')})'},
+        limit: 2000,
+      );
+      final links = <String, String>{
+        for (final r in rows)
+          r['transaction_id'].toString(): r['envelope_id'].toString(),
+      };
+      await state.applyEnvelopeLinks(links);
+    } catch (_) {
+      // Non-fatal: attribution stays device-local until the next sync.
+    }
+  }
+
+  /// Latest rbz snapshot wins unless the user set a custom rate. Falls back
+  /// to the persisted server rate on next boot.
+  Future<void> _pullRate() async {
+    try {
+      final rows = await client.pullRows(
+        'rate_snapshot',
+        orderCol: 'captured_at',
+        ascending: false,
+        limit: 1,
+      );
+      if (rows.isEmpty) return;
+      final v = (rows.first['usd_zwg'] as num?)?.toDouble();
+      if (v == null || v <= 0) return;
+      await state.applyServerRate(v);
+    } catch (_) {
+      // Rate stays as-is offline — never blocks sync status.
+    }
+  }
+
+  /// Pulls the family roster (membership + user_profile) so every family
+  /// member's data can display with a real name. Best effort — identity
+  /// already works from the local bootstrap; this enriches it.
+  Future<void> _pullMembers() async {
+    try {
+      final sid = _spaceId;
+      if (sid == null) return;
+      final membership = await client.pullRows(
+        'membership',
+        orderCol: 'user_id',
+        eqFilters: {'space_id': 'eq.$sid'},
+      );
+      if (membership.isEmpty) return;
+      final ids = [
+        for (final r in membership) r['user_id'].toString(),
+      ];
+      final profiles = await client.pullRows(
+        'user_profile',
+        orderCol: 'id',
+        eqFilters: {'id': 'in.(${ids.join(',')})'},
+      );
+      final list = membersFromServer(
+        membershipRows: membership,
+        profileRows: profiles,
+        meId: state.user.id,
+      );
+      await state.setFamilyMembers(list);
+    } catch (_) {
+      // RLS/network hiccup — local identity remains; retried next full sync.
+    }
+  }
+
   Future<void> _fullSync() async {
     _cursor = null;
     await _push();
     await _pullSince(_spaceId!, null);
+    await _pullEnvelopeLinks(); // budget attribution across devices
+    await _pullRate(); // latest server FX snapshot (unless user override)
+    await _pullMembers(); // family roster: real names for everyone
     lastSyncAt = DateTime.now();
     await _kvSet('last_sync_ms', '${lastSyncAt!.millisecondsSinceEpoch}');
     _setStatus(SyncStatus.idle);

@@ -1290,4 +1290,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get setupWorking => "Preparando todo…";
+
+  @override
+  String get noEnvelopesYet => "Aún no hay sobres: crea el primero desde la pestaña Presupuestos.";
+
+  @override
+  String get noActivityYet => "Nada registrado todavía. Toca + para añadir tu primera transacción.";
+
+  @override
+  String get setupBanner => "Termina la configuración: crea tu familia o únete con un código";
+
+  @override
+  String get setupBannerCta => "Configurar";
+
+  @override
+  String get deleteTypeHint => "Escribe DELETE para confirmar";
+
+  @override
+  String get deletePermanently => "Eliminar permanentemente";
 }

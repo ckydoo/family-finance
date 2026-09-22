@@ -1285,4 +1285,22 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get setupWorking => "Kulungisa konke…";
+
+  @override
+  String get noEnvelopesYet => "Ayikho imibhajeti okhona — yakha leyonqaba kuthebha leziBajeti.";
+
+  @override
+  String get noActivityYet => "Akukho okubhalwe okhona. Thelela + ukungeza itransaction yakho yokuqala.";
+
+  @override
+  String get setupBanner => "Gcwalisa ukulungisa: yakha umndeni wakho noma ngena ngekholodi";
+
+  @override
+  String get setupBannerCta => "Hlela";
+
+  @override
+  String get deleteTypeHint => "Bhala DELETE ukuqinisekise";
+
+  @override
+  String get deletePermanently => "Cisha kunaphakade";
 }

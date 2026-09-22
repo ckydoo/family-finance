@@ -458,3 +458,36 @@ Move-money & envelope details full-screen conversions; 200% device pass.
 - Server: ZERO new endpoints — reused `create_space`/`join_space` from migration 001. Members-tab create/join dialogs remain as the management surface.
 - L10n +22 keys ×6 → **380** (setup copy + 7 household types). `onboarding_flow_test` rewritten (gate wiring, skip→Home, both form states); `widget_screen_test` retargeted.
 
+## Real-data sweep (2026-09-22, user directive: "no mock data, no demos — use the actual DB")
+- **Live boots EMPTY.** `AppState` in live mode no longer loads `seedData()` — placeholder space, zero members/txs/envelopes/goals, stars 0. The Taylor-family fixture now exists ONLY in demo/test builds (`!env.isLive`), which is also what every widget test uses — zero test churn.
+- **Root-cause fix — identity never hydrated before**: `space`/`members` were seed-only and never persisted, so live devices kept the demo family forever. Now device-local identity lives in kv (`members_v1`, `space_name`, `me_id`): hydrated at boot, persisted on adopt and on every `updateMember`.
+- **`onSpaceAdopted(spaceName:)` bootstraps the real owner** — one owner member derived from the signed-in email (`tendi@…` → "tendi", role owner), sets `me_id`, clears synced tables + outbox as before. Join path identical (space name arrives with the first pull).
+- **Empty-state guards** so real-empty UIs are safe & friendly: QuickAdd no longer `.first`-crashes (envelope/member optional, "no envelopes yet" note — `noEnvelopesYet`), Home hides envelope chips when empty and shows "nothing recorded yet — tap +" (`noActivityYet`).
+- Server data still fills everything else via the existing pull (transaction/envelope/goal/mukando/… adapters, all 10 tables verified against live schema).
+- New `test/live_boot_test.dart`: live fresh boot has ZERO demo rows; adopt bootstraps owner identity (email prefix, owner role, kv persisted); demo fixtures intact.
+- L10n +2 ×6 → **382 keys**.
+- Note for later rounds: Budgets/Savings/Lists could get richer empty-state CTAs (UX_POLISH P2) — crash-safe already.
+
+## Next: seamless-flow execution order (audit only, no code — SEAMLESS_AUDIT.md)
+Sprint A (identity keystone: owner id = auth userId; member pull; space name on join) →
+Sprint B (envelope_tx sync, rate_snapshot pull) →
+Sprint C (skip-limbo banner, RPC display names, P4 sync details).
+
+## Sprint A executed (2026-09-22) — the identity keystone
+- Owner member id = `auth.session.userId` (server user_profile row exists → all pushed FKs satisfy). Fallback newUuid only for auth-less tests.
+- Family roster pull: `_pullMembers()` at the end of every `_fullSync` — membership (space-scoped) + user_profile (id in roster) → `membersFromServer` (me-first, co_parent→adult, name from profile or email prefix) → `AppState.setFamilyMembers` (local renames override, server-'Member' guard keeps local display name, me binding survives, members_v1 persisted).
+- Join path learns the family name: `_adoptSpace` fetches `family_space.name` when the RPC didn't return it (`pullRows` gained generic `eqFilters`); `adoptSpaceName` updates space + kv.
+- Tests: live_boot extended (owner id == session id; mapper mapping; merge semantics). 76 files balanced.
+- Dependency note: roster pull relies on schema.sql RLS policies (`membership_read`, `profile_read`) existing on the live DB — run the policy block if live was created from migration 001 alone.
+- Next: Sprint B (envelope_tx sync adapter, rate_snapshot pull) then Sprint C (skip-limbo banner, RPC display-name SQL, P4 sync details).
+
+## Sprint B + C-quick executed (2026-09-22) — "fix what we can fix here"
+- **envelope_tx sync**: tx pushes carry their junction rows; full sync pulls envelope-scoped links and mirrors into local txs (`applyEnvelopeLinks`, saveTx-persisted, no outbox loop).
+- **rate_snapshot pull**: newest snapshot every full sync (descending pull); precedence custom > server > default; kv `server_rate`; hydrated at boot. Real ZiG rates now flow once snapshots exist.
+- **Skip-for-now limbo fixed**: Home banner (live, no space) → `reopenFamilySetup()` re-enters setup.
+- **Type-DELETE account dialog** (P5 tier): type DELETE, disabled button until exact match, "Delete permanently" label.
+- **Migration 004** (`004_rls_policies_and_names.sql`): idempotent RLS install for live DBs missing policies (all synced tables incl. envelope_tx + rate_snapshot read) + display-name fix in create/join RPCs (email prefix, not 'Member').
+- L10n +4 ×6 → **386** (setupBanner, setupBannerCta, deleteTypeHint, deletePermanently). 76 files balanced.
+- Tests: `live_boot_test` 5 → **8** (envelope-link mirror+persist, FX custom-wins precedence, setup re-arm).
+- USER ACTION: run 003 (if not yet) + 004 in Supabase. Seed at least one `rate_snapshot` row (or keep using Settings custom rate).
+

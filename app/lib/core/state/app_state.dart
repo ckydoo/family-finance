@@ -38,29 +38,64 @@ enum Pace { onTrack, watch, over }
 class AppState extends ChangeNotifier {
   AppState({this.db, AppEnv? env, this.auth})
       : env = env ?? const AppEnv.fallback() {
-    final b = seedData();
-    space = b.space;
-    members = b.members;
-    accounts = b.accounts;
-    envelopes = b.envelopes;
-    txs = b.txs;
-    goals = b.goals;
-    goalTxs = b.goalTxs;
-    items = b.items;
-    chores = b.chores;
-    requests = b.requests;
-    proposals = b.proposals;
-    earnings = b.earnings;
-    circle = b.circle;
-    recurring = b.recurring;
-    txs.sort((a, b2) => b2.when.compareTo(a.when));
-    _user = members.first;
+    if (env?.isLive ?? false) {
+      // LIVE: real-data boot. Empty until the family is adopted
+      // (FamilySetup → create/join → server pull fills everything). No demo
+      // fiction ever exists in a live build.
+      space = const FamilySpace(name: 'My family');
+      members = [];
+      accounts = [];
+      envelopes = [];
+      txs = [];
+      goals = [];
+      goalTxs = [];
+      items = [];
+      chores = [];
+      requests = [];
+      proposals = [];
+      earnings = [];
+      circle = _neutralCircle;
+      recurring = [];
+      stars = 0;
+      _user = _placeholderUser;
+    } else {
+      // DEMO/TEST: the seeded showcase family (fixture — never ships live).
+      final b = seedData();
+      space = b.space;
+      members = b.members;
+      accounts = b.accounts;
+      envelopes = b.envelopes;
+      txs = b.txs;
+      goals = b.goals;
+      goalTxs = b.goalTxs;
+      items = b.items;
+      chores = b.chores;
+      requests = b.requests;
+      proposals = b.proposals;
+      earnings = b.earnings;
+      circle = b.circle;
+      recurring = b.recurring;
+      txs.sort((a, b2) => b2.when.compareTo(a.when));
+      _user = members.first;
+    }
     hydrating = db != null;
     if (db != null) {
       _store = Persistence(db!);
       _hydrationFuture = _hydrate();
     }
   }
+
+  /// Neutral mukando header until the family's real row arrives in a pull.
+  static SavingsCircle get _neutralCircle => SavingsCircle(
+        name: 'Savings circle',
+        contribution: Money(100, Currency.usd),
+        totalRounds: 1,
+        currentRound: 1,
+        order: const ['You'],
+      );
+
+  static const Member _placeholderUser =
+      Member(id: 'me', name: 'Me', emoji: 'person', role: Role.owner);
 
   /// Null → pure in-memory demo/test mode. Non-null → persist + hydrate.
   final AppDatabase? db;
@@ -78,7 +113,9 @@ class AppState extends ChangeNotifier {
   Future<void>? _hydrationFuture;
   final List<Future<void>> _writes = <Future<void>>[];
 
-  late final FamilySpace space;
+  /// Device-local family identity. Adopted/renamed by FamilySetup and
+  /// hydrated from kv (members_v1 / space_name) — NOT demo seed data.
+  late FamilySpace space;
   late final List<Member> members;
   late final List<Account> accounts;
   late final List<Envelope> envelopes;
@@ -282,6 +319,31 @@ class AppState extends ChangeNotifier {
   Future<void> _hydrate() async {
     final store = _store!;
     try {
+      // Device-local family identity (live): owner member + space name.
+      final rawMembers = await db?.kvGet('members_v1');
+      if (rawMembers != null && rawMembers.isNotEmpty) {
+        _loadMembersJson(rawMembers);
+      }
+      final savedName = await db?.kvGet('space_name');
+      if (savedName != null && savedName.isNotEmpty) {
+        space = FamilySpace(name: savedName);
+      }
+      final meId = await db?.kvGet('me_id');
+      if (members.isNotEmpty) {
+        _user = members.firstWhere(
+          (m) => m.id == meId,
+          orElse: () => members.first,
+        );
+      }
+      // FX precedence: user custom rate > last server snapshot > default.
+      final custom = await db?.kvGet('custom_rate');
+      if (custom == null || custom.isEmpty) {
+        final sr = await db?.kvGet('server_rate');
+        if (sr != null && sr.isNotEmpty) {
+          final v = double.tryParse(sr);
+          if (v != null && v > 0) rate = v;
+        }
+      }
       if (await store.hasData()) {
         final data = await store.loadAll();
         lastError = null;
@@ -679,7 +741,10 @@ class AppState extends ChangeNotifier {
 
   /// Engine wiped local synced tables after adopting a family space — the
   /// in-memory image follows so the UI is honest until the first pull lands.
-  void onSpaceAdopted() {
+  /// Called by the sync engine after create_space / join_space. Clears all
+  /// synced data (demo seed included) and bootstraps the REAL device-local
+  /// family identity: one owner member derived from the signed-in email.
+  void onSpaceAdopted({String? spaceName}) {
     txs.clear();
     envelopes.clear();
     goals.clear();
@@ -692,15 +757,140 @@ class AppState extends ChangeNotifier {
     recurring.clear();
     // Neutral placeholder until the family's mukando row arrives in the
     // first pull (collecting before that would push this neutral header).
-    circle = SavingsCircle(
-      name: 'Savings circle',
-      contribution: Money(100, Currency.usd),
-      totalRounds: 1,
-      currentRound: 1,
-      order: const ['You'],
+    circle = _neutralCircle;
+
+    // Real identity: the signed-in user IS their server identity — the id
+    // equals auth.users.id, which join/create_space already registered as a
+    // user_profile row. Every pushed row therefore satisfies its FK.
+    final email = auth?.session?.email ?? '';
+    final serverId = auth?.session?.userId;
+    final me = Member(
+      id: (serverId == null || serverId.isEmpty) ? newUuid() : serverId,
+      name: email.isEmpty ? 'Me' : email.split('@').first,
+      emoji: 'person',
+      role: Role.owner,
     );
+    members
+      ..clear()
+      ..add(me);
+    _user = me;
+    if (spaceName != null && spaceName.trim().isNotEmpty) {
+      space = FamilySpace(name: spaceName.trim());
+      _persistKv('space_name', space.name);
+    }
+    _persistKv('members_v1', _membersJson());
+    _persistKv('me_id', me.id);
     pendingOps = 0;
     notifyListeners();
+  }
+
+  String _membersJson() => jsonEncode([
+        for (final m in members)
+          {'id': m.id, 'name': m.name, 'emoji': m.emoji, 'role': m.role.name},
+      ]);
+
+  /// Live-only: updates the space name after the engine fetched it (join
+  /// path). Persisted so restarts keep the real family name.
+  void adoptSpaceName(String name) {
+    if (name.trim().isEmpty) return;
+    space = FamilySpace(name: name.trim());
+    notifyListeners();
+  }
+
+  /// Sprint B: mirror server envelope_tx links into local transactions.
+  /// Only rewrites rows whose link actually changed; each change is persisted
+  /// locally (no re-queue — the server is the source for links).
+  Future<void> applyEnvelopeLinks(Map<String, String> txToEnvelope) async {
+    var changed = false;
+    for (var i = 0; i < txs.length; i++) {
+      final link = txToEnvelope[txs[i].id];
+      if (link == null) continue;
+      if ((txs[i].envelopeId ?? '') == link) continue;
+      final t = txs[i];
+      txs[i] = Tx(
+        id: t.id,
+        envelopeId: link,
+        memberId: t.memberId,
+        type: t.type,
+        amount: t.amount,
+        method: t.method,
+        note: t.note,
+        when: t.when,
+      );
+      await _store?.saveTx(txs[i]);
+      changed = true;
+    }
+    if (changed) notifyListeners();
+  }
+
+  /// Latest server FX snapshot — never overrides a user-set custom rate.
+  Future<void> applyServerRate(double v) async {
+    if (await db?.kvGet('custom_rate') case final cr? when cr.isNotEmpty) {
+      return; // user override wins (spec §5.1 market profile)
+    }
+    if ((v - rate).abs() < 0.0001) return;
+    rate = v;
+    _persistKv('server_rate', v.toStringAsFixed(4));
+    notifyListeners();
+  }
+
+  /// Skip-for-now recovery: reopen the family-setup flow (Home banner).
+  void reopenFamilySetup() {
+    onboardingComplete = false;
+    _persistKv('onboarding_done', '0');
+    notifyListeners();
+  }
+
+  /// Server family roster (from the membership/user_profile pull) replaces
+  /// the local list. Local profile edits (renames/avatars) always win; if the
+  /// server still calls me 'Member', the local display name is kept.
+  Future<void> setFamilyMembers(List<Member> incoming) async {
+    if (incoming.isEmpty) return;
+    String? editsRaw;
+    try {
+      editsRaw = await db?.kvGet('profile_edits');
+    } catch (_) {}
+    final meId = _user.id;
+    final localMe = _user;
+    final resolved = <Member>[];
+    for (final m in incoming) {
+      var name = m.name;
+      var emoji = m.emoji;
+      if (m.id == meId && (name == 'Member' || name.isEmpty)) {
+        name = localMe.name;
+        emoji = localMe.emoji;
+      }
+      resolved.add(Member(id: m.id, name: name, emoji: emoji, role: m.role));
+    }
+    members
+      ..clear()
+      ..addAll(resolved);
+    _applyProfileEdits(editsRaw);
+    _user = members.firstWhere(
+      (m) => m.id == meId,
+      orElse: () => members.first,
+    );
+    _persistKv('members_v1', _membersJson());
+    notifyListeners();
+  }
+
+  void _loadMembersJson(String raw) {
+    try {
+      final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+      members
+        ..clear()
+        ..addAll([
+          for (final j in list)
+            Member(
+              id: j['id'] as String,
+              name: j['name'] as String? ?? 'Member',
+              emoji: j['emoji'] as String? ?? 'person',
+              role: Role.values.byName(j['role'] as String? ?? 'adult'),
+            ),
+        ]);
+    } catch (_) {
+      // Corrupt row → keep whatever we have; next adopt re-bootstraps.
+    }
   }
 
   Future<void> clearLocalAccountData() async {
@@ -854,6 +1044,7 @@ class AppState extends ChangeNotifier {
         for (final m2 in members) m2.id: {'name': m2.name, 'emoji': m2.emoji},
       }),
     );
+    _persistKv('members_v1', _membersJson());
     notifyListeners();
   }
 

@@ -52,8 +52,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       if (!mounted) return;
       final s = AppScope.of(context);
       setState(() {
-        _envelope = s.envelopes.first;
-        _member = s.user;
+        _envelope = s.envelopes.isEmpty ? null : s.envelopes.first;
+        _member = s.members.isEmpty ? null : s.user;
       });
     });
   }
@@ -237,7 +237,24 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               const SizedBox(height: 6),
 
               // Envelope (expenses only)
-              if (_type == TxType.expense) ...[
+              if (_type == TxType.expense && s.envelopes.isEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.card,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: context.hairline),
+                  ),
+                  child: Text(l.noEnvelopesYet,
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          color: context.inkSoft,
+                          height: 1.4)),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_type == TxType.expense && s.envelopes.isNotEmpty) ...[
                 Text(l.envelopeLabel,
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
