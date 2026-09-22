@@ -6,57 +6,86 @@ import 'package:mhuri_money/core/auth/auth_service.dart';
 import 'package:mhuri_money/core/config/app_env.dart';
 
 /// Proves the first-run gate end-to-end (live mode):
-///   login → sign in → onboarding (slide 1 copy visible) → skip → Home.
-/// State persistence of the flag itself is covered in m4_test.
+///   sign in → family setup (welcome → create/join choice) → Skip → Home.
+/// The create/join engine paths are covered by the sync tests (create_space /
+/// join_space RPCs); here we verify the WIRING and the UI states.
+/// Flag persistence is covered in m4_test.
 void main() {
-  testWidgets('live first run: sign in → onboarding → skip → Home',
+  Future<AuthController> signedInAuth(AppEnv env) async {
+    final auth = AuthController(env: env, service: DemoAuthService());
+    await auth.signIn('david@mhuri.app', '123456');
+    return auth;
+  }
+
+  testWidgets('live first run: sign in → family setup → skip → Home',
       (tester) async {
     final env = AppEnv.parse(
       'APP_ENV=live\n'
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
       'SUPABASE_ANON_KEY=k\n',
     );
-    final auth = AuthController(env: env, service: DemoAuthService());
-    await auth.signIn('david@mhuri.app', '123456');
+    final auth = await signedInAuth(env);
 
     await tester.pumpWidget(MhuriMoneyApp(env: env, auth: auth));
     await tester.pumpAndSettle();
 
-    // Onboarding slide 1 is on screen — the gate is wired.
+    // Family setup is on screen (welcome step) — the gate is wired.
     expect(find.text('Money, managed together'), findsOneWidget);
     expect(find.text('Family Pool'), findsNothing);
 
-    // Skipping completes onboarding and reveals the app.
-    await tester.tap(find.text('Skip'));
+    // Welcome → choice.
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text('Set up your family'), findsOneWidget);
+    expect(find.text('Create a family'), findsOneWidget);
+    expect(find.text('Join with a code'), findsOneWidget);
+
+    // The setup flow always offers an exit that lands in the app.
+    await tester.tap(find.text('Skip for now'));
     await tester.pumpAndSettle();
     expect(find.text('Family Pool'), findsOneWidget);
-    expect(find.text('Money, managed together'), findsNothing);
+    expect(find.text('Set up your family'), findsNothing);
   });
 
-  testWidgets('final CTA uses the localized label on the last slide',
+  testWidgets('create path shows name + household type + working CTA',
       (tester) async {
     final env = AppEnv.parse(
       'APP_ENV=live\n'
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
       'SUPABASE_ANON_KEY=k\n',
     );
-    final auth = AuthController(env: env, service: DemoAuthService());
-    await auth.signIn('david@mhuri.app', '123456');
+    final auth = await signedInAuth(env);
 
     await tester.pumpWidget(MhuriMoneyApp(env: env, auth: auth));
     await tester.pumpAndSettle();
-
-    // Walk to the last slide.
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Next'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Next'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Next'));
+    await tester.tap(find.text('Create a family'));
     await tester.pumpAndSettle();
 
-    expect(find.text("Let's get started"), findsOneWidget);
-    expect(find.text('Gentle reminders'), findsOneWidget);
+    expect(find.text('Family name'), findsOneWidget);
+    expect(find.text('What kind of family?'), findsOneWidget);
+    expect(find.text('Couple with kids'), findsOneWidget);
+    expect(find.text('Extended family'), findsOneWidget);
+    expect(find.text('Create family'), findsOneWidget);
+  });
+
+  testWidgets('join path shows the invite-code field', (tester) async {
+    final env = AppEnv.parse(
+      'APP_ENV=live\n'
+      'SUPABASE_URL=https://abcdefgh.supabase.co\n'
+      'SUPABASE_ANON_KEY=k\n',
+    );
+    final auth = await signedInAuth(env);
+
+    await tester.pumpWidget(MhuriMoneyApp(env: env, auth: auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Join with a code'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Invite code'), findsOneWidget);
+    expect(find.text('Join family'), findsOneWidget);
   });
 }

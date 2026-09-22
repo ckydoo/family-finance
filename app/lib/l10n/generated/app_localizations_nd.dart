@@ -1219,4 +1219,70 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get obDone => 'Masiqalise';
+
+  @override
+  String get setupChoiceTitle => "Hlela umndeni wakho";
+
+  @override
+  String get setupChoiceBody => "I-Mhuri Hub isebenza nomndeni owodwa, ndawonye. Yakha lowakho, noma joyina lowo owungulowo.";
+
+  @override
+  String get setupCreateCard => "Yakha umndeni";
+
+  @override
+  String get setupCreateCardBody => "Nika igama, khetha uhlobo lomndeni, memela abantu bakho.";
+
+  @override
+  String get setupJoinCard => "Ngena ngekholodi";
+
+  @override
+  String get setupJoinCardBody => "Umuntu ukumemele — faza ikholodi yomndeni wakhe ujoyine.";
+
+  @override
+  String get createFamilyCta => "Yakha umndeni";
+
+  @override
+  String get joinFamilyCta => "Joyina umndeni";
+
+  @override
+  String get familyNameLabel => "Igama lomndeni";
+
+  @override
+  String get familyNameHint => "isb. Umndeni kaMarufu";
+
+  @override
+  String get householdLabel => "Yimuphi uhlobo lomndeni?";
+
+  @override
+  String get hhCouple => "Abashadile nabantwana";
+
+  @override
+  String get hhSingle => "Umzali oyedwa";
+
+  @override
+  String get hhExtended => "Umndeni omkhulu";
+
+  @override
+  String get hhBlended => "Umndeni ohlangene";
+
+  @override
+  String get hhPartners => "Abashadile, ngabantwana";
+
+  @override
+  String get hhSolo => "Mina yedwa okwesikhashana";
+
+  @override
+  String get hhOther => "Okunye";
+
+  @override
+  String get joinCodeLabel => "Ikholodi yememo";
+
+  @override
+  String get skipForNow => "Yeqela okwesikhashana";
+
+  @override
+  String get setupInviteTitle => "Memela abantu bakho";
+
+  @override
+  String get setupWorking => "Kulungisa konke…";
 }

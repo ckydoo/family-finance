@@ -6,7 +6,7 @@ import 'package:mhuri_money/features/activity/activity_screen.dart';
 import 'package:mhuri_money/features/budgets/budgets_screen.dart';
 import 'package:mhuri_money/features/home/home_screen.dart';
 import 'package:mhuri_money/features/lists/lists_screen.dart';
-import 'package:mhuri_money/features/onboarding/onboarding_screen.dart';
+import 'package:mhuri_money/features/onboarding/family_setup_screen.dart';
 import 'package:mhuri_money/features/reports/reports_screen.dart';
 import 'package:mhuri_money/features/savings/savings_screen.dart';
 import 'package:mhuri_money/features/settings/settings_screen.dart';
@@ -108,11 +108,11 @@ void main() {
       (tester) async {
     sizeWindow(tester);
     final s = await demo();
-    tester.pumpWidget(harness(s, OnboardingScreen(state: s)));
+    tester.pumpWidget(harness(s, FamilySetupScreen(state: s)));
     await tester.pumpAndSettle();
 
     expect(find.text('Money, managed together'), findsOneWidget);
-    expect(find.text('Skip'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
     expect(find.byType(Image), findsOneWidget);
   });
 }

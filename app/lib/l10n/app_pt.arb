@@ -437,4 +437,27 @@
   "inviteHowTo": "A pessoa cria uma conta com o e-mail dela e depois introduz este código para entrar na tua família."
 ,
   "obDone": "Vamos começar"
+,
+  "setupChoiceTitle": "Configura a tua família",
+  "setupChoiceBody": "O Mhuri Hub funciona para uma família, em conjunto. Cria a tua ou entra na que já pertences.",
+  "setupCreateCard": "Criar uma família",
+  "setupCreateCardBody": "Dá um nome, escolhe o tipo de agregado e convida os teus.",
+  "setupJoinCard": "Entrar com um código",
+  "setupJoinCardBody": "Alguém convidou-te — introduz o código familiar para entrares.",
+  "createFamilyCta": "Criar família",
+  "joinFamilyCta": "Entrar na família",
+  "familyNameLabel": "Nome da família",
+  "familyNameHint": "ex.: A família Marufu",
+  "householdLabel": "Que tipo de família?",
+  "hhCouple": "Casal com filhos",
+  "hhSingle": "Pai/mãe solteira",
+  "hhExtended": "Família alargada",
+  "hhBlended": "Família reconstruída",
+  "hhPartners": "Casal sem filhos",
+  "hhSolo": "Só eu por agora",
+  "hhOther": "Outro",
+  "joinCodeLabel": "Código de convite",
+  "skipForNow": "Ignorar por agora",
+  "setupInviteTitle": "Convida os teus",
+  "setupWorking": "A preparar tudo…"
 }

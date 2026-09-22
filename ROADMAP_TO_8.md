@@ -452,3 +452,9 @@ Move-money & envelope details full-screen conversions; 200% device pass.
 - Premium consistency (in-place only): gradient tile gains the Pool card's soft elevation; Skip gets a 48dp tap target; login error/confirmation containers now use theme tokens (`dangerSoft`/`primarySoft`) instead of hardcoded hex.
 - No structural or visual redesign — all existing layouts preserved.
 
+## Family-setup onboarding (2026-09-22, user directive: "create account should involve family setup")
+- **New first-run flow (live mode): Auth → welcome → Create-or-Join → family live.** The generic 4-slide carousel is retired (`onboarding_screen.dart` deleted); `FamilySetupScreen` replaces it behind the same app.dart gate (live + logged-in + !onboardingComplete → flag persists as before, m4_test).
+- Create path: name + household type (7 DB values, ×6 labels) → `SyncEngine.createSpace(name, household:)` — the RPC always accepted `p_household`; the client now sends it → invite step (big code + copy, obDone). Join path: code → `join_space` → straight in. Errors surface inline from `engine.lastError`. "Skip for now" always lands in Home.
+- Server: ZERO new endpoints — reused `create_space`/`join_space` from migration 001. Members-tab create/join dialogs remain as the management surface.
+- L10n +22 keys ×6 → **380** (setup copy + 7 household types). `onboarding_flow_test` rewritten (gate wiring, skip→Home, both form states); `widget_screen_test` retargeted.
+

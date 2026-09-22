@@ -1228,4 +1228,70 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get obDone => 'C’est parti';
+
+  @override
+  String get setupChoiceTitle => "Configure ta famille";
+
+  @override
+  String get setupChoiceBody => "Mhuri Hub marche pour une famille, ensemble. Crée la tienne ou rejoins celle à laquelle tu appartiens.";
+
+  @override
+  String get setupCreateCard => "Créer une famille";
+
+  @override
+  String get setupCreateCardBody => "Nomme-la, choisis ton type de foyer et invite les tiens.";
+
+  @override
+  String get setupJoinCard => "Rejoindre avec un code";
+
+  @override
+  String get setupJoinCardBody => "Quelqu’un t’a invité — saisis son code famille pour le rejoindre.";
+
+  @override
+  String get createFamilyCta => "Créer la famille";
+
+  @override
+  String get joinFamilyCta => "Rejoindre la famille";
+
+  @override
+  String get familyNameLabel => "Nom de la famille";
+
+  @override
+  String get familyNameHint => "ex. La famille Marufu";
+
+  @override
+  String get householdLabel => "Quel type de famille ?";
+
+  @override
+  String get hhCouple => "Couple avec enfants";
+
+  @override
+  String get hhSingle => "Parent seul";
+
+  @override
+  String get hhExtended => "Famille élargie";
+
+  @override
+  String get hhBlended => "Famille recomposée";
+
+  @override
+  String get hhPartners => "Couple sans enfants";
+
+  @override
+  String get hhSolo => "Juste moi pour l’instant";
+
+  @override
+  String get hhOther => "Autre";
+
+  @override
+  String get joinCodeLabel => "Code d’invitation";
+
+  @override
+  String get skipForNow => "Passer pour l’instant";
+
+  @override
+  String get setupInviteTitle => "Invite les tiens";
+
+  @override
+  String get setupWorking => "On prépare tout…";
 }

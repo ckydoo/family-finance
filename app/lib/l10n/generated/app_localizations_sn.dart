@@ -1218,4 +1218,70 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get obDone => 'Ngatangei';
+
+  @override
+  String get setupChoiceTitle => "Gadzirisa mhuri yako";
+
+  @override
+  String get setupChoiceBody => "Mhuri Hub inoshanda nemhuri imwe, pamwechete. Vhaka yako, kana ujoina iyo unoidiwewo.";
+
+  @override
+  String get setupCreateCard => "Vhaka mhuri";
+
+  @override
+  String get setupCreateCardBody => "Pazita zita, sarudza rudzi rwemhuri, ukozonhora vanhu vako.";
+
+  @override
+  String get setupJoinCard => "Pinda nencode";
+
+  @override
+  String get setupJoinCardBody => "Mumwe vakakokorodza iwe — nyora code yemhuri yavo joina.";
+
+  @override
+  String get createFamilyCta => "Vhaka mhuri";
+
+  @override
+  String get joinFamilyCta => "Pinda mumhuri";
+
+  @override
+  String get familyNameLabel => "Zita remhuri";
+
+  @override
+  String get familyNameHint => "somuenzaniso: Mhuri yaMarufu";
+
+  @override
+  String get householdLabel => "Mhuri yakadini?";
+
+  @override
+  String get hhCouple => "Vaviri navana";
+
+  @override
+  String get hhSingle => "Mubereki wega";
+
+  @override
+  String get hhExtended => "Mhuri huru";
+
+  @override
+  String get hhBlended => "Mhuri mivanhu";
+
+  @override
+  String get hhPartners => "Vaviri chete";
+
+  @override
+  String get hhSolo => "Inini ndoga parizvino";
+
+  @override
+  String get hhOther => "Zvimwe";
+
+  @override
+  String get joinCodeLabel => "Kodhi yekukokorodza";
+
+  @override
+  String get skipForNow => "Iraska parizvino";
+
+  @override
+  String get setupInviteTitle => "Kokorodza vanhu vako";
+
+  @override
+  String get setupWorking => "Kugadzirwa zviri kuita…";
 }

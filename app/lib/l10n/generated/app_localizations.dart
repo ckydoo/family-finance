@@ -2253,6 +2253,50 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Let\'s get started'**
   String get obDone;
+
+  String get setupChoiceTitle;
+
+  String get setupChoiceBody;
+
+  String get setupCreateCard;
+
+  String get setupCreateCardBody;
+
+  String get setupJoinCard;
+
+  String get setupJoinCardBody;
+
+  String get createFamilyCta;
+
+  String get joinFamilyCta;
+
+  String get familyNameLabel;
+
+  String get familyNameHint;
+
+  String get householdLabel;
+
+  String get hhCouple;
+
+  String get hhSingle;
+
+  String get hhExtended;
+
+  String get hhBlended;
+
+  String get hhPartners;
+
+  String get hhSolo;
+
+  String get hhOther;
+
+  String get joinCodeLabel;
+
+  String get skipForNow;
+
+  String get setupInviteTitle;
+
+  String get setupWorking;
 }
 
 class _AppLocalizationsDelegate

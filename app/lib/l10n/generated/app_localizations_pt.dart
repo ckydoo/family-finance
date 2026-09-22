@@ -1222,4 +1222,70 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get obDone => 'Vamos começar';
+
+  @override
+  String get setupChoiceTitle => "Configura a tua família";
+
+  @override
+  String get setupChoiceBody => "O Mhuri Hub funciona para uma família, em conjunto. Cria a tua ou entra na que já pertences.";
+
+  @override
+  String get setupCreateCard => "Criar uma família";
+
+  @override
+  String get setupCreateCardBody => "Dá um nome, escolhe o tipo de agregado e convida os teus.";
+
+  @override
+  String get setupJoinCard => "Entrar com um código";
+
+  @override
+  String get setupJoinCardBody => "Alguém convidou-te — introduz o código familiar para entrares.";
+
+  @override
+  String get createFamilyCta => "Criar família";
+
+  @override
+  String get joinFamilyCta => "Entrar na família";
+
+  @override
+  String get familyNameLabel => "Nome da família";
+
+  @override
+  String get familyNameHint => "ex.: A família Marufu";
+
+  @override
+  String get householdLabel => "Que tipo de família?";
+
+  @override
+  String get hhCouple => "Casal com filhos";
+
+  @override
+  String get hhSingle => "Pai/mãe solteira";
+
+  @override
+  String get hhExtended => "Família alargada";
+
+  @override
+  String get hhBlended => "Família reconstruída";
+
+  @override
+  String get hhPartners => "Casal sem filhos";
+
+  @override
+  String get hhSolo => "Só eu por agora";
+
+  @override
+  String get hhOther => "Outro";
+
+  @override
+  String get joinCodeLabel => "Código de convite";
+
+  @override
+  String get skipForNow => "Ignorar por agora";
+
+  @override
+  String get setupInviteTitle => "Convida os teus";
+
+  @override
+  String get setupWorking => "A preparar tudo…";
 }

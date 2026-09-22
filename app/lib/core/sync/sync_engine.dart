@@ -149,10 +149,12 @@ class SyncEngine {
 
   /// Creates a family space. Wipes this device's synced tables first so the
   /// demo seed never leaks into the family's server data.
-  Future<bool> createSpace(String name) async {
+  Future<bool> createSpace(String name,
+      {String household = 'couple_kids'}) async {
     try {
       _setStatus(SyncStatus.syncing);
-      final result = await client.rpc('create_space', {'p_name': name});
+      final result = await client
+          .rpc('create_space', {'p_name': name, 'p_household': household});
       if (result is! Map) {
         throw const SyncException(0, 'unexpected response from server');
       }

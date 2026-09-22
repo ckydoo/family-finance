@@ -437,4 +437,27 @@
   "inviteHowTo": "Anovhaka account neemail yake, obva anyora code iyi kuti apinde mumhuri yako."
 ,
   "obDone": "Ngatangei"
+,
+  "setupChoiceTitle": "Gadzirisa mhuri yako",
+  "setupChoiceBody": "Mhuri Hub inoshanda nemhuri imwe, pamwechete. Vhaka yako, kana ujoina iyo unoidiwewo.",
+  "setupCreateCard": "Vhaka mhuri",
+  "setupCreateCardBody": "Pazita zita, sarudza rudzi rwemhuri, ukozonhora vanhu vako.",
+  "setupJoinCard": "Pinda nencode",
+  "setupJoinCardBody": "Mumwe vakakokorodza iwe — nyora code yemhuri yavo joina.",
+  "createFamilyCta": "Vhaka mhuri",
+  "joinFamilyCta": "Pinda mumhuri",
+  "familyNameLabel": "Zita remhuri",
+  "familyNameHint": "somuenzaniso: Mhuri yaMarufu",
+  "householdLabel": "Mhuri yakadini?",
+  "hhCouple": "Vaviri navana",
+  "hhSingle": "Mubereki wega",
+  "hhExtended": "Mhuri huru",
+  "hhBlended": "Mhuri mivanhu",
+  "hhPartners": "Vaviri chete",
+  "hhSolo": "Inini ndoga parizvino",
+  "hhOther": "Zvimwe",
+  "joinCodeLabel": "Kodhi yekukokorodza",
+  "skipForNow": "Iraska parizvino",
+  "setupInviteTitle": "Kokorodza vanhu vako",
+  "setupWorking": "Kugadzirwa zviri kuita…"
 }

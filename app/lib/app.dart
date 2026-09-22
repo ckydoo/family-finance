@@ -16,7 +16,7 @@ import 'core/widgets/motion.dart';
 import 'core/money/money.dart';
 import 'features/auth/login_screen.dart';
 import 'features/kids/kids_mode.dart';
-import 'features/onboarding/onboarding_screen.dart';
+import 'features/onboarding/family_setup_screen.dart';
 import 'features/shell/adult_shell.dart';
 import 'features/teen/teen_zone.dart';
 
@@ -163,9 +163,10 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 if (!_auth.isLoggedIn) {
                   return LoginScreen(auth: _auth);
                 }
-                // First-run onboarding (live mode only; skip writes kv).
+                // First-run family setup (live mode only; skip writes kv):
+                // create a family or join one — that IS the onboarding.
                 if (_live && _auth.isLoggedIn && !_state.onboardingComplete) {
-                  return OnboardingScreen(state: _state);
+                  return FamilySetupScreen(state: _state);
                 }
                 return const RoleGate();
               },

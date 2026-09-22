@@ -437,4 +437,27 @@
   "inviteHowTo": "Uyakha i-akhawunti nge-imeyili yakhe, bese afaka lekhodi ukuba ajoyine umndeni wakho."
 ,
   "obDone": "Masiqalise"
+,
+  "setupChoiceTitle": "Hlela umndeni wakho",
+  "setupChoiceBody": "I-Mhuri Hub isebenza nomndeni owodwa, ndawonye. Yakha lowakho, noma joyina lowo owungulowo.",
+  "setupCreateCard": "Yakha umndeni",
+  "setupCreateCardBody": "Nika igama, khetha uhlobo lomndeni, memela abantu bakho.",
+  "setupJoinCard": "Ngena ngekholodi",
+  "setupJoinCardBody": "Umuntu ukumemele — faza ikholodi yomndeni wakhe ujoyine.",
+  "createFamilyCta": "Yakha umndeni",
+  "joinFamilyCta": "Joyina umndeni",
+  "familyNameLabel": "Igama lomndeni",
+  "familyNameHint": "isb. Umndeni kaMarufu",
+  "householdLabel": "Yimuphi uhlobo lomndeni?",
+  "hhCouple": "Abashadile nabantwana",
+  "hhSingle": "Umzali oyedwa",
+  "hhExtended": "Umndeni omkhulu",
+  "hhBlended": "Umndeni ohlangene",
+  "hhPartners": "Abashadile, ngabantwana",
+  "hhSolo": "Mina yedwa okwesikhashana",
+  "hhOther": "Okunye",
+  "joinCodeLabel": "Ikholodi yememo",
+  "skipForNow": "Yeqela okwesikhashana",
+  "setupInviteTitle": "Memela abantu bakho",
+  "setupWorking": "Kulungisa konke…"
 }
