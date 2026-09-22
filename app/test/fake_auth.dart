@@ -11,6 +11,13 @@ class FakeAuthService implements AuthService {
       email.contains('@') && email.contains('.') && password.length >= 6;
 
   @override
+  AuthSession? get session => _session;
+
+  @override
+  Future<String?> refreshAccessToken() async =>
+      _session == null ? null : 'fake-access-token';
+
+  @override
   Future<AuthResult> signIn(String email, String password) async {
     if (!_valid(email, password)) {
       return const AuthResult.failure(

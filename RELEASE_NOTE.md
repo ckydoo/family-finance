@@ -1,1 +1,1 @@
-Demo mode removed completely: live-only app, three config paths, setup error screen instead of offline fiction
+Fix: create-family Empty JWT — no ghost sessions, transient refresh failures keep your login, self-healing token refresh

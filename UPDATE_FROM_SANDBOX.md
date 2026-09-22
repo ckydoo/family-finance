@@ -74,3 +74,8 @@ scripts just automate that (and protect `.env`).
 - First-boot legacy purge kept (`live_purged_v1`), no longer gated on env.
 - Tests: added `test/fake_auth.dart` + `test/seed.dart` (explicit test-only baseline); rewrote env/auth/onboarding/widget/persistence/flows/m4/sync tests for the live-only reality (lib_boot 9 tests; zero `DemoAuthService`/`seed_data` refs).
 
+## Empty-JWT fix (2026-09-22, unpushed)
+- Device error "Empty JWT is sent in Authorization header" on Create family — root cause: a failed post-signin token refresh WIPED stored tokens but left the session, so the app looked logged in and sent `Bearer ` + nothing.
+- Fixes: (1) controller uses the service-cached session — no second network call after sign-in, no fabricated sessions; (2) restoreSession only clears tokens on a definite 400/401 — transient 5xx keeps the login; (3) `refreshAccessToken()` + self-healing sync token closure; (4) sync client throws `SyncException(401, "Your session has expired — sign in again.")` instead of ever sending an empty credential.
+- Tests +4 (transient-keeps-session, dead-token-clears, refresh-renews, client empty-token guard). auth_test 15 → 18.
+

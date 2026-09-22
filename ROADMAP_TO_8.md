@@ -504,3 +504,7 @@ Sprint C (skip-limbo banner, RPC display names, P4 sync details).
 - Factory default Kids-Mode exit PIN 1234 kept (documented; parent sets a real PIN).
 - Tests carry their own baseline now: `test/fake_auth.dart`, `test/seed.dart` (explicit, test-only); all 22 test files compile against the live-only API.
 
+## Empty-JWT fix (2026-09-22) — device report from Create family
+- Ghost-session chain removed (controller→service.session), transient refresh failures no longer wipe tokens, sync tokenGet self-heals via refresh, client hard-guards empty credentials.
+- Known good path after pull: sign IN (account exists from signup) → create family.
+
