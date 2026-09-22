@@ -7,7 +7,7 @@ import 'package:mhuri_money/core/auth/recovery_link.dart';
 String _b64url(String s) => base64Url.encode(utf8.encode(s)).replaceAll('=', '');
 
 String _jwt({String sub = 'uid-1', String email = 'ama@example.com'}) =>
-    '${_b64url('{"alg":"HS256","typ":"JWT")}.${_b64url(jsonEncode({"sub": sub, "email": email}))}.sig';
+    '${_b64url('{"alg":"HS256","typ":"JWT"}').}${_b64url(jsonEncode({"sub": sub, "email": email}))}.sig';
 
 void main() {
   group('parseRecoveryLink', () {

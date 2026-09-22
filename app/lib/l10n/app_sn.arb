@@ -616,5 +616,22 @@
   "discardChangesTitle": "Kusiya shanduko?",
   "discardChangesBody": "Haisati yachengetedzwa. Buda zvino?",
   "stay": "Ramba uchishanda",
-  "leave": "Buda"
+  "leave": "Buda",
+  "btnCreate": "Gadzira",
+  "btnJoin": "Batanidza",
+  "hintFamilyExample": "somuenzaniso: Mhuri yaTaylor",
+  "transferFrom": "Kubva",
+  "transferTo": "Kune",
+  "transferWhy": "Sei?",
+  "listNameLabel": "Chinhu",
+  "listQtyLabel": "Nhamba",
+  "kidsPinHint": "PIN itsva (4–6 manhamba)",
+  "kidsPinUpdated": "Kids Mode PIN yave itsva ✓",
+  "setupEnterBoth": "Isa zita raunodawo nezita remhuri.",
+  "setupNeedsConnection": "Unoda kubatana kuti ugadzire mhuri yako.",
+  "setupNameTaken": "Zita iri remhuri ratove ripi. Edza rimwe.",
+  "setupEnterJoin": "Isa zita raunodawo nekodi yekukoka.",
+  "avatarError": "Ifoto yakundikana kuchinjwa. Edzai imwe.",
+  "invitesLoadFailed": "Makota hakuna kuwana. Dhonza zvekare.",
+  "filterAll": "Zvose ({n})"
 }

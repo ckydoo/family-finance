@@ -1887,4 +1887,57 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get leave => 'Buda';
+
+  @override
+  String get btnCreate => 'Gadzira';
+
+  @override
+  String get btnJoin => 'Batanidza';
+
+  @override
+  String get hintFamilyExample => 'somuenzaniso: Mhuri yaTaylor';
+
+  @override
+  String get transferFrom => 'Kubva';
+
+  @override
+  String get transferTo => 'Kune';
+
+  @override
+  String get transferWhy => 'Sei?';
+
+  @override
+  String get listNameLabel => 'Chinhu';
+
+  @override
+  String get listQtyLabel => 'Nhamba';
+
+  @override
+  String get kidsPinHint => 'PIN itsva (4–6 manhamba)';
+
+  @override
+  String get kidsPinUpdated => 'Kids Mode PIN yave itsva ✓';
+
+  @override
+  String get setupEnterBoth => 'Isa zita raunodawo nezita remhuri.';
+
+  @override
+  String get setupNeedsConnection => 'Unoda kubatana kuti ugadzire mhuri yako.';
+
+  @override
+  String get setupNameTaken => 'Zita iri remhuri ratove ripi. Edza rimwe.';
+
+  @override
+  String get setupEnterJoin => 'Isa zita raunodawo nekodi yekukoka.';
+
+  @override
+  String get avatarError => 'Ifoto yakundikana kuchinjwa. Edzai imwe.';
+
+  @override
+  String get invitesLoadFailed => 'Makota hakuna kuwana. Dhonza zvekare.';
+
+  @override
+  String filterAll(Object n) {
+    return 'Zvose ($n)';
+  }
 }

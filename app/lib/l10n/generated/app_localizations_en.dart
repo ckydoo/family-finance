@@ -1880,4 +1880,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get leave => 'Leave';
+
+  @override
+  String get btnCreate => 'Create';
+
+  @override
+  String get btnJoin => 'Join';
+
+  @override
+  String get hintFamilyExample => 'e.g. The Taylor Family';
+
+  @override
+  String get transferFrom => 'From';
+
+  @override
+  String get transferTo => 'To';
+
+  @override
+  String get transferWhy => 'Why?';
+
+  @override
+  String get listNameLabel => 'Item';
+
+  @override
+  String get listQtyLabel => 'Qty';
+
+  @override
+  String get kidsPinHint => 'New PIN (4–6 digits)';
+
+  @override
+  String get kidsPinUpdated => 'Kids Mode PIN updated ✓';
+
+  @override
+  String get setupEnterBoth => 'Enter your preferred name and family name.';
+
+  @override
+  String get setupNeedsConnection => 'A connection is required to create your family.';
+
+  @override
+  String get setupNameTaken => 'That family name is already taken. Try another.';
+
+  @override
+  String get setupEnterJoin => 'Enter your preferred name and invite code.';
+
+  @override
+  String get avatarError => 'Couldn\'t update that photo. Try another one.';
+
+  @override
+  String get invitesLoadFailed => 'Could not load invites. Pull to refresh.';
+
+  @override
+  String filterAll(Object n) {
+    return 'All ($n)';
+  }
 }

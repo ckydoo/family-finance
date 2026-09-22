@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/widgets/ui.dart';
+
 import '../../core/auth/auth_controller.dart';
 import '../../core/auth/pin_store.dart';
 import '../settings/settings_screen.dart';
@@ -49,9 +51,9 @@ Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
     s.setMyAvatar(publicUrl);
     messenger.showSnackBar(SnackBar(
         content: Text(l.photoSaved), behavior: SnackBarBehavior.floating));
-  } on AvatarException catch (e) {
+  } on AvatarException {
     messenger.showSnackBar(SnackBar(
-        content: Text(e.message), behavior: SnackBarBehavior.floating));
+        content: Text(l.avatarError), behavior: SnackBarBehavior.floating));
   } catch (_) {
     messenger.showSnackBar(SnackBar(
         content: Text(l.photoFailed), behavior: SnackBarBehavior.floating));
@@ -144,32 +146,21 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: SecondaryButton(
                       onPressed: () => _pickAndUploadPhoto(context, s),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.primary,
-                        side: BorderSide(color: context.primary),
-                        minimumSize: const Size.fromHeight(44),
-                        shape: const StadiumBorder(),
-                      ),
-                      icon: const Icon(Icons.photo_outlined, size: 18),
-                      label: Text(l.addPhoto),
+                      icon: Icons.photo_outlined,
+                      label: l.addPhoto,
                     ),
                   ),
                   if (m.avatarUrl != null) ...[
                     const SizedBox(width: 8),
-                    OutlinedButton(
+                    SecondaryButton(
                       onPressed: () {
                         s.setMyAvatar('');
                         Navigator.pop(ctx);
                       },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.expenseRed,
-                        side: BorderSide(color: context.expenseRed),
-                        minimumSize: const Size.fromHeight(44),
-                        shape: const StadiumBorder(),
-                      ),
-                      child: Text(l.removePhoto),
+                      danger: true,
+                      label: l.removePhoto,
                     ),
                   ],
                 ],
@@ -629,21 +620,17 @@ class MembersScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(l.createFamilySpace),
-        content: TextField(
+        content: MhuriField(
           controller: name,
+          label: l.familyName,
+          hint: l.hintFamilyExample,
+          fillColor: context.bg,
           autofocus: true,
-          decoration: InputDecoration(
-            labelText: l.familyName,
-            hintText: 'e.g. The Taylor Family',
-            filled: true,
-            fillColor: context.bg,
-            border: OutlineInputBorder(borderSide: BorderSide.none),
-          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -651,7 +638,7 @@ class MembersScreen extends StatelessWidget {
               foregroundColor: context.onSolid,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Create'),
+            child: Text(l.btnCreate),
           ),
         ],
       ),
@@ -674,6 +661,7 @@ class MembersScreen extends StatelessWidget {
   }
 
   Future<void> _joinSpaceDialog(BuildContext context, AppState s) async {
+    final l = AppLocalizations.of(context)!;
     final engine = s.sync;
     if (engine == null) return;
     final code = TextEditingController();
@@ -697,7 +685,7 @@ class MembersScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -705,7 +693,7 @@ class MembersScreen extends StatelessWidget {
               foregroundColor: context.onSolid,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Join'),
+            child: Text(l.btnJoin),
           ),
         ],
       ),
@@ -764,6 +752,7 @@ class MembersScreen extends StatelessWidget {
       );
 
   void _editParentPin(BuildContext context, AppState s) {
+    final l = AppLocalizations.of(context)!;
     final pin = TextEditingController();
     showDialog<void>(
       context: context,
@@ -776,7 +765,7 @@ class MembersScreen extends StatelessWidget {
           obscureText: true,
           maxLength: 6,
           decoration: InputDecoration(
-            hintText: 'New PIN (4\u20136 digits)',
+            hintText: l.kidsPinHint,
             counterText: '',
             filled: true,
             fillColor: context.bg,
@@ -786,7 +775,7 @@ class MembersScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -801,14 +790,14 @@ class MembersScreen extends StatelessWidget {
               if (ctx.mounted) Navigator.pop(ctx);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Kids Mode PIN updated \u2713'),
+                  SnackBar(
+                    content: Text(l.kidsPinUpdated),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            child: const Text('Save'),
+            child: Text(MaterialLocalizations.of(ctx).saveButtonLabel),
           ),
         ],
       ),
@@ -922,7 +911,10 @@ class MembersScreen extends StatelessWidget {
                     backgroundColor: context.danger,
                     foregroundColor: context.onSolid,
                   ),
-                  onPressed: () => Navigator.pop(sheetContext, true),
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.pop(sheetContext, true);
+                  },
                   child: Text(l.deletePermanently),
                 ),
               ),
@@ -1207,14 +1199,10 @@ class MembersScreen extends StatelessWidget {
     final l = AppLocalizations.of(ctx)!;
     final isCurrent = s.user.id == m.id;
     return ListTile(
-      leading: CircleAvatar(
+      leading: MemberAvatar(
         backgroundColor: _roleBg(m.role),
-        backgroundImage:
-            m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
-        child: m.avatarUrl != null
-            ? null
-            : Icon(iconForKey(m.emoji) ?? Icons.person,
-                size: 20, color: ctx.ink),
+        icon: iconForKey(m.emoji) ?? Icons.person,
+        imageUrl: m.avatarUrl,
       ),
       title: Text(
         m.name,

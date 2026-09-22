@@ -1895,4 +1895,57 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get leave => 'Salir';
+
+  @override
+  String get btnCreate => 'Crear';
+
+  @override
+  String get btnJoin => 'Unirse';
+
+  @override
+  String get hintFamilyExample => 'p. ej., familia Taylor';
+
+  @override
+  String get transferFrom => 'De';
+
+  @override
+  String get transferTo => 'Para';
+
+  @override
+  String get transferWhy => '¿Por qué?';
+
+  @override
+  String get listNameLabel => 'Artículo';
+
+  @override
+  String get listQtyLabel => 'Cant.';
+
+  @override
+  String get kidsPinHint => 'PIN nuevo (4–6 dígitos)';
+
+  @override
+  String get kidsPinUpdated => 'PIN del Modo Niños actualizado ✓';
+
+  @override
+  String get setupEnterBoth => 'Escribe tu nombre y el nombre de la familia.';
+
+  @override
+  String get setupNeedsConnection => 'Necesitas conexión para crear tu familia.';
+
+  @override
+  String get setupNameTaken => 'Ese nombre de familia ya existe. Prueba otro.';
+
+  @override
+  String get setupEnterJoin => 'Escribe tu nombre y el código de invitación.';
+
+  @override
+  String get avatarError => 'No se pudo actualizar la foto. Prueba otra.';
+
+  @override
+  String get invitesLoadFailed => 'No se pudieron cargar las invitaciones. Desliza para actualizar.';
+
+  @override
+  String filterAll(Object n) {
+    return 'Todo ($n)';
+  }
 }

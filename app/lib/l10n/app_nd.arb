@@ -616,5 +616,22 @@
   "discardChangesTitle": "Yekela izingququko?",
   "discardChangesBody": "Ayikagciniwe. Phuma njani manje?",
   "stay": "Qhubeka usebenza",
-  "leave": "Phuma"
+  "leave": "Phuma",
+  "btnCreate": "Yenza",
+  "btnJoin": "Hlanganisa",
+  "hintFamilyExample": "isib. umndeni kaTaylor",
+  "transferFrom": "Leya",
+  "transferTo": "Ku",
+  "transferWhy": "Ngani?",
+  "listNameLabel": "Into",
+  "listQtyLabel": "Inani",
+  "kidsPinHint": "I-PIN entsha (4–6 amanani)",
+  "kidsPinUpdated": "I-PIN yeKids Mode yenziwe entsha ✓",
+  "setupEnterBoth": "Faka igama lolakho negama lomndeni.",
+  "setupNeedsConnection": "Udinga ukuxhumana ukuze udale umndeni wakho.",
+  "setupNameTaken": "Igama lelomndeni selithathiwe. Zama elinye.",
+  "setupEnterJoin": "Faka igama lakho nekhodi yesimemo.",
+  "avatarError": "Ifoto ayiphumelelanga ukutshintshwa. Zamanini enye.",
+  "invitesLoadFailed": "Iimvito azifunyanisanga. Zama kwakhona.",
+  "filterAll": "Zonke ({n})"
 }

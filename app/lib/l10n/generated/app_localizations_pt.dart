@@ -1893,4 +1893,57 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get leave => 'Sair';
+
+  @override
+  String get btnCreate => 'Criar';
+
+  @override
+  String get btnJoin => 'Entrar';
+
+  @override
+  String get hintFamilyExample => 'ex.: família Taylor';
+
+  @override
+  String get transferFrom => 'De';
+
+  @override
+  String get transferTo => 'Para';
+
+  @override
+  String get transferWhy => 'Porquê?';
+
+  @override
+  String get listNameLabel => 'Artigo';
+
+  @override
+  String get listQtyLabel => 'Qtd.';
+
+  @override
+  String get kidsPinHint => 'Novo PIN (4–6 dígitos)';
+
+  @override
+  String get kidsPinUpdated => 'PIN do Modo Crianças atualizado ✓';
+
+  @override
+  String get setupEnterBoth => 'Escreve o teu nome e o nome da família.';
+
+  @override
+  String get setupNeedsConnection => 'Precisas de ligação para criar a tua família.';
+
+  @override
+  String get setupNameTaken => 'Esse nome de família já existe. Tenta outro.';
+
+  @override
+  String get setupEnterJoin => 'Escreve o teu nome e o código de convite.';
+
+  @override
+  String get avatarError => 'Não foi possível atualizar a foto. Tenta outra.';
+
+  @override
+  String get invitesLoadFailed => 'Não foi possível carregar os convites. Arrasta para atualizar.';
+
+  @override
+  String filterAll(Object n) {
+    return 'Tudo ($n)';
+  }
 }

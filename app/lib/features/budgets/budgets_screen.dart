@@ -37,13 +37,7 @@ class BudgetsScreen extends StatelessWidget {
       Row(
         children: [
           Expanded(
-            child: Text(
-              l.budgetsTitle,
-              style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink),
-            ),
+            child: PageHeader(l.budgetsTitle),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -164,15 +158,9 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
   var guardArmed = false;
   void armGuard() => guardArmed = true;
 
-  final result = await showModalBottomSheet<
+  final result = await showMhuriSheet<
       ({String name, double limit, Currency currency, Rollover rollover})>(
     context: context,
-    isScrollControlled: true,
-    isDismissible: true,
-    enableDrag: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    backgroundColor: context.bg,
     builder: (sheetContext) => StatefulBuilder(
       builder: (sheetContext, setSheetState) => SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -185,22 +173,7 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l.newEnvelope,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: sheetContext.ink,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip:
-                      MaterialLocalizations.of(sheetContext).closeButtonTooltip,
-                  onPressed: () async {
+            SheetHeader(l.newEnvelope, onClose: () async {
                     if (!guardArmed ||
                         (name.text.trim().isEmpty &&
                             limit.text.trim().isEmpty)) {
@@ -217,36 +190,24 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
                       Navigator.pop(sheetContext);
                     }
                   },
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
             ),
             const SizedBox(height: 12),
-            TextField(
+            MhuriField(
               controller: name,
-              autofocus: true,
+              label: l.envelopeLabel,
               onChanged: (_) => armGuard(),
+              autofocus: true,
               textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: l.envelopeLabel,
-                filled: true,
-                fillColor: sheetContext.card,
-                border: const OutlineInputBorder(borderSide: BorderSide.none),
-              ),
+              fillColor: sheetContext.card,
             ),
             const SizedBox(height: 12),
-            TextField(
+            MhuriField(
               controller: limit,
+              label: l.limitLabel,
               onChanged: (_) => armGuard(),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: l.limitLabel,
-                prefixText: '${currency.symbol} ',
-                filled: true,
-                fillColor: sheetContext.card,
-                border: const OutlineInputBorder(borderSide: BorderSide.none),
-              ),
+              currencySymbol: currency.symbol,
+              prefixText: '${currency.symbol} ',
+              fillColor: sheetContext.card,
             ),
             const SizedBox(height: 12),
             SegmentedButton<Currency>(
@@ -513,6 +474,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final l = AppLocalizations.of(context)!;
     final e = widget.e;
     final spent = s.spentOn(e);
     final remaining = s.remainingOn(e);
@@ -602,7 +564,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                     initialValue: _from,
                     isExpanded: true,
                     decoration: InputDecoration(
-                      labelText: 'From',
+                      labelText: l.transferFrom,
                       filled: true,
                       fillColor: context.card,
                       border: OutlineInputBorder(borderSide: BorderSide.none),
@@ -646,7 +608,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                     initialValue: _to,
                     isExpanded: true,
                     decoration: InputDecoration(
-                      labelText: 'To',
+                      labelText: l.transferTo,
                       filled: true,
                       fillColor: context.card,
                       border: OutlineInputBorder(borderSide: BorderSide.none),
@@ -700,14 +662,9 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextField(
+                  child: MhuriField(
                     controller: _reason,
-                    decoration: InputDecoration(
-                      labelText: 'Why?',
-                      filled: true,
-                      fillColor: context.card,
-                      border: OutlineInputBorder(borderSide: BorderSide.none),
-                    ),
+                    label: l.transferWhy,
                   ),
                 ),
               ],

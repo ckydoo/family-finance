@@ -1888,4 +1888,57 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get leave => 'Phuma';
+
+  @override
+  String get btnCreate => 'Yenza';
+
+  @override
+  String get btnJoin => 'Hlanganisa';
+
+  @override
+  String get hintFamilyExample => 'isib. umndeni kaTaylor';
+
+  @override
+  String get transferFrom => 'Leya';
+
+  @override
+  String get transferTo => 'Ku';
+
+  @override
+  String get transferWhy => 'Ngani?';
+
+  @override
+  String get listNameLabel => 'Into';
+
+  @override
+  String get listQtyLabel => 'Inani';
+
+  @override
+  String get kidsPinHint => 'I-PIN entsha (4–6 amanani)';
+
+  @override
+  String get kidsPinUpdated => 'I-PIN yeKids Mode yenziwe entsha ✓';
+
+  @override
+  String get setupEnterBoth => 'Faka igama lolakho negama lomndeni.';
+
+  @override
+  String get setupNeedsConnection => 'Udinga ukuxhumana ukuze udale umndeni wakho.';
+
+  @override
+  String get setupNameTaken => 'Igama lelomndeni selithathiwe. Zama elinye.';
+
+  @override
+  String get setupEnterJoin => 'Faka igama lakho nekhodi yesimemo.';
+
+  @override
+  String get avatarError => 'Ifoto ayiphumelelanga ukutshintshwa. Zamanini enye.';
+
+  @override
+  String get invitesLoadFailed => 'Iimvito azifunyanisanga. Zama kwakhona.';
+
+  @override
+  String filterAll(Object n) {
+    return 'Zonke ($n)';
+  }
 }

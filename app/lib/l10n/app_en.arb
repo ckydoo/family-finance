@@ -991,5 +991,22 @@
   "discardChangesTitle": "Discard changes?",
   "discardChangesBody": "You have not saved yet. Leave anyway?",
   "stay": "Keep editing",
-  "leave": "Leave"
+  "leave": "Leave",
+  "btnCreate": "Create",
+  "btnJoin": "Join",
+  "hintFamilyExample": "e.g. The Taylor Family",
+  "transferFrom": "From",
+  "transferTo": "To",
+  "transferWhy": "Why?",
+  "listNameLabel": "Item",
+  "listQtyLabel": "Qty",
+  "kidsPinHint": "New PIN (4–6 digits)",
+  "kidsPinUpdated": "Kids Mode PIN updated ✓",
+  "setupEnterBoth": "Enter your preferred name and family name.",
+  "setupNeedsConnection": "A connection is required to create your family.",
+  "setupNameTaken": "That family name is already taken. Try another.",
+  "setupEnterJoin": "Enter your preferred name and invite code.",
+  "avatarError": "Couldn't update that photo. Try another one.",
+  "invitesLoadFailed": "Could not load invites. Pull to refresh.",
+  "filterAll": "All ({n})"
 }

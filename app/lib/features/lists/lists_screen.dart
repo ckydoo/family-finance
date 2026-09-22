@@ -78,7 +78,9 @@ class _ListsScreenState extends State<ListsScreen> {
                     spacing: 8,
                     children: [
                       ChoiceChip(
-                        label: Text('All (${s.items.length})'),
+                        label: Text(
+                            AppLocalizations.of(context)!
+                                .filterAll(s.items.length)),
                         selected: _filter == null,
                         onSelected: (_) => setState(() => _filter = null),
                       ),
@@ -247,7 +249,7 @@ class _ListsScreenState extends State<ListsScreen> {
                   controller: name,
                   autofocus: true,
                   decoration: InputDecoration(
-                    labelText: 'Item',
+                    labelText: l.listNameLabel,
                     filled: true,
                     fillColor: context.card,
                     border: OutlineInputBorder(borderSide: BorderSide.none),
@@ -261,7 +263,7 @@ class _ListsScreenState extends State<ListsScreen> {
                         controller: qty,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: 'Qty',
+                          labelText: l.listQtyLabel,
                           filled: true,
                           fillColor: context.card,
                           border:

@@ -106,10 +106,11 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   }
 
   Future<void> _create() async {
+    final l = AppLocalizations.of(context)!;
     final person = _personName.text.trim();
     final family = _familyName.text.trim();
     if (person.length < 2 || family.length < 2) {
-      setState(() => _error = 'Enter your preferred name and family name.');
+      setState(() => _error = l.setupEnterBoth);
       return;
     }
     setState(() {
@@ -120,7 +121,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     if (engine == null) {
       setState(() {
         _busy = false;
-        _error = 'A connection is required to create your family.';
+        _error = l.setupNeedsConnection;
       });
       return;
     }
@@ -128,7 +129,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = 'That family name is already taken. Try another.';
+        _error = l.setupNameTaken;
       });
       return;
     }
@@ -157,6 +158,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   }
 
   Future<void> _uploadPhotoIfNeeded() async {
+    final l = AppLocalizations.of(context)!;
     final photo = _photo;
     final auth = widget.state.auth;
     if (photo == null || auth?.session == null) return;
@@ -172,17 +174,18 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         ext: _photoExt,
       );
       widget.state.setMyAvatar(url);
-    } on AvatarException catch (e) {
+    } on AvatarException {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(l.avatarError)));
     }
   }
 
   Future<void> _join() async {
+    final l = AppLocalizations.of(context)!;
     final name = _personName.text.trim();
     if (name.length < 2 || _joinCode.text.trim().isEmpty) {
-      setState(() => _error = 'Enter your preferred name and invite code.');
+      setState(() => _error = l.setupEnterJoin);
       return;
     }
     setState(() {
@@ -596,17 +599,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         onChanged: (value) => setState(() => _access['${prefix}_$key'] = value),
       );
 
-  Widget _errorBox() => Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-              color: context.dangerSoft,
-              borderRadius: BorderRadius.circular(12)),
-          child: Text(_error!, style: TextStyle(color: context.expenseRed)),
-        ),
-      );
+  Widget _errorBox() => ErrorNotice(_error!);
 }
 
 

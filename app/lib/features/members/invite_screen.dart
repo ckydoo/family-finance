@@ -63,7 +63,8 @@ class _InviteScreenState extends State<InviteScreen> {
       setState(() => _invites = list);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = '…');
+      setState(() =>
+          _error = AppLocalizations.of(context)!.invitesLoadFailed);
     }
   }
 

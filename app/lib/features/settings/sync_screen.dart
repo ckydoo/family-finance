@@ -202,18 +202,7 @@ class SyncScreen extends StatelessWidget {
     );
   }
 
-  Widget _row(String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          children: [
-            Text(k, style: const TextStyle(fontSize: 13)),
-            const Spacer(),
-            Text(v,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-          ],
-        ),
-      );
+  Widget _row(String k, String v) => SettingsRow(k, v);
 
   String _fmt(DateTime t) {
     String two(int n) => n.toString().padLeft(2, '0');

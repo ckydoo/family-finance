@@ -3113,4 +3113,55 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
 
   /// No description provided for @leave.
   String get leave;
+
+  /// No description provided for @btnCreate.
+  String get btnCreate;
+
+  /// No description provided for @btnJoin.
+  String get btnJoin;
+
+  /// No description provided for @hintFamilyExample.
+  String get hintFamilyExample;
+
+  /// No description provided for @transferFrom.
+  String get transferFrom;
+
+  /// No description provided for @transferTo.
+  String get transferTo;
+
+  /// No description provided for @transferWhy.
+  String get transferWhy;
+
+  /// No description provided for @listNameLabel.
+  String get listNameLabel;
+
+  /// No description provided for @listQtyLabel.
+  String get listQtyLabel;
+
+  /// No description provided for @kidsPinHint.
+  String get kidsPinHint;
+
+  /// No description provided for @kidsPinUpdated.
+  String get kidsPinUpdated;
+
+  /// No description provided for @setupEnterBoth.
+  String get setupEnterBoth;
+
+  /// No description provided for @setupNeedsConnection.
+  String get setupNeedsConnection;
+
+  /// No description provided for @setupNameTaken.
+  String get setupNameTaken;
+
+  /// No description provided for @setupEnterJoin.
+  String get setupEnterJoin;
+
+  /// No description provided for @avatarError.
+  String get avatarError;
+
+  /// No description provided for @invitesLoadFailed.
+  String get invitesLoadFailed;
+
+  /// No description provided for @filterAll.
+  String filterAll(Object n);
 }

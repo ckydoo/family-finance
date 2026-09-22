@@ -616,5 +616,22 @@
   "discardChangesTitle": "Abandonner les changements ?",
   "discardChangesBody": "Pas encore enregistré. Quitter quand même ?",
   "stay": "Continuer l’édition",
-  "leave": "Quitter"
+  "leave": "Quitter",
+  "btnCreate": "Créer",
+  "btnJoin": "Rejoindre",
+  "hintFamilyExample": "ex. la famille Taylor",
+  "transferFrom": "De",
+  "transferTo": "Vers",
+  "transferWhy": "Pourquoi ?",
+  "listNameLabel": "Article",
+  "listQtyLabel": "Qté",
+  "kidsPinHint": "Nouveau code (4–6 chiffres)",
+  "kidsPinUpdated": "Code du Mode Enfants mis à jour ✓",
+  "setupEnterBoth": "Saisis ton prénom et le nom de la famille.",
+  "setupNeedsConnection": "Connexion nécessaire pour créer ta famille.",
+  "setupNameTaken": "Ce nom de famille est déjà pris. Essaie un autre.",
+  "setupEnterJoin": "Saisis ton prénom et le code d’invitation.",
+  "avatarError": "Impossible de mettre à jour la photo. Essaie-en une autre.",
+  "invitesLoadFailed": "Impossible de charger les invitations. Tire pour actualiser.",
+  "filterAll": "Tout ({n})"
 }

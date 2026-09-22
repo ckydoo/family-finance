@@ -29,9 +29,9 @@ This file lists ONLY what is still missing, per the agreed 9/10 plan, tagged
 
 | # | Gap | Where | Notes |
 |---|-----|-------|-------|
-| 11 | **Shared component system** | (F) | ✅ DONE 2026-09-22: `lib/core/widgets/ui.dart` — MhuriCard, SectionHeader, PrimaryButton, EmptyHint, confirmDialog. Adopted: Sync & data, Settings headers, both discard-guard dialogs. Remaining screens migrate opportunistically under the "new code MUST use the kit" rule (no mass rewrites of working screens). |
+| 11 | **Shared component system** | (F) | ✅ COMPLETE 2026-09-23: 12-shape system in `lib/core/widgets/ui.dart` (PageHeader, SectionHeader, SettingsRow, MhuriField+currency input, PrimaryButton, SecondaryButton w/ danger, confirmDialog, showMhuriSheet+SheetHeader, EmptyHint/EmptyState, ErrorNotice, MemberAvatar, TxTile, Skeleton). Adopted across budgets, members, lists, setup, sync. New code MUST use the kit. |
 | 12 | **Full l10n sweep** | (F) | ✅ DONE 2026-09-22: zero ARB keys without generated code (the last 10 stragglers generated); family_setup_screen fully localized (537 keys ×6, generated ×7, full parity). Remaining for 8.5 polish: plurals/dates systematization + sn/nd fluent review + fr/pt overflow check on device. |
-| 13 | Forms hardening | (F) | ✅ DONE 2026-09-22: unsaved-changes guards (setup PopScope + envelope sheet, warn-only-with-data), persistent labels + inline errors + currency keyboards + double-submit locks verified everywhere. |
+| 13 | Forms hardening | (F) | ✅ DONE 2026-09-23: unsaved-changes guards, persistent labels + inline ErrorNotice + currency keyboards + double-submit locks, and the last ~20 embedded English strings extracted (l10n 558×6). Raw e.message leaks removed. |
 | 14 | Motion + haptics + reduced-motion | (F) | ✅ VERIFIED 2026-09-22: reduced-motion already honoured (disableAnimationsOf in motion.dart/celebrate/rings), selective 150–250ms durations, haptics on key actions. |
 | 15 | Structural accessibility | (F) | ✅ AUDITED 2026-09-22: zero icon-only buttons without tooltips, 44×44+ targets, largeText scaler, labeled nav. Device-session item: WCAG AA contrast render check both themes. |
 | 16 | Progressive disclosure + prototype sweep | (F) | ✅ DONE 2026-09-22: fake QR removed (real mhuri://join QR in setup), zero placeholder/demo/coming-soon UI strings. |

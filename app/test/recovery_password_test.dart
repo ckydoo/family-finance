@@ -30,7 +30,7 @@ class FakeClient extends http.BaseClient {
 String _b64url(String s) => base64Url.encode(utf8.encode(s)).replaceAll('=', '');
 
 String _jwt({String sub = 'uid-9', String email = 'bongi@example.com'}) =>
-    '${_b64url('{"alg":"HS256"}}.${_b64url(jsonEncode({"sub": sub, "email": email}))}.sig';
+    '${_b64url('{"alg":"HS256"}').}${_b64url(jsonEncode({"sub": sub, "email": email}))}.sig';
 
 void main() {
   final kv = <String, String>{};

@@ -1,0 +1,138 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  migrations:
+    name: migration chain from zero (Postgres 16)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mhuri_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Register Supabase-compatible auth helper
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -d mhuri_ci -c "
+          do \$\$ begin
+            if not exists (select from pg_roles where rolname='anon')
+              then create role anon nologin; end if;
+            if not exists (select from pg_roles where rolname='authenticated')
+              then create role authenticated nologin; end if;
+            if not exists (select from pg_roles where rolname='service_role')
+              then create role service_role nologin; end if;
+          end \$\$;
+          create schema if not exists auth;
+          create table if not exists auth.users (
+            id uuid primary key,
+            email text,
+            encrypted_password text,
+            email_confirmed_at timestamptz,
+            last_sign_in_at timestamptz,
+            created_at timestamptz default now(),
+            updated_at timestamptz default now(),
+            raw_user_meta_data jsonb default '{}'::jsonb
+          );
+          create or replace function auth.uid() returns uuid language sql stable as
+          \$\$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid \$\$;
+          create schema if not exists storage;
+          create table if not exists storage.buckets (
+            id text primary key, name text, public boolean default false,
+            file_size_limit bigint, allowed_mime_types text[]
+          );
+          create table if not exists storage.objects (
+            id uuid primary key default gen_random_uuid(),
+            bucket_id text references storage.buckets(id),
+            name text, owner uuid, user_id text, metadata jsonb,
+            created_at timestamptz default now(), updated_at timestamptz default now()
+          );
+          create or replace function storage.foldername(name text)
+          returns text[] language sql immutable as
+          \$\$ select string_to_array(name, '/') \$\$;
+          create table if not exists auth.sessions (
+            id uuid primary key default gen_random_uuid(),
+            user_id uuid not null,
+            created_at timestamptz default now()
+          );
+          create table if not exists auth.refresh_tokens (
+            id bigserial primary key,
+            user_id uuid not null,
+            token text,
+            created_at timestamptz default now()
+          );
+          grant usage on schema public, storage, auth to anon, authenticated;
+          grant select, insert, update, delete on all tables in schema public
+            to anon, authenticated;
+          alter default privileges in schema public grant select, insert,
+            update, delete on tables to anon, authenticated;"
+
+      - name: Apply migrations 001→N in order (each in its own transaction)
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(backend/migrations/*.sql)
+          echo "Found ${#files[@]} migrations"
+          for f in "${files[@]}"; do
+            echo "── applying $f"
+            docker exec -i ${{ job.services.postgres.id }} \
+              psql -U postgres -d mhuri_ci -v ON_ERROR_STOP=1 -q < "$f"
+          done
+          echo "✅ full chain applies cleanly from zero"
+
+      - name: Grant client roles (Supabase default-privilege equivalent)
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -d mhuri_ci -c "
+          grant usage on schema public, storage, auth to anon, authenticated;
+          grant select, insert, update, delete on all tables in schema public
+            to anon, authenticated;"
+
+      - name: Verify critical guards exist
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -d mhuri_ci -t -c "
+          select count(*) from pg_policies
+           where schemaname='public' and tablename='user_profile'
+             and policyname='profile_read';" | grep -qx " *1 *" \
+          || { echo "profile_read policy wrong"; exit 1; }
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -d mhuri_ci -t -c "
+          select count(distinct p.proname) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+           where n.nspname='public'
+             and p.proname in ('delete_own_account','leave_family','create_space','join_space',
+                               'set_role_permissions','create_invite','revoke_invite',
+                               'join_invite','transfer_ownership','restore_my_space');" \
+          | grep -qx " *10 *" || { echo "expected RPCs missing"; exit 1; }
+
+      - name: Functional integrity smoke test (deletion rules, RLS scoping)
+        run: |
+          docker exec -i ${{ job.services.postgres.id }} \
+            psql -U postgres -d mhuri_ci -v ON_ERROR_STOP=1 \
+            < backend/tests/integrity_smoke.sql
+
+  flutter:
+    name: flutter analyze + test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --fatal-infos
+      - run: flutter test
