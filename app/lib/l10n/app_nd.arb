@@ -117,7 +117,7 @@
   "loginVerify": "Qinisekisa & ngena",
   "loginChangeNumber": "Shintsha inombolo",
   "loginBadPhone": "Faka inombolo esebenzayo (isb. +44 7700 900123).",
-  "loginFooter": "I-demo: noma yimuphi umfanekiso, ikhodi 1234.\nI-live ithumela ikhodi yeSMS yangempela.",
+  "loginFooter": "Demo: ngena nanye i-imeyili nepasiwedi (ubude obungu-6 noma ngaphezulu).",
   "quickAddTitle": "Engeza okusheshayo",
   "expense": "Isabelomali",
   "envelopeLabel": "Ikhava",
@@ -416,4 +416,25 @@
   "deleteAccountBody": "Lokhu kususa ngokupheleleyo ukungena kwakho ledatha yemali egcinwe kule divayisi. Akubuyiseki.",
   "deleteAccountConfirm": "Susa ngokupheleleyo",
   "deleteAccountFailed": "Asikwazanga ukususa i-akhawunti. Hlola inthanethi uzame futhi."
+,
+  "moreDetails": "Eminye imininingwane",
+  "lessDetails": "Kuncane imininingwane",
+  "discardTitle": "Lahla letransaction?",
+  "discardBody": "Oyangele izinto ezingakagcini.",
+  "keepEditing": "Qhubeka ubhale",
+  "discard": "Lahla",
+  "viewDetails": "Bona imininingwane yemali",
+  "fabTip": "Thelela + ukubhala imali engenayo nophumayo"
+,
+  "emailLabel": "I-imeyili",
+  "passwordLabel": "Ipasiwedi",
+  "loginSignIn": "Ngena",
+  "loginCreateAccount": "Yakha i-akhawunti",
+  "loginBadEmail": "Bhala i-imeyili esetshenziswayo.",
+  "loginShortPassword": "Ipasiwedi ibe letho okuyi-6 ubude.",
+  "checkYourEmail": "Siseduze — hlola i-imeyili yakho uyiqinisekise, bese ungena.",
+  "togglePassword": "Khombisa noma ficela ipasiwedi",
+  "inviteHowTo": "Uyakha i-akhawunti nge-imeyili yakhe, bese afaka lekhodi ukuba ajoyine umndeni wakho."
+,
+  "obDone": "Masiqalise"
 }

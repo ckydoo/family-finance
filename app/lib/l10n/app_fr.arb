@@ -117,7 +117,7 @@
   "loginVerify": "Vérifier et se connecter",
   "loginChangeNumber": "Changer de numéro",
   "loginBadPhone": "Entrez un numéro valide (ex. +44 7700 900123).",
-  "loginFooter": "Mode démo : n'importe quel numéro et le code 1234.\nLe mode live envoie un vrai code SMS.",
+  "loginFooter": "Démo : connecte-toi avec n’importe quel e-mail et mot de passe (6+ caractères).",
   "quickAddTitle": "Ajout rapide",
   "expense": "Dépense",
   "envelopeLabel": "Enveloppe",
@@ -416,4 +416,25 @@
   "deleteAccountBody": "Cette action supprime définitivement votre connexion et les données financières enregistrées sur cet appareil. Elle est irréversible.",
   "deleteAccountConfirm": "Supprimer définitivement",
   "deleteAccountFailed": "Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez."
+,
+  "moreDetails": "Plus de détails",
+  "lessDetails": "Moins de détails",
+  "discardTitle": "Abandonner cette saisie ?",
+  "discardBody": "Vous avez saisi des détails qui ne sont pas encore enregistrés.",
+  "keepEditing": "Continuer la saisie",
+  "discard": "Abandonner",
+  "viewDetails": "Voir les détails du solde",
+  "fabTip": "Touchez + pour noter une entrée ou une sortie"
+,
+  "emailLabel": "Adresse e-mail",
+  "passwordLabel": "Mot de passe",
+  "loginSignIn": "Se connecter",
+  "loginCreateAccount": "Créer un compte",
+  "loginBadEmail": "Saisissez une adresse e-mail valide.",
+  "loginShortPassword": "Le mot de passe doit contenir au moins 6 caractères.",
+  "checkYourEmail": "Presque fini — vérifie ta boîte mail et confirme ton e-mail, puis connecte-toi.",
+  "togglePassword": "Afficher ou masquer le mot de passe",
+  "inviteHowTo": "Il crée un compte avec son e-mail, puis saisit ce code pour rejoindre ta famille."
+,
+  "obDone": "C’est parti"
 }

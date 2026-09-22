@@ -27,7 +27,7 @@ create table family_space (
 
 create table user_profile (
   id uuid primary key references auth.users(id) on delete cascade,
-  phone text unique,
+  email text unique, -- auth.users email (2026-09: email+password auth replaced phone OTP)
   name text not null,
   avatar text not null default '🙂',
   language text not null default 'en' check (language in ('en','sn','nd')),

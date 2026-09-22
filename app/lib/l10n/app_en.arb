@@ -124,7 +124,7 @@
   "loginVerify": "Verify & sign in",
   "loginChangeNumber": "Change number",
   "loginBadPhone": "Enter a valid phone number (e.g. +44 7700 900123).",
-  "loginFooter": "Demo mode: use any phone number and code 1234.\nLive mode sends a real SMS code.",
+  "loginFooter": "Demo build: any email + any password (6+ characters) signs you in.",
   "quickAddTitle": "Quick add",
   "expense": "Expense",
   "envelopeLabel": "Envelope",
@@ -791,4 +791,25 @@
   "deleteAccountBody": "This permanently deletes your sign-in and removes this device's saved financial data. This cannot be undone.",
   "deleteAccountConfirm": "Delete permanently",
   "deleteAccountFailed": "We couldn't delete your account. Check your connection and try again."
+,
+  "moreDetails": "More details",
+  "lessDetails": "Fewer details",
+  "discardTitle": "Discard this entry?",
+  "discardBody": "You entered details that are not saved yet.",
+  "keepEditing": "Keep editing",
+  "discard": "Discard",
+  "viewDetails": "View balance details",
+  "fabTip": "Tap + to record money in or out"
+,
+  "emailLabel": "Email",
+  "passwordLabel": "Password",
+  "loginSignIn": "Sign in",
+  "loginCreateAccount": "Create account",
+  "loginBadEmail": "Enter a valid email address.",
+  "loginShortPassword": "Password must be at least 6 characters.",
+  "checkYourEmail": "Almost there — check your inbox and confirm your email, then sign in.",
+  "togglePassword": "Show or hide password",
+  "inviteHowTo": "They create an account with their email, then enter this code to join your family."
+,
+  "obDone": "Let's get started"
 }

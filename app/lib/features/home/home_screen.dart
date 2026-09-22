@@ -288,7 +288,16 @@ class _PoolCard extends StatelessWidget {
     final primary = s.poolCombined(s.displayCurrency);
     final secondary = s.poolCombined(s.displayCurrency.other);
 
-    return Container(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ReportsScreen()),
+        ),
+        borderRadius: kBRadiusL,
+        splashColor: Colors.white24,
+        highlightColor: Colors.white10,
+        child: Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -370,7 +379,28 @@ class _PoolCard extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          // Visible affordance: the whole card opens Reports (eye = hide/show only).
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  AppLocalizations.of(context)!.viewDetails,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 16, color: Colors.white70),
+            ],
+          ),
         ],
+      ),
+        ),
       ),
     );
   }

@@ -4,10 +4,11 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-/// Phone OTP login (live mode only — demo never shows this screen).
-/// Two phases: phone number → verification code.
-/// Launch market's code for local (leading-0) numbers.
-const String kDefaultCountryCode = '263';
+/// Email + password login (live mode only — demo never shows this screen).
+/// Two modes: sign in, or create account. When Supabase has "Confirm email"
+/// enabled, sign-up returns a "check your inbox" state instead of a session.
+const String kDefaultCountryCode = '263'; // kept for reference — auth is
+// email-based since the 2026-09 auth switch; no phone input remains.
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.auth});
@@ -19,61 +20,64 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _phone = TextEditingController();
-  final _code = TextEditingController();
-  bool _codeSent = false;
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _createMode = false;
+  bool _obscure = true;
+  bool _confirmSent = false;
   String? _error;
 
   @override
   void dispose() {
-    _phone.dispose();
-    _code.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
   }
 
-  /// Normalises phone numbers to E.164 for the OTP API. Leading-0 local
-  /// numbers assume the launch market's code; international (+…) passes
-  /// through untouched.
-  String _normalizePhone(String raw) {
-    var p = raw.replaceAll(RegExp(r'[\s\-()]'), '');
-    if (p.startsWith('00')) {
-      p = '+${p.substring(2)}';
-    } else if (p.startsWith('0')) {
-      p = '+$kDefaultCountryCode${p.substring(1)}';
-    } else if (!p.startsWith('+')) {
-      p = '+$p';
-    }
-    return p;
-  }
+  bool get _validEmail =>
+      RegExp(r'^\S+@\S+\.\S+').hasMatch(_email.text.trim());
 
-  Future<void> _send() async {
-    final phone = _normalizePhone(_phone.text);
-    if (phone.length < 10) {
-      setState(() => _error = AppLocalizations.of(context)!.loginBadPhone);
+  Future<void> _submit() async {
+    final l = AppLocalizations.of(context)!;
+    if (!_validEmail) {
+      setState(() {
+        _error = l.loginBadEmail;
+        _confirmSent = false;
+      });
       return;
     }
-    final ok = await widget.auth.sendCode(phone);
+    if (_password.text.length < 6) {
+      setState(() {
+        _error = l.loginShortPassword;
+        _confirmSent = false;
+      });
+      return;
+    }
+    final email = _email.text.trim();
+    final ok = _createMode
+        ? await widget.auth.signUp(email, _password.text)
+        : await widget.auth.signIn(email, _password.text);
     if (!mounted) return;
     if (ok) {
+      // Success: AuthController notifies, the gate in app.dart swaps screens.
+      setState(() => _error = null);
+    } else if (_createMode && widget.auth.needsConfirmation) {
       setState(() {
-        _codeSent = true;
+        _confirmSent = true;
+        _createMode = false;
         _error = null;
       });
     } else {
-      setState(() => _error = widget.auth.lastError);
+      setState(() {
+        _error = widget.auth.lastError;
+        _confirmSent = false;
+      });
     }
-  }
-
-  Future<void> _verify() async {
-    final phone = _normalizePhone(_phone.text);
-    final ok = await widget.auth.verify(phone, _code.text);
-    if (!mounted) return;
-    // Success: AuthController notifies, the gate in app.dart swaps screens.
-    if (!ok) setState(() => _error = widget.auth.lastError);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: context.bg,
       body: SafeArea(
@@ -102,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              _codeSent ? AppLocalizations.of(context)!.loginEnterCode : AppLocalizations.of(context)!.loginWelcome,
+              l.loginWelcome,
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -111,58 +115,130 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _codeSent
-                  ? AppLocalizations.of(context)!.loginSentCode(_normalizePhone(_phone.text))
-                  : AppLocalizations.of(context)!.loginSignInHint,
+              l.loginSignInHint,
               style: TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.4),
             ),
             const SizedBox(height: 24),
-            if (!_codeSent) ...[
-              TextField(
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                autofocus: true,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink,
-                  letterSpacing: 1,
+
+            // Sign in / Create account switch — one screen, both modes.
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(
+                  value: false,
+                  label: Text(l.loginSignIn),
+                  icon: const Icon(Icons.login_rounded, size: 18),
                 ),
-                decoration: InputDecoration(
-                  hintText: '0772 123 456',
-                  filled: true,
-                  fillColor: context.card,
-                  border: OutlineInputBorder(borderSide: BorderSide.none),
+                ButtonSegment(
+                  value: true,
+                  label: Text(l.loginCreateAccount),
+                  icon: const Icon(Icons.person_add_alt_1, size: 18),
+                ),
+              ],
+              selected: {_createMode},
+              onSelectionChanged: (s) => setState(() {
+                _createMode = s.first;
+                _error = null;
+                _confirmSent = false;
+              }),
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            if (_confirmSent) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: context.primarySoft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.mark_email_read_outlined,
+                        size: 18, color: context.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l.checkYourEmail,
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            color: context.ink,
+                            height: 1.4),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ] else ...[
-              TextField(
-                controller: _code,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                maxLength: 6,
-                obscureText: true,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink,
-                  letterSpacing: 8,
-                ),
-                decoration: InputDecoration(
-                  hintText: '••••••',
-                  counterText: '',
-                  filled: true,
-                  fillColor: context.card,
-                  border: OutlineInputBorder(borderSide: BorderSide.none),
-                ),
-              ),
+              const SizedBox(height: 12),
             ],
+
+            AutofillGroup(
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    autofocus: true,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                      letterSpacing: 0.3,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: l.emailLabel,
+                      hintText: 'you@example.com',
+                      prefixIcon:
+                          Icon(Icons.mail_outline, color: context.inkSoft),
+                      filled: true,
+                      fillColor: context.card,
+                      border: OutlineInputBorder(borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _password,
+                    obscureText: _obscure,
+                    autofillHints: [
+                      _createMode ? AutofillHints.newPassword : AutofillHints.password
+                    ],
+                    onSubmitted: (_) => _submit(),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                      letterSpacing: 1,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: l.passwordLabel,
+                      prefixIcon:
+                          Icon(Icons.lock_outline, color: context.inkSoft),
+                      suffixIcon: IconButton(
+                        tooltip: l.togglePassword,
+                        onPressed: () => setState(() => _obscure = !_obscure),
+                        icon: Icon(
+                          _obscure
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: context.inkSoft,
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: context.card,
+                      border: OutlineInputBorder(borderSide: BorderSide.none),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 12),
             if (_error != null)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9E0DF),
+                  color: context.dangerSoft,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Text(
@@ -176,9 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
               builder: (context, _) {
                 final busy = widget.auth.busy;
                 return ElevatedButton(
-                  onPressed: busy
-                      ? null
-                      : () => _codeSent ? _verify() : _send(),
+                  onPressed: busy ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.primary,
                     foregroundColor: context.onSolid,
@@ -196,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         )
                       : Text(
-                          _codeSent ? AppLocalizations.of(context)!.loginVerify : AppLocalizations.of(context)!.loginSendCode,
+                          _createMode ? l.loginCreateAccount : l.loginSignIn,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
@@ -205,20 +279,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               },
             ),
-            if (_codeSent) ...[
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => setState(() {
-                  _codeSent = false;
-                  _error = null;
-                  _code.clear();
-                }),
-                child: Text(
-                  AppLocalizations.of(context)!.loginChangeNumber,
-                  style: TextStyle(color: context.inkSoft, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
             const SizedBox(height: 32),
             Center(
               child: Text(

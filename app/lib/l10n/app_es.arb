@@ -117,7 +117,7 @@
   "loginVerify": "Verificar e iniciar sesión",
   "loginChangeNumber": "Cambiar número",
   "loginBadPhone": "Introduce un teléfono válido (p. ej. +44 7700 900123).",
-  "loginFooter": "Modo demo: cualquier número y el código 1234.\nEl modo live envía un código SMS real.",
+  "loginFooter": "Modo demo: entra con cualquier correo y contraseña (6+ caracteres).",
   "quickAddTitle": "Añadir rápido",
   "expense": "Gasto",
   "envelopeLabel": "Sobre",
@@ -416,4 +416,25 @@
   "deleteAccountBody": "Esto elimina permanentemente tu acceso y los datos financieros guardados en este dispositivo. No se puede deshacer.",
   "deleteAccountConfirm": "Eliminar permanentemente",
   "deleteAccountFailed": "No pudimos eliminar tu cuenta. Comprueba la conexión e inténtalo de nuevo."
+,
+  "moreDetails": "Más detalles",
+  "lessDetails": "Menos detalles",
+  "discardTitle": "¿Descartar esta entrada?",
+  "discardBody": "Has introducido datos que aún no se han guardado.",
+  "keepEditing": "Seguir editando",
+  "discard": "Descartar",
+  "viewDetails": "Ver detalles del saldo",
+  "fabTip": "Toca + para registrar ingresos o gastos"
+,
+  "emailLabel": "Correo electrónico",
+  "passwordLabel": "Contraseña",
+  "loginSignIn": "Iniciar sesión",
+  "loginCreateAccount": "Crear cuenta",
+  "loginBadEmail": "Introduce un correo válido.",
+  "loginShortPassword": "La contraseña debe tener al menos 6 caracteres.",
+  "checkYourEmail": "Casi listo: revisa tu correo y confirma tu email, después inicia sesión.",
+  "togglePassword": "Mostrar u ocultar la contraseña",
+  "inviteHowTo": "Crea una cuenta con su correo y luego introduce este código para unirse a tu familia."
+,
+  "obDone": "Empecemos"
 }

@@ -317,7 +317,61 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get loginFooter =>
-      'Modo demo: cualquier número y el código 1234.\nEl modo live envía un código SMS real.';
+      'Modo demo: entra con cualquier correo y contraseña (6+ caracteres).';
+
+  @override
+  String get moreDetails => "Más detalles";
+
+  @override
+  String get lessDetails => "Menos detalles";
+
+  @override
+  String get discardTitle => "¿Descartar esta entrada?";
+
+  @override
+  String get discardBody => "Has introducido datos que aún no se han guardado.";
+
+  @override
+  String get keepEditing => "Seguir editando";
+
+  @override
+  String get discard => "Descartar";
+
+  @override
+  String get viewDetails => "Ver detalles del saldo";
+
+  @override
+  String get fabTip => "Toca + para registrar ingresos o gastos";
+
+  @override
+  String get emailLabel => "Correo electrónico";
+
+  @override
+  String get passwordLabel => "Contraseña";
+
+  @override
+  String get loginSignIn => "Iniciar sesión";
+
+  @override
+  String get loginCreateAccount => "Crear cuenta";
+
+  @override
+  String get loginBadEmail => "Introduce un correo válido.";
+
+  @override
+  String get loginShortPassword => "La contraseña debe tener al menos 6 caracteres.";
+
+  @override
+  String get checkYourEmail => "Casi listo: revisa tu correo y confirma tu email, después inicia sesión.";
+
+  @override
+  String get togglePassword => "Mostrar u ocultar la contraseña";
+
+  @override
+  String get inviteHowTo => "Crea una cuenta con su correo y luego introduce este código para unirse a tu familia.";
+
+  @override
+  String get obDone => "Empecemos";
 
   @override
   String get quickAddTitle => 'Añadir rápido';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../budgets/budgets_screen.dart';
@@ -34,6 +35,29 @@ class _NavDest {
 
 class _AdultShellState extends State<AdultShell> {
   int _tab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeFabTip());
+  }
+
+  /// First-run discoverability for the central + (one-time, kv-flagged).
+  Future<void> _maybeFabTip() async {
+    final s = AppScope.of(context);
+    if (await s.db?.kvGet('fab_tip_seen') == '1') return;
+    await s.db?.kvSet('fab_tip_seen', '1');
+    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.fabTip),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +134,8 @@ class _AdultShellState extends State<AdultShell> {
 
   Widget _nav(_NavDest d, int idx) {
     final selected = _tab == idx;
+    // Extreme text scale: icons only — the row can never overflow.
+    final huge = MediaQuery.textScalerOf(context).scale(11) >= 19;
     final color = selected ? context.primaryDark : context.ink;
     return Expanded(
       child: InkWell(
@@ -130,11 +156,14 @@ class _AdultShellState extends State<AdultShell> {
               scale: selected ? 1.08 : 1.0,
               child: Icon(
                 selected ? d.active : d.rest,
-                size: 22,
+                size: huge ? 26 : 22,
                 color: color,
               ),
             ),
-            const SizedBox(height: 2),
+            if (!huge) ...const [
+              SizedBox(height: 2),
+            ] else const SizedBox(height: 6),
+            if (!huge)
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(

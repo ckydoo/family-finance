@@ -1,0 +1,13 @@
+-- ============================================================================
+-- LIVE SUPABASE SCHEMA — captured 2026-09-22 from the Supabase dashboard
+-- (Database → Syntax viewer). REFERENCE ONLY — this is what is ACTUALLY
+-- deployed. The desired state lives in schema.sql; migrations/ bridge the two.
+--
+-- Reconciliation notes (see migrations/003_email_auth_and_checks.sql):
+--   • user_profile: live has `phone`, no `email`; language CHECK = en/sn/nd
+--   • transaction.method CHECK lacks mobile_money + agent (app emits them)
+--   • recurring_rule.method CHECK lacks ecocash/zipit/innbucks (app emits them)
+--   • All 10 app-synced tables exist with matching column names ✓
+--     (transaction, envelope, goal, goal_tx, list_item, kid_request,
+--      earning, recurring_rule, chore, mukando)
+-- ============================================================================

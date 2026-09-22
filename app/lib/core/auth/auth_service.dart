@@ -1,35 +1,44 @@
-/// Auth models + service interface + demo implementation (M2).
+/// Auth models + service interface + demo implementation (M2 → email auth).
 ///
-/// M2 keeps identity separate from family data: a session proves who you are
-/// (M3 attaches family spaces server-side). Demo mode never shows login.
+/// Identity stays separate from family data: a session proves who you are
+/// (M3 attaches family spaces server-side). Email + password via Supabase
+/// GoTrue; demo mode uses the same shape with no network.
 library;
 
 class AuthSession {
   final String userId;
-  final String phone;
+  final String email;
 
-  const AuthSession({required this.userId, required this.phone});
+  const AuthSession({required this.userId, required this.email});
 }
 
 class AuthResult {
   final bool ok;
   final String? error;
 
-  const AuthResult._(this.ok, this.error);
+  /// True when the account was created but the provider requires email
+  /// confirmation before a session is issued (Supabase default). The UI
+  /// shows "check your inbox" and switches to sign-in mode.
+  final bool needsConfirmation;
+
+  const AuthResult._(this.ok, this.error, {this.needsConfirmation = false});
 
   const AuthResult.success() : this._(true, null);
+
+  const AuthResult.confirmationNeeded() : this._(true, null, needsConfirmation: true);
 
   const AuthResult.failure(String message) : this._(false, message);
 }
 
 /// One interface, two implementations:
-///  * [DemoAuthService] — deterministic offline flow (code `1234`).
-///  * `SupabaseAuthService` — real phone OTP over GoTrue REST (see
+///  * [DemoAuthService] — deterministic offline flow (any email + 6-char
+///    password, no confirmation step).
+///  * `SupabaseAuthService` — real email+password over GoTrue REST (see
 ///    supabase_auth_service.dart).
 abstract class AuthService {
-  Future<AuthResult> sendOtp(String phone);
+  Future<AuthResult> signIn(String email, String password);
 
-  Future<AuthResult> verifyOtp(String phone, String code);
+  Future<AuthResult> signUp(String email, String password);
 
   /// Returns a saved session at startup, or null (show login).
   Future<AuthSession?> restoreSession();
@@ -40,25 +49,28 @@ abstract class AuthService {
   Future<AuthResult> deleteAccount();
 }
 
-/// Offline/demo auth: any phone + code `1234`. Exists so the login screen and
-/// AuthController are exercised identically in tests and demo builds without
-/// any network.
+/// Offline/demo auth: any well-formed email + password of 6+ characters.
+/// Exists so the login screen and AuthController are exercised identically
+/// in tests and demo builds without any network.
 class DemoAuthService implements AuthService {
-  static const demoCode = '1234';
-
   AuthSession? _session;
 
-  @override
-  Future<AuthResult> sendOtp(String phone) async => const AuthResult.success();
+  bool _valid(String email, String password) =>
+      email.contains('@') && email.contains('.') && password.length >= 6;
 
   @override
-  Future<AuthResult> verifyOtp(String phone, String code) async {
-    if (code.trim() == demoCode) {
-      _session = AuthSession(userId: 'demo_user', phone: phone);
-      return const AuthResult.success();
+  Future<AuthResult> signIn(String email, String password) async {
+    if (!_valid(email, password)) {
+      return const AuthResult.failure(
+          'Enter a valid email and a password of at least 6 characters.');
     }
-    return const AuthResult.failure('Wrong code — demo code is 1234.');
+    _session = AuthSession(userId: 'demo_user', email: email);
+    return const AuthResult.success();
   }
+
+  @override
+  Future<AuthResult> signUp(String email, String password) async =>
+      signIn(email, password);
 
   @override
   Future<AuthSession?> restoreSession() async => _session;

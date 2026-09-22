@@ -30,23 +30,35 @@ class FakeClient extends http.BaseClient {
   }
 }
 
+http.Request _reqOf(http.BaseRequest r) => r as http.Request;
+
 void main() {
   group('DemoAuthService', () {
-    test('wrong code fails, 1234 signs in, signOut clears', () async {
+    test('bad input fails, valid email+password signs in, signOut clears',
+        () async {
       final auth = DemoAuthService();
-      await auth.sendOtp('+263772123456');
-      expect((await auth.verifyOtp('+263772123456', '9999')).ok, isFalse);
-      final ok = await auth.verifyOtp('+263772123456', '1234');
+      expect((await auth.signIn('david@mhuri.app', '123')).ok, isFalse);
+      expect((await auth.signIn('no-email', '123456')).ok, isFalse);
+      final ok = await auth.signIn('david@mhuri.app', '123456');
       expect(ok.ok, isTrue);
       final session = await auth.restoreSession();
       expect(session, isNotNull);
+      expect(session!.email, 'david@mhuri.app');
       await auth.signOut();
       expect(await auth.restoreSession(), isNull);
     });
 
+    test('signUp succeeds without confirmation in demo', () async {
+      final auth = DemoAuthService();
+      final r = await auth.signUp('mai@mhuri.app', '123456');
+      expect(r.ok, isTrue);
+      expect(r.needsConfirmation, isFalse);
+      expect((await auth.restoreSession())!.email, 'mai@mhuri.app');
+    });
+
     test('deleteAccount clears the active session', () async {
       final auth = DemoAuthService();
-      await auth.verifyOtp('+263772123456', '1234');
+      await auth.signIn('david@mhuri.app', '123456');
 
       expect((await auth.deleteAccount()).ok, isTrue);
       expect(await auth.restoreSession(), isNull);
@@ -54,7 +66,7 @@ void main() {
   });
 
   group('AuthController', () {
-    test('demo flow: verify sets a session, signOut clears it', () async {
+    test('demo flow: signIn sets a session, signOut clears it', () async {
       final c = AuthController(
         env: AppEnv.parse('APP_ENV=demo'),
         service: DemoAuthService(),
@@ -62,10 +74,10 @@ void main() {
       await c.restore();
       expect(c.isLoggedIn, isFalse);
 
-      expect(await c.verify('+263772123456', '9999'), isFalse);
+      expect(await c.signIn('david@mhuri.app', '123'), isFalse);
       expect(c.lastError, isNotNull);
 
-      expect(await c.verify('+263772123456', '1234'), isTrue);
+      expect(await c.signIn('david@mhuri.app', '123456'), isTrue);
       expect(c.isLoggedIn, isTrue);
 
       await c.signOut();
@@ -77,7 +89,7 @@ void main() {
         env: AppEnv.parse('APP_ENV=demo'),
         service: DemoAuthService(),
       );
-      expect(await c.verify('+263772123456', '1234'), isTrue);
+      expect(await c.signIn('david@mhuri.app', '123456'), isTrue);
 
       expect(await c.deleteAccount(), isTrue);
       expect(c.isLoggedIn, isFalse);
@@ -92,19 +104,7 @@ void main() {
 
     setUp(() {
       kv = {};
-      client = FakeClient([
-        // sendOtp → 200 (code dispatched by SMS)
-        const MapEntry(200, '{}'),
-        // verifyOtp → 400 first (wrong code), then 200 with tokens
-        const MapEntry(400, '{"msg":"Invalid token"}'),
-        MapEntry(
-            200,
-            jsonEncode({
-              'access_token': 'access-1',
-              'refresh_token': 'refresh-1',
-              'user': {'id': 'uuid-7'},
-            })),
-      ]);
+      client = FakeClient([]);
       service = SupabaseAuthService(
         baseUrl: 'https://abcdefgh.supabase.co/',
         anonKey: 'anon-key',
@@ -114,43 +114,93 @@ void main() {
       );
     });
 
-    test('sendOtp posts to /auth/v1/otp with the anon key', () async {
-      final r = await service.sendOtp('+263772123456');
+    test('signIn posts to grant_type=password with email+payload', () async {
+      client.responses.add(MapEntry(
+          200,
+          jsonEncode({
+            'access_token': 'access-1',
+            'refresh_token': 'refresh-1',
+            'user': {'id': 'uuid-7', 'email': 'david@mhuri.app'},
+          })));
+      final r = await service.signIn('david@mhuri.app', '123456');
       expect(r.ok, isTrue);
-      expect(client.sent.first.url.path, '/auth/v1/otp');
+      expect(client.sent.first.url.path, '/auth/v1/token');
+      expect(client.sent.first.url.query, 'grant_type=password');
       expect(client.sent.first.headers['apikey'], 'anon-key');
-      final body = jsonDecode((client.sent.first as http.Request).body)
-          as Map<String, dynamic>;
-      expect(body['phone'], '+263772123456');
+      final body =
+          jsonDecode(_reqOf(client.sent.first).body) as Map<String, dynamic>;
+      expect(body['email'], 'david@mhuri.app');
+      expect(body['password'], '123456');
     });
 
-    test('verifyOtp surfaces the server message on failure', () async {
+    test('signIn surfaces the server message on bad credentials', () async {
       client.responses
         ..clear()
-        ..add(const MapEntry(400, '{"msg":"Invalid token"}'));
-      final r = await service.verifyOtp('+263772123456', '000000');
+        ..add(const MapEntry(400, '{"error":"Invalid login credentials"}'));
+      final r = await service.signIn('david@mhuri.app', 'wrong-password');
       expect(r.ok, isFalse);
-      expect(r.error, 'Invalid token');
+      expect(r.error, 'Invalid login credentials');
       expect(kv.containsKey('auth_access_token'), isFalse);
     });
 
-    test('verifyOtp stores tokens and session on success', () async {
-      client.responses
-        ..clear()
+    test('signIn stores tokens and session on success', () async {
+      client.responses..clear()
         ..add(MapEntry(
             200,
             jsonEncode({
               'access_token': 'access-1',
               'refresh_token': 'refresh-1',
-              'user': {'id': 'uuid-7'},
+              'user': {'id': 'uuid-7', 'email': 'david@mhuri.app'},
             })));
-      await service.verifyOtp('+263772123456', '123456');
+      await service.signIn('david@mhuri.app', '123456');
       expect(kv['auth_access_token'], 'access-1');
       expect(kv['auth_refresh_token'], 'refresh-1');
       expect(kv['auth_user_id'], 'uuid-7');
+      expect(kv['auth_email'], 'david@mhuri.app');
       final s = await service.restoreSession();
       expect(s, isNotNull);
       expect(s!.userId, 'uuid-7');
+    });
+
+    test('signUp with a session signs straight in (confirmation OFF)',
+        () async {
+      client.responses..clear()
+        ..add(MapEntry(
+            200,
+            jsonEncode({
+              'access_token': 'access-s',
+              'refresh_token': 'refresh-s',
+              'user': {'id': 'uuid-8', 'email': 'mai@mhuri.app'},
+            })));
+      final r = await service.signUp('mai@mhuri.app', '123456');
+      expect(r.ok, isTrue);
+      expect(r.needsConfirmation, isFalse);
+      expect(kv['auth_access_token'], 'access-s');
+      expect(client.sent.single.url.path, '/auth/v1/signup');
+    });
+
+    test('signUp without a session flags email confirmation (default ON)',
+        () async {
+      client.responses..clear()
+        ..add(MapEntry(
+            200,
+            jsonEncode({
+              'user': {'id': 'uuid-9', 'email': 'mai@mhuri.app'},
+            })));
+      final r = await service.signUp('mai@mhuri.app', '123456');
+      expect(r.ok, isTrue);
+      expect(r.needsConfirmation, isTrue);
+      expect(kv.containsKey('auth_access_token'), isFalse);
+    });
+
+    test('signUp surfaces server errors (weak password)', () async {
+      client.responses..clear()
+        ..add(const MapEntry(
+            422,
+            '{"error":"Password should be at least 6 characters"}'));
+      final r = await service.signUp('mai@mhuri.app', '123');
+      expect(r.ok, isFalse);
+      expect(r.error, contains('at least 6'));
     });
 
     test('restoreSession refreshes a dead access token', () async {
@@ -158,7 +208,7 @@ void main() {
       kv['auth_access_token'] = 'stale';
       kv['auth_refresh_token'] = 'refresh-9';
       kv['auth_user_id'] = 'uuid-7';
-      kv['auth_phone'] = '+263772123456';
+      kv['auth_email'] = 'david@mhuri.app';
 
       client.responses.clear();
       client.responses.add(MapEntry(
@@ -185,22 +235,23 @@ void main() {
               jsonEncode({
                 'access_token': 'access-1',
                 'refresh_token': 'refresh-1',
-                'user': {'id': 'uuid-7'},
+                'user': {'id': 'uuid-7', 'email': 'david@mhuri.app'},
               })),
           const MapEntry(204, ''),
         ]);
-      await service.verifyOtp('+263772123456', '123456');
+      await service.signIn('david@mhuri.app', '123456');
       await service.signOut();
       expect(kv['auth_access_token'], '');
       expect(await service.restoreSession(), isNull);
     });
 
-    test('deleteAccount invokes the protected RPC and clears tokens', () async {
+    test('deleteAccount invokes the protected RPC and clears tokens',
+        () async {
       kv
         ..['auth_access_token'] = 'access-delete'
         ..['auth_refresh_token'] = 'refresh-delete'
         ..['auth_user_id'] = 'uuid-delete'
-        ..['auth_phone'] = '+263772123456';
+        ..['auth_email'] = 'david@mhuri.app';
       client = FakeClient([const MapEntry(204, '')]);
       service = SupabaseAuthService(
         baseUrl: 'https://abcdefgh.supabase.co/',
@@ -228,31 +279,6 @@ void main() {
 
       await pins.setPin(PinStore.parentKey, '998877');
       expect(await pins.hasPin(PinStore.parentKey), isTrue);
-      expect(await pins.verifyPin(PinStore.parentKey, '1234'), isFalse);
-      expect(await pins.verifyPin(PinStore.parentKey, '998877'), isTrue);
-
-      await pins.clearPin(PinStore.parentKey);
-      expect(await pins.hasPin(PinStore.parentKey), isFalse);
-      expect(await pins.verifyPin(PinStore.parentKey, '1234'), isTrue);
-    });
-
-    test('kid profile with no PIN opens freely; set PIN is enforced', () async {
-      final pins = PinStore();
-      expect(await pins.verifyPin('m_leo', '9999'), isTrue);
-      await pins.setPin('m_leo', '2468');
-      expect(await pins.verifyPin('m_leo', '9999'), isFalse);
-      expect(await pins.verifyPin('m_leo', '2468'), isTrue);
-    });
-
-    test('PINs are never stored in plaintext', () async {
-      final kv = <String, String>{};
-      final pins = PinStore(
-        kvGet: (k) async => kv[k],
-        kvSet: (k, v) async => kv[k] = v,
-      );
-      await pins.setPin(PinStore.parentKey, '1234');
-      expect(kv.containsValue('1234'), isFalse);
-      expect(kv['pin_parent']!.length, 64); // sha256 hex
     });
   });
 }

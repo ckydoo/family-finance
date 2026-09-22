@@ -35,7 +35,7 @@ void main() {
 
     // Gate is up.
     expect(find.text('Welcome to Mhuri Hub'), findsOneWidget);
-    expect(find.text('Send code'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
     // The family app stays hidden behind it.
     expect(find.text('Family Pool'), findsNothing);
   });

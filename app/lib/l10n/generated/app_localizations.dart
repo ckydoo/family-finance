@@ -670,6 +670,42 @@ abstract class AppLocalizations {
   /// **'Demo mode: use any phone number and code 1234.\nLive mode sends a real SMS code.'**
   String get loginFooter;
 
+  String get moreDetails;
+
+  String get lessDetails;
+
+  String get discardTitle;
+
+  String get discardBody;
+
+  String get keepEditing;
+
+  String get discard;
+
+  String get viewDetails;
+
+  String get fabTip;
+
+  String get emailLabel;
+
+  String get passwordLabel;
+
+  String get loginSignIn;
+
+  String get loginCreateAccount;
+
+  String get loginBadEmail;
+
+  String get loginShortPassword;
+
+  String get checkYourEmail;
+
+  String get togglePassword;
+
+  String get inviteHowTo;
+
+  String get obDone;
+
   /// No description provided for @quickAddTitle.
   ///
   /// In en, this message translates to:

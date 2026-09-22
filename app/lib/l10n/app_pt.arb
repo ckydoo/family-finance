@@ -117,7 +117,7 @@
   "loginVerify": "Verificar e entrar",
   "loginChangeNumber": "Mudar número",
   "loginBadPhone": "Introduza um telefone válido (ex.: +44 7700 900123).",
-  "loginFooter": "Modo demo: qualquer número e o código 1234.\nO modo live envia um código SMS real.",
+  "loginFooter": "Demonstração: entra com qualquer e-mail e palavra-passe (6+ caracteres).",
   "quickAddTitle": "Adicionar rápido",
   "expense": "Despesa",
   "envelopeLabel": "Envelope",
@@ -416,4 +416,25 @@
   "deleteAccountBody": "Isto elimina permanentemente o seu acesso e os dados financeiros guardados neste dispositivo. Não pode ser desfeito.",
   "deleteAccountConfirm": "Eliminar permanentemente",
   "deleteAccountFailed": "Não foi possível eliminar a sua conta. Verifique a ligação e tente novamente."
+,
+  "moreDetails": "Mais detalhes",
+  "lessDetails": "Menos detalhes",
+  "discardTitle": "Descartar este lançamento?",
+  "discardBody": "Introduziu dados que ainda não foram guardados.",
+  "keepEditing": "Continuar a editar",
+  "discard": "Descartar",
+  "viewDetails": "Ver detalhes do saldo",
+  "fabTip": "Toque + para registar entradas ou saídas"
+,
+  "emailLabel": "E-mail",
+  "passwordLabel": "Palavra-passe",
+  "loginSignIn": "Entrar",
+  "loginCreateAccount": "Criar conta",
+  "loginBadEmail": "Introduza um e-mail válido.",
+  "loginShortPassword": "A palavra-passe precisa de pelo menos 6 caracteres.",
+  "checkYourEmail": "Quase lá — verifica o teu e-mail e confirma, depois entra.",
+  "togglePassword": "Mostrar ou ocultar a palavra-passe",
+  "inviteHowTo": "A pessoa cria uma conta com o e-mail dela e depois introduz este código para entrar na tua família."
+,
+  "obDone": "Vamos começar"
 }

@@ -117,7 +117,7 @@
   "loginVerify": "Simbirurira & pinda",
   "loginChangeNumber": "Chinja nhare",
   "loginBadPhone": "Pinda nhare inoshanda (somuenzaniso +44 7700 900123).",
-  "loginFooter": "Demo: chero nhare uye pinda 1234.\nLive inotumira kodhi yeSMS chaiyo.",
+  "loginFooter": "Demo: pinda mukati nechero email nemusteri (6+ mavara).",
   "quickAddTitle": "Wedzera nyore",
   "expense": "Kubhadhara",
   "envelopeLabel": "Mabhuku",
@@ -416,4 +416,25 @@
   "deleteAccountBody": "Izvi zvinodzima zvachose kupinda kwako nedata remari rakachengetwa pafoni ino. Hazvigoni kudzorerwa.",
   "deleteAccountConfirm": "Dzima zvachose",
   "deleteAccountFailed": "Hatina kukwanisa kudzima akaundi. Tarisa internet woedza zvakare."
+,
+  "moreDetails": "Mamwe mashoko",
+  "lessDetails": "Shoma mashoko",
+  "discardTitle": "Kurega iyi transaction?",
+  "discardBody": "Izvo zvamanyora hazatisati zasevwa.",
+  "keepEditing": "Enderera kunyora",
+  "discard": "Kurega",
+  "viewDetails": "Ona ruzivo rwemari",
+  "fabTip": "Dzvanya + kunyora mari inopinda kana kubuda"
+,
+  "emailLabel": "Email",
+  "passwordLabel": "Password",
+  "loginSignIn": "Pinda mukati",
+  "loginCreateAccount": "Vhaka account",
+  "loginBadEmail": "Nyora email inoshanda.",
+  "loginShortPassword": "Password inofanira kuve neanopfuura 6 mavara.",
+  "checkYourEmail": "Pedyo nezvo — tarisa email yako woitambudza? aiwa, woisimba, wobvawapinda mukati.",
+  "togglePassword": "Ratidza kana kuvanza password",
+  "inviteHowTo": "Anovhaka account neemail yake, obva anyora code iyi kuti apinde mumhuri yako."
+,
+  "obDone": "Ngatangei"
 }

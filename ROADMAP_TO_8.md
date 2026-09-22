@@ -417,3 +417,38 @@ Note: `lib/l10n/generated/app_localizations.dart` is a **build-time artifact** (
 - `assets/branding/` now bundles only `app_icon.png` + `splash.png` (directory-listed in pubspec — every file there ships in the APK).
 - Device week: generate launcher icons with `dart run flutter_launcher_icons` (pubspec already points at `assets/branding/app_icon.png`). If the rings read thin on a real launcher, thicken ring strokes in a v2.
 
+## UX-polish phase (2026-09-22) — round 1
+Full spec + per-item dispositions: `UX_POLISH_PHASE.md`. This round: **P1 done**
+(Quick Add → full-screen keyboard-safe page: pinned header/Save, essentials
+first, "More details" fold, discard-guard only with entered data — PopScope
+`onPopInvokedWithResult`, Flutter 3.22+); **P2 partial** (Pool card → Reports
+with "View balance details"+chevron and pressed state; one-time FAB tooltip kv
+`fab_tip_seen`); **P3 started** (nav auto icon-only at textScale ≥ ~1.7).
+L10n +8 keys ×6 = **348** (moreDetails, lessDetails, discardTitle, discardBody,
+keepEditing, discard, viewDetails, fabTip); generated ×7 extended by hand —
+a machine `flutter gen-l10n` on pull will normalize them.
+Next round: P4 sync-details screen + backoff + auth-expiry vs network;
+P5 destructive tiers (type-DELETE account flow, undo, precise language);
+Move-money & envelope details full-screen conversions; 200% device pass.
+
+## Auth switch: phone OTP → email + password (2026-09-22, user directive)
+- GoTrue endpoints: `POST /auth/v1/token?grant_type=password` (sign in), `POST /auth/v1/signup` (create), refresh + logout + `rpc/delete_own_account` unchanged. Hand-written client kept, injectable HTTP, all flows re-tested offline.
+- Sign-up honours Supabase's default "Confirm email": sessionless 200 → `AuthResult.confirmationNeeded` → login shows a green "check your inbox" banner and returns to sign-in mode. Disable confirmation in Supabase Auth settings for instant sessions.
+- Session kv: `auth_access_token/refresh/user_id` + **`auth_email`** (was `auth_phone`). Demo: any email + 6-char password; kv `demo_auth` now stores the email. Live users sign in once after this ships.
+- Invites stay code-based (client can't call the admin invite API — that needs the service key): the members sheet now explains "they create an account with their email, then enter this code" (`inviteHowTo`, ×6).
+- Login screen: SegmentedButton sign-in/create-account, email field + password with visibility toggle, validation (regex + min 6), AutofillGroup, kDefaultCountryCode kept as a reference constant only.
+- Backend: `profiles.phone` → `profiles.email` (schema.sql) + `migrations/003_profiles_email.sql` (ADD COLUMN + backfill from auth.users). **Run the migration in Supabase before shipping live.**
+- L10n +9 keys ×6 → **357**; widget_test expects "Sign in"; auth_test fully rewritten (4 groups, 13 tests).
+
+## Live-schema reconciliation (2026-09-22, from user's Supabase dashboard dump)
+- Deployed schema captured (reference: `backend/supabase_live_schema.sql`). All 10 app-synced tables exist with matching columns ✓ (mukando.round_order, chore.star_value/state, goal_tx, kid_request…).
+- **Two sync-breaking CHECK gaps found**: `transaction.method` (no mobile_money/agent) and `recurring_rule.method` (no ecocash/zipit/innbucks) — the app's single Method enum emits the union. Any such record would fail server push silently until fixed.
+- **Migration 003 rewritten** (`003_email_auth_and_checks.sql`, idempotent): user_profile.email + backfill from auth.users; language CHECK widened to 6 locales; both method CHECKs widened to the union domain. **User must run this in Supabase before live sync.**
+- Repo schema.sql was already `user_profile`+email; the erroneous `003_profiles_email.sql` (wrong table name) is deleted.
+
+## Onboarding & auth premium pass (2026-09-22, user directive: "verify wiring, match design, don't go rogue")
+- **Wiring verified** (unchanged, was correct): app.dart gates live+logged-in+first-run; `completeOnboarding` kv persistence covered by m4_test. NEW `test/onboarding_flow_test.dart` proves the full path: sign in → slide 1 visible → Skip → Home (and last-slide localized CTA).
+- Fixed: final CTA was hardcoded English "Let's get started" → new `obDone` key ×6 (358 keys) + generated ×7; stale "three slides" comment → four.
+- Premium consistency (in-place only): gradient tile gains the Pool card's soft elevation; Skip gets a 48dp tap target; login error/confirmation containers now use theme tokens (`dangerSoft`/`primarySoft`) instead of hardcoded hex.
+- No structural or visual redesign — all existing layouts preserved.
+

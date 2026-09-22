@@ -10,13 +10,15 @@ import 'auth_service.dart';
 typedef KvGetter = Future<String?> Function(String key);
 typedef KvSetter = Future<void> Function(String key, String value);
 
-/// Real phone-OTP auth against Supabase's GoTrue REST API — hand-written so
-/// the app does not need the Supabase SDK. Only three stable endpoints are
+/// Real email+password auth against Supabase's GoTrue REST API — hand-written
+/// so the app does not need the Supabase SDK. Only four stable endpoints are
 /// used, and the HTTP client is injectable, so the whole flow is testable
 /// offline (see test/auth_test.dart).
 ///
-///   POST {base}/auth/v1/otp                       {phone}            → send code
-///   POST {base}/auth/v1/verify                    {type,phone,token} → sign in
+///   POST {base}/auth/v1/token?grant_type=password  {email,password} → sign in
+///   POST {base}/auth/v1/signup                     {email,password} → create
+///     (returns a session when email confirmation is OFF; only a user object
+///      when confirmation is ON → [AuthResult.confirmationNeeded])
 ///   POST {base}/auth/v1/token?grant_type=refresh_token               → refresh
 ///   POST {base}/auth/v1/logout  (Authorization: Bearer)              → sign out
 class SupabaseAuthService implements AuthService {
@@ -46,17 +48,21 @@ class SupabaseAuthService implements AuthService {
       };
 
   @override
-  Future<AuthResult> sendOtp(String phone) async {
+  Future<AuthResult> signIn(String email, String password) async {
     try {
       final r = await _client.post(
-        Uri.parse('$_base/auth/v1/otp'),
+        Uri.parse('$_base/auth/v1/token?grant_type=password'),
         headers: _headers,
-        body: jsonEncode({'phone': phone}),
+        body: jsonEncode({'email': email, 'password': password}),
       );
-      if (r.statusCode >= 200 && r.statusCode < 300) {
-        return const AuthResult.success();
+      if (r.statusCode < 200 || r.statusCode >= 300) {
+        return AuthResult.failure(_errorMessage(r));
       }
-      return AuthResult.failure(_errorMessage(r));
+      final session = _sessionFrom(r.body);
+      if (session == null) {
+        return const AuthResult.failure('Sign-in failed — try again.');
+      }
+      return AuthResult.success();
     } catch (_) {
       return const AuthResult.failure(
           'Network error — check your connection and try again.');
@@ -64,36 +70,49 @@ class SupabaseAuthService implements AuthService {
   }
 
   @override
-  Future<AuthResult> verifyOtp(String phone, String code) async {
+  Future<AuthResult> signUp(String email, String password) async {
     try {
       final r = await _client.post(
-        Uri.parse('$_base/auth/v1/verify'),
+        Uri.parse('$_base/auth/v1/signup'),
         headers: _headers,
-        body: jsonEncode({
-          'type': 'sms',
-          'phone': phone,
-          'token': code.trim(),
-        }),
+        body: jsonEncode({'email': email, 'password': password}),
       );
       if (r.statusCode < 200 || r.statusCode >= 300) {
         return AuthResult.failure(_errorMessage(r));
       }
       final body = jsonDecode(r.body) as Map<String, dynamic>;
-      final access = body['access_token'] as String?;
-      final refresh = body['refresh_token'] as String?;
-      final user = body['user'] as Map<String, dynamic>?;
-      final userId = (user?['id'] ?? body['user_id'] ?? phone).toString();
-      if (access == null || access.isEmpty) {
-        return const AuthResult.failure('Sign-in failed — try again.');
+      if (body['access_token'] is String &&
+          (body['access_token'] as String).isNotEmpty) {
+        _sessionFrom(r.body);
+        return const AuthResult.success();
       }
-      _session = AuthSession(userId: userId, phone: phone);
-      await _persistTokens(
-          access: access, refresh: refresh, userId: userId, phone: phone);
-      return const AuthResult.success();
+      // Sessionless 200 = "Confirm email" is enabled: account exists, but the
+      // user must click the link in their inbox before signing in.
+      if (body['user'] != null) {
+        return const AuthResult.confirmationNeeded();
+      }
+      return const AuthResult.failure('Sign-up failed — try again.');
     } catch (_) {
       return const AuthResult.failure(
           'Network error — check your connection and try again.');
     }
+  }
+
+  /// Parses tokens out of a GoTrue response body, caches the session and
+  /// persists it. Returns the session, or null when the body has no tokens.
+  AuthSession? _sessionFrom(String body) {
+    final map = jsonDecode(body) as Map<String, dynamic>;
+    final access = map['access_token'] as String?;
+    final refresh = map['refresh_token'] as String?;
+    final user = map['user'] as Map<String, dynamic>?;
+    final userId = (user?['id'] ?? map['user_id']).toString();
+    final email =
+        (user?['email'] ?? map['email'] ?? '').toString();
+    if (access == null || access.isEmpty) return null;
+    _session = AuthSession(userId: userId, email: email);
+    _persistTokens(
+        access: access, refresh: refresh, userId: userId, email: email);
+    return _session;
   }
 
   @override
@@ -103,7 +122,7 @@ class SupabaseAuthService implements AuthService {
     final refresh = await get('auth_refresh_token');
     final access = await get('auth_access_token');
     final userId = await get('auth_user_id');
-    final phone = await get('auth_phone');
+    final email = await get('auth_email');
 
     // No stored session → login screen.
     if ((refresh == null || refresh.isEmpty) &&
@@ -124,10 +143,10 @@ class SupabaseAuthService implements AuthService {
         final newRefresh = body['refresh_token'] as String? ?? refresh;
         if (newAccess != null && newAccess.isNotEmpty) {
           final uid = userId ?? 'user';
-          final ph = phone ?? '';
-          _session = AuthSession(userId: uid, phone: ph);
+          final em = email ?? '';
+          _session = AuthSession(userId: uid, email: em);
           await _persistTokens(
-              access: newAccess, refresh: newRefresh, userId: uid, phone: ph);
+              access: newAccess, refresh: newRefresh, userId: uid, email: em);
           return _session;
         }
       }
@@ -137,7 +156,7 @@ class SupabaseAuthService implements AuthService {
       // Offline at startup with a stored session: trust it for now; the sync
       // layer (M3) handles 401s by re-refreshing.
       if (access != null && access.isNotEmpty) {
-        _session ??= AuthSession(userId: userId ?? 'user', phone: phone ?? '');
+        _session ??= AuthSession(userId: userId ?? 'user', email: email ?? '');
         return _session;
       }
       return _session;
@@ -190,14 +209,14 @@ class SupabaseAuthService implements AuthService {
     required String access,
     required String? refresh,
     required String userId,
-    required String phone,
+    required String email,
   }) async {
     final set = _kvSet;
     if (set == null) return;
     await set('auth_access_token', access);
     if (refresh != null) await set('auth_refresh_token', refresh);
     await set('auth_user_id', userId);
-    await set('auth_phone', phone);
+    await set('auth_email', email);
   }
 
   Future<void> _clearTokens() async {

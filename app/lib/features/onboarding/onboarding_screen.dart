@@ -5,8 +5,9 @@ import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 /// First-run onboarding (M4, live mode only — demo never shows it).
-/// Three calm slides, then straight into the app; the family space is set
-/// up from the Family tab (create / join with the partner's code).
+/// Four calm slides (app.dart gates on live + logged-in + first run), then
+/// straight into the app; the family space is set up from the Family tab
+/// (create / join with the partner's code).
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.state});
 
@@ -68,6 +69,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: widget.state.completeOnboarding,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(64, 48), // 48dp tap target (a11y)
+                ),
                 child: Text(
                   AppLocalizations.of(context)!.skip,
                   style: TextStyle(
@@ -97,6 +101,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               colors: [context.primary, context.primaryDark],
                             ),
                             borderRadius: BorderRadius.circular(32),
+                            // Same soft elevation pattern as the Pool card.
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.primary.withValues(alpha: 0.28),
+                                blurRadius: 22,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
                           alignment: Alignment.center,
                           child: Icon(_slideIcons[i], size: 52, color: Colors.white),
@@ -159,7 +171,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     child: Text(
                       _page == _slideIcons.length - 1
-                          ? "Let's get started"
+                          ? AppLocalizations.of(context)!.obDone
                           : AppLocalizations.of(context)!.next,
                       style: const TextStyle(
                         fontSize: 16,

@@ -314,7 +314,61 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get loginFooter =>
-      'I-demo: noma yimuphi umfanekiso, ikhodi 1234.\nI-live ithumela ikhodi yeSMS yangempela.';
+      'Demo: ngena nanye i-imeyili nepasiwedi (ubude obungu-6 noma ngaphezulu).';
+
+  @override
+  String get moreDetails => "Eminye imininingwane";
+
+  @override
+  String get lessDetails => "Kuncane imininingwane";
+
+  @override
+  String get discardTitle => "Lahla letransaction?";
+
+  @override
+  String get discardBody => "Oyangele izinto ezingakagcini.";
+
+  @override
+  String get keepEditing => "Qhubeka ubhale";
+
+  @override
+  String get discard => "Lahla";
+
+  @override
+  String get viewDetails => "Bona imininingwane yemali";
+
+  @override
+  String get fabTip => "Thelela + ukubhala imali engenayo nophumayo";
+
+  @override
+  String get emailLabel => "I-imeyili";
+
+  @override
+  String get passwordLabel => "Ipasiwedi";
+
+  @override
+  String get loginSignIn => "Ngena";
+
+  @override
+  String get loginCreateAccount => "Yakha i-akhawunti";
+
+  @override
+  String get loginBadEmail => "Bhala i-imeyili esetshenziswayo.";
+
+  @override
+  String get loginShortPassword => "Ipasiwedi ibe letho okuyi-6 ubude.";
+
+  @override
+  String get checkYourEmail => "Siseduze — hlola i-imeyili yakho uyiqinisekise, bese ungena.";
+
+  @override
+  String get togglePassword => "Khombisa noma ficela ipasiwedi";
+
+  @override
+  String get inviteHowTo => "Uyakha i-akhawunti nge-imeyili yakhe, bese afaka lekhodi ukuba ajoyine umndeni wakho.";
+
+  @override
+  String get obDone => "Masiqalise";
 
   @override
   String get quickAddTitle => 'Engeza okusheshayo';

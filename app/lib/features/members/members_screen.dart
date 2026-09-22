@@ -919,6 +919,12 @@ class MembersScreen extends StatelessWidget {
                   color: context.ink,
                 ),
               ),
+              const SizedBox(height: 6),
+              Text(
+                l.inviteHowTo,
+                style: TextStyle(
+                    fontSize: 12.5, color: context.inkSoft, height: 1.4),
+              ),
               const SizedBox(height: 14),
               if (s.isLive && code.isNotEmpty) ...[
                 Container(
