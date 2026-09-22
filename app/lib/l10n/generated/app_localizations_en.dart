@@ -1284,6 +1284,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noActivityYet => "Nothing recorded yet. Tap + to add your first transaction.";
+  String get modeLive => "Live — synced to your family space";
+  String get modeDemo => "Demo mode — sample family, nothing syncs";
+  String get modeDemoHint => "Create app/.env from .env.example (add your Supabase keys) and rebuild to go live.";
 
   @override
   String get setupBanner => "Finish setting up: create your family or join with a code";

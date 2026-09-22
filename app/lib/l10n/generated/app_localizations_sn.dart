@@ -1290,6 +1290,9 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get noActivityYet => "Hapana chanyorwa zvasvino. Dzvanya + kunyora transaction yekutanga.";
+  String get modeLive => "Live — inofambidzana nenzvimbo yemhuri yako";
+  String get modeDemo => "Demo mode — mhuri yemuenzaniso, hapana chinofambidzana";
+  String get modeDemoHint => "Gadzira app/.env kubva ku .env.example (wedzera Supabase keys dzako) wobva wazvitangazve kuenda live.";
 
   @override
   String get setupBanner => "Pedzisa kugadzirisa: vhaka mhuri yako kana ujoin nencode";

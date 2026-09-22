@@ -134,3 +134,37 @@ Also verify: kid claims chore on B → parent confirms on A → stars move.
 - gen-l10n complaints about an ARB → paste the exact error + Flutter version.
 - SQL errors in Supabase → paste the message; do NOT hand-edit the schema.
 - Never edit `lib/l10n/generated/*` — it regenerates on every build.
+
+---
+
+## GO LIVE ON A DEVICE (read this before testing with real users)
+
+The app ships in **offline demo mode** by design: without its config it shows
+the sample family and never calls the network. Supabase migrations alone do
+NOT connect an app build to your backend — the build needs the Supabase URL
+and anon key bundled. Two ways, pick one:
+
+**Option A — `.env` asset (persistent)**
+1. `cd app && cp .env.example .env`
+2. Edit `.env`: set `APP_ENV=live`, paste `SUPABASE_URL=` and
+   `SUPABASE_ANON_KEY=` from Supabase → Project Settings → API.
+3. In `app/pubspec.yaml`, uncomment the `- .env` line under `assets:`.
+4. `flutter run` (or `flutter build apk`).
+
+**Option B — dart-defines (no file, great for quick device tests)**
+```
+flutter run \
+  --dart-define=MHURI_APP_ENV=live \
+  --dart-define=MHURI_SUPABASE_URL=https://<your-ref>.supabase.co \
+  --dart-define=MHURI_SUPABASE_ANON_KEY=<your-anon-key>
+```
+
+**Upgrading a phone that ran the old demo build?** Uninstall first (or clear
+app storage). If you can't, the app now self-heals: the first live boot wipes
+leftover local demo rows once (`live_purged_v1` guard) and restarts
+onboarding — real adopted families are never touched.
+
+**Verify you're live:** Settings → top card. It must say
+"Live — synced to your family space". If it says "Demo mode", the build has
+no config (that card exists precisely so this can't sneak up on you again).
+

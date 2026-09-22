@@ -415,8 +415,7 @@
   "deleteAccountTitle": "¿Eliminar tu cuenta?",
   "deleteAccountBody": "Esto elimina permanentemente tu acceso y los datos financieros guardados en este dispositivo. No se puede deshacer.",
   "deleteAccountConfirm": "Eliminar permanentemente",
-  "deleteAccountFailed": "No pudimos eliminar tu cuenta. Comprueba la conexión e inténtalo de nuevo."
-,
+  "deleteAccountFailed": "No pudimos eliminar tu cuenta. Comprueba la conexión e inténtalo de nuevo.",
   "moreDetails": "Más detalles",
   "lessDetails": "Menos detalles",
   "discardTitle": "¿Descartar esta entrada?",
@@ -424,8 +423,7 @@
   "keepEditing": "Seguir editando",
   "discard": "Descartar",
   "viewDetails": "Ver detalles del saldo",
-  "fabTip": "Toca + para registrar ingresos o gastos"
-,
+  "fabTip": "Toca + para registrar ingresos o gastos",
   "emailLabel": "Correo electrónico",
   "passwordLabel": "Contraseña",
   "loginSignIn": "Iniciar sesión",
@@ -434,10 +432,8 @@
   "loginShortPassword": "La contraseña debe tener al menos 6 caracteres.",
   "checkYourEmail": "Casi listo: revisa tu correo y confirma tu email, después inicia sesión.",
   "togglePassword": "Mostrar u ocultar la contraseña",
-  "inviteHowTo": "Crea una cuenta con su correo y luego introduce este código para unirse a tu familia."
-,
-  "obDone": "Empecemos"
-,
+  "inviteHowTo": "Crea una cuenta con su correo y luego introduce este código para unirse a tu familia.",
+  "obDone": "Empecemos",
   "setupChoiceTitle": "Configura tu familia",
   "setupChoiceBody": "Mhuri Hub funciona para una familia, juntos. Crea la tuya o únete a la que perteneces.",
   "setupCreateCard": "Crear una familia",
@@ -459,13 +455,14 @@
   "joinCodeLabel": "Código de invitación",
   "skipForNow": "Omitir por ahora",
   "setupInviteTitle": "Invita a los tuyos",
-  "setupWorking": "Preparando todo…"
-,
+  "setupWorking": "Preparando todo…",
   "noEnvelopesYet": "Aún no hay sobres: crea el primero desde la pestaña Presupuestos.",
-  "noActivityYet": "Nada registrado todavía. Toca + para añadir tu primera transacción."
-,
+  "noActivityYet": "Nada registrado todavía. Toca + para añadir tu primera transacción.",
   "setupBanner": "Termina la configuración: crea tu familia o únete con un código",
   "setupBannerCta": "Configurar",
   "deleteTypeHint": "Escribe DELETE para confirmar",
-  "deletePermanently": "Eliminar permanentemente"
+  "deletePermanently": "Eliminar permanentemente",
+  "modeLive": "En vivo — sincronizado con tu espacio familiar",
+  "modeDemo": "Modo demo — familia de ejemplo, nada se sincroniza",
+  "modeDemoHint": "Crea app/.env desde .env.example (añade tus claves de Supabase) y recompila para pasar a en vivo."
 }

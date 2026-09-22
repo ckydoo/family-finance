@@ -2301,6 +2301,9 @@ abstract class AppLocalizations {
   String get noEnvelopesYet;
 
   String get noActivityYet;
+  String get modeLive;
+  String get modeDemo;
+  String get modeDemoHint;
 
   String get setupBanner;
 

@@ -1291,6 +1291,9 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get noActivityYet => "Akukho okubhalwe okhona. Thelela + ukungeza itransaction yakho yokuqala.";
+  String get modeLive => "Live — ihambisana ngesikhala somndeni wakho";
+  String get modeDemo => "Demo mode — umndeni wesiboniso, akukho okuhambisanyo";
+  String get modeDemoHint => "Yakha app/.env esuka ku .env.example (ngeza amakihi akho e-Supabase) uphinde wakhe ukuthi live.";
 
   @override
   String get setupBanner => "Gcwalisa ukulungisa: yakha umndeni wakho noma ngena ngekholodi";

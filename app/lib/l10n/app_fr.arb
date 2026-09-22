@@ -415,8 +415,7 @@
   "deleteAccountTitle": "Supprimer votre compte ?",
   "deleteAccountBody": "Cette action supprime définitivement votre connexion et les données financières enregistrées sur cet appareil. Elle est irréversible.",
   "deleteAccountConfirm": "Supprimer définitivement",
-  "deleteAccountFailed": "Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez."
-,
+  "deleteAccountFailed": "Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez.",
   "moreDetails": "Plus de détails",
   "lessDetails": "Moins de détails",
   "discardTitle": "Abandonner cette saisie ?",
@@ -424,8 +423,7 @@
   "keepEditing": "Continuer la saisie",
   "discard": "Abandonner",
   "viewDetails": "Voir les détails du solde",
-  "fabTip": "Touchez + pour noter une entrée ou une sortie"
-,
+  "fabTip": "Touchez + pour noter une entrée ou une sortie",
   "emailLabel": "Adresse e-mail",
   "passwordLabel": "Mot de passe",
   "loginSignIn": "Se connecter",
@@ -434,10 +432,8 @@
   "loginShortPassword": "Le mot de passe doit contenir au moins 6 caractères.",
   "checkYourEmail": "Presque fini — vérifie ta boîte mail et confirme ton e-mail, puis connecte-toi.",
   "togglePassword": "Afficher ou masquer le mot de passe",
-  "inviteHowTo": "Il crée un compte avec son e-mail, puis saisit ce code pour rejoindre ta famille."
-,
-  "obDone": "C’est parti"
-,
+  "inviteHowTo": "Il crée un compte avec son e-mail, puis saisit ce code pour rejoindre ta famille.",
+  "obDone": "C’est parti",
   "setupChoiceTitle": "Configure ta famille",
   "setupChoiceBody": "Mhuri Hub marche pour une famille, ensemble. Crée la tienne ou rejoins celle à laquelle tu appartiens.",
   "setupCreateCard": "Créer une famille",
@@ -459,13 +455,14 @@
   "joinCodeLabel": "Code d’invitation",
   "skipForNow": "Passer pour l’instant",
   "setupInviteTitle": "Invite les tiens",
-  "setupWorking": "On prépare tout…"
-,
+  "setupWorking": "On prépare tout…",
   "noEnvelopesYet": "Pas encore d’enveloppes — crée la première depuis l’onglet Budgets.",
-  "noActivityYet": "Rien d’enregistré pour l’instant. Touchez + pour ajouter ta première opération."
-,
+  "noActivityYet": "Rien d’enregistré pour l’instant. Touchez + pour ajouter ta première opération.",
   "setupBanner": "Termine la configuration : crée ta famille ou rejoins-en une avec un code",
   "setupBannerCta": "Configurer",
   "deleteTypeHint": "Tape DELETE pour confirmer",
-  "deletePermanently": "Supprimer définitivement"
+  "deletePermanently": "Supprimer définitivement",
+  "modeLive": "En direct — synchronisé avec votre espace familial",
+  "modeDemo": "Mode démo — famille d’exemple, rien ne se synchronise",
+  "modeDemoHint": "Créez app/.env à partir de .env.example (ajoutez vos clés Supabase) puis recompilez pour passer en direct."
 }

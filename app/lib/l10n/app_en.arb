@@ -790,8 +790,7 @@
   "deleteAccountTitle": "Delete your account?",
   "deleteAccountBody": "This permanently deletes your sign-in and removes this device's saved financial data. This cannot be undone.",
   "deleteAccountConfirm": "Delete permanently",
-  "deleteAccountFailed": "We couldn't delete your account. Check your connection and try again."
-,
+  "deleteAccountFailed": "We couldn't delete your account. Check your connection and try again.",
   "moreDetails": "More details",
   "lessDetails": "Fewer details",
   "discardTitle": "Discard this entry?",
@@ -799,8 +798,7 @@
   "keepEditing": "Keep editing",
   "discard": "Discard",
   "viewDetails": "View balance details",
-  "fabTip": "Tap + to record money in or out"
-,
+  "fabTip": "Tap + to record money in or out",
   "emailLabel": "Email",
   "passwordLabel": "Password",
   "loginSignIn": "Sign in",
@@ -809,10 +807,8 @@
   "loginShortPassword": "Password must be at least 6 characters.",
   "checkYourEmail": "Almost there — check your inbox and confirm your email, then sign in.",
   "togglePassword": "Show or hide password",
-  "inviteHowTo": "They create an account with their email, then enter this code to join your family."
-,
-  "obDone": "Let's get started"
-,
+  "inviteHowTo": "They create an account with their email, then enter this code to join your family.",
+  "obDone": "Let's get started",
   "setupChoiceTitle": "Set up your family",
   "setupChoiceBody": "Mhuri Hub works for one family, together. Create yours, or join the one you belong to.",
   "setupCreateCard": "Create a family",
@@ -834,13 +830,14 @@
   "joinCodeLabel": "Invite code",
   "skipForNow": "Skip for now",
   "setupInviteTitle": "Invite your people",
-  "setupWorking": "Setting things up…"
-,
+  "setupWorking": "Setting things up…",
   "noEnvelopesYet": "No envelopes yet — create your first one from the Budgets tab to start tracking spending.",
-  "noActivityYet": "Nothing recorded yet. Tap + to add your first transaction."
-,
+  "noActivityYet": "Nothing recorded yet. Tap + to add your first transaction.",
   "setupBanner": "Finish setting up: create your family or join with a code",
   "setupBannerCta": "Set up",
   "deleteTypeHint": "Type DELETE to confirm",
-  "deletePermanently": "Delete permanently"
+  "deletePermanently": "Delete permanently",
+  "modeLive": "Live — synced to your family space",
+  "modeDemo": "Demo mode — sample family, nothing syncs",
+  "modeDemoHint": "Create app/.env from .env.example (add your Supabase keys) and rebuild to go live."
 }

@@ -491,3 +491,10 @@ Sprint C (skip-limbo banner, RPC display names, P4 sync details).
 - Tests: `live_boot_test` 5 → **8** (envelope-link mirror+persist, FX custom-wins precedence, setup re-arm).
 - USER ACTION: run 003 (if not yet) + 004 in Supabase. Seed at least one `rate_snapshot` row (or keep using Settings custom rate).
 
+## Go-live fixes (2026-09-22) — "device showed demo"
+- Root cause: phone builds had no `.env` asset → demo fallback by design; migrations don't bind a build to Supabase.
+- `AppEnv.load()`: dart-define fallback path (`MHURI_*` keys) alongside the `.env` asset.
+- One-time legacy purge on first live boot (`live_purged_v1`): wipes pre-live demo rows + stale markers; guarded against real adopted installs.
+- Settings mode card (live/demo + config error) — l10n 386 → **389** ×6.
+- live_boot_test 8 → **10** (legacy purge fires / adopted install survives).
+

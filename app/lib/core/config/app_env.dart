@@ -41,14 +41,24 @@ class AppEnv {
       (supabaseUrl?.isNotEmpty ?? false) &&
       (supabaseAnonKey?.isNotEmpty ?? false);
 
-  /// Loads `.env` from the asset bundle. Any problem → demo fallback.
+  /// Loads `.env` from the asset bundle. Any problem → try the
+  /// `--dart-define` overrides (MHURI_APP_ENV / MHURI_SUPABASE_URL /
+  /// MHURI_SUPABASE_ANON_KEY), then demo fallback. A build with neither
+  /// source is demo by design — never half-configured.
   static Future<AppEnv> load() async {
     try {
       final raw = await rootBundle.loadString('.env');
       return AppEnv.parse(raw);
-    } catch (_) {
-      return const AppEnv.fallback();
+    } catch (_) {}
+    const dartEnv = String.fromEnvironment('MHURI_APP_ENV');
+    if (dartEnv.isNotEmpty) {
+      return AppEnv.parse(
+        'APP_ENV=$dartEnv\n'
+        'SUPABASE_URL=${const String.fromEnvironment('MHURI_SUPABASE_URL')}\n'
+        'SUPABASE_ANON_KEY=${const String.fromEnvironment('MHURI_SUPABASE_ANON_KEY')}\n',
+      );
     }
+    return const AppEnv.fallback();
   }
 
   /// Parser kept deliberately simple: KEY=VALUE lines, `#` comments, optional

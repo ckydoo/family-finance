@@ -61,3 +61,10 @@ folder IS your clone.
 
 Extract the zip over your clone folder manually and run `git status`. The
 scripts just automate that (and protect `.env`).
+
+## Go-live round (2026-09-22, unpushed)
+- Device builds were silently falling back to demo (no `.env` asset bundled). `AppEnv.load()` now also accepts `--dart-define` overrides (`MHURI_APP_ENV` / `MHURI_SUPABASE_URL` / `MHURI_SUPABASE_ANON_KEY`).
+- First live boot purges legacy demo rows + stale markers from upgraded installs (one-time `live_purged_v1` kv guard; never fires once `members_v1` / `space_name` / `auth_user_id` exist).
+- Settings shows a sync-mode status card (live vs demo + config error), l10n +3 ×6 → **389**.
+- Tests 8 → **10** (purge fires on legacy db; adopted install untouched).
+

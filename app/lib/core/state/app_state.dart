@@ -319,6 +319,22 @@ class AppState extends ChangeNotifier {
   Future<void> _hydrate() async {
     final store = _store!;
     try {
+      // GO-LIVE GUARD (one-time): devices upgraded from pre-live builds carry
+      // demo fixtures + stale markers (onboarding_done, outbox, demo_auth kv)
+      // in their local db. On the first live boot we wipe user data so the
+      // app starts truly empty. Never fires once real adoption/session
+      // markers exist (members_v1 / space_name / auth_user_id) — a family
+      // adopted on live is never touched.
+      if (env.isLive && (await db?.kvGet('live_purged_v1') ?? '') == '') {
+        final v1 = await db?.kvGet('members_v1');
+        final sn = await db?.kvGet('space_name');
+        final aid = await db?.kvGet('auth_user_id');
+        final adopted = (v1 != null && v1.isNotEmpty) ||
+            (sn != null && sn.isNotEmpty) ||
+            (aid != null && aid.isNotEmpty);
+        if (!adopted) await db?.wipeUserData();
+        await db?.kvSet('live_purged_v1', '1');
+      }
       // Device-local family identity (live): owner member + space name.
       final rawMembers = await db?.kvGet('members_v1');
       if (rawMembers != null && rawMembers.isNotEmpty) {

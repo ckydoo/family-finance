@@ -1300,6 +1300,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noActivityYet => "Rien d’enregistré pour l’instant. Touchez + pour ajouter ta première opération.";
+  String get modeLive => "En direct — synchronisé avec votre espace familial";
+  String get modeDemo => "Mode démo — famille d’exemple, rien ne se synchronise";
+  String get modeDemoHint => "Créez app/.env à partir de .env.example (ajoutez vos clés Supabase) puis recompilez pour passer en direct.";
 
   @override
   String get setupBanner => "Termine la configuration : crée ta famille ou rejoins-en une avec un code";

@@ -1,1 +1,1 @@
-Sprint B+C: envelope_tx sync, server FX rates, setup nudge banner, type-DELETE dialog, RLS migration 004
+Go-live: device builds read .env or dart-defines, first live boot purges legacy demo data, Settings sync-mode card

@@ -1294,6 +1294,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get noActivityYet => "Nada registado ainda. Toque + para adicionar a tua primeira transação.";
+  String get modeLive => "Ao vivo — sincronizado com o seu espaço familiar";
+  String get modeDemo => "Modo demo — família de exemplo, nada sincroniza";
+  String get modeDemoHint => "Crie app/.env a partir de .env.example (adicione as suas chaves do Supabase) e recompile para ficar ao vivo.";
 
   @override
   String get setupBanner => "Termina a configuração: cria a tua família ou entra com um código";

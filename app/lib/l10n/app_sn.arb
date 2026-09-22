@@ -415,8 +415,7 @@
   "deleteAccountTitle": "Dzima akaundi yako?",
   "deleteAccountBody": "Izvi zvinodzima zvachose kupinda kwako nedata remari rakachengetwa pafoni ino. Hazvigoni kudzorerwa.",
   "deleteAccountConfirm": "Dzima zvachose",
-  "deleteAccountFailed": "Hatina kukwanisa kudzima akaundi. Tarisa internet woedza zvakare."
-,
+  "deleteAccountFailed": "Hatina kukwanisa kudzima akaundi. Tarisa internet woedza zvakare.",
   "moreDetails": "Mamwe mashoko",
   "lessDetails": "Shoma mashoko",
   "discardTitle": "Kurega iyi transaction?",
@@ -424,8 +423,7 @@
   "keepEditing": "Enderera kunyora",
   "discard": "Kurega",
   "viewDetails": "Ona ruzivo rwemari",
-  "fabTip": "Dzvanya + kunyora mari inopinda kana kubuda"
-,
+  "fabTip": "Dzvanya + kunyora mari inopinda kana kubuda",
   "emailLabel": "Email",
   "passwordLabel": "Password",
   "loginSignIn": "Pinda mukati",
@@ -434,10 +432,8 @@
   "loginShortPassword": "Password inofanira kuve neanopfuura 6 mavara.",
   "checkYourEmail": "Pedyo nezvo — tarisa email yako woitambudza? aiwa, woisimba, wobvawapinda mukati.",
   "togglePassword": "Ratidza kana kuvanza password",
-  "inviteHowTo": "Anovhaka account neemail yake, obva anyora code iyi kuti apinde mumhuri yako."
-,
-  "obDone": "Ngatangei"
-,
+  "inviteHowTo": "Anovhaka account neemail yake, obva anyora code iyi kuti apinde mumhuri yako.",
+  "obDone": "Ngatangei",
   "setupChoiceTitle": "Gadzirisa mhuri yako",
   "setupChoiceBody": "Mhuri Hub inoshanda nemhuri imwe, pamwechete. Vhaka yako, kana ujoina iyo unoidiwewo.",
   "setupCreateCard": "Vhaka mhuri",
@@ -459,13 +455,14 @@
   "joinCodeLabel": "Kodhi yekukokorodza",
   "skipForNow": "Iraska parizvino",
   "setupInviteTitle": "Kokorodza vanhu vako",
-  "setupWorking": "Kugadzirwa zviri kuita…"
-,
+  "setupWorking": "Kugadzirwa zviri kuita…",
   "noEnvelopesYet": "Hapana bhajeti dziri pozvino — vhaka yekutanga kubva kuBudgets tab.",
-  "noActivityYet": "Hapana chanyorwa zvasvino. Dzvanya + kunyora transaction yekutanga."
-,
+  "noActivityYet": "Hapana chanyorwa zvasvino. Dzvanya + kunyora transaction yekutanga.",
   "setupBanner": "Pedzisa kugadzirisa: vhaka mhuri yako kana ujoin nencode",
   "setupBannerCta": "Gadzirisa",
   "deleteTypeHint": "Nyora DELETE kuti ivhure",
-  "deletePermanently": "Dzima zvachose"
+  "deletePermanently": "Dzima zvachose",
+  "modeLive": "Live — inofambidzana nenzvimbo yemhuri yako",
+  "modeDemo": "Demo mode — mhuri yemuenzaniso, hapana chinofambidzana",
+  "modeDemoHint": "Gadzira app/.env kubva ku .env.example (wedzera Supabase keys dzako) wobva wazvitangazve kuenda live."
 }

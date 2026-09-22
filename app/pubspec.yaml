@@ -73,6 +73,10 @@ flutter:
           weight: 800
   assets:
     - assets/branding/
-    # M2: to go live, create .env from .env.example, then uncomment this
-    # line so the app can read it:
+    # M2: to go live, EITHER create .env from .env.example and uncomment the
+    # line below, OR build with --dart-define (no pubspec change needed):
+    #   flutter run \
+    #     --dart-define=MHURI_APP_ENV=live \
+    #     --dart-define=MHURI_SUPABASE_URL=https://<ref>.supabase.co \
+    #     --dart-define=MHURI_SUPABASE_ANON_KEY=<anon-key>
     # - .env

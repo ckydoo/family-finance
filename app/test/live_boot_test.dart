@@ -41,6 +41,21 @@ void main() {
     return (s, auth);
   }
 
+  /// Builds a live AppState over an EXISTING raw database (for upgrade /
+  /// legacy-purge scenarios). Untyped raw on purpose — ffi Database type.
+  Future<(AppState, AuthController)> stateOn(raw) async {
+    final env = AppEnv.parse(
+      'APP_ENV=live\n'
+      'SUPABASE_URL=https://abcdefgh.supabase.co\n'
+      'SUPABASE_ANON_KEY=k\n',
+    );
+    final auth = AuthController(env: env, service: DemoAuthService())
+      ..signIn('tendi@mhuri.app', '123456');
+    final s = AppState(db: AppDatabase.wrap(raw), env: env, auth: auth);
+    await s.ready();
+    return (s, auth);
+  }
+
   /// Same as [liveState] but also returns the raw database so tests can
   /// assert what was actually persisted (kv, tx rows).
   Future<(AppState, AuthController, Database)> liveStateRaw() async {
@@ -221,5 +236,73 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
     final kv = (await raw.query('kv', where: 'k = ?', whereArgs: ['onboarding_done'])).single;
     expect(kv['v'], '0'); // banner path can flip it back on
+  });
+
+  test('first live boot purges legacy demo rows (upgrade from pre-live)',
+      () async {
+    // A device that ran the old demo build: fixtures + stale markers, and
+    // no adoption/session keys anywhere.
+    final raw = await databaseFactory.openDatabase(
+      inMemoryDatabasePath,
+      version: 1,
+      onCreate: (d, v) async => await AppDatabase.createSchema(d),
+    );
+    await raw.insert('tx', {
+      'id': 'legacy-t1',
+      'envelope_id': null,
+      'member_id': 'demo_mom',
+      'type': 'expense',
+      'amount_minor': 4999,
+      'currency': 'usd',
+      'method': 'cash',
+      'note': 'legacy demo spend',
+      'when_ms': 1700000000000,
+    });
+    await raw.insert('kv', {'k': 'onboarding_done', 'v': '1'});
+    await raw.insert('kv', {'k': 'demo_auth', 'v': 'someone@old.app'});
+
+    final (s, _) = await stateOn(raw);
+
+    // Wiped on first live boot — the app is genuinely empty, onboarding
+    // restarts, and the purge is flagged so it never runs again.
+    expect(s.txs, isEmpty);
+    expect(s.envelopes, isEmpty);
+    expect(s.onboardingComplete, isFalse);
+    final flag =
+        (await raw.query('kv', where: 'k = ?', whereArgs: ['live_purged_v1'])).single;
+    expect(flag['v'], '1');
+    final leftover =
+        await raw.query('tx', where: 'id = ?', whereArgs: ['legacy-t1']);
+    expect(leftover, isEmpty);
+  });
+
+  test('go-live purge never touches a real adopted install', () async {
+    final raw = await databaseFactory.openDatabase(
+      inMemoryDatabasePath,
+      version: 1,
+      onCreate: (d, v) async => await AppDatabase.createSchema(d),
+    );
+    // Real family marker (space_name) + a real recorded transaction.
+    await raw.insert('kv', {'k': 'space_name', 'v': 'The Marufu Family'});
+    await raw.insert('tx', {
+      'id': 'real-t1',
+      'envelope_id': null,
+      'member_id': 'server-uuid-me',
+      'type': 'expense',
+      'amount_minor': 1200,
+      'currency': 'usd',
+      'method': 'mobileMoney',
+      'note': 'real fare',
+      'when_ms': 1700000000000,
+    });
+
+    final (s, _) = await stateOn(raw);
+
+    expect(s.space.name, 'The Marufu Family');
+    expect(s.txs, hasLength(1)); // real data survives
+    expect(s.txs.first.note, 'real fare');
+    final flag =
+        (await raw.query('kv', where: 'k = ?', whereArgs: ['live_purged_v1'])).single;
+    expect(flag['v'], '1'); // guard runs once, harmlessly
   });
 }

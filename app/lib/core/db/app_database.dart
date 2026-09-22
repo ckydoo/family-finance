@@ -38,6 +38,20 @@ class AppDatabase {
     );
   }
 
+  /// One-time legacy purge (first live boot): a device upgraded from a
+  /// pre-live build carries demo fixtures + stale markers in its local db.
+  /// Deletes every user row — kv included; the caller immediately re-flags
+  /// the purge. Real adopted data is never present when this may run.
+  Future<void> wipeUserData() async {
+    for (final t in const [
+      'account', 'envelope', 'tx', 'goal', 'goal_tx', 'recurring', 'outbox',
+      'list_item', 'chore', 'kid_request', 'proposal', 'earning', 'circle',
+      'kv',
+    ]) {
+      await raw.delete(t);
+    }
+  }
+
   static Future<AppDatabase?> open() async {
     try {
       final dir = await getDatabasesPath();
