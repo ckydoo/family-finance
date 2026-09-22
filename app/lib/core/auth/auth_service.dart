@@ -35,6 +35,9 @@ abstract class AuthService {
   Future<AuthSession?> restoreSession();
 
   Future<void> signOut();
+
+  /// Permanently deletes the authenticated account and its server identity.
+  Future<AuthResult> deleteAccount();
 }
 
 /// Offline/demo auth: any phone + code `1234`. Exists so the login screen and
@@ -63,5 +66,11 @@ class DemoAuthService implements AuthService {
   @override
   Future<void> signOut() async {
     _session = null;
+  }
+
+  @override
+  Future<AuthResult> deleteAccount() async {
+    _session = null;
+    return const AuthResult.success();
   }
 }

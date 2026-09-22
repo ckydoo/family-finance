@@ -561,3 +561,24 @@ create policy recurring_read on recurring_rule
 create policy recurring_write on recurring_rule
   for all using (space_role(space_id) is not null)
   with check (space_role(space_id) is not null);
+
+-- Self-service account deletion. The authenticated role can invoke this
+-- function but never receives direct access to auth.users.
+create or replace function public.delete_own_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if v_user is null then
+    raise exception 'NOT_AUTHENTICATED';
+  end if;
+  delete from auth.users where id = v_user;
+end;
+$$;
+
+revoke all on function public.delete_own_account() from public, anon;
+grant execute on function public.delete_own_account() to authenticated;

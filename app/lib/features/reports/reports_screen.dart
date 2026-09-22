@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/state/app_state.dart';
-import '../../core/widgets/app_icons.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/when.dart';
@@ -24,135 +23,83 @@ class ReportsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${tStr(context, 'reportTitle')} — ${monthTitle(DateTime.now())}'),
+        title: Text(
+            '${tStr(context, 'reportTitle')} — ${monthTitle(DateTime.now())}'),
       ),
       body: SafeArea(
         child: RefreshIndicator(
-        onRefresh: () => s.refresh(),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          children: [
-            // ── Stat grid ────────────────────────────────────────────────
-            Row(
+            onRefresh: () => s.refresh(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
               children: [
-                Expanded(
-                  child: _stat(
-                    context,
-                    tStr(context, 'income'),
-                    s.monthIncome.text,
-                    context.incomeGreen,
-                    Icons.trending_up,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _stat(
-                    context,
-                    tStr(context, 'spent'),
-                    s.monthSpend.text,
-                    context.expenseRed,
-                    Icons.trending_down,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _stat(
-                    context,
-                    tStr(context, 'saved'),
-                    s.monthSaved.text,
-                    context.primary,
-                    Icons.track_changes,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _stat(
-                    context,
-                    tStr(context, 'safePerDay'),
-                    s.safeToSpend.text,
-                    context.ink,
-                    Icons.wb_twilight,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // ── Envelope health ──────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: context.card,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  RingProgress(
-                    value: s.envelopeHealth,
-                    size: 74,
-                    stroke: 9,
-                    color: s.envelopeHealth >= 0.7 ? context.primary : context.accent,
-                    child: Text(
-                      '${(s.envelopeHealth * 100).round()}%',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        color: context.ink,
+                // ── Stat grid ────────────────────────────────────────────────
+                Row(
+                  children: [
+                    Expanded(
+                      child: _stat(
+                        context,
+                        tStr(context, 'income'),
+                        s.monthIncome.text,
+                        context.incomeGreen,
+                        Icons.trending_up,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tStr(context, 'envelopeHealth'),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: context.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          AppLocalizations.of(context)!.reachedMove(
-                            s.envelopes.where((e) => s.paceOf(e) != Pace.over).length,
-                            s.envelopes.length,
-                          ),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.inkSoft,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _stat(
+                        context,
+                        tStr(context, 'spent'),
+                        s.monthSpend.text,
+                        context.expenseRed,
+                        Icons.trending_down,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _stat(
+                        context,
+                        tStr(context, 'saved'),
+                        s.monthSaved.text,
+                        context.primary,
+                        Icons.track_changes,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _stat(
+                        context,
+                        tStr(context, 'safePerDay'),
+                        s.safeToSpend.text,
+                        context.ink,
+                        Icons.wb_twilight,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-            // ── Cash leak ────────────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: context.card,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                // ── Envelope health ──────────────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: context.card,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
                     children: [
-                      Expanded(
+                      RingProgress(
+                        value: s.envelopeHealth,
+                        size: 74,
+                        stroke: 9,
+                        color: s.envelopeHealth >= 0.7
+                            ? context.primary
+                            : context.accent,
                         child: Text(
-                          tStr(context, 'cashLeak'),
+                          '${(s.envelopeHealth * 100).round()}%',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 15,
@@ -160,118 +107,181 @@ class ReportsScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Text(
-                        AppLocalizations.of(context)!.cashShare((s.cashLeakShare * 100).round()),
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: context.accent,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tStr(context, 'envelopeHealth'),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: context.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              AppLocalizations.of(context)!.reachedMove(
+                                s.envelopes
+                                    .where((e) => s.paceOf(e) != Pace.over)
+                                    .length,
+                                s.envelopes.length,
+                              ),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.inkSoft,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(5),
-                    child: LinearProgressIndicator(
-                      value: s.cashLeakShare,
-                      minHeight: 8,
-                      backgroundColor: context.track,
-                      color: context.accent,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppLocalizations.of(context)!.cashTrace,
-                    style: TextStyle(fontSize: 11.5, color: context.inkSoft, height: 1.35),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+                ),
+                const SizedBox(height: 12),
 
-            // ── Top envelopes ────────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: context.card,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.whereMoneyWent,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      color: context.ink,
-                    ),
+                // ── Cash leak ────────────────────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: context.card,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(height: 14),
-                  _WhereItWent(state: s),
-                  const SizedBox(height: 14),
-                  _TrendCard(state: s),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              tStr(context, 'cashLeak'),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: context.ink,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            AppLocalizations.of(context)!
+                                .cashShare((s.cashLeakShare * 100).round()),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: context.accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: LinearProgressIndicator(
+                          value: s.cashLeakShare,
+                          minHeight: 8,
+                          backgroundColor: context.track,
+                          color: context.accent,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        AppLocalizations.of(context)!.cashTrace,
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            color: context.inkSoft,
+                            height: 1.35),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-            ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const FamilyMeetingScreen()),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.primary,
-                foregroundColor: context.onSolid,
-                minimumSize: const Size.fromHeight(52),
-                shape: const StadiumBorder(),
-              ),
-              icon: const Icon(Icons.groups),
-              label: Text(
-                AppLocalizations.of(context)!.meetingCta,
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final path = await AppScope.of(context).exportCsv();
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      path == null
-                          ? AppLocalizations.of(context)!.exportFailed
-                          : AppLocalizations.of(context)!.csvSaved(path),
-                    ),
-                    behavior: SnackBarBehavior.floating,
+                // ── Top envelopes ────────────────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: context.card,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: context.primary,
-                side: BorderSide(color: context.primary),
-                minimumSize: const Size.fromHeight(48),
-                shape: const StadiumBorder(),
-              ),
-              icon: const Icon(Icons.table_view, size: 20),
-              label: Text(AppLocalizations.of(context)!.exportCsv),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                AppLocalizations.of(context)!.bringToMeeting,
-                style: TextStyle(fontSize: 11.5, color: context.inkSoft),
-              ),
-            ),
-          ],
-        )),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.whereMoneyWent,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: context.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _WhereItWent(state: s),
+                      const SizedBox(height: 14),
+                      _TrendCard(state: s),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const FamilyMeetingScreen()),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primary,
+                    foregroundColor: context.onSolid,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: const StadiumBorder(),
+                  ),
+                  icon: const Icon(Icons.groups),
+                  label: Text(
+                    AppLocalizations.of(context)!.meetingCta,
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final path = await AppScope.of(context).exportCsv();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          path == null
+                              ? AppLocalizations.of(context)!.exportFailed
+                              : AppLocalizations.of(context)!.csvSaved(path),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.primary,
+                    side: BorderSide(color: context.primary),
+                    minimumSize: const Size.fromHeight(48),
+                    shape: const StadiumBorder(),
+                  ),
+                  icon: const Icon(Icons.table_view, size: 20),
+                  label: Text(AppLocalizations.of(context)!.exportCsv),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.bringToMeeting,
+                    style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+                  ),
+                ),
+              ],
+            )),
       ),
     );
   }
 
-  Widget _stat(BuildContext context, String label, String value, Color color, IconData icon) =>
+  Widget _stat(BuildContext context, String label, String value, Color color,
+          IconData icon) =>
       Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -354,8 +364,7 @@ class _WhereItWentState extends State<_WhereItWent> {
 
     // Top 6 slices, rest folded into "Other".
     var rows = spent.take(6).toList();
-    final restTotal =
-        spent.skip(6).fold<double>(0, (a, e) => a + e.value.$1);
+    final restTotal = spent.skip(6).fold<double>(0, (a, e) => a + e.value.$1);
     if (restTotal > 0) {
       rows = [
         ...rows,
@@ -481,8 +490,7 @@ class _TrendCard extends StatelessWidget {
       var net = 0.0;
       for (final t in s.txs) {
         if (!t.when.isBefore(start) && t.when.isBefore(end)) {
-          final usd =
-              t.amount.inCurrency(Currency.usd, s.rate).minor / 100.0;
+          final usd = t.amount.inCurrency(Currency.usd, s.rate).minor / 100.0;
           net += t.type == TxType.income ? usd : -usd;
         }
       }

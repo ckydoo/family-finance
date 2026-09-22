@@ -9,7 +9,6 @@ import '../../core/money/money.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
-import '../../core/money/money.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 
@@ -277,8 +276,14 @@ class MembersScreen extends StatelessWidget {
               AppLocalizations.of(context)!.setPrivacySub,
               () => _privacySheet(context, s),
             ),
-            _setting(context, AppLocalizations.of(context)!.setMonthStart,
-                AppLocalizations.of(context)!.setMonthStartSub),
+            _settingAction(
+              context,
+              AppLocalizations.of(context)!.setMonthStart,
+              AppLocalizations.of(context)!.setMonthStartSub,
+              () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
+            ),
             _settingAction(
               context,
               AppLocalizations.of(context)!.setNotif,
@@ -289,7 +294,7 @@ class MembersScreen extends StatelessWidget {
             ),
             if (s.isLive) _spaceCard(context, s),
             _pinRow(context, s),
-            if (s.env.isLive && s.auth != null) _accountRow(context, s),
+            if (s.auth?.isLoggedIn ?? false) _accountRow(context, s),
             _settingAction(
               context,
               AppLocalizations.of(context)!.setBackup,
@@ -340,8 +345,8 @@ class MembersScreen extends StatelessWidget {
         ),
       );
 
-  void _pickLanguage(BuildContext context, AppState s) {
-    showDialog<void>(
+  Future<void> _pickLanguage(BuildContext context, AppState s) async {
+    final selected = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -350,9 +355,7 @@ class MembersScreen extends StatelessWidget {
           for (final entry in kLanguageNames.entries)
             SimpleDialogOption(
               onPressed: () {
-                final navigator = Navigator.of(ctx);
-                s.setLocale(entry.key);
-                navigator.pop();
+                Navigator.pop(ctx, entry.key);
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -384,6 +387,8 @@ class MembersScreen extends StatelessWidget {
         ],
       ),
     );
+    if (selected == null || !context.mounted) return;
+    s.setLocale(selected);
   }
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -747,7 +752,9 @@ class MembersScreen extends StatelessWidget {
   }
 
   Widget _accountRow(BuildContext context, AppState s) {
-    final phone = s.auth!.session?.phone ?? '';
+    final auth = s.auth!;
+    final l = AppLocalizations.of(context)!;
+    final phone = auth.session?.phone ?? '';
     final masked = phone.length <= 4
         ? phone
         : '\u2022\u2022\u2022 ${phone.substring(phone.length - 4)}';
@@ -758,41 +765,90 @@ class MembersScreen extends StatelessWidget {
         color: context.card,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Account',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: context.ink,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  AppLocalizations.of(context)!.signedInAs(masked),
-                  style: TextStyle(fontSize: 12, color: context.inkSoft),
-                ),
-              ],
+          Text(
+            l.accountTitle,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              color: context.ink,
             ),
           ),
-          OutlinedButton(
-            onPressed: () async {
-              Navigator.of(context).popUntil((r) => r.isFirst);
-              await s.auth!.signOut();
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.danger,
-              side: BorderSide(color: context.danger),
-              shape: const StadiumBorder(),
-            ),
-            child: Text(AppLocalizations.of(context)!.signOut),
+          const SizedBox(height: 2),
+          Text(
+            l.signedInAs(masked),
+            style: TextStyle(fontSize: 12, color: context.inkSoft),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton(
+                onPressed: auth.busy
+                    ? null
+                    : () async {
+                        final navigator = Navigator.of(context);
+                        navigator.popUntil((route) => route.isFirst);
+                        await auth.signOut();
+                      },
+                child: Text(l.signOut),
+              ),
+              TextButton(
+                onPressed:
+                    auth.busy ? null : () => _confirmDeleteAccount(context, s),
+                style: TextButton.styleFrom(foregroundColor: context.danger),
+                child: Text(l.deleteAccount),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context, AppState s) async {
+    final auth = s.auth;
+    if (auth == null) return;
+
+    final l = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(l.deleteAccountTitle),
+            content: Text(l.deleteAccountBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(
+                    MaterialLocalizations.of(dialogContext).cancelButtonLabel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.danger,
+                  foregroundColor: context.onSolid,
+                ),
+                child: Text(l.deleteAccountConfirm),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) return;
+    final deleted = await auth.deleteAccount();
+    if (deleted) {
+      await s.clearLocalAccountData();
+      return;
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(auth.lastError ?? l.deleteAccountFailed),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -1292,41 +1348,6 @@ class MembersScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _setting(BuildContext context, String title, String subtitle) =>
-      Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.card,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: context.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: context.inkSoft),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: context.inkSoft),
-          ],
-        ),
-      );
 }
 
 class _MemberRow extends StatelessWidget {

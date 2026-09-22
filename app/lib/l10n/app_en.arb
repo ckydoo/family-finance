@@ -784,5 +784,11 @@
   "inviteDemoNote": "Demo mode comes with a seeded family. In live mode your invite code lives here — share it and the family joins your space.",
   "editProfile": "Edit profile",
   "editProfileSub": "Name and avatar for this member",
-  "photoNote": "Profile photos arrive with family sync. Avatars are live now."
+  "photoNote": "Profile photos arrive with family sync. Avatars are live now.",
+  "accountTitle": "Account",
+  "deleteAccount": "Delete account",
+  "deleteAccountTitle": "Delete your account?",
+  "deleteAccountBody": "This permanently deletes your sign-in and removes this device's saved financial data. This cannot be undone.",
+  "deleteAccountConfirm": "Delete permanently",
+  "deleteAccountFailed": "We couldn't delete your account. Check your connection and try again."
 }

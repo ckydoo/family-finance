@@ -21,11 +21,15 @@ void main() {
   late AppDatabase db;
 
   setUp(() async {
-    final raw =
-        await databaseFactory.openDatabase(inMemoryDatabasePath, version: 1,
-            onCreate: (d, v) async {
-      await AppDatabase.createSchema(d);
-    });
+    final raw = await databaseFactory.openDatabase(
+      inMemoryDatabasePath,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (d, v) async {
+          await AppDatabase.createSchema(d);
+        },
+      ),
+    );
     db = AppDatabase.wrap(raw);
   });
 
@@ -115,7 +119,10 @@ void main() {
 
     final second = AppState(db: db);
     await second.ready();
-    expect(second.requests.first.state, RequestState.approved);
+    expect(
+      second.requests.singleWhere((r) => r.reason == 'Restart proof').state,
+      RequestState.approved,
+    );
     expect(
       second.savedOn(second.goal('g_jar')!).minor,
       jarBefore + 400, // + US$4.00 approved into the jar

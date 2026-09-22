@@ -1136,4 +1136,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get photoNote =>
       'Profile photos arrive with family sync. Avatars are live now.';
+
+  @override
+  String get accountTitle => 'Account';
+
+  @override
+  String get deleteAccount => 'Delete account';
+
+  @override
+  String get deleteAccountTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountBody =>
+      'This permanently deletes your sign-in and removes this device\'s saved financial data. This cannot be undone.';
+
+  @override
+  String get deleteAccountConfirm => 'Delete permanently';
+
+  @override
+  String get deleteAccountFailed =>
+      'We couldn\'t delete your account. Check your connection and try again.';
 }

@@ -409,5 +409,11 @@
   "inviteDemoNote": "Le mode démo vient avec une famille d'exemple. En mode live, votre code d'invitation vit ici — partagez-le et la famille rejoint votre espace.",
   "editProfile": "Modifier le profil",
   "editProfileSub": "Nom et avatar de ce membre",
-  "photoNote": "Les photos de profil arrivent avec la synchro familiale. Les avatars sont déjà actifs."
+  "photoNote": "Les photos de profil arrivent avec la synchro familiale. Les avatars sont déjà actifs.",
+  "accountTitle": "Compte",
+  "deleteAccount": "Supprimer le compte",
+  "deleteAccountTitle": "Supprimer votre compte ?",
+  "deleteAccountBody": "Cette action supprime définitivement votre connexion et les données financières enregistrées sur cet appareil. Elle est irréversible.",
+  "deleteAccountConfirm": "Supprimer définitivement",
+  "deleteAccountFailed": "Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez."
 }

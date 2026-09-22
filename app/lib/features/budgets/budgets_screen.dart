@@ -27,7 +27,10 @@ class BudgetsScreen extends StatelessWidget {
           Expanded(
             child: Text(
               l.budgetsTitle,
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: context.ink),
+              style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: context.ink),
             ),
           ),
           Container(
@@ -65,12 +68,7 @@ class BudgetsScreen extends StatelessWidget {
           child: _EnvelopeCard(e: e),
         ),
       ElevatedButton.icon(
-        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l.newEnvStub),
-            behavior: SnackBarBehavior.floating,
-          ),
-        ),
+        onPressed: () => _showNewEnvelopeSheet(context, s),
         style: ElevatedButton.styleFrom(
           backgroundColor: context.primary,
           foregroundColor: context.onSolid,
@@ -142,6 +140,153 @@ class BudgetsScreen extends StatelessWidget {
   }
 }
 
+Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
+  final l = AppLocalizations.of(context)!;
+  final name = TextEditingController();
+  final limit = TextEditingController();
+  var currency = Currency.usd;
+  var rollover = Rollover.reset;
+
+  final result = await showModalBottomSheet<
+      ({String name, double limit, Currency currency, Rollover rollover})>(
+    context: context,
+    isScrollControlled: true,
+    isDismissible: true,
+    enableDrag: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    backgroundColor: context.bg,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setSheetState) => SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          4,
+          20,
+          20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l.newEnvelope,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: sheetContext.ink,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip:
+                      MaterialLocalizations.of(sheetContext).closeButtonTooltip,
+                  onPressed: () => Navigator.pop(sheetContext),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: name,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: l.envelopeLabel,
+                filled: true,
+                fillColor: sheetContext.card,
+                border: const OutlineInputBorder(borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: limit,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: l.limitLabel,
+                prefixText: '${currency.symbol} ',
+                filled: true,
+                fillColor: sheetContext.card,
+                border: const OutlineInputBorder(borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<Currency>(
+              segments: const [
+                ButtonSegment(value: Currency.usd, label: Text('USD')),
+                ButtonSegment(value: Currency.zwg, label: Text('ZiG')),
+              ],
+              selected: {currency},
+              onSelectionChanged: (value) =>
+                  setSheetState(() => currency = value.first),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<Rollover>(
+              initialValue: rollover,
+              isExpanded: true,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: sheetContext.card,
+                border: const OutlineInputBorder(borderSide: BorderSide.none),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: Rollover.reset,
+                  child: Text(l.rollReset),
+                ),
+                DropdownMenuItem(
+                  value: Rollover.roll,
+                  child: Text(l.rollRoll),
+                ),
+                DropdownMenuItem(
+                  value: Rollover.accumulate,
+                  child: Text(l.rollAccum),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) setSheetState(() => rollover = value);
+              },
+            ),
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: () {
+                final amount =
+                    double.tryParse(limit.text.trim().replaceAll(',', ''));
+                if (name.text.trim().isEmpty || amount == null || amount <= 0) {
+                  return;
+                }
+                Navigator.pop(
+                  sheetContext,
+                  (
+                    name: name.text.trim(),
+                    limit: amount,
+                    currency: currency,
+                    rollover: rollover,
+                  ),
+                );
+              },
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                shape: const StadiumBorder(),
+              ),
+              child: Text(l.save),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (result == null) return;
+  state.addEnvelope(
+    name: result.name,
+    limit: Money.fromMajor(result.limit, result.currency),
+    rollover: result.rollover,
+  );
+}
+
 class _EnvelopeCard extends StatelessWidget {
   final Envelope e;
 
@@ -202,9 +347,15 @@ class _EnvelopeCard extends StatelessWidget {
                       if (e.isPersonal)
                         Icon(Icons.lock, size: 12, color: context.inkSoft),
                       const SizedBox(width: 4),
-                      Text(
-                        rolloverLabel(AppLocalizations.of(context)!, e.rollover),
-                        style: TextStyle(fontSize: 10.5, color: context.inkSoft),
+                      Expanded(
+                        child: Text(
+                          rolloverLabel(
+                              AppLocalizations.of(context)!, e.rollover),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              TextStyle(fontSize: 10.5, color: context.inkSoft),
+                        ),
                       ),
                     ],
                   ),
@@ -253,9 +404,18 @@ class _PaceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (pace) {
-      Pace.onTrack => (AppLocalizations.of(context)!.chipOnTrack, const Color(0xFFD9EDE8)),
-      Pace.watch => (AppLocalizations.of(context)!.watch, const Color(0xFFFBE7C6)),
-      Pace.over => (AppLocalizations.of(context)!.chipReached, const Color(0xFFF9E0DF)),
+      Pace.onTrack => (
+          AppLocalizations.of(context)!.chipOnTrack,
+          const Color(0xFFD9EDE8)
+        ),
+      Pace.watch => (
+          AppLocalizations.of(context)!.watch,
+          const Color(0xFFFBE7C6)
+        ),
+      Pace.over => (
+          AppLocalizations.of(context)!.chipReached,
+          const Color(0xFFF9E0DF)
+        ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -265,7 +425,8 @@ class _PaceChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.ink),
+        style: TextStyle(
+            fontSize: 11, fontWeight: FontWeight.w700, color: context.ink),
       ),
     );
   }
@@ -314,7 +475,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
     final e = widget.e;
     final spent = s.spentOn(e);
     final remaining = s.remainingOn(e);
-    final inEnvelope = s.txs.where((t) => t.envelopeId == e.id).take(4).toList();
+    final inEnvelope =
+        s.txs.where((t) => t.envelopeId == e.id).take(4).toList();
 
     return SingleChildScrollView(
       padding: EdgeInsets.only(
@@ -376,7 +538,10 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             const SizedBox(height: 18),
             Text(
               AppLocalizations.of(context)!.moveMoney,
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: context.ink),
+              style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: context.ink),
             ),
             const SizedBox(height: 10),
             Row(
@@ -403,7 +568,13 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                                 color: context.primaryDark,
                               ),
                               const SizedBox(width: 8),
-                              Text(x.name),
+                              Expanded(
+                                child: Text(
+                                  x.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -416,7 +587,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.arrow_forward, size: 18, color: context.inkSoft),
+                  child: Icon(Icons.arrow_forward,
+                      size: 18, color: context.inkSoft),
                 ),
                 Expanded(
                   child: DropdownButtonFormField<Envelope>(
@@ -429,7 +601,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                       border: OutlineInputBorder(borderSide: BorderSide.none),
                     ),
                     items: [
-                      for (final x in s.envelopes.where((x) => x.id != _from?.id))
+                      for (final x
+                          in s.envelopes.where((x) => x.id != _from?.id))
                         DropdownMenuItem(
                           value: x,
                           child: Row(
@@ -440,7 +613,13 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                                 color: context.primaryDark,
                               ),
                               const SizedBox(width: 8),
-                              Text(x.name),
+                              Expanded(
+                                child: Text(
+                                  x.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -459,10 +638,12 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Amount (${_from?.limit.currency.symbol ?? ''})',
+                      labelText:
+                          'Amount (${_from?.limit.currency.symbol ?? ''})',
                       filled: true,
                       fillColor: context.card,
-                      border: const OutlineInputBorder(borderSide: BorderSide.none),
+                      border:
+                          const OutlineInputBorder(borderSide: BorderSide.none),
                     ),
                   ),
                 ),
@@ -522,7 +703,10 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             const SizedBox(height: 20),
             Text(
               AppLocalizations.of(context)!.recentInEnv,
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: context.ink),
+              style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: context.ink),
             ),
             const SizedBox(height: 10),
             if (inEnvelope.isEmpty)
@@ -552,7 +736,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
           ),
           child: Column(
             children: [
-              Text(label, style: TextStyle(fontSize: 11, color: context.inkSoft)),
+              Text(label,
+                  style: TextStyle(fontSize: 11, color: context.inkSoft)),
               const SizedBox(height: 4),
               FittedBox(
                 fit: BoxFit.scaleDown,

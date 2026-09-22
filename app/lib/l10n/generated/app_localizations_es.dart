@@ -1147,4 +1147,24 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get photoNote =>
       'Las fotos de perfil llegan con la sincronización familiar. Los avatares ya están activos.';
+
+  @override
+  String get accountTitle => 'Cuenta';
+
+  @override
+  String get deleteAccount => 'Eliminar cuenta';
+
+  @override
+  String get deleteAccountTitle => '¿Eliminar tu cuenta?';
+
+  @override
+  String get deleteAccountBody =>
+      'Esto elimina permanentemente tu acceso y los datos financieros guardados en este dispositivo. No se puede deshacer.';
+
+  @override
+  String get deleteAccountConfirm => 'Eliminar permanentemente';
+
+  @override
+  String get deleteAccountFailed =>
+      'No pudimos eliminar tu cuenta. Comprueba la conexión e inténtalo de nuevo.';
 }

@@ -409,5 +409,11 @@
   "inviteDemoNote": "El modo demo trae una familia de ejemplo. En modo live tu código de invitación vive aquí — compártelo y la familia se une a tu espacio.",
   "editProfile": "Editar perfil",
   "editProfileSub": "Nombre y avatar de este miembro",
-  "photoNote": "Las fotos de perfil llegan con la sincronización familiar. Los avatares ya están activos."
+  "photoNote": "Las fotos de perfil llegan con la sincronización familiar. Los avatares ya están activos.",
+  "accountTitle": "Cuenta",
+  "deleteAccount": "Eliminar cuenta",
+  "deleteAccountTitle": "¿Eliminar tu cuenta?",
+  "deleteAccountBody": "Esto elimina permanentemente tu acceso y los datos financieros guardados en este dispositivo. No se puede deshacer.",
+  "deleteAccountConfirm": "Eliminar permanentemente",
+  "deleteAccountFailed": "No pudimos eliminar tu cuenta. Comprueba la conexión e inténtalo de nuevo."
 }

@@ -1143,4 +1143,24 @@ class AppLocalizationsNd extends AppLocalizations {
   @override
   String get photoNote =>
       'Izithombe zephrofayili ziza nohlanganiselo lomndeni. Ama-avatar asekwilapha.';
+
+  @override
+  String get accountTitle => 'I-akhawunti';
+
+  @override
+  String get deleteAccount => 'Susa i-akhawunti';
+
+  @override
+  String get deleteAccountTitle => 'Ususe i-akhawunti yakho?';
+
+  @override
+  String get deleteAccountBody =>
+      'Lokhu kususa ngokupheleleyo ukungena kwakho ledatha yemali egcinwe kule divayisi. Akubuyiseki.';
+
+  @override
+  String get deleteAccountConfirm => 'Susa ngokupheleleyo';
+
+  @override
+  String get deleteAccountFailed =>
+      'Asikwazanga ukususa i-akhawunti. Hlola inthanethi uzame futhi.';
 }

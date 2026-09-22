@@ -96,4 +96,21 @@ class AuthController extends ChangeNotifier {
     _lastError = null;
     notifyListeners();
   }
+
+  Future<bool> deleteAccount() async {
+    _lastError = null;
+    _busy = true;
+    notifyListeners();
+    final result = await _service.deleteAccount();
+    _busy = false;
+    if (!result.ok) {
+      _lastError = result.error;
+      notifyListeners();
+      return false;
+    }
+    if (!env.isLive) await _kvSet?.call('demo_auth', '');
+    _session = null;
+    notifyListeners();
+    return true;
+  }
 }

@@ -1150,4 +1150,24 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get photoNote =>
       'Les photos de profil arrivent avec la synchro familiale. Les avatars sont déjà actifs.';
+
+  @override
+  String get accountTitle => 'Compte';
+
+  @override
+  String get deleteAccount => 'Supprimer le compte';
+
+  @override
+  String get deleteAccountTitle => 'Supprimer votre compte ?';
+
+  @override
+  String get deleteAccountBody =>
+      'Cette action supprime définitivement votre connexion et les données financières enregistrées sur cet appareil. Elle est irréversible.';
+
+  @override
+  String get deleteAccountConfirm => 'Supprimer définitivement';
+
+  @override
+  String get deleteAccountFailed =>
+      'Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez.';
 }

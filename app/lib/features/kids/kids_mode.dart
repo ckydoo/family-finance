@@ -111,7 +111,8 @@ class KidsMode extends StatelessWidget {
                         stroke: 8,
                         color: kKidSky,
                         track: const Color(0xFFF0E9D8),
-                        child: const Icon(Icons.directions_bike, size: 24, color: kKidInk),
+                        child: const Icon(Icons.directions_bike,
+                            size: 24, color: kKidInk),
                       ),
                     ],
                   ),
@@ -133,7 +134,9 @@ class KidsMode extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: jar == null || jar.target.minor <= 0
                           ? 0
-                          : (saved.minor / jar.target.minor).clamp(0.0, 1.0).toDouble(),
+                          : (saved.minor / jar.target.minor)
+                              .clamp(0.0, 1.0)
+                              .toDouble(),
                       minHeight: 12,
                       backgroundColor: const Color(0xFFF0E9D8),
                       color: kKidSky,
@@ -143,7 +146,8 @@ class KidsMode extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      AppLocalizations.of(context)!.kidsGoalSaved('New Bike', pct),
+                      AppLocalizations.of(context)!
+                          .kidsGoalSaved('New Bike', pct),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -184,7 +188,8 @@ class KidsMode extends StatelessWidget {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    AppLocalizations.of(context)!.sentKid(c.name),
+                                    AppLocalizations.of(context)!
+                                        .sentKid(c.name),
                                   ),
                                   backgroundColor: kKidInk,
                                   behavior: SnackBarBehavior.floating,
@@ -233,7 +238,8 @@ class KidsMode extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          AppLocalizations.of(context)!.kidsWishItem(saved.text),
+                          AppLocalizations.of(context)!
+                              .kidsWishItem(saved.text),
                           style: const TextStyle(
                             fontSize: 12.5,
                             color: kKidInk,
@@ -244,7 +250,8 @@ class KidsMode extends StatelessWidget {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(5),
                           child: LinearProgressIndicator(
-                            value: (saved.minor / 2500).clamp(0.0, 1.0).toDouble(),
+                            value:
+                                (saved.minor / 2500).clamp(0.0, 1.0).toDouble(),
                             minHeight: 10,
                             backgroundColor: const Color(0xFFF0E9D8),
                             color: kKidCoral,
@@ -284,7 +291,8 @@ class KidsMode extends StatelessWidget {
                       if (next == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(AppLocalizations.of(context)!.kidsAllDone),
+                            content:
+                                Text(AppLocalizations.of(context)!.kidsAllDone),
                             backgroundColor: kKidInk,
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -343,7 +351,8 @@ class KidsMode extends StatelessWidget {
       child: Text(
         label,
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
+        style: const TextStyle(
+            fontSize: 15, fontWeight: FontWeight.w800, height: 1.2),
       ),
     );
   }
@@ -396,7 +405,8 @@ class KidsMode extends StatelessWidget {
                     prefixText: '${cur.symbol} ',
                     filled: true,
                     fillColor: Colors.white,
-                    border: const OutlineInputBorder(borderSide: BorderSide.none),
+                    border:
+                        const OutlineInputBorder(borderSide: BorderSide.none),
                     hintText: '0.00',
                   ),
                 ),
@@ -433,12 +443,15 @@ class KidsMode extends StatelessWidget {
                     if (v == null || v <= 0) return;
                     s.requestMoney(
                       Money.fromMajor(v, cur),
-                      reason.text.trim().isEmpty ? AppLocalizations.of(context)!.kidsDefaultReason : reason.text.trim(),
+                      reason.text.trim().isEmpty
+                          ? AppLocalizations.of(context)!.kidsDefaultReason
+                          : reason.text.trim(),
                     );
                     Navigator.pop(sheetCtx);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(AppLocalizations.of(context)!.sentToParents),
+                        content:
+                            Text(AppLocalizations.of(context)!.sentToParents),
                         backgroundColor: kKidInk,
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -465,6 +478,8 @@ class KidsMode extends StatelessWidget {
 
   void _pinDialog(BuildContext context) {
     final s = AppScope.of(context);
+    final l = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
     final pin = TextEditingController();
     int shake = 0; // G13: bumped on a wrong PIN to re-trigger the wiggle
 
@@ -472,80 +487,82 @@ class KidsMode extends StatelessWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialog) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(children: [
-                  Icon(Icons.lock, size: 16),
-                  SizedBox(width: 6),
-                  Text(AppLocalizations.of(context)!.parentsOnly),
-                ]),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(AppLocalizations.of(context)!.pinExitLine),
-            const SizedBox(height: 12),
-            // G13: the field wiggles once per wrong attempt.
-            TweenAnimationBuilder<double>(
-              key: ValueKey(shake),
-              tween: Tween(begin: shake == 0 ? 1.0 : 0.0, end: 0.0),
-              duration: const Duration(milliseconds: 420),
-              curve: Curves.easeOut,
-              builder: (context, v, child) {
-                final dx = math.sin(v * 6 * math.pi) * 9 * v;
-                return Transform.translate(offset: Offset(dx, 0), child: child);
-              },
-              child: TextField(
-                controller: pin,
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: '••••',
-                  filled: true,
-                  fillColor: context.bg,
-                  border: OutlineInputBorder(borderSide: BorderSide.none),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(children: [
+            Icon(Icons.lock, size: 16),
+            SizedBox(width: 6),
+            Text(l.parentsOnly),
+          ]),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l.pinExitLine),
+              const SizedBox(height: 12),
+              // G13: the field wiggles once per wrong attempt.
+              TweenAnimationBuilder<double>(
+                key: ValueKey(shake),
+                tween: Tween(begin: shake == 0 ? 1.0 : 0.0, end: 0.0),
+                duration: const Duration(milliseconds: 420),
+                curve: Curves.easeOut,
+                builder: (context, v, child) {
+                  final dx = math.sin(v * 6 * math.pi) * 9 * v;
+                  return Transform.translate(
+                      offset: Offset(dx, 0), child: child);
+                },
+                child: TextField(
+                  controller: pin,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: '••••',
+                    filled: true,
+                    fillColor: context.bg,
+                    border: OutlineInputBorder(borderSide: BorderSide.none),
+                  ),
                 ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l.cancel),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final ok = await s.pinStore
+                    .verifyPin(PinStore.parentKey, pin.text.trim());
+                if (ok) {
+                  // Find the owner to hand the device back to.
+                  Member? owner;
+                  for (final m in s.members) {
+                    if (m.role == Role.owner) {
+                      owner = m;
+                      break;
+                    }
+                  }
+                  if (owner != null) s.switchUser(owner);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                } else {
+                  HapticFeedback.heavyImpact(); // G13
+                  setDialog(() => shake++);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(l.wrongPin),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: Text(l.unlock),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.primary,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              final ok = await s.pinStore
-                  .verifyPin(PinStore.parentKey, pin.text.trim());
-              if (ok) {
-                // Find the owner to hand the device back to.
-                Member? owner;
-                for (final m in s.members) {
-                  if (m.role == Role.owner) {
-                    owner = m;
-                    break;
-                  }
-                }
-                if (owner != null) s.switchUser(owner);
-                if (ctx.mounted) Navigator.pop(ctx);
-                            } else {
-                HapticFeedback.heavyImpact(); // G13
-                setDialog(() => shake++);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context)!.wrongPin),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: Text(AppLocalizations.of(context)!.unlock),
-          ),
-        ],
-      ),
       ),
     );
   }

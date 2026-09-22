@@ -1141,4 +1141,24 @@ class AppLocalizationsSn extends AppLocalizations {
   @override
   String get photoNote =>
       'Mifananidzo yeprofile inouya nekuendanisa kwemhuri. Zvivanhu zviri po zvino.';
+
+  @override
+  String get accountTitle => 'Akaundi';
+
+  @override
+  String get deleteAccount => 'Dzima akaundi';
+
+  @override
+  String get deleteAccountTitle => 'Dzima akaundi yako?';
+
+  @override
+  String get deleteAccountBody =>
+      'Izvi zvinodzima zvachose kupinda kwako nedata remari rakachengetwa pafoni ino. Hazvigoni kudzorerwa.';
+
+  @override
+  String get deleteAccountConfirm => 'Dzima zvachose';
+
+  @override
+  String get deleteAccountFailed =>
+      'Hatina kukwanisa kudzima akaundi. Tarisa internet woedza zvakare.';
 }

@@ -43,6 +43,14 @@ void main() {
       await auth.signOut();
       expect(await auth.restoreSession(), isNull);
     });
+
+    test('deleteAccount clears the active session', () async {
+      final auth = DemoAuthService();
+      await auth.verifyOtp('+263772123456', '1234');
+
+      expect((await auth.deleteAccount()).ok, isTrue);
+      expect(await auth.restoreSession(), isNull);
+    });
   });
 
   group('AuthController', () {
@@ -63,6 +71,18 @@ void main() {
       await c.signOut();
       expect(c.isLoggedIn, isFalse);
     });
+
+    test('deleteAccount clears the controller session', () async {
+      final c = AuthController(
+        env: AppEnv.parse('APP_ENV=demo'),
+        service: DemoAuthService(),
+      );
+      expect(await c.verify('+263772123456', '1234'), isTrue);
+
+      expect(await c.deleteAccount(), isTrue);
+      expect(c.isLoggedIn, isFalse);
+      expect(c.lastError, isNull);
+    });
   });
 
   group('SupabaseAuthService (GoTrue REST, offline via FakeClient)', () {
@@ -77,11 +97,13 @@ void main() {
         const MapEntry(200, '{}'),
         // verifyOtp → 400 first (wrong code), then 200 with tokens
         const MapEntry(400, '{"msg":"Invalid token"}'),
-        MapEntry(200, jsonEncode({
-          'access_token': 'access-1',
-          'refresh_token': 'refresh-1',
-          'user': {'id': 'uuid-7'},
-        })),
+        MapEntry(
+            200,
+            jsonEncode({
+              'access_token': 'access-1',
+              'refresh_token': 'refresh-1',
+              'user': {'id': 'uuid-7'},
+            })),
       ]);
       service = SupabaseAuthService(
         baseUrl: 'https://abcdefgh.supabase.co/',
@@ -103,6 +125,9 @@ void main() {
     });
 
     test('verifyOtp surfaces the server message on failure', () async {
+      client.responses
+        ..clear()
+        ..add(const MapEntry(400, '{"msg":"Invalid token"}'));
       final r = await service.verifyOtp('+263772123456', '000000');
       expect(r.ok, isFalse);
       expect(r.error, 'Invalid token');
@@ -110,6 +135,15 @@ void main() {
     });
 
     test('verifyOtp stores tokens and session on success', () async {
+      client.responses
+        ..clear()
+        ..add(MapEntry(
+            200,
+            jsonEncode({
+              'access_token': 'access-1',
+              'refresh_token': 'refresh-1',
+              'user': {'id': 'uuid-7'},
+            })));
       await service.verifyOtp('+263772123456', '123456');
       expect(kv['auth_access_token'], 'access-1');
       expect(kv['auth_refresh_token'], 'refresh-1');
@@ -127,10 +161,12 @@ void main() {
       kv['auth_phone'] = '+263772123456';
 
       client.responses.clear();
-      client.responses.add(MapEntry(200, jsonEncode({
-        'access_token': 'access-2',
-        'refresh_token': 'refresh-10',
-      })));
+      client.responses.add(MapEntry(
+          200,
+          jsonEncode({
+            'access_token': 'access-2',
+            'refresh_token': 'refresh-10',
+          })));
 
       final s = await service.restoreSession();
       expect(s, isNotNull);
@@ -141,10 +177,47 @@ void main() {
     });
 
     test('signOut clears stored tokens (best-effort server call)', () async {
+      client.responses
+        ..clear()
+        ..addAll([
+          MapEntry(
+              200,
+              jsonEncode({
+                'access_token': 'access-1',
+                'refresh_token': 'refresh-1',
+                'user': {'id': 'uuid-7'},
+              })),
+          const MapEntry(204, ''),
+        ]);
       await service.verifyOtp('+263772123456', '123456');
       await service.signOut();
       expect(kv['auth_access_token'], '');
       expect(await service.restoreSession(), isNull);
+    });
+
+    test('deleteAccount invokes the protected RPC and clears tokens', () async {
+      kv
+        ..['auth_access_token'] = 'access-delete'
+        ..['auth_refresh_token'] = 'refresh-delete'
+        ..['auth_user_id'] = 'uuid-delete'
+        ..['auth_phone'] = '+263772123456';
+      client = FakeClient([const MapEntry(204, '')]);
+      service = SupabaseAuthService(
+        baseUrl: 'https://abcdefgh.supabase.co/',
+        anonKey: 'anon-key',
+        kvGet: (k) async => kv[k],
+        kvSet: (k, v) async => kv[k] = v,
+        client: client,
+      );
+
+      final result = await service.deleteAccount();
+
+      expect(result.ok, isTrue);
+      expect(client.sent.single.url.path, '/rest/v1/rpc/delete_own_account');
+      expect(
+          client.sent.single.headers['Authorization'], 'Bearer access-delete');
+      expect(kv['auth_access_token'], '');
+      expect(kv['auth_refresh_token'], '');
     });
   });
 

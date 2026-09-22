@@ -29,26 +29,28 @@ class PinStore {
   String _hash(String memberId, String pin) =>
       sha256.convert(utf8.encode('mhuri:$memberId:$pin')).toString();
 
-  String _storageKey(String memberId) => 'pin_$memberId';
+  String _storageKey(String memberId) =>
+      memberId.startsWith('pin_') ? memberId : 'pin_$memberId';
 
   Future<void> setPin(String memberId, String pin) async {
     final set = _set;
     final key = _storageKey(memberId);
     final hashed = _hash(memberId, pin);
+    _memory[key] = hashed;
     if (set != null) {
       await set(key, hashed);
-    } else {
-      _memory[key] = hashed;
     }
   }
 
   Future<void> clearPin(String memberId) async {
     final set = _set;
     final key = _storageKey(memberId);
+    _memory.remove(key);
+    _memory.remove('pin_$memberId');
     if (set != null) {
       await set(key, '');
-    } else {
-      _memory.remove(key);
+      // Older builds accidentally stored the parent PIN as pin_pin_parent.
+      if (memberId == parentKey) await set('pin_$memberId', '');
     }
   }
 
@@ -67,7 +69,7 @@ class PinStore {
     if (candidate.isEmpty) return false;
     final stored = await _read(memberId);
     if (stored == null || stored.isEmpty) {
-      return memberId == parentKey && candidate == '1234';
+      return memberId == parentKey ? candidate == '1234' : true;
     }
     return stored == _hash(memberId, candidate);
   }
@@ -76,8 +78,13 @@ class PinStore {
     final key = _storageKey(memberId);
     final get = _get;
     if (get != null) {
-      return get(key);
+      final value = await get(key);
+      if (value != null && value.isNotEmpty) return value;
+      // Preserve PINs written by older builds with the duplicated prefix.
+      if (memberId == parentKey) return get('pin_$memberId');
+      return value;
     }
-    return _memory[key];
+    return _memory[key] ??
+        (memberId == parentKey ? _memory['pin_$memberId'] : null);
   }
 }

@@ -87,7 +87,8 @@ class SupabaseAuthService implements AuthService {
         return const AuthResult.failure('Sign-in failed — try again.');
       }
       _session = AuthSession(userId: userId, phone: phone);
-      await _persistTokens(access: access, refresh: refresh, userId: userId, phone: phone);
+      await _persistTokens(
+          access: access, refresh: refresh, userId: userId, phone: phone);
       return const AuthResult.success();
     } catch (_) {
       return const AuthResult.failure(
@@ -158,6 +159,31 @@ class SupabaseAuthService implements AuthService {
     }
     _session = null;
     await _clearTokens();
+  }
+
+  @override
+  Future<AuthResult> deleteAccount() async {
+    final access = await _kvGet?.call('auth_access_token');
+    if (access == null || access.isEmpty) {
+      return const AuthResult.failure(
+          'Your session has expired. Sign in again.');
+    }
+    try {
+      final response = await _client.post(
+        Uri.parse('$_base/rest/v1/rpc/delete_own_account'),
+        headers: {..._headers, 'Authorization': 'Bearer $access'},
+        body: '{}',
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return AuthResult.failure(_errorMessage(response));
+      }
+      _session = null;
+      await _clearTokens();
+      return const AuthResult.success();
+    } catch (_) {
+      return const AuthResult.failure(
+          'Network error — check your connection and try again.');
+    }
   }
 
   Future<void> _persistTokens({

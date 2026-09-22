@@ -409,5 +409,11 @@
   "inviteDemoNote": "I-demo iza nomndeni omkhombiselwe. Ku-live ikhodi yakho yesimemo ihlala lapha — yabelana ngayo umndeni unge esikhaleni sakho.",
   "editProfile": "Hlela iphrofayili",
   "editProfileSub": "Igama nesithombe salendlu",
-  "photoNote": "Izithombe zephrofayili ziza nohlanganiselo lomndeni. Ama-avatar asekwilapha."
+  "photoNote": "Izithombe zephrofayili ziza nohlanganiselo lomndeni. Ama-avatar asekwilapha.",
+  "accountTitle": "I-akhawunti",
+  "deleteAccount": "Susa i-akhawunti",
+  "deleteAccountTitle": "Ususe i-akhawunti yakho?",
+  "deleteAccountBody": "Lokhu kususa ngokupheleleyo ukungena kwakho ledatha yemali egcinwe kule divayisi. Akubuyiseki.",
+  "deleteAccountConfirm": "Susa ngokupheleleyo",
+  "deleteAccountFailed": "Asikwazanga ukususa i-akhawunti. Hlola inthanethi uzame futhi."
 }

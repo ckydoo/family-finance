@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'core/auth/auth_controller.dart';
 import 'core/config/app_env.dart';
 import 'core/db/app_database.dart';
+import 'core/l10n/localization_delegates.dart';
 import 'core/notifications/notifier.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'core/db/persistence.dart';
@@ -121,54 +122,55 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       child: AnimatedBuilder(
         animation: _state,
         builder: (context, _) {
-        // G7: money grouping follows the app locale (es/fr/pt via intl).
-        Money.localeTag = _state.localeCode;
-        return MaterialApp(
-        title: 'Mhuri Hub',
-        debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        darkTheme: buildAppDarkTheme(),
-        // G1: system-following dark mode with manual override.
-        themeMode: _state.themeMode == 1
-            ? ThemeMode.light
-            : _state.themeMode == 2
-                ? ThemeMode.dark
-                : ThemeMode.system,
-        // M6 international: 6 languages, system-aware, user-overridable.
-        locale: _state.localeCode.isEmpty ? null : Locale(_state.localeCode),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        // Elder mode (J6): scale every screen's text.
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context)
-              .copyWith(textScaler: TextScaler.linear(_state.largeText ? 1.2 : 1.0)),
-          child: child ?? const SizedBox.shrink(),
-        ),
-        home: AnimatedBuilder(
-          animation: _auth,
-          builder: (context, _) {
-            // Hydration splash: local database is loading (demo boots fast).
-            if (_state.hydrating) {
-              return const _Splash();
-            }
-            // Interface pass 3: a designed failure path, not a white screen.
-            if (_state.lastError != null) {
-              return _ErrorPane(onRetry: () => _state.refresh());
-            }
-            // First run starts at Authentication in BOTH modes (demo login
-            // = any phone + code 1234). After verifying once, launches go
-            // straight in via the restored session.
-            if (!_auth.isLoggedIn) {
-              return LoginScreen(auth: _auth);
-            }
-            // First-run onboarding (live mode only; skip writes kv).
-            if (_live && _auth.isLoggedIn && !_state.onboardingComplete) {
-              return OnboardingScreen(state: _state);
-            }
-            return const RoleGate();
-          },
-        ),
-        );
+          // G7: money grouping follows the app locale (es/fr/pt via intl).
+          Money.localeTag = _state.localeCode;
+          return MaterialApp(
+            title: 'Mhuri Hub',
+            debugShowCheckedModeBanner: false,
+            theme: buildAppTheme(),
+            darkTheme: buildAppDarkTheme(),
+            // G1: system-following dark mode with manual override.
+            themeMode: _state.themeMode == 1
+                ? ThemeMode.light
+                : _state.themeMode == 2
+                    ? ThemeMode.dark
+                    : ThemeMode.system,
+            // M6 international: 6 languages, system-aware, user-overridable.
+            locale:
+                _state.localeCode.isEmpty ? null : Locale(_state.localeCode),
+            localizationsDelegates: mhuriLocalizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            // Elder mode (J6): scale every screen's text.
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(_state.largeText ? 1.2 : 1.0)),
+              child: child ?? const SizedBox.shrink(),
+            ),
+            home: AnimatedBuilder(
+              animation: _auth,
+              builder: (context, _) {
+                // Hydration splash: local database is loading (demo boots fast).
+                if (_state.hydrating) {
+                  return const _Splash();
+                }
+                // Interface pass 3: a designed failure path, not a white screen.
+                if (_state.lastError != null) {
+                  return _ErrorPane(onRetry: () => _state.refresh());
+                }
+                // First run starts at Authentication in BOTH modes (demo login
+                // = any phone + code 1234). After verifying once, launches go
+                // straight in via the restored session.
+                if (!_auth.isLoggedIn) {
+                  return LoginScreen(auth: _auth);
+                }
+                // First-run onboarding (live mode only; skip writes kv).
+                if (_live && _auth.isLoggedIn && !_state.onboardingComplete) {
+                  return OnboardingScreen(state: _state);
+                }
+                return const RoleGate();
+              },
+            ),
+          );
         },
       ),
     );
@@ -183,8 +185,7 @@ class _Splash extends StatefulWidget {
   State<_Splash> createState() => _SplashState();
 }
 
-class _SplashState extends State<_Splash>
-    with SingleTickerProviderStateMixin {
+class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
 
   @override

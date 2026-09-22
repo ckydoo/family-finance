@@ -409,5 +409,11 @@
   "inviteDemoNote": "Demo inouya nemhuri yemuenzaniso. Mulive kodhi yekukoka inogara pano — igovane nemhuri ipinde munzvimbo yako.",
   "editProfile": "Chinja profile",
   "editProfileSub": "Zita nemufananidzo weuyu member",
-  "photoNote": "Mifananidzo yeprofile inouya nekuendanisa kwemhuri. Zvivanhu zviri po zvino."
+  "photoNote": "Mifananidzo yeprofile inouya nekuendanisa kwemhuri. Zvivanhu zviri po zvino.",
+  "accountTitle": "Akaundi",
+  "deleteAccount": "Dzima akaundi",
+  "deleteAccountTitle": "Dzima akaundi yako?",
+  "deleteAccountBody": "Izvi zvinodzima zvachose kupinda kwako nedata remari rakachengetwa pafoni ino. Hazvigoni kudzorerwa.",
+  "deleteAccountConfirm": "Dzima zvachose",
+  "deleteAccountFailed": "Hatina kukwanisa kudzima akaundi. Tarisa internet woedza zvakare."
 }

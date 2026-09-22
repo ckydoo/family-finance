@@ -93,7 +93,8 @@ class AppState extends ChangeNotifier {
   late SavingsCircle circle;
   late final List<RecurringRule> recurring;
 
-  Member _user = const Member(id: 'x', name: 'x', emoji: 'person', role: Role.adult);
+  Member _user =
+      const Member(id: 'x', name: 'x', emoji: 'person', role: Role.adult);
   Currency displayCurrency = Currency.usd;
 
   /// Demo FX rate (USD → ZiG). In production: a daily central-bank snapshot,
@@ -136,7 +137,8 @@ class AppState extends ChangeNotifier {
   Set<String> _seenRequestResults = {};
 
   /// True while the startup hydration runs (only with a database attached).
-  bool autoHideAmounts = true; // privacy: hide balances on background (kv 'auto_hide')
+  bool autoHideAmounts =
+      true; // privacy: hide balances on background (kv 'auto_hide')
   bool hydrating = false;
   bool refreshing = false; // soft refresh in flight (tree stays mounted)
   bool _loadedOnce = false;
@@ -701,6 +703,18 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearLocalAccountData() async {
+    final database = db;
+    if (database != null) {
+      await Persistence(database).wipeSynced();
+      await database.raw.delete('account');
+      await database.raw.delete('outbox');
+      await database.raw.delete('kv');
+    }
+    accounts.clear();
+    onSpaceAdopted();
+  }
+
   /// Server-pulled rows (raw JSON) → in-memory merge. Persistence already
   /// stored them; this updates what the screens render.
   void applyPulled(String entity, List<Map<String, Object?>> rows) {
@@ -837,8 +851,7 @@ class AppState extends ChangeNotifier {
     _persistKv(
       'profile_edits',
       jsonEncode({
-        for (final m2 in members)
-          m2.id: {'name': m2.name, 'emoji': m2.emoji},
+        for (final m2 in members) m2.id: {'name': m2.name, 'emoji': m2.emoji},
       }),
     );
     notifyListeners();
@@ -996,6 +1009,26 @@ class AppState extends ChangeNotifier {
 
   Money remainingOn(Envelope e) =>
       Money(e.limit.minor - spentOn(e).minor, e.limit.currency);
+
+  void addEnvelope({
+    required String name,
+    required Money limit,
+    Rollover rollover = Rollover.reset,
+    String emoji = 'money',
+  }) {
+    final envelope = Envelope(
+      id: _seq('e'),
+      name: name.trim(),
+      emoji: emoji,
+      limit: limit,
+      rollover: rollover,
+    );
+    envelopes.add(envelope);
+    _persistEnvelope(envelope);
+    _queue('envelope', envelope);
+    pendingOps++;
+    notifyListeners();
+  }
 
   /// Effective limit including rollover carry (spec D4).
   ///
@@ -1206,7 +1239,7 @@ class AppState extends ChangeNotifier {
     if (circle.currentRound < circle.totalRounds) {
       circle.currentRound++;
       _persistSavingsCircle();
-    _queue('mukando', circle);
+      _queue('mukando', circle);
       _resyncReminders();
       pendingOps++;
       notifyListeners();
@@ -1218,7 +1251,7 @@ class AppState extends ChangeNotifier {
     if (circle.currentRound > 1) {
       circle.currentRound--;
       _persistSavingsCircle();
-    _queue('mukando', circle);
+      _queue('mukando', circle);
       _resyncReminders();
       notifyListeners();
     }
@@ -1252,7 +1285,7 @@ class AppState extends ChangeNotifier {
       c.state = ChoreState.waiting;
       stars = (stars - c.stars).clamp(0, 1000000000);
       _persistChore(c);
-    _queue('chore', c);
+      _queue('chore', c);
       _persistKv('stars', '$stars');
       _resyncReminders();
       notifyListeners();
