@@ -9,17 +9,12 @@ import 'supabase_auth_service.dart';
 /// Sessions are real Supabase GoTrue sessions (email + password); tests may
 /// inject a fake [AuthService].
 class AuthController extends ChangeNotifier {
-  final KvGetter? _kvGet;
-  final KvSetter? _kvSet;
-
   AuthController({
     required this.env,
     AuthService? service,
     KvGetter? kvGet,
     KvSetter? kvSet,
-  })  : _kvGet = kvGet,
-        _kvSet = kvSet,
-        _service = service ??
+  }) : _service = service ??
             SupabaseAuthService(
               baseUrl: env.supabaseUrl!,
               anonKey: env.supabaseAnonKey!,

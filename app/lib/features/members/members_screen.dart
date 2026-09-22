@@ -18,8 +18,8 @@ Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
   final l = AppLocalizations.of(sheetCtx)!;
   final messenger = ScaffoldMessenger.of(sheetCtx);
   try {
-    final picked = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, maxWidth: 720, imageQuality: 72);
+    final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery, maxWidth: 720, imageQuality: 72);
     if (picked == null) return;
     messenger.showSnackBar(SnackBar(
         content: Text(l.photoUploading), behavior: SnackBarBehavior.floating));
@@ -35,11 +35,14 @@ Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
       anonKey: key,
       tokenGet: () async {
         final t = await s.db?.kvGet('auth_access_token');
-        return (t != null && t.isNotEmpty) ? t : s.auth?.refreshAccessToken();
+        if (t != null && t.isNotEmpty) return t;
+        final auth = s.auth;
+        if (auth == null) return null;
+        return auth.refreshAccessToken();
       },
     );
-    final publicUrl = await uploader.upload(
-        bytes: bytes, userId: s.user.id, ext: ext);
+    final publicUrl =
+        await uploader.upload(bytes: bytes, userId: s.user.id, ext: ext);
     s.setMyAvatar(publicUrl);
     messenger.showSnackBar(SnackBar(
         content: Text(l.photoSaved), behavior: SnackBarBehavior.floating));
@@ -887,9 +890,7 @@ class MembersScreen extends StatelessWidget {
                 children: [
                   Text(l.deleteAccountBody,
                       style: TextStyle(
-                          fontSize: 13,
-                          color: context.inkSoft,
-                          height: 1.4)),
+                          fontSize: 13, color: context.inkSoft, height: 1.4)),
                   const SizedBox(height: 12),
                   TextField(
                     controller: typeCtrl,
@@ -899,8 +900,7 @@ class MembersScreen extends StatelessWidget {
                       hintText: l.deleteTypeHint,
                       filled: true,
                       fillColor: context.card,
-                      border:
-                          OutlineInputBorder(borderSide: BorderSide.none),
+                      border: OutlineInputBorder(borderSide: BorderSide.none),
                     ),
                   ),
                 ],
@@ -908,8 +908,8 @@ class MembersScreen extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext, false),
-                  child: Text(
-                      MaterialLocalizations.of(dialogContext).cancelButtonLabel),
+                  child: Text(MaterialLocalizations.of(dialogContext)
+                      .cancelButtonLabel),
                 ),
                 FilledButton(
                   onPressed: typeCtrl.text.trim() == 'DELETE'
@@ -1135,7 +1135,8 @@ class MembersScreen extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: _roleBg(m.role),
-        backgroundImage: m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
+        backgroundImage:
+            m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
         child: m.avatarUrl != null
             ? null
             : Icon(iconForKey(m.emoji) ?? Icons.person,

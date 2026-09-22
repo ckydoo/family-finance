@@ -1137,7 +1137,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get photoNote =>
-      'Les photos de profil arrivent avec la synchro familiale. Les avatars sont déjà actifs.';
+      'Les photos sont envoyées au serveur familial et s\'affichent sur tous les appareils.';
 
   @override
   String get accountTitle => 'Compte';
@@ -1306,23 +1306,67 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deletePermanently => 'Supprimer définitivement';
-  String get errInviteCode => "Saisis le code d'invitation donné par le responsable de la famille — il ressemble à MHRI-4F2A.";
-  String get errFamilyNameTaken => "Ce nom de famille est déjà pris — essaie un autre nom.";
-  String get authErrEmailNotConfirmed => "Vérifie ta boîte mail — touche d'abord le lien de confirmation, puis connecte-toi.";
-  String get authErrBadCredentials => "L'e-mail ou le mot de passe est incorrect.";
-  String get authErrAlreadyRegistered => "Un compte existe déjà avec cet e-mail — connecte-toi.";
-  String get authErrRateLimited => "Trop de tentatives — attends une minute et réessaie.";
-  String get authErrNetwork => "Pas de connexion — vérifie ta connexion internet et réessaie.";
-  String get authResend => "Renvoyer l'e-mail de confirmation";
-  String get authResent => "E-mail de confirmation envoyé — vérifie ta boîte.";
-  String get mukandoOn => "Cercle d'épargne (mukando)";
-  String get mukandoEnableTitle => "Mukando — épargne rotative";
-  String get mukandoEnableSub => "Épargnez à tour de rôle en famille. Désactivé par défaut — active-le si votre cercle fait des tours.";
-  String get mukandoEnableCta => "Activer le mukando";
-  String get addPhoto => "Utiliser une photo";
-  String get removePhoto => "Retirer la photo";
-  String get photoUploading => "Envoi de la photo…";
-  String get photoFailed => "Impossible d'envoyer la photo — vérifie ta connexion et réessaie.";
-  String get photoSaved => "Photo enregistrée — ta famille la verra aussi.";
 
+  @override
+  String get errInviteCode =>
+      'Saisis le code d\'invitation donné par le responsable de la famille — il ressemble à MHRI-4F2A.';
+
+  @override
+  String get errFamilyNameTaken =>
+      'Ce nom de famille est déjà pris — essaie un autre nom.';
+
+  @override
+  String get authErrEmailNotConfirmed =>
+      'Vérifie ta boîte mail — touche d\'abord le lien de confirmation, puis connecte-toi.';
+
+  @override
+  String get authErrBadCredentials =>
+      'L\'e-mail ou le mot de passe est incorrect.';
+
+  @override
+  String get authErrAlreadyRegistered =>
+      'Un compte existe déjà avec cet e-mail — connecte-toi.';
+
+  @override
+  String get authErrRateLimited =>
+      'Trop de tentatives — attends une minute et réessaie.';
+
+  @override
+  String get authErrNetwork =>
+      'Pas de connexion — vérifie ta connexion internet et réessaie.';
+
+  @override
+  String get authResend => 'Renvoyer l\'e-mail de confirmation';
+
+  @override
+  String get authResent => 'E-mail de confirmation envoyé — vérifie ta boîte.';
+
+  @override
+  String get mukandoOn => 'Cercle d\'épargne (mukando)';
+
+  @override
+  String get mukandoEnableTitle => 'Mukando — épargne rotative';
+
+  @override
+  String get mukandoEnableSub =>
+      'Épargnez à tour de rôle en famille. Désactivé par défaut — active-le si votre cercle fait des tours.';
+
+  @override
+  String get mukandoEnableCta => 'Activer le mukando';
+
+  @override
+  String get addPhoto => 'Utiliser une photo';
+
+  @override
+  String get removePhoto => 'Retirer la photo';
+
+  @override
+  String get photoUploading => 'Envoi de la photo…';
+
+  @override
+  String get photoFailed =>
+      'Impossible d\'envoyer la photo — vérifie ta connexion et réessaie.';
+
+  @override
+  String get photoSaved => 'Photo enregistrée — ta famille la verra aussi.';
 }

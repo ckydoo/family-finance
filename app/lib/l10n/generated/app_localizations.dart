@@ -2089,7 +2089,7 @@ abstract class AppLocalizations {
   /// No description provided for @photoNote.
   ///
   /// In en, this message translates to:
-  /// **'Profile photos arrive with family sync. Avatars are live now.'**
+  /// **'Photos upload to your family\'s server and show across devices.'**
   String get photoNote;
 
   /// No description provided for @accountTitle.
@@ -2403,23 +2403,113 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete permanently'**
   String get deletePermanently;
+
+  /// No description provided for @errInviteCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the invite code from the family owner — it looks like MHRI-4F2A.'**
   String get errInviteCode;
+
+  /// No description provided for @errFamilyNameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'That family name is already taken — try another name.'**
   String get errFamilyNameTaken;
+
+  /// No description provided for @authErrEmailNotConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your inbox — tap the confirmation link first, then sign in.'**
   String get authErrEmailNotConfirmed;
+
+  /// No description provided for @authErrBadCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or password is wrong.'**
   String get authErrBadCredentials;
+
+  /// No description provided for @authErrAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists — sign in instead.'**
   String get authErrAlreadyRegistered;
+
+  /// No description provided for @authErrRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts — wait a minute and try again.'**
   String get authErrRateLimited;
+
+  /// No description provided for @authErrNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection — check your internet and try again.'**
   String get authErrNetwork;
+
+  /// No description provided for @authResend.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend confirmation email'**
   String get authResend;
+
+  /// No description provided for @authResent.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation email sent — check your inbox.'**
   String get authResent;
+
+  /// No description provided for @mukandoOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings circle (mukando)'**
   String get mukandoOn;
+
+  /// No description provided for @mukandoEnableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mukando — rotating savings'**
   String get mukandoEnableTitle;
+
+  /// No description provided for @mukandoEnableSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Save in turns with your family. Off by default — turn it on if your circle does rounds.'**
   String get mukandoEnableSub;
+
+  /// No description provided for @mukandoEnableCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on mukando'**
   String get mukandoEnableCta;
+
+  /// No description provided for @addPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Use photo'**
   String get addPhoto;
+
+  /// No description provided for @removePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
   String get removePhoto;
+
+  /// No description provided for @photoUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo…'**
   String get photoUploading;
+
+  /// No description provided for @photoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload the photo — check your connection and try again.'**
   String get photoFailed;
+
+  /// No description provided for @photoSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo saved — your family will see it too.'**
   String get photoSaved;
 }
 
