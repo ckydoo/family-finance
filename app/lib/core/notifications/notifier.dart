@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -6,7 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'reminders.dart';
 
 /// Thin wrapper over flutter_local_notifications (v22 API: all-named
-/// parameters). Every call is fire-and-forget safe — a failed schedule or
+/// parameters). Every call is fire-and-forget safe - a failed schedule or
 /// a missing platform channel must never crash the app. On non-phone
 /// platforms (desktop/web/tests) this silently no-ops.
 class Notifier {
@@ -21,33 +23,48 @@ class Notifier {
   /// database is irrelevant (no flutter_timezone dependency needed).
   static bool get supported =>
       !kIsWeb &&
+      Platform.environment['FLUTTER_TEST'] != 'true' &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
 
   static Future<void> _ensureInit() async {
     if (_inited || !supported) return;
     tzdata.initializeTimeZones();
-    final settings = InitializationSettings(
-      android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
-      iOS: DarwinInitializationSettings(),
+    const settings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      ),
     );
     await _plugin.initialize(settings: settings);
     _inited = true;
   }
 
-  /// OS permission (Android 13+ prompts; iOS already prompts during init).
-  static Future<void> requestPermission() async {
+  /// Requests OS permission and reports whether notifications may be shown.
+  static Future<bool> requestPermission() async {
     try {
       await _ensureInit();
-      if (!supported) return;
+      if (!supported) return false;
       if (defaultTargetPlatform == TargetPlatform.android) {
-        await _plugin
-            .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>()
-            ?.requestNotificationsPermission();
+        return await _plugin
+                .resolvePlatformSpecificImplementation<
+                    AndroidFlutterLocalNotificationsPlugin>()
+                ?.requestNotificationsPermission() ??
+            false;
       }
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        return await _plugin
+                .resolvePlatformSpecificImplementation<
+                    IOSFlutterLocalNotificationsPlugin>()
+                ?.requestPermissions(alert: true, badge: true, sound: true) ??
+            false;
+      }
+      return false;
     } catch (e) {
       debugPrint('Notifier.requestPermission: $e');
+      return false;
     }
   }
 
@@ -64,7 +81,7 @@ class Notifier {
         importance: Importance.max,
         priority: Priority.high,
       );
-      final details = NotificationDetails(
+      const details = NotificationDetails(
         android: androidDetails,
         iOS: DarwinNotificationDetails(),
       );
@@ -89,8 +106,8 @@ class Notifier {
   }
 
   /// Immediate notification (used by Settings' "send a test" button).
-  static Future<void> showNow(Reminder r) async {
-    if (!supported) return;
+  static Future<bool> showNow(Reminder r) async {
+    if (!supported) return false;
     try {
       await _ensureInit();
       const androidDetails = AndroidNotificationDetails(
@@ -100,7 +117,7 @@ class Notifier {
         importance: Importance.max,
         priority: Priority.high,
       );
-      final details = NotificationDetails(
+      const details = NotificationDetails(
         android: androidDetails,
         iOS: DarwinNotificationDetails(),
       );
@@ -110,8 +127,10 @@ class Notifier {
         body: r.body,
         notificationDetails: details,
       );
+      return true;
     } catch (e) {
       debugPrint('Notifier.showNow: $e');
+      return false;
     }
   }
 }

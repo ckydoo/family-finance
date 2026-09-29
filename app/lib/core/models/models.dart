@@ -16,10 +16,21 @@ enum ChoreState { todo, waiting, confirmed }
 
 enum RequestState { pending, approved, declined }
 
+enum OverspendPolicy { warn, block }
+
+enum SyncHealthState { saved, syncing, synced, needsAttention }
+
+extension OverspendPolicyX on OverspendPolicy {
+  String get label => switch (this) {
+        OverspendPolicy.warn => 'Warn and require confirmation',
+        OverspendPolicy.block => 'Block overspending strictly',
+      };
+}
+
 extension RoleX on Role {
   String get label => switch (this) {
-        Role.owner => 'Owner',
-        Role.adult => 'Adult',
+        Role.owner => 'Family Admin',
+        Role.adult => 'Adult Member',
         Role.teen => 'Teen',
         Role.kid => 'Kid',
         Role.viewer => 'Elder · Viewer',
@@ -61,20 +72,21 @@ extension FrequencyX on Frequency {
       };
 }
 
-/// C7 — a repeating expense (school fees, rent, airtime) with a review step:
-/// due rules surface on Home and a parent posts them (or skips) — nothing is
+/// C7 - a repeating expense (school fees, rent, airtime) with a review step:
+/// due rules surface on Home and a parent posts them (or skips) - nothing is
 /// charged silently. Device-local in M4; server sync joins later.
 class RecurringRule {
   final String id;
-  final String name;
-  final String emoji;
-  final Money amount;
-  final String? envelopeId;
-  final String memberId;
-  final Method method;
-  final Frequency frequency;
+  String name;
+  String emoji;
+  Money amount;
+  String? envelopeId;
+  String memberId;
+  Method method;
+  Frequency frequency;
   DateTime nextDue;
   bool active;
+  bool isArchived;
 
   RecurringRule({
     required this.id,
@@ -87,6 +99,7 @@ class RecurringRule {
     required this.nextDue,
     this.envelopeId,
     this.active = true,
+    this.isArchived = false,
   });
 
   bool isDueWithin(Duration window) =>
@@ -121,6 +134,7 @@ class Member {
   final String name;
   final String emoji;
   final Role role;
+  final String? serverRole;
 
   /// Public URL of the member's profile picture (null → emoji fallback).
   final String? avatarUrl;
@@ -130,6 +144,7 @@ class Member {
     required this.name,
     required this.emoji,
     required this.role,
+    this.serverRole,
     this.avatarUrl,
   });
 }
@@ -153,11 +168,12 @@ class Account {
 /// [limit] is mutable to support "move money between envelopes".
 class Envelope {
   final String id;
-  final String name;
-  final String emoji;
+  String name;
+  String emoji;
   Money limit;
-  final Rollover rollover;
+  Rollover rollover;
   final bool isPersonal;
+  bool isArchived;
 
   Envelope({
     required this.id,
@@ -166,6 +182,7 @@ class Envelope {
     required this.limit,
     this.rollover = Rollover.reset,
     this.isPersonal = false,
+    this.isArchived = false,
   });
 }
 
@@ -178,6 +195,7 @@ class Tx {
   final Method method;
   final String note;
   final DateTime when;
+  final DateTime? deletedAt;
 
   const Tx({
     required this.id,
@@ -188,6 +206,7 @@ class Tx {
     required this.note,
     required this.when,
     this.envelopeId,
+    this.deletedAt,
   });
 }
 
@@ -199,6 +218,7 @@ class Goal {
   final String? autoSave;
   final bool isKidJar;
   final String? ownerMemberId;
+  final String status;
 
   const Goal({
     required this.id,
@@ -208,16 +228,19 @@ class Goal {
     this.autoSave,
     this.isKidJar = false,
     this.ownerMemberId,
+    this.status = 'active',
   });
 }
 
 class GoalTx {
+  final String? id;
   final String goalId;
   final String byMemberId;
   final Money amount;
   final DateTime at;
 
   const GoalTx({
+    this.id,
     required this.goalId,
     required this.byMemberId,
     required this.amount,
@@ -227,9 +250,9 @@ class GoalTx {
 
 class ListItem {
   final String id;
-  final String name;
-  final int qty;
-  final Money est; // estimated unit price
+  String name;
+  int qty;
+  Money est; // estimated unit price
   ItemState state;
   bool checkedOut;
   final String addedById;
@@ -251,7 +274,7 @@ class ListItem {
 }
 
 /// The shopping-list header (server `shopping_list`). Devices only need to
-/// know which list exists — the id stamps every item push (list_id) and the
+/// know which list exists - the id stamps every item push (list_id) and the
 /// name feeds the Lists screen title.
 class ShoppingListHeader {
   final String id;
@@ -293,7 +316,8 @@ class InviteInfo {
   });
 
   bool get isOpen =>
-      revokedAt == null && acceptedAt == null &&
+      revokedAt == null &&
+      acceptedAt == null &&
       (expiresAt == null || expiresAt!.isAfter(DateTime.now()));
 
   /// Deep link the QR encodes and the share sheet hands to WhatsApp/SMS.
@@ -302,15 +326,19 @@ class InviteInfo {
 
 class Chore {
   final String id;
-  final String name;
-  final int stars;
+  String name;
+  int stars;
   ChoreState state;
+  String? assigneeMemberId;
+  bool isArchived;
 
   Chore({
     required this.id,
     required this.name,
     required this.stars,
     this.state = ChoreState.todo,
+    this.assigneeMemberId,
+    this.isArchived = false,
   });
 }
 
@@ -330,7 +358,7 @@ class KidRequest {
   });
 }
 
-/// Teen expense proposal (spec Module H2) — enters the parents' pending queue.
+/// Teen expense proposal (spec Module H2) - enters the parents' pending queue.
 class Proposal {
   final String id;
   final String teenId;
@@ -366,7 +394,7 @@ class Earning {
   });
 }
 
-/// Savings circle (ROSCA — rotation savings). Records only — never holds
+/// Savings circle (ROSCA - rotation savings). Records only - never holds
 /// the money (spec §4 E4).
 class SavingsCircle {
   final String name;
@@ -384,7 +412,7 @@ class SavingsCircle {
   });
 
   /// Rotation wraps: a circle can run more rounds than members (cycle 2
-  /// starts at the top of [order]) — and an empty order can never crash.
+  /// starts at the top of [order]) - and an empty order can never crash.
   String get nextCollector =>
       order.isEmpty ? '' : order[(currentRound - 1) % order.length];
 

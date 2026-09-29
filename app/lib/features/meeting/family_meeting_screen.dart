@@ -7,7 +7,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/widgets/ring_progress.dart';
 
-/// Family Meeting (spec I4) — a guided 15-minute monthly agenda the couple
+/// Family Meeting (spec I4) - a guided 15-minute monthly agenda the couple
 /// walks through together. The note they agree on is saved on-device.
 class FamilyMeetingScreen extends StatefulWidget {
   const FamilyMeetingScreen({super.key});
@@ -50,20 +50,22 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                 style: TextStyle(fontSize: 13, color: context.inkSoft),
               ),
               const SizedBox(height: 16),
-              // ── Step 1 — recap ─────────────────────────────────────────
+              // ── Step 1 - recap ─────────────────────────────────────────
               _step(
                 n: 1,
                 title: l.mFigures,
                 child: Row(
                   children: [
-                    _figure(l.figureIncome, s.monthIncome.text, context.incomeGreen),
-                    _figure(l.figureSpent, s.monthSpend.text, context.expenseRed),
+                    _figure(l.figureIncome, s.monthIncome.text,
+                        context.incomeGreen),
+                    _figure(
+                        l.figureSpent, s.monthSpend.text, context.expenseRed),
                     _figure(l.figureSaved, s.monthSaved.text, context.primary),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
-              // ── Step 2 — envelopes ─────────────────────────────────────
+              // ── Step 2 - envelopes ─────────────────────────────────────
               _step(
                 n: 2,
                 title: l.mEnvelopeHealth,
@@ -73,7 +75,9 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                       value: s.envelopeHealth,
                       size: 60,
                       stroke: 8,
-                      color: s.envelopeHealth >= 0.7 ? context.primary : context.accent,
+                      color: s.envelopeHealth >= 0.7
+                          ? context.primary
+                          : context.accent,
                       child: Text(
                         '${(s.envelopeHealth * 100).round()}%',
                         style: TextStyle(
@@ -99,7 +103,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
               ),
             ];
             final right = <Widget>[
-              // ── Step 3 — goals ─────────────────────────────────────────
+              // ── Step 3 - goals ─────────────────────────────────────────
               _step(
                 n: 3,
                 title: l.mGoals,
@@ -142,21 +146,25 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              // ── Step 4 — kids & requests ─────────────────────────────
+              // ── Step 4 - kids & requests ─────────────────────────────
               _step(
                 n: 4,
                 title: l.mChores,
                 child: Text(
                   l.mChoresLine(
                     s.stars,
-                    s.requests.where((r) => r.state == RequestState.pending).length,
-                    s.proposals.where((p) => p.state == RequestState.pending).length,
+                    s.requests
+                        .where((r) => r.state == RequestState.pending)
+                        .length,
+                    s.proposals
+                        .where((p) => p.state == RequestState.pending)
+                        .length,
                   ),
                   style: TextStyle(fontSize: 12.5, color: context.inkSoft),
                 ),
               ),
               const SizedBox(height: 12),
-              // ── Step 5 — one improvement ─────────────────────────────
+              // ── Step 5 - one improvement ─────────────────────────────
               _step(
                 n: 5,
                 title: l.mImprove,
@@ -170,7 +178,8 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                         hintText: l.meetingNoteHint,
                         filled: true,
                         fillColor: context.card,
-                        border: const OutlineInputBorder(borderSide: BorderSide.none),
+                        border: const OutlineInputBorder(
+                            borderSide: BorderSide.none),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -236,7 +245,8 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
     );
   }
 
-  Widget _step({required int n, required String title, required Widget child}) =>
+  Widget _step(
+          {required int n, required String title, required Widget child}) =>
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

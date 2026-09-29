@@ -1,5 +1,5 @@
-/// The synced entity set (M3 + premium pass). The family ledger — money,
-/// budgets, lists, approvals, earnings — syncs, and as of the premium pass so
+/// The synced entity set (M3 + premium pass). The family ledger - money,
+/// budgets, lists, approvals, earnings - syncs, and as of the premium pass so
 /// do chores (stars), the savings-circle header (mukando, one per family) and
 /// recurring rules. Wallet balances stay device-local (see ROADMAP notes).
 library;
@@ -23,7 +23,7 @@ class SyncCtx {
 
 /// One synced table: server name + JSON round-trip for its domain type.
 /// [decode] may return one of two types for `kid_request` (KidRequest for
-/// kind=money, Proposal for kind=expense_proposal) — the engine routes both.
+/// kind=money, Proposal for kind=expense_proposal) - the engine routes both.
 class SyncAdapter {
   final String entity;
   final String table;
@@ -67,8 +67,15 @@ String _rolloverOut(Rollover r) => switch (r) {
 Rollover _rolloverIn(String v) =>
     v == 'rollover' ? Rollover.roll : Rollover.values.byName(v);
 
-Currency _currencyIn(Object? value) =>
-    Currency.values.byName(value.toString().toLowerCase());
+Currency _currencyIn(Object? value) {
+  final s = (value ?? '').toString().toLowerCase();
+  if (s == 'zig' || s == 'zwg') return Currency.zwg;
+  if (s == 'usd') return Currency.usd;
+  return Currency.values.firstWhere(
+    (c) => c.name.toLowerCase() == s,
+    orElse: () => Currency.usd,
+  );
+}
 
 Money _moneyOf(Map<String, Object?> j, String minorKey, String currencyKey) =>
     Money(j[minorKey] as int, _currencyIn(j[currencyKey]));
@@ -90,12 +97,13 @@ final kSyncAdapters = <String, SyncAdapter>{
         'space_id': ctx.spaceId,
         'type': t.type.name,
         'amount_minor': t.amount.minor,
-        'currency': t.amount.currency.short,
+        'currency': t.amount.currency.code,
         'member_id': t.memberId,
         'method': _methodOut[t.method],
         'note': t.note,
         'occurred_at': t.when.toUtc().toIso8601String(),
         'created_by': t.memberId,
+        'deleted_at': t.deletedAt?.toUtc().toIso8601String(),
       };
     },
     decode: (j) => Tx(
@@ -107,6 +115,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       method: _methodIn(j['method'] as String? ?? 'other'),
       note: j['note'] as String? ?? '',
       when: (_iso(j['occurred_at']) ?? DateTime.now()),
+      deletedAt: _iso(j['deleted_at']),
     ),
   ),
   'envelope': SyncAdapter(
@@ -121,10 +130,11 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': e.name,
         'icon': e.emoji,
         'limit_minor': e.limit.minor,
-        'limit_currency': e.limit.currency.short,
+        'limit_currency': e.limit.currency.code,
         'period': 'monthly',
         'rollover': _rolloverOut(e.rollover),
         'sharing': e.isPersonal ? 'personal' : 'shared',
+        'is_archived': e.isArchived,
       };
     },
     decode: (j) => Envelope(
@@ -137,6 +147,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       ),
       rollover: _rolloverIn(j['rollover'] as String? ?? 'reset'),
       isPersonal: (j['sharing'] as String? ?? 'shared') == 'personal',
+      isArchived: j['is_archived'] as bool? ?? false,
     ),
   ),
   'goal': SyncAdapter(
@@ -151,10 +162,10 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': g.name,
         'icon': g.emoji,
         'target_minor': g.target.minor,
-        'target_currency': g.target.currency.short,
+        'target_currency': g.target.currency.code,
         'owner_member_id': g.ownerMemberId,
         'is_kid_jar': g.isKidJar,
-        'status': 'active',
+        'status': g.status,
       };
     },
     decode: (j) => Goal(
@@ -167,6 +178,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       ),
       ownerMemberId: j['owner_member_id'] as String?,
       isKidJar: (j['is_kid_jar'] as bool?) ?? false,
+      status: j['status'] as String? ?? 'active',
       // auto-save rules are device-local for M3
     ),
   ),
@@ -181,12 +193,13 @@ final kSyncAdapters = <String, SyncAdapter>{
         'goal_id': t.goalId,
         'member_id': t.byMemberId,
         'amount_minor': t.amount.minor,
-        'currency': t.amount.currency.short,
+        'currency': t.amount.currency.code,
         'note': '',
         'at': t.at.toUtc().toIso8601String(),
       };
     },
     decode: (j) => GoalTx(
+      id: j['id'] as String?,
       goalId: j['goal_id'] as String,
       byMemberId: j['member_id'] as String,
       amount: _moneyOf(j, 'amount_minor', 'currency'),
@@ -205,7 +218,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': i.name,
         'qty': i.qty,
         'est_price_minor': i.est.minor,
-        'currency': i.est.currency.short,
+        'currency': i.est.currency.code,
         'added_by': i.addedById,
         'state': i.state.name,
         'checked_out': i.checkedOut,
@@ -223,7 +236,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       deletedAt: _iso(j['deleted_at']),
     ),
   ),
-  // Shopping-list HEADER — must sync so every device knows the list exists
+  // Shopping-list HEADER - must sync so every device knows the list exists
   // (its id stamps item pushes; created by create_space server-side).
   'shopping_list': SyncAdapter(
     entity: 'shopping_list',
@@ -246,7 +259,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       deletedAt: _iso(j['deleted_at']),
     ),
   ),
-  // kid_request covers BOTH kid money requests and teen proposals — the
+  // kid_request covers BOTH kid money requests and teen proposals - the
   // server table is shared, `kind` picks the local shape.
   'kid_request': SyncAdapter(
     entity: 'kid_request',
@@ -259,7 +272,7 @@ final kSyncAdapters = <String, SyncAdapter>{
           'space_id': ctx.spaceId,
           'requester_id': d.kidId,
           'amount_minor': d.amount.minor,
-          'currency': d.amount.currency.short,
+          'currency': d.amount.currency.code,
           'reason': d.reason,
           'kind': 'money',
           'state': d.state.name,
@@ -271,7 +284,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'space_id': ctx.spaceId,
         'requester_id': p.teenId,
         'amount_minor': p.amount.minor,
-        'currency': p.amount.currency.short,
+        'currency': p.amount.currency.code,
         'reason': p.reason,
         'kind': 'expense_proposal',
         'envelope_id': p.envelopeId,
@@ -310,7 +323,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'member_id': e.memberId,
         'note': e.note,
         'amount_minor': e.amount.minor,
-        'currency': e.amount.currency.short,
+        'currency': e.amount.currency.code,
         'occurred_at': e.when.toUtc().toIso8601String(),
       };
     },
@@ -337,13 +350,15 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': r.name,
         'emoji': r.emoji,
         'amount_minor': r.amount.minor,
-        'currency': r.amount.currency.short,
+        'currency': r.amount.currency.code,
         'envelope_id': (r.envelopeId?.isEmpty ?? true) ? null : r.envelopeId,
         'member_id': r.memberId.isEmpty ? null : r.memberId,
         'method': _methodOut[r.method],
         'frequency': r.frequency.name,
         'next_due': dateIso(r.nextDue),
         'active': r.active,
+        'archived_at':
+            r.isArchived ? DateTime.now().toUtc().toIso8601String() : null,
       };
     },
     decode: (j) => RecurringRule(
@@ -358,6 +373,7 @@ final kSyncAdapters = <String, SyncAdapter>{
           Frequency.values.byName(j['frequency'] as String? ?? 'monthly'),
       nextDue: DateTime.parse(j['next_due'] as String),
       active: j['active'] as bool? ?? true,
+      isArchived: j['archived_at'] != null,
     ),
   ),
   'chore': SyncAdapter(
@@ -372,6 +388,8 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': c.name,
         'star_value': c.stars.clamp(1, 10),
         'state': c.state.name,
+        'assignee_member_id': c.assigneeMemberId,
+        'is_archived': c.isArchived,
       };
     },
     decode: (j) => Chore(
@@ -379,6 +397,8 @@ final kSyncAdapters = <String, SyncAdapter>{
       name: j['name'] as String? ?? '',
       stars: j['star_value'] as int? ?? 1,
       state: ChoreState.values.byName(j['state'] as String? ?? 'todo'),
+      assigneeMemberId: j['assignee_member_id'] as String?,
+      isArchived: j['is_archived'] as bool? ?? false,
     ),
   ),
   'mukando': SyncAdapter(
@@ -395,7 +415,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'space_id': ctx.spaceId,
         'name': c.name,
         'contribution_minor': c.contribution.minor,
-        'currency': c.contribution.currency.short,
+        'currency': c.contribution.currency.code,
         'frequency': 'monthly',
         'total_rounds': c.totalRounds,
         'current_round': c.currentRound,
@@ -423,13 +443,13 @@ final kSyncAdapters = <String, SyncAdapter>{
 const kPullOrder = [
   'envelope', 'goal', 'shopping_list', 'tx', 'goal_tx', 'list_item',
   'kid_request', 'earning',
-  'recurring', 'chore', 'mukando', // circle last — cheapest, header-only
+  'recurring', 'chore', 'mukando', // circle last - cheapest, header-only
 ];
 
 /// ── Family identity (live) ─────────────────────────────────────────────────
 /// Maps server [membership] + [user_profile] rows into the app's local member
 /// list. The signed-in user's id IS their server identity (auth.users id), so
-/// every pushed row references a real user_profile — no FK rejections.
+/// every pushed row references a real user_profile - no FK rejections.
 List<Member> membersFromServer({
   required List<Map<String, Object?>> membershipRows,
   required List<Map<String, Object?>> profileRows,
@@ -450,7 +470,9 @@ List<Member> membersFromServer({
         'teen' => Role.teen,
         'kid' => Role.kid,
         'viewer' => Role.viewer,
-        // 'adult' and 'co_parent' both map to the app's adult role.
+        // `co_parent` is the existing database representation for an
+        // additional Family Admin; no risky role migration is required.
+        'co_parent' => Role.owner,
         _ => Role.adult,
       };
 
@@ -464,6 +486,7 @@ List<Member> membersFromServer({
       name: nameOf(p).isEmpty ? 'Member' : nameOf(p),
       emoji: 'person',
       role: roleOf((m['role'] ?? 'adult').toString()),
+      serverRole: (m['role'] ?? 'adult').toString(),
       avatarUrl: (p?['avatar_url'] ?? '').toString().isEmpty
           ? null
           : (p?['avatar_url']).toString(),
@@ -474,7 +497,7 @@ List<Member> membersFromServer({
       out.add(member);
     }
   }
-  // Me first, then the rest alphabetically — stable list for the UI.
+  // Me first, then the rest alphabetically - stable list for the UI.
   final meMember =
       me ?? Member(id: meId, name: 'Me', emoji: 'person', role: Role.owner);
   out.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));

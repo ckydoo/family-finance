@@ -89,8 +89,28 @@ void main() {
     );
     first.addItem('Roundtrip soap', 2, Money.fromMajor(1.5, Currency.usd));
     first.contribute(first.goal('g_fees')!, Money.fromMajor(30, Currency.usd));
+    final owner = first.realUser;
+    const kid = Member(
+      id: 'roundtrip-kid',
+      name: 'Roundtrip kid',
+      emoji: 'child',
+      role: Role.kid,
+    );
+    const teen = Member(
+      id: 'roundtrip-teen',
+      name: 'Roundtrip teen',
+      emoji: 'person',
+      role: Role.teen,
+    );
+    first.members.addAll(const [kid, teen]);
+    first.switchUser(kid);
+    first.setRealUser(kid);
     first.requestMoney(Money.fromMajor(5, Currency.usd), 'Roundtrip request');
+    first.switchUser(teen);
+    first.setRealUser(teen);
     first.addEarning(Money.fromMajor(9, Currency.usd), 'Roundtrip job');
+    first.switchUser(owner);
+    first.setRealUser(owner);
     await first.flushWrites();
 
     final second = AppState(db: db);
@@ -113,9 +133,13 @@ void main() {
     final first = AppState(db: db);
     await first.ready();
 
-    first.requestMoney(Money.fromMajor(4, Currency.usd), 'Restart proof');
-    await first.flushWrites();
-    final r = first.requests.first;
+    final r = KidRequest(
+      id: 'restart-proof-request',
+      kidId: 'm_leo',
+      amount: Money.fromMajor(4, Currency.usd),
+      reason: 'Restart proof',
+    );
+    first.requests.add(r);
     final jarBefore = first.savedOn(first.goal('g_jar')!).minor;
     first.approveRequest(r);
     await first.flushWrites();

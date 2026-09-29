@@ -1,4 +1,4 @@
-# Roadmap to 8/10 — Build-Here Plan
+# Roadmap to 8/10 - Build-Here Plan
 
 **Strategy:** build 100% of the product in the sandbox → download once → wire APIs
 via `.env` → short device session to verify. No Flutter toolchain in the sandbox.
@@ -11,7 +11,7 @@ via `.env` → short device session to verify. No Flutter toolchain in the sandb
 | All 3 shells (adult / teen / kid), 12+ screens | ✅ done |
 | `flutter analyze` | ✅ **No issues found** (compiler-verified baseline) |
 | Unit + widget tests | ✅ written · ⏳ run on your machine (5-min task, see M0) |
-| Persistence, auth, sync, notifications | ❌ not started — this roadmap |
+| Persistence, auth, sync, notifications | ❌ not started - this roadmap |
 
 ---
 
@@ -19,10 +19,10 @@ via `.env` → short device session to verify. No Flutter toolchain in the sandb
 
 1. **Pattern discipline.** New UI/logic reuses APIs already proven in the
    analyzer-clean baseline. Genuinely new APIs (Drift, Supabase) are isolated in
-   `core/db/`, `core/sync/`, `core/auth/` — thin wrappers, never scattered.
+   `core/db/`, `core/sync/`, `core/auth/` - thin wrappers, never scattered.
 2. **Static audit after every change** (brace/import/API cross-check harness).
 3. **Verification bridge (you, optional per checkpoint):** run one command on
-   your machine and paste the output — no IDE needed:
+   your machine and paste the output - no IDE needed:
    ```bash
    cd mhuri-money/app && flutter analyze && flutter test
    ```
@@ -34,44 +34,44 @@ via `.env` → short device session to verify. No Flutter toolchain in the sandb
 
 ## Milestones
 
-### M0 — Baseline lock (you, ~5 min)
+### M0 - Baseline lock (you, ~5 min)
 - [ ] On your machine: `flutter create --project-name mhuri_money --platforms android,ios .`
 - [ ] `flutter pub get && flutter analyze && flutter test` → paste me the output
 - Done when: tests pass (or I fix what fails). From here on, every checkpoint
   is the same one command.
 
-### M1 — Persistence: the app remembers (2–3 sessions)
-- ✅ **Built (this session):** sqflite (SQLite) storage — chosen over Drift
+### M1 - Persistence: the app remembers (2–3 sessions)
+- ✅ **Built (this session):** sqflite (SQLite) storage - chosen over Drift
   because it needs **zero code generation**, fitting the build-here rule;
   every line is hand-written and statically checkable.
-- ✅ `core/db/app_database.dart` — hand-written schema mirroring
+- ✅ `core/db/app_database.dart` - hand-written schema mirroring
   `backend/schema.sql` (12 tables); fails soft to in-memory demo mode.
-- ✅ `core/db/persistence.dart` — row mappers + seed/load/upserts for every
+- ✅ `core/db/persistence.dart` - row mappers + seed/load/upserts for every
   entity; batch-seeded first run.
 - ✅ Write-through hooks on **every** AppState mutation; startup hydration
   replaces the seed with stored state; `ready()` / `flushWrites()` for
   deterministic tests.
-- ✅ `test/persistence_test.dart` — 4 restart-roundtrip tests (the M1 DoD).
+- ✅ `test/persistence_test.dart` - 4 restart-roundtrip tests (the M1 DoD).
 - ⏳ **Verify via your checkpoint command:** `flutter analyze && flutter test`
-  (persistence tests need SQLite on the host — standard on macOS/Linux).
+  (persistence tests need SQLite on the host - standard on macOS/Linux).
 - **DoD:** restart the app → every envelope, tx, list, jar is still there. ~3→4.5/10.
 
-### M2 — Identity & auth (2 sessions)
+### M2 - Identity & auth (2 sessions)
 - ✅ **Built (this session):**
-  - `core/config/app_env.dart` — hand-rolled `.env` parser (no dotenv dep):
+  - `core/config/app_env.dart` - hand-rolled `.env` parser (no dotenv dep):
     `APP_ENV=demo|live`, Supabase keys, optional FCM/Sentry/rate keys.
     Missing/invalid `.env` **always** → offline demo mode, exactly as before.
-  - `core/auth/` — `AuthService` interface; **DemoAuthService** (code `1234`);
+  - `core/auth/` - `AuthService` interface; **DemoAuthService** (code `1234`);
     **SupabaseAuthService**: hand-written GoTrue REST client (otp / verify /
     refresh / logout) with injectable HTTP client → fully testable offline;
     tokens persisted in the local `kv` table.
-  - `AuthController` — session lifecycle (restore/send/verify/signOut) with
+  - `AuthController` - session lifecycle (restore/send/verify/signOut) with
     busy + error state for the UI.
-  - `LoginScreen` — phone → OTP phases, ZW number normalisation
+  - `LoginScreen` - phone → OTP phases, ZW number normalisation
     (0772… → +263…), error states, busy spinner.
   - Gate in `app.dart`: live mode without a session → login; everything else
     → classic app. Demo never shows login.
-  - `PinStore` — salted SHA-256 PINs (Kids Mode exit now real & settable from
+  - `PinStore` - salted SHA-256 PINs (Kids Mode exit now real & settable from
     Family settings; kid profile PINs ready for M4 device handoff).
   - Tests: env parser (5), auth flows + REST via FakeClient (8), PIN store (3),
     login-gate widget test.
@@ -79,20 +79,20 @@ via `.env` → short device session to verify. No Flutter toolchain in the sandb
 - Note: login proves *identity*; family-space linking goes live with M3 sync.
 - **DoD:** real OTP login once `.env` is wired; demo mode untouched without it. ~5/10.
 
-### M3 — Sync: the core promise (3–4 sessions)
+### M3 - Sync: the core promise (3–4 sessions)
 - ✅ **Built (this session):**
-  - `core/sync/outbox.dart` — ordered, idempotent outbox table (v2 schema);
+  - `core/sync/outbox.dart` - ordered, idempotent outbox table (v2 schema);
     failed batches stay queued and retry.
-  - `core/sync/sync_mappers.dart` — 7-entity registry (transaction, envelope,
+  - `core/sync/sync_mappers.dart` - 7-entity registry (transaction, envelope,
     goal, goal_tx, list_item, kid_request incl. teen proposals, earning):
     domain ↔ server JSON with enum bridges (bankCard↔bank_card, roll↔rollover).
-  - `core/sync/supabase_sync_client.dart` — hand-written PostgREST client:
+  - `core/sync/supabase_sync_client.dart` - hand-written PostgREST client:
     push = merge-duplicates upserts (idempotent), pull = `updated_at` cursor,
     rpc for family bootstrap. No Supabase SDK.
-  - `core/sync/sync_engine.dart` — push→pull→apply loop; debounced after
+  - `core/sync/sync_engine.dart` - push→pull→apply loop; debounced after
     mutations, 45s poll, pull-on-start; create/join family space (wipes demo
     seed first); statuses (idle/syncing/offline/needsSignIn/needsSetup/error).
-  - `backend/migrations/001_sync_and_space.sql` — updated_at columns +
+  - `backend/migrations/001_sync_and_space.sql` - updated_at columns +
     triggers, `create_space`/`join_space` SECURITY DEFINER functions with
     invite codes, RLS-safe bootstrap.
   - App wiring: every live mutation enqueues server-shaped JSON; pulls merge
@@ -108,26 +108,26 @@ via `.env` → short device session to verify. No Flutter toolchain in the sandb
 - ⏳ Server side: run `schema.sql` + `migrations/001` on your Supabase project
   when you wire `.env` (backend/README covers it).
 - **DoD (after .env):** two phones, one family space, live shared lists and
-  approval flows — the reason the app exists. ~6.5/10.
+  approval flows - the reason the app exists. ~6.5/10.
 
-### M4 — Product completeness (4–6 sessions)
+### M4 - Product completeness (4–6 sessions)
 - ✅ **Built (this session):**
-  - **Onboarding** — 3-slide first run (live mode only; Skip persists), then
+  - **Onboarding** - 3-slide first run (live mode only; Skip persists), then
     straight into the app; hydration splash while the DB loads.
-  - **Recurring transactions (C7)** — rules with weekly/monthly/term
+  - **Recurring transactions (C7)** - rules with weekly/monthly/term
     frequency; due rules surface on Home's smart card and Budgets with
     **Post / Skip** review actions (nothing charges silently); catch-up
     advancement for stale rules; persisted locally.
-  - **Cycle math (B5 + D4)** — payday-aligned cycles (`month_start_day`,
+  - **Cycle math (B5 + D4)** - payday-aligned cycles (`month_start_day`,
     settable, persisted); envelope spending now scoped to the current cycle;
     pace based on cycle progress; **rollover carry** (one-cycle lookback)
-    and **accumulate** mode (base × cycles since first use, capped 24 —
+    and **accumulate** mode (base × cycles since first use, capped 24 -
     documented simplification).
-  - **Family Meeting (I4)** — guided 5-step agenda screen (recap, envelope
+  - **Family Meeting (I4)** - guided 5-step agenda screen (recap, envelope
     health, goals, kids' queue, "one thing to improve" with saved note).
-  - **CSV export (I6)** — all transactions to the device Documents folder
+  - **CSV export (I6)** - all transactions to the device Documents folder
     (fails soft off-device). PDF/image share stays post-8 backlog.
-  - **Empty/loading states** — shared EmptyState widget wired into Budgets,
+  - **Empty/loading states** - shared EmptyState widget wired into Budgets,
     Activity, Savings, Teen earnings; splash for hydration.
   - Tests: cycle math (day-25 wrap, boundary day, rejects), rollover carry,
     recurring post/skip/toggle + restart survival, onboarding/month-start
@@ -138,35 +138,35 @@ via `.env` → short device session to verify. No Flutter toolchain in the sandb
   ready; parent UI lands with device-handoff polish).
 - **DoD:** every spec module A–J has its MVP feature set working. ~7/10.
 
-### M5 — Notifications & reliability (2–3 sessions)
+### M5 - Notifications & reliability (2–3 sessions)
 - ✅ **Built (this session):**
-  - **Reminder planner** (`core/notifications/reminders.dart`) — pure,
+  - **Reminder planner** (`core/notifications/reminders.dart`) - pure,
     unit-tested computation of the spec's J2 alert set: bill due in 3 days
     (C7), envelope 80% / used-up warning, kid request + chore-approval
     nudges, mukando turn (weekly Sunday check-in), goal milestones
     (25/50/75/100%), family-meeting-eve reminder, weekly digest
     (Sunday 6pm). Quiet-hours shifting (J3) and a 12-reminder cap built in.
-  - **Device scheduling** (`core/notifications/notifier.dart`) —
+  - **Device scheduling** (`core/notifications/notifier.dart`) -
     flutter_local_notifications v22 (all-named API), UTC-instant scheduling
     (no timezone plugin needed), weekly repeats via dayOfWeekAndTime,
     inexact alarms (no extra Android permission), every call fails soft.
-  - **Settings screen (J3)** — master switch, per-category prefs, quiet
+  - **Settings screen (J3)** - master switch, per-category prefs, quiet
     hours pickers, month-start-day picker, CSV export, test-notification
     button; reachable from the Family screen's ⚙ icon.
-  - **Home bell (§7.5)** — opens a live "what will notify" sheet.
-  - **Event nudges** — goal milestone crossing on contribute(); kid-device
+  - **Home bell (§7.5)** - opens a live "what will notify" sheet.
+  - **Event nudges** - goal milestone crossing on contribute(); kid-device
     "your request was answered" when the decision syncs over (seen-ids
     persisted so it never double-fires).
   - Plan changes are deduped (sync ticks stay free); config persists in kv.
   - Tests: 14 planner cases + settings persistence + milestone trigger.
 - ⏳ **Not in M5 (honest list):** server push (FCM via Supabase edge
-  functions — needs a Firebase project; post-8), outbox
+  functions - needs a Firebase project; post-8), outbox
   retry/back-pressure hardening and error-reporting hook (folded into M7).
 - **DoD:** approval arrives as a notification; nothing is lost offline. ~7.5/10.
 
-### M6 — International (re-scoped per redirect: "international, not just Zim")
+### M6 - International (re-scoped per redirect: "international, not just Zim")
 - ✅ **Built (this session):**
-  - **Official gen-l10n toolchain** — `flutter_localizations` + `generate:
+  - **Official gen-l10n toolchain** - `flutter_localizations` + `generate:
     true` + `l10n.yaml`; ARBs in `lib/l10n/`; generated code in
     `lib/l10n/generated/` (real files, no synthetic packages). **Adding a
     language = drop in one ARB file** (plus one line in `kLanguageNames`).
@@ -177,30 +177,30 @@ via `.env` → short device session to verify. No Flutter toolchain in the sandb
     safe-to-spend, see-all), Budgets (+ recurring + new envelope),
     Activity, Savings, Lists, Reports CTAs, Settings, reminders sheet,
     onboarding (all three slides), and all Kids/Teen strings via the
-    legacy `tStr` — now a thin adapter over `AppLocalizations` (21 keys ×
+    legacy `tStr` - now a thin adapter over `AppLocalizations` (21 keys ×
     6 languages). Remaining long tail (deep sheets, snackbars) stays
-    English for now — incremental ARB additions.
-  - **Language picker** (Settings ⚙ + Family tab) — 6 languages, persisted
+    English for now - incremental ARB additions.
+  - **Language picker** (Settings ⚙ + Family tab) - 6 languages, persisted
     in kv; MaterialApp wires delegates/supportedLocales/locale.
-  - **Elder large-text mode (J6)** — global 1.2× text scaler, toggle in
+  - **Elder large-text mode (J6)** - global 1.2× text scaler, toggle in
     Settings, persisted. TalkBack: icon buttons already carry tooltips
     (read as labels); high-contrast theme + full Semantics audit → backlog.
 - ⏳ **Not in M6 (honest list):** native-speaker review of SN/ND/ES/FR/PT
-  (spec required review for SN/ND — still true, now for four more); full
+  (spec required review for SN/ND - still true, now for four more); full
   long-tail string coverage; high-contrast theme; RTL script support
-  (Arabic etc. — layout uses standard widgets, so it's additive);
+  (Arabic etc. - layout uses standard widgets, so it's additive);
   **multi-currency ledger** (Currency enum → ISO-4217 + editable rates +
-  account-currency pickers — touches models/persistence/sync mappers; its
+  account-currency pickers - touches models/persistence/sync mappers; its
   own milestone-sized change, designed and quoted here for M8+).
 - **DoD:** the app speaks six languages end to end on every core surface. ~8/10 in code.
 
-### M7 — Quality wall (2–3 sessions)
+### M7 - Quality wall (2–3 sessions)
 - ✅ **Built (this session):**
-  - **Five core flows as tests** (`test/flows_test.dart`) — money in/out →
+  - **Five core flows as tests** (`test/flows_test.dart`) - money in/out →
     envelopes + pool; goal contribution → milestone nudge; kid request →
     approve → jar + nudge clearing; shopping run → Groceries envelope;
     recurring bill → reviewed post → survives restart.
-  - **Widget tests per main screen** (`test/widget_screen_test.dart`) —
+  - **Widget tests per main screen** (`test/widget_screen_test.dart`) -
     Home (+ bell → reminders sheet), Budgets, Activity, Savings, Reports,
     Settings, Lists, Onboarding (+ brand asset) all pump the seeded demo
     state and assert real content.
@@ -209,38 +209,38 @@ via `.env` → short device session to verify. No Flutter toolchain in the sandb
     "Sync now" = `syncNow(force: true)`); poison outbox batches **park**
     after 8 failed attempts (surfaced with a clear message, retried via
     Sync now, never dropped); pluggable `SyncEngine.reportError` hook
-    (wired to a debug printer — point it at Sentry/Crashlytics in live
+    (wired to a debug printer - point it at Sentry/Crashlytics in live
     mode; optional `SENTRY_DSN` stays post-8).
-  - **Branding assets** — AI-generated app icon + splash PNG in
+  - **Branding assets** - AI-generated app icon + splash PNG in
     `assets/branding/`, wired via pubspec config for
     flutter_launcher_icons ^0.14.4 + flutter_native_splash ^2.4.8 (one
-    command each on your machine — see README); brand mark on onboarding.
+    command each on your machine - see README); brand mark on onboarding.
 - ⏳ **Not in M7 (honest list):** golden tests need one real
-  `flutter test --update-goldens` run — deferred to M8 device week;
+  `flutter test --update-goldens` run - deferred to M8 device week;
   on-device integration tests (`integration_test/`) likewise M8;
   analyzer-guided const/perf pass happens live at your first
   `flutter analyze`. M6 (language & accessibility) deliberately skipped
-  for now — still open on the ladder.
+  for now - still open on the ladder.
 - **DoD:** the 5-minute demo script passes testfully, not just manually. ~8/10 in code.
 
-### Interface pass 3 (post-audit wave 2) — DONE
+### Interface pass 3 (post-audit wave 2) - DONE
 - **i18n fold-in**: the 9 strings the premium pass hardcoded (sync pill w/ ICU plural, hide/show tooltips, Theme/System/Light/Dark, six-month net, donut empty) + Undo → ARB keys in all 6 languages, parity verified.
 - **Pull-to-refresh**: RefreshIndicator on Home/Budgets/Savings/Lists/Activity/Reports → `AppState.refresh()` re-reads the local store.
 - **Error + retry**: `lastError` captured in hydration; designed `_ErrorPane` (no white screen) with Try again.
 - **Skeletons**: `Skeleton` pulse widget; cold-boot splash now pulses the logo + 3 skeleton bars (shape of what loads).
-- **Undo**: circle collect + chore confirm (overwrite-safe ops only — the domain has no deletes by design, so no sync tombstones invented).
+- **Undo**: circle collect + chore confirm (overwrite-safe ops only - the domain has no deletes by design, so no sync tombstones invented).
 - **Status bar**: per-theme SystemUiOverlayStyle (dark icons on light, light icons on dark).
 - **Tablet**: tab content capped at 620 dp centered (phone-first, premium standard).
 - **Semantics**: CountUp announces the final value once; TrendBars expose a spoken summary.
 - **Dark native splash**: `color_dark`/`image_dark` (+android_12) → regenerate with flutter_native_splash:create (user machine).
 - Tests: +3 (refresh round-trip, circle undo, chore undo) → 8 in premium_pass_test.
 
-### Premium frontend pass (G1–G13) — DONE
+### Premium frontend pass (G1–G13) - DONE
 Implemented the FRONTEND_GAP_AUDIT ladder in full (light-theme visuals preserved; everything honors OS reduce-motion):
 - **G1 Dark mode**: `MhuriColors` light/dark palette + `context.card/ink/…` extension; `buildAppDarkTheme()`; ThemeMode (system/light/dark) persisted via kv, Settings dropdown; ~530 token references migrated off const tokens; dark AA contrast verified (ink 16.0 / soft 8.4 / faint 5.2).
 - **G2 Motion**: `CountUpText` hero amounts, rings draw in (`RingProgress` tween), confetti `celebrate()` overlay (goal reached, circle collect, chore confirm).
 - **G3 Haptics**: nav tick, save medium, approve/collect light, swap/eye selection, wrong-PIN heavy.
-- **G4 Reports**: hand-rolled touch-scrub `DonutChart` + legend (top-6 + Other) and 6-month net `TrendBars` (USD-normalized) — zero chart packages.
+- **G4 Reports**: hand-rolled touch-scrub `DonutChart` + legend (top-6 + Other) and 6-month net `TrendBars` (USD-normalized) - zero chart packages.
 - **G5 Privacy**: eye-toggle balance mask (hero, safe-to-spend, pot) persisted + auto-hide on app pause (Monzo-style).
 - **G6 A11y**: light `kInkSoft/kInkFaint` darkened to WCAG (5.19 / 4.52), all IconButtons have tooltips (+FAB), reduce-motion honored in every animation.
 - **G7 i18n formatting**: `intl` dep; es/fr/pt grouping (1.234,56) via `Money.localeTag` (en + sn/nd keep en grouping); login example number internationalized.
@@ -249,56 +249,56 @@ Implemented the FRONTEND_GAP_AUDIT ladder in full (light-theme visuals preserved
 - **G10**: pool card compresses subtly on scroll (NotificationListener + AnimatedScale).
 - **G11**: chore confirm → confetti + haptic. **G12**: offline pill (N changes saved on device). **G13**: PIN field wiggle + heavy haptic on wrong PIN.
 - Tests: `test/premium_pass_test.dart` (5 tests: palette, themeMode clamp+round-trip, hideAmounts round-trip, en default, es/fr/pt grouping).
-- Known follow-ups: SCREENSHOTS.html still light-only/emoji-rendered (regenerate after checkpoint); `Icon(style:)` oddity in reports legend is pre-existing & compiles on user's SDK — leave.
+- Known follow-ups: SCREENSHOTS.html still light-only/emoji-rendered (regenerate after checkpoint); `Icon(style:)` oddity in reports legend is pre-existing & compiles on user's SDK - leave.
 
-### Internationalization pass (post-M6) — DONE
+### Internationalization pass (post-M6) - DONE
 Removed all Zimbabwe-only terminology app-wide (lib / test / ARBs / docs / preview):
 - **Payment methods**: `Method.ecocash/zipit/innbucks` → `mobileMoney` / `agent` (wire values `mobile_money`, `agent`; labels 'Mobile money', 'Agent / cash point').
 - **Mukando → savings circle**: `Mukando`→`SavingsCircle`, `AppState.mukando`→`circle`, `mukandoCollect()`→`circleCollect()`, local table `mukando`→`circle`, reminder category/key → `circle` / `circle_weekly`.
-- **Demo data**: the Taylor family (David, Maya, Leo, Mia, Zoe, Nana), Main bank / Mobile wallet, FreshMart / City Supermarket / Saturday market, 'Fuel + bus fares', 'Rice 10kg', 'Family Holiday — by the sea', space 'The Taylor Family', collection order 'Aunt Kim, Maya, Uncle Raj, David, Mrs. Lee'.
+- **Demo data**: the Taylor family (David, Maya, Leo, Mia, Zoe, Nana), Main bank / Mobile wallet, FreshMart / City Supermarket / Saturday market, 'Fuel + bus fares', 'Rice 10kg', 'Family Holiday - by the sea', space 'The Taylor Family', collection order 'Aunt Kim, Maya, Uncle Raj, David, Mrs. Lee'.
 - **RBZ** → 'daily central-bank snapshot' / 'daily reference'; **+263** → generic E.164 normaliser with a `kDefaultCountryCode` const (launch-market default).
-- **ARBs ×6**: onboarding copy internationalized ('in every currency you use'); Shona/Ndebele files keep native words — mukando/mhuri/Gogo are correct *translations*, which is the internationalization itself.
+- **ARBs ×6**: onboarding copy internationalized ('in every currency you use'); Shona/Ndebele files keep native words - mukando/mhuri/Gogo are correct *translations*, which is the internationalization itself.
 - **Kept on purpose**: the USD+ZiG ledger pair (engine decision) + 'Zimbabwe Gold (ZiG)' currency labels; the 'Mhuri Hub' product name (brand).
 - Verified: terminology gate + structure checks PASS (56 dart files, 14,526 lines).
 
 ### Design polish pass (frontend quality, pre-M8)
 - ✅ **Built (this session):** "international app feel" upgrade, centered on
   the design system:
-  - **Poppins typography** (bundled, OFL — 5 weights in assets/fonts/,
-    license included) — geometric, warm; the standard consumer-fintech
+  - **Poppins typography** (bundled, OFL - 5 weights in assets/fonts/,
+    license included) - geometric, warm; the standard consumer-fintech
     look. Wired app-wide via the theme (every screen inherits).
   - **Full M3 theme system** (`app_theme.dart`): refined seed ColorScheme
     (teal-tinted ink, soft washes), a real type scale (tight display
     numbers, airy body), stadium buttons, filled/rounded inputs with focus
     rings, 24-radius cards & dialogs, 28-radius sheets with drag handles,
-    rounded floating snackbars, chips, tiles, switches, FAB, nav bar —
+    rounded floating snackbars, chips, tiles, switches, FAB, nav bar -
     and platform-correct **page transitions** (Zoom on Android, Cupertino
     swipe-back on iOS) with InkSparkle press ripples.
   - **Design tokens**: radius ruler (12/18/24/28), hairline + soft shadow
-    tokens (`kCardShadow`), wash colors — so future screens stay coherent.
+    tokens (`kCardShadow`), wash colors - so future screens stay coherent.
   - **Hero moments**: Family Pool card gets a floating gradient shadow +
     display-size money typography; branded splash (logo, name, tagline).
-- ✅ **Icon system (this session):** app-wide emoji→Material-icon sweep —
+- ✅ **Icon system (this session):** app-wide emoji→Material-icon sweep -
   110+ edits across 27 files, then taken to the root: the data layer now
-  uses SEMANTIC icon keys (`'cart'`, `'school'`, `'man'`, `'bank'`…) —
+  uses SEMANTIC icon keys (`'cart'`, `'school'`, `'man'`, `'bank'`…) -
   zero emojis in the database, sync payloads, or UI (safe because no
-  device has ever run the app — no migration needed). A central map
+  device has ever run the app - no migration needed). A central map
   (`core/widgets/app_icons.dart`, key→icon, neutral-icon fallback for
   unknown/remote keys) feeds every renderer: tx tiles, envelope cards,
   goal rings, avatars, smart cards, reminders, settings, onboarding, kids,
   teen, reports, dropdowns. Snackbars reworded; ARB titles de-emojified
   (6 languages). Emojis remain ONLY in OS-notification text (platform
-  convention — the tray cannot render IconData) and →/✓ text glyphs.
+  convention - the tray cannot render IconData) and →/✓ text glyphs.
   Key coverage enforced by `app_icons_test.dart`.
 - ⏳ **Next polish candidates:** dark mode (needs hardcoded-color sweep),
   skeleton loaders, hero animations, haptics.
 
-### M8 — Device week (the only on-device phase, 1–3 days)
+### M8 - Device week (the only on-device phase, 1–3 days)
 - Download → `flutter create` platforms → install on your phone.
 - Create `.env` from `.env.example`, fill keys → login, sync, push live.
 - Run the full demo script on-device; we work the fix list together
   (small runtime fixes expected: layout quirks, keyboard insets, plugin configs).
-- **DoD: ~8/10 working product in your hand — beta-ready.**
+- **DoD: ~8/10 working product in your hand - beta-ready.**
 
 ### After 8 (unchanged from the spec): closed beta with 10–30 families →
 hardening → store listing, privacy policy, Play Store review → **launch (10/10 path).**
@@ -320,7 +320,7 @@ hardening → store listing, privacy policy, Play Store review → **launch (10/
 ## What I will NOT do (per your instruction)
 - No Flutter/Dart SDK installs in the sandbox.
 - No Flutter builds, `flutter analyze`, `flutter test`, or any Dart execution in
-  the sandbox — not even small logic-only runs.
+  the sandbox - not even small logic-only runs.
 - All in-sandbox verification is non-Dart static analysis (the structure /
   consistency harness) plus pattern discipline.
 - Verification truth lives outside the sandbox: your optional one-command
@@ -329,7 +329,7 @@ hardening → store listing, privacy policy, Play Store review → **launch (10/
 
 ---
 
-## l10n completion (i18n wave 3) — DONE ✅ 2026-09-21
+## l10n completion (i18n wave 3) - DONE ✅ 2026-09-21
 
 **All 17 feature surfaces now localize through `AppLocalizations`; 6-language parity (EN/ES/FR/PT/SN/ND) at 176 keys each.**
 
@@ -339,24 +339,24 @@ What shipped:
 - **Static gate**: ARB parity ✓ · 107 distinct l10n refs all resolvable to ARB keys ✓ · 0 const-wrapped l10n ✓ · 17/17 feature files import l10n ✓ · 0 leftover EN UI strings in the 7 files ✓.
 - Kept as data/proper nouns (by design): space name "The Taylor Family", `ZiG`/`USD`, `FreshMart`, "New Bike" goal seed, currency long names.
 
-Note: `lib/l10n/generated/app_localizations.dart` is a **build-time artifact** (`generate: true` + `l10n.yaml` → `output-dir: lib/l10n/generated`); it materializes on `flutter pub get` on your machine — its absence in this sandbox is expected.
+Note: `lib/l10n/generated/app_localizations.dart` is a **build-time artifact** (`generate: true` + `l10n.yaml` → `output-dir: lib/l10n/generated`); it materializes on `flutter pub get` on your machine - its absence in this sandbox is expected.
 
 
 ---
 
-## Premium pass 2 (Track A: sync-scope completion + Track B: feel/depth) — DONE ✅ 2026-09-21
+## Premium pass 2 (Track A: sync-scope completion + Track B: feel/depth) - DONE ✅ 2026-09-21
 
-**Track A — the family-sharing claim is now true end-to-end (code level):**
+**Track A - the family-sharing claim is now true end-to-end (code level):**
 - **10 synced entities** (was 7): + `chore` (stars/state), `mukando` (savings-circle header; deterministic per-space row id, member names in `round_order[]`), `recurring_rule` (new table). Proposals were already synced via `kid_request`.
-- **backend/schema.sql** append-section: `updated_at` + triggers on **all 10 synced tables** — this fixed a latent first-sync crash (only `transaction` had the column the pull API orders by); `chore.state` + nullable assignee; new `recurring_rule` table with RLS + index.
+- **backend/schema.sql** append-section: `updated_at` + triggers on **all 10 synced tables** - this fixed a latent first-sync crash (only `transaction` had the column the pull API orders by); `chore.state` + nullable assignee; new `recurring_rule` table with RLS + index.
 - Engine glue: 9 mutation sites now queue to the outbox (circle collect/undo, chore claim/confirm/unconfirm, recurring add/post/skip/toggle); pull-apply + local-persistence cases for the 3 new entities; live pending-pill refreshes right after enqueue.
 - **Latent compile bugs found & fixed** (would have failed the first `flutter analyze`): duplicated `child: child:` in 4 screens (home/savings/activity/reports), `),,` in the shell, `SnackBarBehavior.floating()` call, `const InputDecoration(fillColor: context.card)` in meeting, budgets `child: child:`.
 
-**Track B — feel & depth:**
+**Track B - feel & depth:**
 - **Two-pane tablets**: budgets (envelopes | recurring rules) and family meeting (money | family agenda) at ≥900dp; shell now caps per-tab (620 phone-width / 980 budgets).
 - **Soft refresh**: pull-to-refresh no longer swaps the tree to splash (`refreshing` flag); splash only on first load / error retry.
 - **A11y**: donut chart exposes full "Spending by envelope: X n%" Semantics label (scrub excluded); reports donut a11y label localized; RingProgress already carries readable % text.
-- **Haptics**: added on quick-add save (medium) — home already had confirm/collect/undo covered.
+- **Haptics**: added on quick-add save (medium) - home already had confirm/collect/undo covered.
 - **i18n completion to zero**: 139 more keys this pass (97 UI + 40 placeholder-composites + fixes) → **315 keys ×6 languages, full parity, 297 call-site refs all resolve, 0 English literals left in feature code** (keepers: The Taylor Family, New Bike, Zoe as data).
 
 **Static gate (sandbox, non-Dart):** Dart-aware paren/bracket/brace balance PASS on 59 files · ARB parity PASS · ref resolution PASS · EN sweep 0 · 98 tests now in `test/` (94 + 4 new adapter round-trip/pull-order tests).
@@ -364,14 +364,14 @@ Note: `lib/l10n/generated/app_localizations.dart` is a **build-time artifact** (
 
 ---
 
-## Hardening continuation (resume-sync + live-mode id fixes) — DONE ✅ 2026-09-21
+## Hardening continuation (resume-sync + live-mode id fixes) - DONE ✅ 2026-09-21
 
 **Two first-live-sync blockers found and fixed before they ever hit a real Supabase project:**
-- **Client ids were not uuids.** `_seq()` minted `tx0`-style ids while every server id column is `uuid` — the FakeServer (201-always) masked it; real Postgres would reject **every** client push. Fix: new `core/utils/ids.dart` (`newUuid()` v4 via `Random.secure`, `uuidFromSeed()` md5-based deterministic) wired into `_seq`, `newClientId`, and the mukando deterministic id (`uuidFromSeed('mukando/<spaceId>')`).
-- **Space adoption didn't clear the 3 new stores.** `wipeSynced()` covered 8 tables, `onSpaceAdopted()` cleared 8 lists — demo-seed chores/recurring/circle would have leaked into family sync. Now 11 tables / full in-memory reset with a neutral circle placeholder until the first pull.
+- **Client ids were not uuids.** `_seq()` minted `tx0`-style ids while every server id column is `uuid` - the FakeServer (201-always) masked it; real Postgres would reject **every** client push. Fix: new `core/utils/ids.dart` (`newUuid()` v4 via `Random.secure`, `uuidFromSeed()` md5-based deterministic) wired into `_seq`, `newClientId`, and the mukando deterministic id (`uuidFromSeed('mukando/<spaceId>')`).
+- **Space adoption didn't clear the 3 new stores.** `wipeSynced()` covered 8 tables, `onSpaceAdopted()` cleared 8 lists - demo-seed chores/recurring/circle would have leaked into family sync. Now 11 tables / full in-memory reset with a neutral circle placeholder until the first pull.
 
 **Also shipped:**
-- **Resume-sync**: app resume (live + logged in) fires `syncNow()` + pill refresh — the 45s poll window collapses to ~0 for the "just opened the app" moment.
+- **Resume-sync**: app resume (live + logged in) fires `syncNow()` + pill refresh - the 45s poll window collapses to ~0 for the "just opened the app" moment.
 - **Tests**: +3 (uuid shape/uniqueness/determinism; premium-entity pull applies chore/recurring_rule/mukando and advances the cursor; premium-entity mutations push to all three server tables with every pushed id uuid-verified). **101 tests total.**
 
 **Gate:** 60-file Dart-aware balance ✓ · 315×6 parity ✓ · 297 refs ✓ · EN sweep 0 ✓ · uuid minting ✓.
@@ -379,53 +379,53 @@ Note: `lib/l10n/generated/app_localizations.dart` is a **build-time artifact** (
 
 ---
 
-## Device-feedback pass (Family screen dead rows + profile switching) — DONE ✅ 2026-09-21
+## Device-feedback pass (Family screen dead rows + profile switching) - DONE ✅ 2026-09-21
 
 **First real-device feedback incorporated. The Family screen's stub rows are now fully functional:**
-- **Switch profile (new)**: settings row → member picker sheet (avatar, role, "You" tag) → `switchUser` + jump to root. **View-as is no longer demo-seed-only** — every member can be previewed in live mode too (Kids Mode stays PIN-sealed). The stray "You" chip is localized.
+- **Switch profile (new)**: settings row → member picker sheet (avatar, role, "You" tag) → `switchUser` + jump to root. **View-as is no longer demo-seed-only** - every member can be previewed in live mode too (Kids Mode stays PIN-sealed). The stray "You" chip is localized.
 - **Currency & rates** (new sheet): display-currency picker (USD/ZiG), editable ZiG-per-USD rate with save + "reset to RBZ snapshot" (15.27). New `setCustomRate` persists via kv and hydrates on restart.
-- **Privacy** (new sheet): "Hide amounts when I leave the app" toggle — the background auto-hide is now a *preference* (`autoHideAmounts`, kv-persisted, respected by the app lifecycle observer) instead of hardcoded — plus "Hide amounts right now".
+- **Privacy** (new sheet): "Hide amounts when I leave the app" toggle - the background auto-hide is now a *preference* (`autoHideAmounts`, kv-persisted, respected by the app lifecycle observer) instead of hardcoded - plus "Hide amounts right now".
 - **Backup & export** (new sheet): working CSV export (path snackbar), copy invite code (live), and an honestly-disabled "Encrypted cloud backup (coming)" row.
 - **Notifications** row now opens the real Settings screen (reminders, quiet hours, test notification). "Month start day" stays informational by design.
 
 **Plumbing:** `DbSnapshot` gained `autoHide`/`customRate` (persist + hydrate round-trip, covered by a new state test). +14 l10n keys ×6 (**329 keys**, parity ✓).
 
-**Process note:** two script batches reported success while silently not applying (unassigned transform calls) — caught by post-write disk verification, re-applied, and every edit is now grep-verified on disk. Gate: 60-file balance ✓ · 329×6 ✓ · 311 refs ✓.
+**Process note:** two script batches reported success while silently not applying (unassigned transform calls) - caught by post-write disk verification, re-applied, and every edit is now grep-verified on disk. Gate: 60-file balance ✓ · 329×6 ✓ · 311 refs ✓.
 
 
 ---
 
-## Device-feedback pass 2 (first-run auth, nav bug, affordances, profile editing) — DONE ✅ 2026-09-21
+## Device-feedback pass 2 (first-run auth, nav bug, affordances, profile editing) - DONE ✅ 2026-09-21
 
 - **First run now starts at Authentication** (both modes). Demo: any phone number + code `1234` (footer copy updated ×6); the demo session persists via kv (`demo_auth`) so subsequent launches go straight in; live unchanged (real OTP). Sign-out clears the marker.
-- **BUG — bottom-nav off-by-one**: the FAB center slot left 4 nav destinations but the IndexedStack math still assumed 5 (`_tab < 2 ? _tab : _tab - 1`) — **Savings rendered Budgets and Lists rendered Savings**. Now 1:1 (`index: _tab`).
+- **BUG - bottom-nav off-by-one**: the FAB center slot left 4 nav destinations but the IndexedStack math still assumed 5 (`_tab < 2 ? _tab : _tab - 1`) - **Savings rendered Budgets and Lists rendered Savings**. Now 1:1 (`index: _tab`).
 - **Invite a family member**: prominent button on the Family screen → sheet with the big invite code + copy (live), explanatory note (demo).
 - **Profile editing**: tapping your own member row (or the pencil) → name + avatar picker sheet (7 semantic avatar keys), persisted via kv `profile_edits`, re-applied on every hydration. Roles stay sync-owned. Profile photos noted as arriving with family sync.
-- **Header affordance**: the invisible avatar row is now a bordered tappable pill — overlapping avatars, person-add icon, "Family ›" with chevron.
-- **Reports icon**: black glyph → teal-gradient donut badge (white glyph) — it leads the charts, it now looks the part.
-- **Repaired a half-applied earlier edit**: View-as had silently collapsed to `canDemo = m.id == 'm_tariro'` (an id that doesn't exist in the seed) — the real cause of "no way to switch profiles" on device. Now `canDemo = true` for everyone.
+- **Header affordance**: the invisible avatar row is now a bordered tappable pill - overlapping avatars, person-add icon, "Family ›" with chevron.
+- **Reports icon**: black glyph → teal-gradient donut badge (white glyph) - it leads the charts, it now looks the part.
+- **Repaired a half-applied earlier edit**: View-as had silently collapsed to `canDemo = m.id == 'm_tariro'` (an id that doesn't exist in the seed) - the real cause of "no way to switch profiles" on device. Now `canDemo = true` for everyone.
 - +5 l10n keys ×6 (**334 keys**, parity ✓). Gate: 60 files balance ✓, 334×6 ✓, 316 refs ✓.
 
-**On-device note:** indentation in spliced regions is off — run `dart format lib` once before committing.
+**On-device note:** indentation in spliced regions is off - run `dart format lib` once before committing.
 
-## Rebrand — display name (2026-09-21)
-- **Mhuri Money → Mhuri Hub** (user chose "Hub": neutral, nothing money-flavoured, whole-family platform feel). Scope: user-facing only — Material app title + home header, loginWelcome / recordsOnly across all 6 locales, pubspec description, docs. Internal Dart slug stays `mhuri_money` (invisible to users; zero code risk).
+## Rebrand - display name (2026-09-21)
+- **Mhuri Money → Mhuri Hub** (user chose "Hub": neutral, nothing money-flavoured, whole-family platform feel). Scope: user-facing only - Material app title + home header, loginWelcome / recordsOnly across all 6 locales, pubspec description, docs. Internal Dart slug stays `mhuri_money` (invisible to users; zero code risk).
 - When platform folders are generated (device week, `flutter create .`): set `android:label="Mhuri Hub"` + iOS `CFBundleDisplayName` so the launcher icon matches.
 
 ## App icon swap (2026-09-21)
-- New mark: **interlocking white rings + amber arc on teal gradient** (user pick C from 3 candidates) — family-circle/mukando symbolism, international-premium styling. Legacy hut icon archived at `design/app_icon_hut_legacy.png`; candidates + size-proof sheet in `design/`.
-- `assets/branding/` now bundles only `app_icon.png` + `splash.png` (directory-listed in pubspec — every file there ships in the APK).
+- New mark: **interlocking white rings + amber arc on teal gradient** (user pick C from 3 candidates) - family-circle/mukando symbolism, international-premium styling. Legacy hut icon archived at `design/app_icon_hut_legacy.png`; candidates + size-proof sheet in `design/`.
+- `assets/branding/` now bundles only `app_icon.png` + `splash.png` (directory-listed in pubspec - every file there ships in the APK).
 - Device week: generate launcher icons with `dart run flutter_launcher_icons` (pubspec already points at `assets/branding/app_icon.png`). If the rings read thin on a real launcher, thicken ring strokes in a v2.
 
-## UX-polish phase (2026-09-22) — round 1
+## UX-polish phase (2026-09-22) - round 1
 Full spec + per-item dispositions: `UX_POLISH_PHASE.md`. This round: **P1 done**
 (Quick Add → full-screen keyboard-safe page: pinned header/Save, essentials
-first, "More details" fold, discard-guard only with entered data — PopScope
+first, "More details" fold, discard-guard only with entered data - PopScope
 `onPopInvokedWithResult`, Flutter 3.22+); **P2 partial** (Pool card → Reports
 with "View balance details"+chevron and pressed state; one-time FAB tooltip kv
 `fab_tip_seen`); **P3 started** (nav auto icon-only at textScale ≥ ~1.7).
 L10n +8 keys ×6 = **348** (moreDetails, lessDetails, discardTitle, discardBody,
-keepEditing, discard, viewDetails, fabTip); generated ×7 extended by hand —
+keepEditing, discard, viewDetails, fabTip); generated ×7 extended by hand -
 a machine `flutter gen-l10n` on pull will normalize them.
 Next round: P4 sync-details screen + backoff + auth-expiry vs network;
 P5 destructive tiers (type-DELETE account flow, undo, precise language);
@@ -435,14 +435,14 @@ Move-money & envelope details full-screen conversions; 200% device pass.
 - GoTrue endpoints: `POST /auth/v1/token?grant_type=password` (sign in), `POST /auth/v1/signup` (create), refresh + logout + `rpc/delete_own_account` unchanged. Hand-written client kept, injectable HTTP, all flows re-tested offline.
 - Sign-up honours Supabase's default "Confirm email": sessionless 200 → `AuthResult.confirmationNeeded` → login shows a green "check your inbox" banner and returns to sign-in mode. Disable confirmation in Supabase Auth settings for instant sessions.
 - Session kv: `auth_access_token/refresh/user_id` + **`auth_email`** (was `auth_phone`). Demo: any email + 6-char password; kv `demo_auth` now stores the email. Live users sign in once after this ships.
-- Invites stay code-based (client can't call the admin invite API — that needs the service key): the members sheet now explains "they create an account with their email, then enter this code" (`inviteHowTo`, ×6).
+- Invites stay code-based (client can't call the admin invite API - that needs the service key): the members sheet now explains "they create an account with their email, then enter this code" (`inviteHowTo`, ×6).
 - Login screen: SegmentedButton sign-in/create-account, email field + password with visibility toggle, validation (regex + min 6), AutofillGroup, kDefaultCountryCode kept as a reference constant only.
 - Backend: `profiles.phone` → `profiles.email` (schema.sql) + `migrations/003_profiles_email.sql` (ADD COLUMN + backfill from auth.users). **Run the migration in Supabase before shipping live.**
 - L10n +9 keys ×6 → **357**; widget_test expects "Sign in"; auth_test fully rewritten (4 groups, 13 tests).
 
 ## Live-schema reconciliation (2026-09-22, from user's Supabase dashboard dump)
 - Deployed schema captured (reference: `backend/supabase_live_schema.sql`). All 10 app-synced tables exist with matching columns ✓ (mukando.round_order, chore.star_value/state, goal_tx, kid_request…).
-- **Two sync-breaking CHECK gaps found**: `transaction.method` (no mobile_money/agent) and `recurring_rule.method` (no ecocash/zipit/innbucks) — the app's single Method enum emits the union. Any such record would fail server push silently until fixed.
+- **Two sync-breaking CHECK gaps found**: `transaction.method` (no mobile_money/agent) and `recurring_rule.method` (no ecocash/zipit/innbucks) - the app's single Method enum emits the union. Any such record would fail server push silently until fixed.
 - **Migration 003 rewritten** (`003_email_auth_and_checks.sql`, idempotent): user_profile.email + backfill from auth.users; language CHECK widened to 6 locales; both method CHECKs widened to the union domain. **User must run this in Supabase before live sync.**
 - Repo schema.sql was already `user_profile`+email; the erroneous `003_profiles_email.sql` (wrong table name) is deleted.
 
@@ -450,38 +450,38 @@ Move-money & envelope details full-screen conversions; 200% device pass.
 - **Wiring verified** (unchanged, was correct): app.dart gates live+logged-in+first-run; `completeOnboarding` kv persistence covered by m4_test. NEW `test/onboarding_flow_test.dart` proves the full path: sign in → slide 1 visible → Skip → Home (and last-slide localized CTA).
 - Fixed: final CTA was hardcoded English "Let's get started" → new `obDone` key ×6 (358 keys) + generated ×7; stale "three slides" comment → four.
 - Premium consistency (in-place only): gradient tile gains the Pool card's soft elevation; Skip gets a 48dp tap target; login error/confirmation containers now use theme tokens (`dangerSoft`/`primarySoft`) instead of hardcoded hex.
-- No structural or visual redesign — all existing layouts preserved.
+- No structural or visual redesign - all existing layouts preserved.
 
 ## Family-setup onboarding (2026-09-22, user directive: "create account should involve family setup")
 - **New first-run flow (live mode): Auth → welcome → Create-or-Join → family live.** The generic 4-slide carousel is retired (`onboarding_screen.dart` deleted); `FamilySetupScreen` replaces it behind the same app.dart gate (live + logged-in + !onboardingComplete → flag persists as before, m4_test).
-- Create path: name + household type (7 DB values, ×6 labels) → `SyncEngine.createSpace(name, household:)` — the RPC always accepted `p_household`; the client now sends it → invite step (big code + copy, obDone). Join path: code → `join_space` → straight in. Errors surface inline from `engine.lastError`. "Skip for now" always lands in Home.
-- Server: ZERO new endpoints — reused `create_space`/`join_space` from migration 001. Members-tab create/join dialogs remain as the management surface.
+- Create path: name + household type (7 DB values, ×6 labels) → `SyncEngine.createSpace(name, household:)` - the RPC always accepted `p_household`; the client now sends it → invite step (big code + copy, obDone). Join path: code → `join_space` → straight in. Errors surface inline from `engine.lastError`. "Skip for now" always lands in Home.
+- Server: ZERO new endpoints - reused `create_space`/`join_space` from migration 001. Members-tab create/join dialogs remain as the management surface.
 - L10n +22 keys ×6 → **380** (setup copy + 7 household types). `onboarding_flow_test` rewritten (gate wiring, skip→Home, both form states); `widget_screen_test` retargeted.
 
-## Real-data sweep (2026-09-22, user directive: "no mock data, no demos — use the actual DB")
-- **Live boots EMPTY.** `AppState` in live mode no longer loads `seedData()` — placeholder space, zero members/txs/envelopes/goals, stars 0. The Taylor-family fixture now exists ONLY in demo/test builds (`!env.isLive`), which is also what every widget test uses — zero test churn.
-- **Root-cause fix — identity never hydrated before**: `space`/`members` were seed-only and never persisted, so live devices kept the demo family forever. Now device-local identity lives in kv (`members_v1`, `space_name`, `me_id`): hydrated at boot, persisted on adopt and on every `updateMember`.
-- **`onSpaceAdopted(spaceName:)` bootstraps the real owner** — one owner member derived from the signed-in email (`tendi@…` → "tendi", role owner), sets `me_id`, clears synced tables + outbox as before. Join path identical (space name arrives with the first pull).
-- **Empty-state guards** so real-empty UIs are safe & friendly: QuickAdd no longer `.first`-crashes (envelope/member optional, "no envelopes yet" note — `noEnvelopesYet`), Home hides envelope chips when empty and shows "nothing recorded yet — tap +" (`noActivityYet`).
+## Real-data sweep (2026-09-22, user directive: "no mock data, no demos - use the actual DB")
+- **Live boots EMPTY.** `AppState` in live mode no longer loads `seedData()` - placeholder space, zero members/txs/envelopes/goals, stars 0. The Taylor-family fixture now exists ONLY in demo/test builds (`!env.isLive`), which is also what every widget test uses - zero test churn.
+- **Root-cause fix - identity never hydrated before**: `space`/`members` were seed-only and never persisted, so live devices kept the demo family forever. Now device-local identity lives in kv (`members_v1`, `space_name`, `me_id`): hydrated at boot, persisted on adopt and on every `updateMember`.
+- **`onSpaceAdopted(spaceName:)` bootstraps the real owner** - one owner member derived from the signed-in email (`tendi@…` → "tendi", role owner), sets `me_id`, clears synced tables + outbox as before. Join path identical (space name arrives with the first pull).
+- **Empty-state guards** so real-empty UIs are safe & friendly: QuickAdd no longer `.first`-crashes (envelope/member optional, "no envelopes yet" note - `noEnvelopesYet`), Home hides envelope chips when empty and shows "nothing recorded yet - tap +" (`noActivityYet`).
 - Server data still fills everything else via the existing pull (transaction/envelope/goal/mukando/… adapters, all 10 tables verified against live schema).
 - New `test/live_boot_test.dart`: live fresh boot has ZERO demo rows; adopt bootstraps owner identity (email prefix, owner role, kv persisted); demo fixtures intact.
 - L10n +2 ×6 → **382 keys**.
-- Note for later rounds: Budgets/Savings/Lists could get richer empty-state CTAs (UX_POLISH P2) — crash-safe already.
+- Note for later rounds: Budgets/Savings/Lists could get richer empty-state CTAs (UX_POLISH P2) - crash-safe already.
 
-## Next: seamless-flow execution order (audit only, no code — SEAMLESS_AUDIT.md)
+## Next: seamless-flow execution order (audit only, no code - SEAMLESS_AUDIT.md)
 Sprint A (identity keystone: owner id = auth userId; member pull; space name on join) →
 Sprint B (envelope_tx sync, rate_snapshot pull) →
 Sprint C (skip-limbo banner, RPC display names, P4 sync details).
 
-## Sprint A executed (2026-09-22) — the identity keystone
+## Sprint A executed (2026-09-22) - the identity keystone
 - Owner member id = `auth.session.userId` (server user_profile row exists → all pushed FKs satisfy). Fallback newUuid only for auth-less tests.
-- Family roster pull: `_pullMembers()` at the end of every `_fullSync` — membership (space-scoped) + user_profile (id in roster) → `membersFromServer` (me-first, co_parent→adult, name from profile or email prefix) → `AppState.setFamilyMembers` (local renames override, server-'Member' guard keeps local display name, me binding survives, members_v1 persisted).
+- Family roster pull: `_pullMembers()` at the end of every `_fullSync` - membership (space-scoped) + user_profile (id in roster) → `membersFromServer` (me-first, co_parent→adult, name from profile or email prefix) → `AppState.setFamilyMembers` (local renames override, server-'Member' guard keeps local display name, me binding survives, members_v1 persisted).
 - Join path learns the family name: `_adoptSpace` fetches `family_space.name` when the RPC didn't return it (`pullRows` gained generic `eqFilters`); `adoptSpaceName` updates space + kv.
 - Tests: live_boot extended (owner id == session id; mapper mapping; merge semantics). 76 files balanced.
-- Dependency note: roster pull relies on schema.sql RLS policies (`membership_read`, `profile_read`) existing on the live DB — run the policy block if live was created from migration 001 alone.
+- Dependency note: roster pull relies on schema.sql RLS policies (`membership_read`, `profile_read`) existing on the live DB - run the policy block if live was created from migration 001 alone.
 - Next: Sprint B (envelope_tx sync adapter, rate_snapshot pull) then Sprint C (skip-limbo banner, RPC display-name SQL, P4 sync details).
 
-## Sprint B + C-quick executed (2026-09-22) — "fix what we can fix here"
+## Sprint B + C-quick executed (2026-09-22) - "fix what we can fix here"
 - **envelope_tx sync**: tx pushes carry their junction rows; full sync pulls envelope-scoped links and mirrors into local txs (`applyEnvelopeLinks`, saveTx-persisted, no outbox loop).
 - **rate_snapshot pull**: newest snapshot every full sync (descending pull); precedence custom > server > default; kv `server_rate`; hydrated at boot. Real ZiG rates now flow once snapshots exist.
 - **Skip-for-now limbo fixed**: Home banner (live, no space) → `reopenFamilySetup()` re-enters setup.
@@ -491,28 +491,28 @@ Sprint C (skip-limbo banner, RPC display names, P4 sync details).
 - Tests: `live_boot_test` 5 → **8** (envelope-link mirror+persist, FX custom-wins precedence, setup re-arm).
 - USER ACTION: run 003 (if not yet) + 004 in Supabase. Seed at least one `rate_snapshot` row (or keep using Settings custom rate).
 
-## Go-live fixes (2026-09-22) — "device showed demo"
+## Go-live fixes (2026-09-22) - "device showed demo"
 - Root cause: phone builds had no `.env` asset → demo fallback by design; migrations don't bind a build to Supabase.
 - `AppEnv.load()`: dart-define fallback path (`MHURI_*` keys) alongside the `.env` asset.
 - One-time legacy purge on first live boot (`live_purged_v1`): wipes pre-live demo rows + stale markers; guarded against real adopted installs.
-- Settings mode card (live/demo + config error) — l10n 386 → **389** ×6.
+- Settings mode card (live/demo + config error) - l10n 386 → **389** ×6.
 - live_boot_test 8 → **10** (legacy purge fires / adopted install survives).
 
-## Demo removal (2026-09-22) — "remove it completely"
+## Demo removal (2026-09-22) - "remove it completely"
 - Deleted: `EnvMode`, `AppEnv.fallback`, `DemoAuthService`, `seed_data.dart` (451 lines), demo UI strings (loginFooter, membersDemoTip, inviteDemoNote, mode* card), all demo kv/mode branches.
 - Boot contract: config = dart-defines > .env asset > committed constants; unconfigured build → `MhuriSetupErrorApp` (no silent fallback). `AppEnv.isConfigured` replaces `isLive`; AppState boots empty always.
 - Factory default Kids-Mode exit PIN 1234 kept (documented; parent sets a real PIN).
 - Tests carry their own baseline now: `test/fake_auth.dart`, `test/seed.dart` (explicit, test-only); all 22 test files compile against the live-only API.
 
-## Empty-JWT fix (2026-09-22) — device report from Create family
+## Empty-JWT fix (2026-09-22) - device report from Create family
 - Ghost-session chain removed (controller→service.session), transient refresh failures no longer wipe tokens, sync tokenGet self-heals via refresh, client hard-guards empty credentials.
 - Known good path after pull: sign IN (account exists from signup) → create family.
 
-## Post-merge repair (2026-09-22) — auth fixes restored over the .env-asset config
+## Post-merge repair (2026-09-22) - auth fixes restored over the .env-asset config
 - Config direction (user): `.env` asset is primary; dart-defines for CI; constants path removed. Kept.
 - Restored: auth_service interface additions, SupabaseAuthService session getter + transient-failure-safe restore + refreshAccessToken, controller no-ghost paths, sync client empty-credential guard, self-healing tokenGet, 4 regression tests.
 
-## First-run spec (2026-09-22) — DESIGN ONLY, no code yet
+## First-run spec (2026-09-22) - DESIGN ONLY, no code yet
 - User's 9-step first-time flow reviewed → spec written at `FIRST_RUN_SPEC.md`.
 - Locked: bottom nav unchanged (Home | Budgets | Lists | Savings | Family + ＋); flow is a walk-through ending in the existing tabs.
 - Mandatory path = 4 inputs: Welcome → Account (name/email/password) → Create/Join → Money in. Invite (WhatsApp share), spending plan (+ optional due dates = bills), payoff screen are optional.
@@ -522,8 +522,8 @@ Sprint C (skip-limbo banner, RPC display names, P4 sync details).
 - Pending user approval → then a build sprint (acceptance criteria in the spec).
 
 ## Profile photos + validation round (2026-09-22)
-- Avatars end-to-end (storage bucket, upload, roster pull, UI) — migration 005 required.
+- Avatars end-to-end (storage bucket, upload, roster pull, UI) - migration 005 required.
 - Family names unique server-side + inline check (user rule: no two families with the same name).
 - Auth errors speak plainly (codes → copy → resend-confirmation action).
-- Mukando is now opt-in (Home card + Savings section gated; Settings switch) — was wrongly default-on.
+- Mukando is now opt-in (Home card + Savings section gated; Settings switch) - was wrongly default-on.
 

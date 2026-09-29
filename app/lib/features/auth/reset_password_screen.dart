@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-/// Create-new-password — the last step of password recovery.
+/// Create-new-password - the last step of password recovery.
 ///
 /// The app got here by opening the reset link (mhuri://reset-callback), which
 /// carried a recovery session. This screen picks the new password, PUTs it to
@@ -49,7 +51,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   bool get _hasLength => _new.text.length >= 8;
-  bool get _hasMix => _new.text.contains(RegExp(r'[A-Za-z]')) &&
+  bool get _hasMix =>
+      _new.text.contains(RegExp(r'[A-Za-z]')) &&
       _new.text.contains(RegExp(r'[0-9]'));
 
   String? _validate(AppLocalizations l) {
@@ -87,7 +90,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       });
       return;
     }
-    // Success: the recovery session ends here — back to sign-in.
+    // Success: the recovery session ends here - back to sign-in.
     await widget.auth.signOut();
     if (!mounted) return;
     navigator.popUntil((route) => route.isFirst);
@@ -122,93 +125,126 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l.resetTitle)),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          children: [
-            if (_expired) ...[
-              Icon(Icons.schedule, size: 44, color: context.primary),
-              const SizedBox(height: 12),
-              Text(l.resetExpiredTitle,
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.w800),
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 8),
-              Text(l.resetExpiredBody,
-                  style: TextStyle(fontSize: 14, color: context.inkSoft),
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _sending ? null : _sendNewLink,
-                child: Text(l.resetSendNew),
-              ),
-            ] else ...[
-              if (widget.email != null && widget.email!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(widget.email!,
-                      style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: context.inkSoft)),
-                ),
-              Text(l.resetSubtitle,
-                  style: TextStyle(fontSize: 14, color: context.inkSoft)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _new,
-                obscureText: _obscureNew,
-                autofillHints: const [AutofillHints.newPassword],
-                enableSuggestions: false,
-                autocorrect: false,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  labelText: l.resetNewLabel,
-                  errorText: _inlineError,
-                  suffixIcon: IconButton(
-                    tooltip: l.resetShow,
-                    icon: Icon(_obscureNew
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () =>
-                        setState(() => _obscureNew = !_obscureNew),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: defaultTargetPlatform == TargetPlatform.iOS
+                  ? const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics())
+                  : const ClampingScrollPhysics(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                    maxWidth: 460,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (_expired) ...[
+                            const Spacer(flex: 1),
+                            Icon(Icons.schedule,
+                                size: 44, color: context.primary),
+                            const SizedBox(height: 12),
+                            Text(l.resetExpiredTitle,
+                                style: const TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.w800),
+                                textAlign: TextAlign.center),
+                            const SizedBox(height: 8),
+                            Text(l.resetExpiredBody,
+                                style: TextStyle(
+                                    fontSize: 14, color: context.inkSoft),
+                                textAlign: TextAlign.center),
+                            const SizedBox(height: 24),
+                            FilledButton(
+                              onPressed: _sending ? null : _sendNewLink,
+                              child: Text(l.resetSendNew),
+                            ),
+                            const Spacer(flex: 1),
+                          ] else ...[
+                            if (widget.email != null &&
+                                widget.email!.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(widget.email!,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: context.inkSoft)),
+                              ),
+                            Text(l.resetSubtitle,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontSize: 14, color: context.inkSoft)),
+                            const SizedBox(height: 20),
+                            TextField(
+                              controller: _new,
+                              obscureText: _obscureNew,
+                              autofillHints: const [AutofillHints.newPassword],
+                              enableSuggestions: false,
+                              autocorrect: false,
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                labelText: l.resetNewLabel,
+                                errorText: _inlineError,
+                                suffixIcon: IconButton(
+                                  tooltip: l.resetShow,
+                                  icon: Icon(_obscureNew
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined),
+                                  onPressed: () => setState(
+                                      () => _obscureNew = !_obscureNew),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _rule(l.resetRuleLength, _hasLength),
+                            _rule(l.resetRuleMix, _hasMix),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _confirm,
+                              obscureText: _obscureConfirm,
+                              autofillHints: const [AutofillHints.newPassword],
+                              enableSuggestions: false,
+                              autocorrect: false,
+                              decoration: InputDecoration(
+                                labelText: l.resetConfirmLabel,
+                                suffixIcon: IconButton(
+                                  tooltip: l.resetShow,
+                                  icon: Icon(_obscureConfirm
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined),
+                                  onPressed: () => setState(
+                                      () => _obscureConfirm = !_obscureConfirm),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            FilledButton(
+                              onPressed: _busy ? null : _submit,
+                              child: _busy
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator.adaptive(
+                                          strokeWidth: 2),
+                                    )
+                                  : Text(l.resetCta),
+                            ),
+                            const Spacer(flex: 1),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              _rule(l.resetRuleLength, _hasLength),
-              _rule(l.resetRuleMix, _hasMix),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _confirm,
-                obscureText: _obscureConfirm,
-                autofillHints: const [AutofillHints.newPassword],
-                enableSuggestions: false,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: l.resetConfirmLabel,
-                  suffixIcon: IconButton(
-                    tooltip: l.resetShow,
-                    icon: Icon(_obscureConfirm
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () =>
-                        setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _busy ? null : _submit,
-                child: _busy
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l.resetCta),
-              ),
-            ],
-          ],
+            );
+          },
         ),
       ),
     );

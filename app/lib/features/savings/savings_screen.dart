@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/utils/ids.dart';
+
 import '../../core/money/money.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/motion.dart';
-import '../../l10n/generated/app_localizations.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/ring_progress.dart';
+import '../../core/widgets/ui.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 /// Savings goals, kid jars and the savings-circle tracker (spec Module E, §7.5).
 class SavingsScreen extends StatelessWidget {
@@ -20,13 +23,17 @@ class SavingsScreen extends StatelessWidget {
     final s = AppScope.of(context);
     final familyGoals = s.goals.where((g) => !g.isKidJar).toList();
     final kidGoals = s.goals.where((g) => g.isKidJar).toList();
+    final kidsWithoutJar = s.members
+        .where((member) =>
+            member.role == Role.kid && s.kidJarFor(member.id) == null)
+        .toList();
     final m = s.circle;
 
     return SafeArea(
       child: RefreshIndicator(
           onRefresh: () => s.refresh(),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            padding: kTabPageInsets,
             children: [
               Row(
                 children: [
@@ -48,8 +55,12 @@ class SavingsScreen extends StatelessWidget {
                     ),
                 ],
               ),
+              Text(
+                'Save towards the things that matter to your family.',
+                style: TextStyle(fontSize: 13, color: context.inkSoft),
+              ),
               const SizedBox(height: 16),
-              if (familyGoals.isEmpty)
+              if (familyGoals.isEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: EmptyState(
@@ -58,7 +69,39 @@ class SavingsScreen extends StatelessWidget {
                     subtitle: AppLocalizations.of(context)!.noGoalsHint,
                   ),
                 ),
-              if (familyGoals.isEmpty) ...[
+                Text(
+                  'Ideas for family savings:',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: context.inkSoft,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final idea in [
+                      'Emergency fund',
+                      'School fees',
+                      'Home',
+                      'Car',
+                      'Business',
+                      'Travel',
+                      'Other',
+                    ])
+                      ActionChip(
+                        avatar: const Icon(Icons.add, size: 14),
+                        label: Text(idea),
+                        onPressed: () => _newGoalSheet(
+                          context,
+                          initialName: idea == 'Other' ? '' : idea,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: () => _newGoalSheet(context),
                   style: ElevatedButton.styleFrom(
@@ -79,17 +122,35 @@ class SavingsScreen extends StatelessWidget {
 
               // ── Kid jars ────────────────────────────────────────────────────
               const SizedBox(height: 8),
-              Text(
-                "Kids' jars",
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: context.ink),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.kidsJars,
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: context.ink),
+                    ),
+                  ),
+                  if (s.canEditBudgets && kidsWithoutJar.isNotEmpty)
+                    IconButton(
+                      tooltip: AppLocalizations.of(context)!.addKidWish,
+                      onPressed: () => _newGoalSheet(
+                        context,
+                        kidJarMembers: kidsWithoutJar,
+                      ),
+                      icon: Icon(Icons.add_circle,
+                          color: context.primary, size: 28),
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
-                AppLocalizations.of(context)!.starsHome(s.stars),
-                style: TextStyle(fontSize: 12, color: context.inkSoft),
+                'Kids can complete chores, earn stars and save towards their own goals. '
+                '${AppLocalizations.of(context)!.starsHome(s.stars)}',
+                style: TextStyle(
+                    fontSize: 12, color: context.inkSoft, height: 1.4),
               ),
               const SizedBox(height: 12),
               for (final g in kidGoals) ...[
@@ -112,14 +173,9 @@ class SavingsScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Container(
+                          SizedBox(
                             width: 40,
                             height: 40,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFEFE3F7),
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
                             child: Icon(Icons.autorenew,
                                 size: 19, color: context.primaryDark),
                           ),
@@ -139,7 +195,7 @@ class SavingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Round ${m.currentRound} of ${m.totalRounds} — '
+                        'Round ${m.currentRound} of ${m.totalRounds} - '
                         '${m.nextCollector} collects ${m.contribution.text}',
                         style: TextStyle(fontSize: 13, color: context.ink),
                       ),
@@ -165,7 +221,8 @@ class SavingsScreen extends StatelessWidget {
                       ElevatedButton(
                         onPressed: () {
                           HapticFeedback.lightImpact();
-                          s.circleCollect();
+                          s.circleCollect(
+                              id: 'mukando_round_${s.circle.currentRound + 1}');
                           celebrate(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -204,129 +261,122 @@ class SavingsScreen extends StatelessWidget {
     );
   }
 
-  void _newGoalSheet(BuildContext context) {
+  void _newGoalSheet(
+    BuildContext context, {
+    List<Member> kidJarMembers = const [],
+    String initialName = '',
+  }) {
     final s = AppScope.of(context);
-    var goalName = '';
+    final isKidJar = kidJarMembers.isNotEmpty;
+    Member? selectedKid = isKidJar ? kidJarMembers.first : null;
+    final nameController = TextEditingController(text: initialName);
+    var goalName = initialName;
     var targetText = '';
-    var currency = Currency.usd;
+    var currency = s.displayCurrency;
 
-    showModalBottomSheet<void>(
+    String? goalError;
+
+    showMhuriSheet<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheetState) => SingleChildScrollView(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-          ),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            decoration: BoxDecoration(
-              color: context.bg,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(
-                  child: Container(
-                    width: 42,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: context.track,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  AppLocalizations.of(context)!.newSavingsGoal,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: context.ink,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  autofocus: true,
-                  textInputAction: TextInputAction.next,
-                  onChanged: (value) => goalName = value,
+        builder: (sheetContext, setSheetState) => MhuriSheetShell(
+          title: isKidJar
+              ? AppLocalizations.of(context)!.addKidWish
+              : AppLocalizations.of(context)!.newSavingsGoal,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isKidJar) ...[
+                DropdownButtonFormField<Member>(
+                  initialValue: selectedKid,
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.goalName,
-                    hintText: AppLocalizations.of(context)!.goalNameHint,
-                    filled: true,
-                    fillColor: context.card,
+                    labelText: AppLocalizations.of(context)!.childLabel,
                   ),
+                  items: [
+                    for (final member in kidJarMembers)
+                      DropdownMenuItem(value: member, child: Text(member.name)),
+                  ],
+                  onChanged: (value) =>
+                      setSheetState(() => selectedKid = value),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (value) => targetText = value,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.targetAmount,
-                    prefixText: '${currency.symbol} ',
-                    filled: true,
-                    fillColor: context.card,
-                  ),
+              ],
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                textInputAction: TextInputAction.next,
+                onChanged: (value) {
+                  goalName = value;
+                  if (goalError != null) setSheetState(() => goalError = null);
+                },
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.goalName,
+                  hintText: AppLocalizations.of(context)!.goalNameHint,
+                  filled: true,
+                  fillColor: context.card,
                 ),
-                const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: amountInputFormatters,
+                onChanged: (value) {
+                  targetText = value;
+                  if (goalError != null) setSheetState(() => goalError = null);
+                },
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.targetAmount,
+                  prefixText: '${currency.symbol} ',
+                  filled: true,
+                  fillColor: context.card,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (s.activeCurrencies.length > 1)
                 Wrap(
                   spacing: 8,
                   children: [
-                    ChoiceChip(
-                      label: const Text('USD'),
-                      selected: currency == Currency.usd,
-                      onSelected: (_) =>
-                          setSheetState(() => currency = Currency.usd),
-                    ),
-                    ChoiceChip(
-                      label: const Text('ZiG'),
-                      selected: currency == Currency.zwg,
-                      onSelected: (_) =>
-                          setSheetState(() => currency = Currency.zwg),
-                    ),
+                    for (final c in s.activeCurrencies)
+                      ChoiceChip(
+                        label: Text(c.short),
+                        selected: currency == c,
+                        onSelected: (_) => setSheetState(() => currency = c),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    final parsed = double.tryParse(
-                      targetText.trim().replaceAll(',', ''),
-                    );
-                    if (goalName.trim().isEmpty ||
-                        parsed == null ||
-                        parsed <= 0) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!.goalNameAmountFirst,
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                      return;
-                    }
-                    s.addGoal(
-                      name: goalName,
-                      target: Money.fromMajor(parsed, currency),
-                    );
-                    Navigator.pop(sheetContext);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.onSolid,
-                    minimumSize: const Size.fromHeight(52),
-                    shape: const StadiumBorder(),
-                  ),
-                  child: Text(AppLocalizations.of(context)!.createGoal),
-                ),
+              if (goalError != null) ...[
+                const SizedBox(height: 10),
+                ErrorNotice(goalError!),
               ],
-            ),
+              const SizedBox(height: 20),
+              PrimaryButton(
+                label: AppLocalizations.of(context)!.createGoal,
+                onPressed: () {
+                  final parsed = double.tryParse(
+                    targetText.trim().replaceAll(',', ''),
+                  );
+                  if (goalName.trim().isEmpty ||
+                      parsed == null ||
+                      parsed <= 0) {
+                    setSheetState(() {
+                      goalError =
+                          AppLocalizations.of(context)!.goalNameAmountFirst;
+                    });
+                    return;
+                  }
+                  s.addGoal(
+                    name: goalName,
+                    target: Money.fromMajor(parsed, currency),
+                    emoji: isKidJar ? 'gift' : 'goal',
+                    isKidJar: isKidJar,
+                    ownerMemberId: selectedKid?.id,
+                  );
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            ],
           ),
         ),
       ),
@@ -387,27 +437,130 @@ class GoalCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${saved.text} of ${goal.target.text}'
-                  '${goal.autoSave != null ? ' · ${goal.autoSave}' : ''}',
+                  s.hideAmounts
+                      ? '••••• saved'
+                      : '${saved.text} saved${goal.autoSave != null ? ' · ${goal.autoSave}' : ''}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 12, color: context.inkSoft),
+                ),
+                Text(
+                  s.hideAmounts ? 'Goal: •••••' : 'Goal: ${goal.target.text}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, color: context.inkSoft),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => _contribute(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.primary,
-              foregroundColor: context.onSolid,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              shape: const StadiumBorder(),
-            ),
-            child: const Text('Add'),
+          Column(
+            children: [
+              ElevatedButton(
+                onPressed: () => _contribute(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.primary,
+                  foregroundColor: context.onSolid,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: const StadiumBorder(),
+                ),
+                child: const Text('Add'),
+              ),
+              if (s.canEditBudgets)
+                PopupMenuButton<String>(
+                  tooltip: 'Savings goal actions',
+                  onSelected: (action) => _goalAction(context, s, action),
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                        value: 'edit', child: Text('Edit goal')),
+                    if (goal.status != 'done')
+                      const PopupMenuItem(
+                          value: 'complete', child: Text('Mark as completed')),
+                    if (s.canAdmin)
+                      const PopupMenuItem(
+                          value: 'archive', child: Text('Archive goal')),
+                  ],
+                ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _goalAction(
+      BuildContext context, AppState state, String action) async {
+    if (action == 'edit') {
+      _editGoal(context, state);
+      return;
+    }
+    if (action == 'complete') {
+      state.completeGoal(goal);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Savings goal completed'),
+          behavior: SnackBarBehavior.floating));
+      return;
+    }
+    final confirmed = await confirmDialog(
+      context,
+      title: 'Archive ${goal.name}?',
+      body:
+          'The goal will leave your active list, while its contribution history remains available for financial records.',
+      confirmLabel: 'Archive goal',
+      danger: true,
+    );
+    if (confirmed && context.mounted) {
+      state.archiveGoal(goal);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Savings goal archived'),
+          behavior: SnackBarBehavior.floating));
+    }
+  }
+
+  void _editGoal(BuildContext context, AppState state) {
+    final name = TextEditingController(text: goal.name);
+    final target = TextEditingController(
+        text: (goal.target.minor / 100).toStringAsFixed(2));
+    String? error;
+    showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) => MhuriSheetShell(
+          title: 'Edit savings goal',
+          footer: PrimaryButton(
+            label: 'Save changes',
+            onPressed: () {
+              final amount = double.tryParse(target.text.replaceAll(',', ''));
+              if (name.text.trim().isEmpty || amount == null || amount <= 0) {
+                setSheet(() => error = 'Enter a goal name and valid target.');
+                return;
+              }
+              state.updateGoal(goal,
+                  name: name.text,
+                  target: Money.fromMajor(amount, goal.target.currency));
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.pop(sheetContext);
+              messenger.showSnackBar(const SnackBar(
+                  content: Text('Savings goal updated'),
+                  behavior: SnackBarBehavior.floating));
+            },
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+                controller: name,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Goal')),
+            const SizedBox(height: 12),
+            TextField(
+                controller: target,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: amountInputFormatters,
+                decoration: InputDecoration(
+                    labelText: 'Target (${goal.target.currency.symbol})')),
+            if (error != null) ErrorNotice(error!),
+          ]),
+        ),
       ),
     );
   }
@@ -416,41 +569,30 @@ class GoalCard extends StatelessWidget {
     final s = AppScope.of(context);
     Currency cur = goal.target.currency;
     final controller = TextEditingController();
+    bool submitting = false;
 
-    showModalBottomSheet<void>(
+    showMhuriSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (sheetCtx) => StatefulBuilder(
-        builder: (sheetCtx, setSheet) => SingleChildScrollView(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
-          ),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-            decoration: BoxDecoration(
-              color: context.bg,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
+        builder: (sheetCtx, setSheet) {
+          String? contributionError;
+          return MhuriSheetShell(
+            title: AppLocalizations.of(context)!.addToGoal(goal.name),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  AppLocalizations.of(context)!.addToGoal(goal.name),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: context.ink,
-                  ),
-                ),
-                const SizedBox(height: 14),
                 TextField(
                   controller: controller,
                   autofocus: true,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: amountInputFormatters,
+                  onChanged: (_) {
+                    if (contributionError != null) {
+                      setSheet(() => contributionError = null);
+                    }
+                  },
                   style: const TextStyle(
                       fontSize: 26, fontWeight: FontWeight.w800),
                   decoration: InputDecoration(
@@ -465,17 +607,14 @@ class GoalCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    ChoiceChip(
-                      label: const Text('USD'),
-                      selected: cur == Currency.usd,
-                      onSelected: (_) => setSheet(() => cur = Currency.usd),
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('ZiG'),
-                      selected: cur == Currency.zwg,
-                      onSelected: (_) => setSheet(() => cur = Currency.zwg),
-                    ),
+                    for (final c in s.activeCurrencies) ...[
+                      ChoiceChip(
+                        label: Text(c.short),
+                        selected: cur == c,
+                        onSelected: (_) => setSheet(() => cur = c),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     const Spacer(),
                     Text(
                       AppLocalizations.of(context)!
@@ -484,39 +623,101 @@ class GoalCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (contributionError != null) ...[
+                  const SizedBox(height: 10),
+                  ErrorNotice(contributionError!),
+                ],
                 const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
+                PrimaryButton(
+                  label: AppLocalizations.of(context)!.saveContribution,
+                  busy: submitting,
+                  onPressed: () async {
                     final v =
                         double.tryParse(controller.text.replaceAll(',', ''));
-                    if (v == null || v <= 0) return;
-                    final before = s.savedOn(goal).minor;
-                    s.contribute(goal, Money.fromMajor(v, cur));
-                    Navigator.pop(sheetCtx);
-                    if (before < goal.target.minor &&
-                        s.savedOn(goal).minor >= goal.target.minor) {
-                      celebrate(context); // G2: milestone moment
+                    if (v == null || v <= 0) {
+                      setSheet(() => contributionError =
+                          AppLocalizations.of(sheetCtx)!.enterAmountFirst);
+                      return;
                     }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(AppLocalizations.of(context)!
-                            .addedToGoal(goal.name)),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    final contribution = Money.fromMajor(v, cur);
+                    final available = s.availableToSpend(cur);
+                    if (contribution.minor > available.minor) {
+                      final shortfall = Money(
+                        contribution.minor - available.minor,
+                        cur,
+                      );
+                      setSheet(() => contributionError =
+                          AppLocalizations.of(sheetCtx)!
+                              .savingsExceedsCashBody(shortfall.text));
+                      return;
+                    }
+
+                    final before = s.savedOn(goal).minor;
+                    final inGoalCurrency =
+                        contribution.inCurrency(goal.target.currency, s.rate);
+                    final overBy =
+                        before + inGoalCurrency.minor - goal.target.minor;
+                    if (overBy > 0) {
+                      final proceed = await showDialog<bool>(
+                            context: sheetCtx,
+                            builder: (dialogContext) => AlertDialog(
+                              icon: Icon(Icons.flag_outlined,
+                                  color: dialogContext.primary),
+                              title: Text(AppLocalizations.of(dialogContext)!
+                                  .goalOverfundTitle),
+                              content: Text(AppLocalizations.of(dialogContext)!
+                                  .goalOverfundBody(
+                                      Money(overBy, goal.target.currency)
+                                          .text)),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, false),
+                                  child: Text(
+                                      AppLocalizations.of(dialogContext)!
+                                          .adjustAmount),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, true),
+                                  child: Text(
+                                      AppLocalizations.of(dialogContext)!
+                                          .addAnyway),
+                                ),
+                              ],
+                            ),
+                          ) ??
+                          false;
+                      if (!proceed || !sheetCtx.mounted) return;
+                    }
+
+                    setSheet(() => submitting = true);
+                    try {
+                      s.contribute(goal, contribution, id: newUuid());
+                      if (!sheetCtx.mounted) return;
+                      Navigator.pop(sheetCtx);
+                      if (before < goal.target.minor &&
+                          s.savedOn(goal).minor >= goal.target.minor) {
+                        celebrate(context); // G2: milestone moment
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context)!
+                              .addedToGoal(goal.name)),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } finally {
+                      if (sheetCtx.mounted) {
+                        setSheet(() => submitting = false);
+                      }
+                    }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.onSolid,
-                    minimumSize: const Size.fromHeight(50),
-                    shape: const StadiumBorder(),
-                  ),
-                  child: Text(AppLocalizations.of(context)!.saveContribution),
                 ),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

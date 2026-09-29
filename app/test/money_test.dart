@@ -35,7 +35,7 @@ void main() {
       );
     });
 
-    test('no silent conversion — original stays authoritative', () {
+    test('no silent conversion - original stays authoritative', () {
       final m = Money.fromMajor(50, Currency.usd);
       m.converted(rate); // returns a new value; must not mutate
       expect(m.currency, Currency.usd);

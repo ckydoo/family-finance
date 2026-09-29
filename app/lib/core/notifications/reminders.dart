@@ -1,7 +1,7 @@
 import '../models/models.dart';
 import '../money/money.dart';
 
-/// M5 — smart notifications (spec J2/J3), computed device-side.
+/// M5 - smart notifications (spec J2/J3), computed device-side.
 ///
 /// Everything in this file is PURE (no plugin, no platform channels) so the
 /// planning logic is unit-testable. [Notifier] owns the actual scheduling.
@@ -36,20 +36,7 @@ ReminderCategory? categoryFromKey(String key) => switch (key) {
       _ => null,
     };
 
-const allCategoryKeys =
-    'bills,budget,kids,circle,goals,meeting,digest';
-
-extension ReminderCategoryX on ReminderCategory {
-  String get label => switch (this) {
-        ReminderCategory.bills => 'Bills due (3 days before)',
-        ReminderCategory.budget => 'Envelope 80% & empty warnings',
-        ReminderCategory.kids => 'Kids: requests & chore approvals',
-        ReminderCategory.circle => 'Savings circle (Sunday)',
-        ReminderCategory.goals => 'Goal milestones',
-        ReminderCategory.meeting => 'Family meeting day',
-        ReminderCategory.digest => 'Weekly digest (Sunday 6pm)',
-      };
-}
+const allCategoryKeys = 'bills,budget,kids,circle,goals,meeting,digest';
 
 /// One scheduled reminder. [key] is stable (dedupe + notification id).
 class Reminder {
@@ -59,7 +46,7 @@ class Reminder {
   final String body;
   final DateTime when;
 
-  /// Weekly-repeating (digest/savings circle) — uses the plugin's
+  /// Weekly-repeating (digest/savings circle) - uses the plugin's
   /// dayOfWeekAndTime match.
   final bool weekly;
 
@@ -117,7 +104,7 @@ class NotifyConfig {
   }
 }
 
-/// One envelope's position in the current cycle — planner input so the
+/// One envelope's position in the current cycle - planner input so the
 /// pure planner can warn at 80%/100% of the (cycle-aware) limit.
 class EnvelopeHealth {
   final Envelope envelope;
@@ -135,7 +122,7 @@ class EnvelopeHealth {
 
 /// Computes the reminder list to schedule right now (J2's seven alerts:
 /// bill due 3 days, budget 80%/empty, kid request, chore confirm, savings circle
-/// turn, meeting day, weekly Sunday digest — plus event extras like goal
+/// turn, meeting day, weekly Sunday digest - plus event extras like goal
 /// milestones pushed in by [extra]).
 class ReminderPlanner {
   ReminderPlanner._();
@@ -157,15 +144,14 @@ class ReminderPlanner {
     if (!config.enabled) return const [];
     final out = <Reminder>[];
 
-    // 1. Bills due within 3 days (C7 + J2) — morning of the due day.
+    // 1. Bills due within 3 days (C7 + J2) - morning of the due day.
     if (config.allows(ReminderCategory.bills)) {
       final dueSoon = recurring.where((r) {
         if (!r.active) return false;
         final today = DateTime(now.year, now.month, now.day);
         final overdue = r.nextDue.isBefore(today);
         if (overdue) return true;
-        final within3 = r.nextDue
-            .isBefore(today.add(const Duration(days: 3)));
+        final within3 = r.nextDue.isBefore(today.add(const Duration(days: 3)));
         return within3;
       }).toList()
         ..sort((a, b) => a.nextDue.compareTo(b.nextDue));
@@ -173,12 +159,11 @@ class ReminderPlanner {
         final today = DateTime(now.year, now.month, now.day);
         final overdue = r.nextDue.isBefore(today);
         out.add(Reminder(
-          key:
-              'bill_${r.id}${overdue ? '_overdue' : '_${_dayKey(r.nextDue)}'}',
+          key: 'bill_${r.id}${overdue ? '_overdue' : '_${_dayKey(r.nextDue)}'}',
           category: ReminderCategory.bills,
-          title: '${r.name} — ${r.amount.text}',
+          title: '${r.name} - ${r.amount.text}',
           body: overdue
-              ? 'This one is due now — post it from Home when you pay it.'
+              ? 'This one is due now - post it from Home when you pay it.'
               : 'Due this ${r.frequency == Frequency.weekly ? 'week' : 'month'}. '
                   'Review & post when it\'s paid.',
           when: overdue
@@ -202,7 +187,7 @@ class ReminderPlanner {
               ? '${h.envelope.emoji} ${h.envelope.name} is used up'
               : '${h.envelope.emoji} ${h.envelope.name} is 80% spent',
           body: empty
-              ? 'The envelope reached its limit this cycle — decide together '
+              ? 'The envelope reached its limit this cycle - decide together '
                   'before topping it up.'
               : 'Only a slice of this envelope is left this cycle.',
           when: _atHour(now, 18, minute: 30),
@@ -218,7 +203,7 @@ class ReminderPlanner {
           key: 'kid_${r.id}',
           category: ReminderCategory.kids,
           title: '${memberNames[r.kidId] ?? 'A kid'} is waiting on an answer',
-          body: '${r.amount.text} — ${r.reason}. Approve or decline it.',
+          body: '${r.amount.text} - ${r.reason}. Approve or decline it.',
           when: now.add(const Duration(minutes: 2)),
         ));
       }
@@ -227,14 +212,14 @@ class ReminderPlanner {
         out.add(Reminder(
           key: 'chore_${c.id}',
           category: ReminderCategory.kids,
-          title: '"${c.name}" is done — confirm it',
+          title: '"${c.name}" is done - confirm it',
           body: 'A chore is waiting for your ⭐ confirmation.',
           when: now.add(const Duration(minutes: 30)),
         ));
       }
     }
 
-    // 4. Savings circle turn (E4/J2) — Sunday 5pm while the round is open
+    // 4. Savings circle turn (E4/J2) - Sunday 5pm while the round is open
     //    (the tracker has no collection dates yet, so a weekly check-in).
     if (config.allows(ReminderCategory.circle) &&
         circle != null &&
@@ -243,7 +228,7 @@ class ReminderPlanner {
         key: 'circle_weekly',
         category: ReminderCategory.circle,
         title:
-            '🔄 Savings circle — ${memberNames[circle.nextCollector] ?? 'next up'} '
+            '🔄 Savings circle - ${memberNames[circle.nextCollector] ?? 'next up'} '
             'collects this round',
         body: 'Round ${circle.currentRound} of ${circle.totalRounds}. '
             'Mark contributions in Savings.',
@@ -252,11 +237,10 @@ class ReminderPlanner {
       ));
     }
 
-    // 5. Family meeting (I4) — the evening before the new cycle starts.
+    // 5. Family meeting (I4) - the evening before the new cycle starts.
     if (config.allows(ReminderCategory.meeting)) {
-      final day = monthStartDay < 1
-          ? 1
-          : (monthStartDay > 28 ? 28 : monthStartDay);
+      final day =
+          monthStartDay < 1 ? 1 : (monthStartDay > 28 ? 28 : monthStartDay);
       var meeting = DateTime(now.year, now.month, day);
       if (!meeting.isAfter(now)) {
         meeting = DateTime(now.year, now.month + 1, day);
@@ -265,12 +249,12 @@ class ReminderPlanner {
         key: 'meeting_${_dayKey(meeting)}',
         category: ReminderCategory.meeting,
         title: '👨🏾‍👩🏾‍👧🏾 Family meeting tomorrow',
-        body: 'The guided agenda is ready — 15 minutes to align next month.',
+        body: 'The guided agenda is ready - 15 minutes to align next month.',
         when: _atHour(meeting.subtract(const Duration(days: 1)), 18),
       ));
     }
 
-    // 6. Weekly family digest — Sunday 6pm (J2).
+    // 6. Weekly family digest - Sunday 6pm (J2).
     if (config.allows(ReminderCategory.digest)) {
       out.add(Reminder(
         key: 'digest_weekly',
@@ -282,7 +266,7 @@ class ReminderPlanner {
       ));
     }
 
-    // 7. Event extras (goal milestones, kid answers) — already instant.
+    // 7. Event extras (goal milestones, kid answers) - already instant.
     for (final r in extra) {
       if (!config.allows(r.category)) continue;
       out.add(r);

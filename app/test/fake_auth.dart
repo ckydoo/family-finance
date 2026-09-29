@@ -6,6 +6,8 @@ import 'package:mhuri_money/core/config/app_env.dart';
 /// contract without any network.
 class FakeAuthService implements AuthService {
   AuthSession? _session;
+  bool requireConfirmation = false;
+  String? validPassword = 'correct-password';
 
   bool _valid(String email, String password) =>
       email.contains('@') && email.contains('.') && password.length >= 6;
@@ -28,8 +30,17 @@ class FakeAuthService implements AuthService {
   }
 
   @override
-  Future<AuthResult> signUp(String email, String password) async =>
-      signIn(email, password);
+  Future<AuthResult> signUp(String email, String password) async {
+    if (!_valid(email, password)) {
+      return const AuthResult.failure(
+          'Enter a valid email and a password of at least 6 characters.');
+    }
+    if (requireConfirmation) {
+      return const AuthResult.confirmationNeeded();
+    }
+    _session = AuthSession(userId: 'test-user-1', email: email);
+    return const AuthResult.success();
+  }
 
   @override
   Future<AuthSession?> restoreSession() async => _session;
@@ -50,7 +61,7 @@ class FakeAuthService implements AuthService {
 
   @override
   Future<bool> adoptRecoverySession(String accessToken, String refreshToken) async {
-    _session = AuthSession(userId: 'test-user-1', email: 'reset@example.com');
+    _session = const AuthSession(userId: 'test-user-1', email: 'reset@example.com');
     return true;
   }
 
@@ -64,9 +75,13 @@ class FakeAuthService implements AuthService {
     _session = null;
     return const AuthResult.success();
   }
+
+  @override
+  Future<bool> reauthenticate(String password) async =>
+      _session != null && (validPassword == null || password == validPassword);
 }
 
-/// A configured (connected) env for tests — the only kind the app runs with.
+/// A configured (connected) env for tests - the only kind the app runs with.
 AppEnv testEnv() => AppEnv.parse(
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
       'SUPABASE_ANON_KEY=test-key\n',

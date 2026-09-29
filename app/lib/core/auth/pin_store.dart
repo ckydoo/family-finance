@@ -4,14 +4,16 @@ import 'package:crypto/crypto.dart';
 
 import 'supabase_auth_service.dart' show KvGetter, KvSetter;
 
+import '../security/rate_limiter.dart';
+
 /// Hashed PIN storage (M2).
 ///
-///  * `pin_<memberId>` — a kid/teen profile PIN (parent sets it; M4 uses it
+///  * `pin_<memberId>` - a kid/teen profile PIN (parent sets it; M4 uses it
 ///    when handing a shared device to a specific child).
-///  * `pin_parent` — the PIN required to leave Kids Mode.
+///  * `pin_parent` - the PIN required to leave Kids Mode.
 ///
 /// PINs are stored as salted SHA-256, never plaintext. A 4–6 digit PIN is a
-/// *gating* control (stops a child tapping through), not bank-grade security —
+/// *gating* control (stops a child tapping through), not bank-grade security -
 /// the honest note is in the README.
 class PinStore {
   PinStore({KvGetter? kvGet, KvSetter? kvSet})
@@ -23,8 +25,17 @@ class PinStore {
 
   /// In-memory fallback for tests (production always has a database).
   final Map<String, String> _memory = {};
+  final RateLimiter _limiter = RateLimiter(
+    maxAttempts: 5,
+    window: const Duration(seconds: 30),
+    lockoutDuration: const Duration(seconds: 30),
+  );
 
   static const parentKey = 'pin_parent';
+
+  bool isLockedOut(String memberId) => !_limiter.isAllowed(memberId);
+  Duration? lockoutRemaining(String memberId) =>
+      _limiter.timeUntilReset(memberId);
 
   String _hash(String memberId, String pin) =>
       sha256.convert(utf8.encode('mhuri:$memberId:$pin')).toString();
@@ -37,6 +48,7 @@ class PinStore {
     final key = _storageKey(memberId);
     final hashed = _hash(memberId, pin);
     _memory[key] = hashed;
+    _limiter.reset(memberId);
     if (set != null) {
       await set(key, hashed);
     }
@@ -47,6 +59,7 @@ class PinStore {
     final key = _storageKey(memberId);
     _memory.remove(key);
     _memory.remove('pin_$memberId');
+    _limiter.reset(memberId);
     if (set != null) {
       await set(key, '');
       // Older builds accidentally stored the parent PIN as pin_pin_parent.
@@ -63,15 +76,30 @@ class PinStore {
   ///  * for the parent key, the factory default `1234` is accepted until
   ///    the parent sets a real PIN;
   ///  * for kid profiles, no PIN means the profile simply opens (nothing to
-  ///    protect yet — parents opt in by setting one).
+  ///    protect yet - parents opt in by setting one).
   Future<bool> verifyPin(String memberId, String pin) async {
+    if (isLockedOut(memberId)) return false;
+
     final candidate = pin.trim();
-    if (candidate.isEmpty) return false;
-    final stored = await _read(memberId);
-    if (stored == null || stored.isEmpty) {
-      return memberId == parentKey ? candidate == '1234' : true;
+    if (candidate.isEmpty) {
+      _limiter.recordAttempt(memberId);
+      return false;
     }
-    return stored == _hash(memberId, candidate);
+    final stored = await _read(memberId);
+    final bool match;
+    if (stored == null || stored.isEmpty) {
+      match = memberId == parentKey ? candidate == '1234' : true;
+    } else {
+      match = stored == _hash(memberId, candidate);
+    }
+
+    if (match) {
+      _limiter.reset(memberId);
+      return true;
+    } else {
+      _limiter.recordAttempt(memberId);
+      return false;
+    }
   }
 
   Future<String?> _read(String memberId) async {

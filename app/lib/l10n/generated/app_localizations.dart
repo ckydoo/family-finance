@@ -127,7 +127,7 @@ abstract class AppLocalizations {
   /// No description provided for @tabLists.
   ///
   /// In en, this message translates to:
-  /// **'Lists'**
+  /// **'Shopping'**
   String get tabLists;
 
   /// No description provided for @tabFamily.
@@ -166,11 +166,77 @@ abstract class AppLocalizations {
   /// **'Family Pool'**
   String get familyPool;
 
+  /// No description provided for @availableToSpendLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Available to spend'**
+  String get availableToSpendLabel;
+
+  /// No description provided for @savingsExceedsCashTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough available cash'**
+  String get savingsExceedsCashTitle;
+
+  /// No description provided for @savingsExceedsCashBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This contribution is {amount} more than the cash available to spend.'**
+  String savingsExceedsCashBody(Object amount);
+
+  /// No description provided for @goalOverfundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This exceeds the goal'**
+  String get goalOverfundTitle;
+
+  /// No description provided for @goalOverfundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The contribution puts this goal {amount} above its target. Add it anyway?'**
+  String goalOverfundBody(Object amount);
+
+  /// No description provided for @addAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Add anyway'**
+  String get addAnyway;
+
   /// No description provided for @safeToSpend.
   ///
   /// In en, this message translates to:
-  /// **'Safe to spend today: {amount}'**
-  String safeToSpend(String amount);
+  /// **'Available today: {amount}'**
+  String safeToSpend(Object amount);
+
+  /// No description provided for @flexibleSpendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Available today'**
+  String get flexibleSpendTitle;
+
+  /// No description provided for @flexibleSpendExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'What remains today after protecting savings and money reserved in your budgets.'**
+  String get flexibleSpendExplanation;
+
+  /// No description provided for @reservedForEnvelopes.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserved for budgets'**
+  String get reservedForEnvelopes;
+
+  /// No description provided for @freeAfterCommitments.
+  ///
+  /// In en, this message translates to:
+  /// **'Free after commitments'**
+  String get freeAfterCommitments;
+
+  /// No description provided for @daysRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Days remaining: {count}'**
+  String daysRemaining(int count);
 
   /// No description provided for @seeAll.
   ///
@@ -247,13 +313,13 @@ abstract class AppLocalizations {
   /// No description provided for @newEnvelope.
   ///
   /// In en, this message translates to:
-  /// **'New envelope'**
+  /// **'New budget'**
   String get newEnvelope;
 
   /// No description provided for @recurringExpenses.
   ///
   /// In en, this message translates to:
-  /// **'Recurring expenses'**
+  /// **'Regular payments'**
   String get recurringExpenses;
 
   /// No description provided for @shopping.
@@ -277,7 +343,7 @@ abstract class AppLocalizations {
   /// No description provided for @noActivityHint.
   ///
   /// In en, this message translates to:
-  /// **'Every expense, income and approval shows up here — add your first one with the + button.'**
+  /// **'Every expense, income and approval shows up here - add your first one with the + button.'**
   String get noActivityHint;
 
   /// No description provided for @noGoals.
@@ -289,13 +355,13 @@ abstract class AppLocalizations {
   /// No description provided for @noGoalsHint.
   ///
   /// In en, this message translates to:
-  /// **'Start with an emergency fund — even a little each week changes how emergencies feel.'**
+  /// **'Start with an emergency fund - even a little each week changes how emergencies feel.'**
   String get noGoalsHint;
 
   /// No description provided for @reportTitle.
   ///
   /// In en, this message translates to:
-  /// **'Report card'**
+  /// **'Monthly summary'**
   String get reportTitle;
 
   /// No description provided for @income.
@@ -319,19 +385,19 @@ abstract class AppLocalizations {
   /// No description provided for @safePerDay.
   ///
   /// In en, this message translates to:
-  /// **'Safe / day'**
+  /// **'Available per day'**
   String get safePerDay;
 
   /// No description provided for @envelopeHealth.
   ///
   /// In en, this message translates to:
-  /// **'Envelope health'**
+  /// **'Budget progress'**
   String get envelopeHealth;
 
   /// No description provided for @cashLeak.
   ///
   /// In en, this message translates to:
-  /// **'Cash leak'**
+  /// **'Cash spending'**
   String get cashLeak;
 
   /// No description provided for @shareReport.
@@ -421,7 +487,7 @@ abstract class AppLocalizations {
   /// No description provided for @peek.
   ///
   /// In en, this message translates to:
-  /// **'Parents let you see this envelope'**
+  /// **'Parents let you see this budget'**
   String get peek;
 
   /// No description provided for @plan.
@@ -451,13 +517,13 @@ abstract class AppLocalizations {
   /// No description provided for @quietHours.
   ///
   /// In en, this message translates to:
-  /// **'Quiet hours (no notifications inside this window)'**
+  /// **'Quiet hours'**
   String get quietHours;
 
   /// No description provided for @monthStartsOn.
   ///
   /// In en, this message translates to:
-  /// **'Month starts on'**
+  /// **'Starts on'**
   String get monthStartsOn;
 
   /// No description provided for @language.
@@ -494,7 +560,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Scheduled on this device · quiet hours {from}–{to}'**
-  String scheduledOn(String from, String to);
+  String scheduledOn(Object from, Object to);
 
   /// No description provided for @remindersOff.
   ///
@@ -517,19 +583,19 @@ abstract class AppLocalizations {
   /// No description provided for @ob1Body.
   ///
   /// In en, this message translates to:
-  /// **'One calm place for everything your family earns, spends, saves and plans — in every currency you use, online or off.'**
+  /// **'One calm place for everything your family earns, spends, saves and plans - in every currency you use, online or off.'**
   String get ob1Body;
 
   /// No description provided for @ob2Title.
   ///
   /// In en, this message translates to:
-  /// **'Envelopes, not guilt'**
+  /// **'Plan without the guilt'**
   String get ob2Title;
 
   /// No description provided for @ob2Body.
   ///
   /// In en, this message translates to:
-  /// **'Give every dollar a job. Groceries, school fees, transport — see at a glance what is on track, what needs a top-up, and what is safe to spend today.'**
+  /// **'Give every dollar a job. Groceries, school fees, transport - see what is on track, what needs attention, and what remains today.'**
   String get ob2Body;
 
   /// No description provided for @ob3Title.
@@ -553,8 +619,8 @@ abstract class AppLocalizations {
   /// No description provided for @syncPill.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 change saved on this device — syncs when online} other{{count} changes saved on this device — syncs when online}}'**
-  String syncPill(int count);
+  /// **'{count, plural, =1{1 change saved on this device - syncs when online} other{{count} changes saved on this device - syncs when online}}'**
+  String syncPill(num count);
 
   /// No description provided for @hideAmountsTip.
   ///
@@ -595,19 +661,19 @@ abstract class AppLocalizations {
   /// No description provided for @sixMonthNet.
   ///
   /// In en, this message translates to:
-  /// **'Six-month net (USD)'**
+  /// **'Money left each month (USD)'**
   String get sixMonthNet;
 
   /// No description provided for @donutEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No spending recorded yet this cycle — the donut fills as you add expenses.'**
+  /// **'No spending recorded yet this cycle - the donut fills as you add expenses.'**
   String get donutEmpty;
 
   /// No description provided for @ob4Body.
   ///
   /// In en, this message translates to:
-  /// **'Bill nags, budget watch and the weekly family digest — quiet hours respected, everything on your phone. You are in charge.'**
+  /// **'Bill nags, budget watch and the weekly family digest - quiet hours respected, everything on your phone. You are in charge.'**
   String get ob4Body;
 
   /// No description provided for @next.
@@ -619,7 +685,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginWelcome.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Mhuri Hub'**
+  /// **'Welcome to Mhuri'**
   String get loginWelcome;
 
   /// No description provided for @loginEnterCode.
@@ -632,7 +698,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'We sent a code by SMS to {phone}'**
-  String loginSentCode(String phone);
+  String loginSentCode(Object phone);
 
   /// No description provided for @loginSignInHint.
   ///
@@ -679,7 +745,7 @@ abstract class AppLocalizations {
   /// No description provided for @envelopeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Envelope'**
+  /// **'Budget'**
   String get envelopeLabel;
 
   /// No description provided for @whoLabel.
@@ -709,14 +775,14 @@ abstract class AppLocalizations {
   /// No description provided for @savedOffline.
   ///
   /// In en, this message translates to:
-  /// **'Saved ✓ — works offline, syncs when online'**
+  /// **'Saved ✓ - works offline, syncs when online'**
   String get savedOffline;
 
   /// No description provided for @kidsHi.
   ///
   /// In en, this message translates to:
   /// **'Hi {name}!'**
-  String kidsHi(String name);
+  String kidsHi(Object name);
 
   /// No description provided for @kidsMyJar.
   ///
@@ -727,8 +793,8 @@ abstract class AppLocalizations {
   /// No description provided for @kidsGoalSaved.
   ///
   /// In en, this message translates to:
-  /// **'Goal: {goal} — {pct}% saved'**
-  String kidsGoalSaved(String goal, int pct);
+  /// **'Goal: {goal} - {pct}% saved'**
+  String kidsGoalSaved(Object goal, Object pct);
 
   /// No description provided for @kidsMyChores.
   ///
@@ -745,8 +811,8 @@ abstract class AppLocalizations {
   /// No description provided for @kidsWishItem.
   ///
   /// In en, this message translates to:
-  /// **'Soccer ball — US\$25 · saved {amount}'**
-  String kidsWishItem(String amount);
+  /// **'Soccer ball - US\$25 · saved {amount}'**
+  String kidsWishItem(Object amount);
 
   /// No description provided for @kidsAskMoney.
   ///
@@ -771,6 +837,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Parents'**
   String get kidsParents;
+
+  /// No description provided for @kidsNoChores.
+  ///
+  /// In en, this message translates to:
+  /// **'No chores are waiting. Ask a parent to add one when you are ready.'**
+  String get kidsNoChores;
+
+  /// No description provided for @kidsParentArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent area'**
+  String get kidsParentArea;
+
+  /// No description provided for @kidsAndChores.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids & chores'**
+  String get kidsAndChores;
+
+  /// No description provided for @addChore.
+  ///
+  /// In en, this message translates to:
+  /// **'Add chore'**
+  String get addChore;
+
+  /// No description provided for @addChoreHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a family chore and choose its star reward.'**
+  String get addChoreHint;
+
+  /// No description provided for @choreName.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore name'**
+  String get choreName;
+
+  /// No description provided for @starReward.
+  ///
+  /// In en, this message translates to:
+  /// **'Star reward'**
+  String get starReward;
+
+  /// No description provided for @choreFieldsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a chore name and at least 1 star.'**
+  String get choreFieldsRequired;
+
+  /// No description provided for @choreAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added for the kids.'**
+  String choreAdded(Object name);
+
+  /// No description provided for @noFamilyChores.
+  ///
+  /// In en, this message translates to:
+  /// **'No chores yet. Add the first one for the kids.'**
+  String get noFamilyChores;
+
+  /// No description provided for @choreStars.
+  ///
+  /// In en, this message translates to:
+  /// **'{stars} stars'**
+  String choreStars(Object stars);
+
+  /// No description provided for @kidsNoWish.
+  ///
+  /// In en, this message translates to:
+  /// **'No wish selected yet'**
+  String get kidsNoWish;
+
+  /// No description provided for @kidsWishProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {target} goal · {saved} saved'**
+  String kidsWishProgress(Object name, Object target, Object saved);
+
+  /// No description provided for @kidsJars.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids\' savings'**
+  String get kidsJars;
+
+  /// No description provided for @addKidWish.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a kid\'s wish'**
+  String get addKidWish;
+
+  /// No description provided for @childLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Child'**
+  String get childLabel;
 
   /// No description provided for @kidsAskTitle.
   ///
@@ -805,7 +967,7 @@ abstract class AppLocalizations {
   /// No description provided for @teenEarnHint.
   ///
   /// In en, this message translates to:
-  /// **'Wash a car, help at the corner shop — log it and watch your jar grow.'**
+  /// **'Wash a car, help at the corner shop - log it and watch your jar grow.'**
   String get teenEarnHint;
 
   /// No description provided for @teenSpend.
@@ -830,13 +992,19 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Suggested split of {amount} earned this month'**
-  String teenSplitHint(String amount);
+  String teenSplitHint(Object amount);
 
   /// No description provided for @teenSavedJar.
   ///
   /// In en, this message translates to:
-  /// **'Saved to your jar — parents match 50%'**
+  /// **'Saved to your jar - parents match 50%'**
   String get teenSavedJar;
+
+  /// No description provided for @teenJarCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare your savings jar. Check your connection and try again.'**
+  String get teenJarCreateFailed;
 
   /// No description provided for @teenWhatDid.
   ///
@@ -856,10 +1024,16 @@ abstract class AppLocalizations {
   /// **'Couple + kids · month starts on the 1st'**
   String get membersDesc;
 
+  /// No description provided for @membersCycleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget cycle starts on day {day}'**
+  String membersCycleDesc(int day);
+
   /// No description provided for @membersInviteHint.
   ///
   /// In en, this message translates to:
-  /// **'Share the code or scan to invite a family member'**
+  /// **'Create a secure, role-based invitation for each family member'**
   String get membersInviteHint;
 
   /// No description provided for @setCurrency.
@@ -872,7 +1046,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'USD primary · ZiG secondary · {rate}'**
-  String setCurrencySub(String rate);
+  String setCurrencySub(Object rate);
 
   /// No description provided for @setPrivacy.
   ///
@@ -883,7 +1057,7 @@ abstract class AppLocalizations {
   /// No description provided for @setPrivacySub.
   ///
   /// In en, this message translates to:
-  /// **'Private pockets: off — partner sees shared only'**
+  /// **'Private pockets: off - partner sees shared only'**
   String get setPrivacySub;
 
   /// No description provided for @setMonthStart.
@@ -895,7 +1069,7 @@ abstract class AppLocalizations {
   /// No description provided for @setMonthStartSub.
   ///
   /// In en, this message translates to:
-  /// **'1st — aligns with salary cycle'**
+  /// **'1st - aligns with salary cycle'**
   String get setMonthStartSub;
 
   /// No description provided for @setNotif.
@@ -955,13 +1129,13 @@ abstract class AppLocalizations {
   /// No description provided for @mEnvelopeHealth.
   ///
   /// In en, this message translates to:
-  /// **'Envelope health'**
+  /// **'Budget progress'**
   String get mEnvelopeHealth;
 
   /// No description provided for @mReachedTalk.
   ///
   /// In en, this message translates to:
-  /// **'Talk about the envelopes marked \"Reached\". Top them up together — calmly.'**
+  /// **'Talk about the budgets that need attention and adjust them together.'**
   String get mReachedTalk;
 
   /// No description provided for @mGoals.
@@ -985,25 +1159,25 @@ abstract class AppLocalizations {
   /// No description provided for @recSkipped.
   ///
   /// In en, this message translates to:
-  /// **'Skipped — next: {date}'**
-  String recSkipped(String date);
+  /// **'Skipped - next: {date}'**
+  String recSkipped(Object date);
 
   /// No description provided for @recNew.
   ///
   /// In en, this message translates to:
-  /// **'New recurring expense'**
+  /// **'New regular payment'**
   String get recNew;
 
   /// No description provided for @recReview.
   ///
   /// In en, this message translates to:
-  /// **'Nothing is charged automatically — you review and post everything.'**
+  /// **'Nothing is charged automatically - you review and post everything.'**
   String get recReview;
 
   /// No description provided for @recNoEnvelope.
   ///
   /// In en, this message translates to:
-  /// **'No envelope'**
+  /// **'No budget'**
   String get recNoEnvelope;
 
   /// No description provided for @recNextDue.
@@ -1057,7 +1231,7 @@ abstract class AppLocalizations {
   /// No description provided for @roleViewer.
   ///
   /// In en, this message translates to:
-  /// **'Elder · Viewer'**
+  /// **'Viewer'**
   String get roleViewer;
 
   /// No description provided for @methodCash.
@@ -1159,43 +1333,43 @@ abstract class AppLocalizations {
   /// No description provided for @noEnvelopes.
   ///
   /// In en, this message translates to:
-  /// **'No envelopes yet'**
+  /// **'No budgets yet'**
   String get noEnvelopes;
 
   /// No description provided for @envelopesHint.
   ///
   /// In en, this message translates to:
-  /// **'Envelopes are budgets you can see: Groceries, School fees, Transport. Create your first one below.'**
+  /// **'Create a budget for groceries, school, transport or anything your family plans for.'**
   String get envelopesHint;
 
   /// No description provided for @newEnvStub.
   ///
   /// In en, this message translates to:
-  /// **'New envelope — coming in Phase 1'**
+  /// **'New budget'**
   String get newEnvStub;
 
   /// No description provided for @addRecurringTip.
   ///
   /// In en, this message translates to:
-  /// **'Add recurring expense'**
+  /// **'Add regular payment'**
   String get addRecurringTip;
 
   /// No description provided for @recReviewed.
   ///
   /// In en, this message translates to:
-  /// **'Reviewed before posting — nothing is charged silently.'**
+  /// **'Reviewed before posting - nothing is charged silently.'**
   String get recReviewed;
 
   /// No description provided for @noRecurring.
   ///
   /// In en, this message translates to:
-  /// **'No recurring expenses yet'**
+  /// **'No regular payments yet'**
   String get noRecurring;
 
   /// No description provided for @recurringHint.
   ///
   /// In en, this message translates to:
-  /// **'Add school fees, rent or airtime rules — we remind you when each one comes due.'**
+  /// **'Add school fees, rent or airtime rules - we remind you when each one comes due.'**
   String get recurringHint;
 
   /// No description provided for @chipOnTrack.
@@ -1225,7 +1399,7 @@ abstract class AppLocalizations {
   /// No description provided for @pickFirst.
   ///
   /// In en, this message translates to:
-  /// **'Pick envelopes and an amount first'**
+  /// **'Choose budgets and an amount first'**
   String get pickFirst;
 
   /// No description provided for @skipPeriod.
@@ -1261,7 +1435,7 @@ abstract class AppLocalizations {
   /// No description provided for @meetingNoteHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g. \"Cook more on Sundays — musika spending is creeping.\"'**
+  /// **'e.g. \"Cook more on Sundays - musika spending is creeping.\"'**
   String get meetingNoteHint;
 
   /// No description provided for @meetingSaveNote.
@@ -1279,13 +1453,13 @@ abstract class AppLocalizations {
   /// No description provided for @meetingDone.
   ///
   /// In en, this message translates to:
-  /// **'Done — see you next month'**
+  /// **'Done - see you next month'**
   String get meetingDone;
 
   /// No description provided for @reportCard.
   ///
   /// In en, this message translates to:
-  /// **'Report card'**
+  /// **'Monthly summary'**
   String get reportCard;
 
   /// No description provided for @recentActivity.
@@ -1375,7 +1549,7 @@ abstract class AppLocalizations {
   /// No description provided for @listSharedSub.
   ///
   /// In en, this message translates to:
-  /// **'Family shopping list · shared with everyone'**
+  /// **'Your family\'s shared shopping list'**
   String get listSharedSub;
 
   /// No description provided for @tickFirst.
@@ -1423,7 +1597,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineRetry.
   ///
   /// In en, this message translates to:
-  /// **'Offline — will retry automatically'**
+  /// **'Offline - will retry automatically'**
   String get offlineRetry;
 
   /// No description provided for @syncProblem.
@@ -1435,7 +1609,7 @@ abstract class AppLocalizations {
   /// No description provided for @signinExpired.
   ///
   /// In en, this message translates to:
-  /// **'Sign-in expired — sign out and back in'**
+  /// **'Sign-in expired - sign out and back in'**
   String get signinExpired;
 
   /// No description provided for @syncing.
@@ -1477,7 +1651,7 @@ abstract class AppLocalizations {
   /// No description provided for @localizedNote.
   ///
   /// In en, this message translates to:
-  /// **'The whole app now speaks six languages — no more EN-only screens.'**
+  /// **'The whole app now speaks six languages - no more EN-only screens.'**
   String get localizedNote;
 
   /// No description provided for @nextCreateSpace.
@@ -1489,7 +1663,7 @@ abstract class AppLocalizations {
   /// No description provided for @reachedMove.
   ///
   /// In en, this message translates to:
-  /// **'{on} of {total} envelopes still on track. Open the ones marked \"Reached\" and move money in — calm, not perfect.'**
+  /// **'{on} of {total} budgets are on track. Open a budget to review or move money.'**
   String reachedMove(Object on, Object total);
 
   /// No description provided for @cashTrace.
@@ -1501,7 +1675,7 @@ abstract class AppLocalizations {
   /// No description provided for @whereMoneyWent.
   ///
   /// In en, this message translates to:
-  /// **'Where the money went'**
+  /// **'Your spending'**
   String get whereMoneyWent;
 
   /// No description provided for @exportFailed.
@@ -1543,7 +1717,7 @@ abstract class AppLocalizations {
   /// No description provided for @recordsOnly.
   ///
   /// In en, this message translates to:
-  /// **'Mhuri Hub never holds the money — records only.'**
+  /// **'Mhuri never holds the money - records only.'**
   String get recordsOnly;
 
   /// No description provided for @saveContribution.
@@ -1567,13 +1741,13 @@ abstract class AppLocalizations {
   /// No description provided for @monthCycle.
   ///
   /// In en, this message translates to:
-  /// **'Month cycle'**
+  /// **'Budget month'**
   String get monthCycle;
 
   /// No description provided for @paydayAlign.
   ///
   /// In en, this message translates to:
-  /// **'Payday-aligned budgets — cycles reset on this day, and the family meeting reminder lands the evening before'**
+  /// **'Payday-aligned budgets - cycles reset on this day, and the family meeting reminder lands the evening before'**
   String get paydayAlign;
 
   /// No description provided for @backupComing.
@@ -1609,7 +1783,7 @@ abstract class AppLocalizations {
   /// No description provided for @fromEnvelope.
   ///
   /// In en, this message translates to:
-  /// **'From envelope'**
+  /// **'From budget'**
   String get fromEnvelope;
 
   /// No description provided for @amountPurposeFirst.
@@ -1687,13 +1861,13 @@ abstract class AppLocalizations {
   /// No description provided for @choreDoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'\"{name}\" done — confirm?'**
+  /// **'\"{name}\" done - confirm?'**
   String choreDoneTitle(Object name);
 
   /// No description provided for @choreDoneSub.
   ///
   /// In en, this message translates to:
-  /// **'{stars} stars — confirm to grow the jar'**
+  /// **'{stars} stars - confirm to grow the jar'**
   String choreDoneSub(Object stars);
 
   /// No description provided for @circleSub.
@@ -1723,7 +1897,7 @@ abstract class AppLocalizations {
   /// No description provided for @recentInEnv.
   ///
   /// In en, this message translates to:
-  /// **'Recent in this envelope'**
+  /// **'Recent activity in this budget'**
   String get recentInEnv;
 
   /// No description provided for @nothingLogged.
@@ -1759,13 +1933,13 @@ abstract class AppLocalizations {
   /// No description provided for @circleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Savings circle — Round {round} of {total}'**
+  /// **'Savings circle - Round {round} of {total}'**
   String circleTitle(Object round, Object total);
 
   /// No description provided for @postedSnack.
   ///
   /// In en, this message translates to:
-  /// **'{name} posted ✓ — envelope updated'**
+  /// **'{name} posted ✓ - budget updated'**
   String postedSnack(Object name);
 
   /// No description provided for @starsGiven.
@@ -1777,19 +1951,19 @@ abstract class AppLocalizations {
   /// No description provided for @approvedReq.
   ///
   /// In en, this message translates to:
-  /// **'Approved ✓ — {amount} added to {name}'**
+  /// **'Approved ✓ - {amount} added to {name}'**
   String approvedReq(Object amount, Object name);
 
   /// No description provided for @declineBody.
   ///
   /// In en, this message translates to:
-  /// **'{reason}\n\nFrom envelope: {env}'**
+  /// **'{reason}\n\nFrom budget: {env}'**
   String declineBody(Object reason, Object env);
 
   /// No description provided for @approvedProp.
   ///
   /// In en, this message translates to:
-  /// **'Approved ✓ — {amount} logged to {env}'**
+  /// **'Approved ✓ - {amount} logged to {env}'**
   String approvedProp(Object amount, Object env);
 
   /// No description provided for @sentKid.
@@ -1801,7 +1975,7 @@ abstract class AppLocalizations {
   /// No description provided for @listEmptyAdd.
   ///
   /// In en, this message translates to:
-  /// **'Nothing here — add an item with ＋'**
+  /// **'Nothing here - add an item with ＋'**
   String get listEmptyAdd;
 
   /// No description provided for @usesPct.
@@ -1813,13 +1987,13 @@ abstract class AppLocalizations {
   /// No description provided for @loggedTo.
   ///
   /// In en, this message translates to:
-  /// **'Logged {amount} to {name} ✓ — envelope updated'**
+  /// **'Recorded {amount} in {name} ✓ - budget updated'**
   String loggedTo(Object amount, Object name);
 
   /// No description provided for @finishShop.
   ///
   /// In en, this message translates to:
-  /// **'Finish shopping → log expense'**
+  /// **'Record shopping expense'**
   String get finishShop;
 
   /// No description provided for @estPrice.
@@ -1843,7 +2017,7 @@ abstract class AppLocalizations {
   /// No description provided for @createFail.
   ///
   /// In en, this message translates to:
-  /// **'Could not create the space — try again'**
+  /// **'Could not create the space - try again'**
   String get createFail;
 
   /// No description provided for @joinSpaceTitle.
@@ -1861,13 +2035,13 @@ abstract class AppLocalizations {
   /// No description provided for @joinedOk.
   ///
   /// In en, this message translates to:
-  /// **'Joined ✓ — your family data is syncing'**
+  /// **'Joined ✓ - your family data is syncing'**
   String get joinedOk;
 
   /// No description provided for @joinFail.
   ///
   /// In en, this message translates to:
-  /// **'Could not join — try again'**
+  /// **'Could not join - try again'**
   String get joinFail;
 
   /// No description provided for @kidsPin.
@@ -1879,7 +2053,7 @@ abstract class AppLocalizations {
   /// No description provided for @kidsPinSub.
   ///
   /// In en, this message translates to:
-  /// **'Required to leave Kids Mode — tap to change'**
+  /// **'Required to leave Kids Mode - tap to change'**
   String get kidsPinSub;
 
   /// No description provided for @signedInAs.
@@ -1897,7 +2071,7 @@ abstract class AppLocalizations {
   /// No description provided for @viewAs.
   ///
   /// In en, this message translates to:
-  /// **'View as'**
+  /// **'Preview as…'**
   String get viewAs;
 
   /// No description provided for @cashShare.
@@ -1909,13 +2083,13 @@ abstract class AppLocalizations {
   /// No description provided for @donutA11y.
   ///
   /// In en, this message translates to:
-  /// **'Spending by envelope, {name} selected, {share} percent'**
+  /// **'Spending by budget, {name} selected, {share} percent'**
   String donutA11y(Object name, Object share);
 
   /// No description provided for @starsHome.
   ///
   /// In en, this message translates to:
-  /// **'{stars} stars — confirm chores on Home to grow jars'**
+  /// **'{stars} stars - confirm chores on Home to grow jars'**
   String starsHome(Object stars);
 
   /// No description provided for @circleMember.
@@ -1933,7 +2107,7 @@ abstract class AppLocalizations {
   /// No description provided for @roundOk.
   ///
   /// In en, this message translates to:
-  /// **'Round recorded ✓ — records only, we never hold money'**
+  /// **'Round recorded ✓ - records only, we never hold money'**
   String get roundOk;
 
   /// No description provided for @addToGoal.
@@ -1999,7 +2173,7 @@ abstract class AppLocalizations {
   /// No description provided for @overBudgetTitle.
   ///
   /// In en, this message translates to:
-  /// **'This envelope will be over budget'**
+  /// **'This budget will be over its limit'**
   String get overBudgetTitle;
 
   /// No description provided for @overBudgetBody.
@@ -2065,7 +2239,7 @@ abstract class AppLocalizations {
   /// No description provided for @rateField.
   ///
   /// In en, this message translates to:
-  /// **'ZiG per 1 USD'**
+  /// **'Exchange rate'**
   String get rateField;
 
   /// No description provided for @rateSave.
@@ -2077,13 +2251,13 @@ abstract class AppLocalizations {
   /// No description provided for @rateReset.
   ///
   /// In en, this message translates to:
-  /// **'Reset to RBZ snapshot'**
+  /// **'Reset to default rate'**
   String get rateReset;
 
   /// No description provided for @rateCustomNote.
   ///
   /// In en, this message translates to:
-  /// **'Used for the ZiG view across the whole app. The bundled RBZ snapshot is 15.27.'**
+  /// **'Used for currency conversion across the whole app.'**
   String get rateCustomNote;
 
   /// No description provided for @autoHide.
@@ -2095,7 +2269,7 @@ abstract class AppLocalizations {
   /// No description provided for @autoHideSub.
   ///
   /// In en, this message translates to:
-  /// **'Balances hide automatically when the app goes to the background — turn off if you prefer.'**
+  /// **'Balances hide automatically when the app goes to the background - turn off if you prefer.'**
   String get autoHideSub;
 
   /// No description provided for @hideNow.
@@ -2125,7 +2299,7 @@ abstract class AppLocalizations {
   /// No description provided for @inviteTitle.
   ///
   /// In en, this message translates to:
-  /// **'Invite a family member'**
+  /// **'Invite family'**
   String get inviteTitle;
 
   /// No description provided for @editProfile.
@@ -2293,7 +2467,7 @@ abstract class AppLocalizations {
   /// No description provided for @passwordResetSent.
   ///
   /// In en, this message translates to:
-  /// **'Password reset email sent — check your inbox.'**
+  /// **'Password reset email sent - open the link on this phone and the app will finish it.'**
   String get passwordResetSent;
 
   /// No description provided for @passwordResetFailed.
@@ -2305,7 +2479,7 @@ abstract class AppLocalizations {
   /// No description provided for @newToMhuri.
   ///
   /// In en, this message translates to:
-  /// **'New to Mhuri Hub?'**
+  /// **'New to Mhuri?'**
   String get newToMhuri;
 
   /// No description provided for @alreadyHaveAccount.
@@ -2329,7 +2503,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkYourEmail.
   ///
   /// In en, this message translates to:
-  /// **'Almost there — check your inbox and confirm your email, then sign in.'**
+  /// **'Almost there - check your inbox and confirm your email, then sign in.'**
   String get checkYourEmail;
 
   /// No description provided for @togglePassword.
@@ -2359,7 +2533,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupChoiceBody.
   ///
   /// In en, this message translates to:
-  /// **'Mhuri Hub works for one family, together. Create yours, or join the one you belong to.'**
+  /// **'Mhuri works for one family, together. Create yours, or join the one you belong to.'**
   String get setupChoiceBody;
 
   /// No description provided for @setupCreateCard.
@@ -2383,7 +2557,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupJoinCardBody.
   ///
   /// In en, this message translates to:
-  /// **'Someone invited you — enter their family code to join them.'**
+  /// **'Someone invited you - enter their family code to join them.'**
   String get setupJoinCardBody;
 
   /// No description provided for @createFamilyCta.
@@ -2473,7 +2647,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupInviteTitle.
   ///
   /// In en, this message translates to:
-  /// **'Invite your people'**
+  /// **'Invite members'**
   String get setupInviteTitle;
 
   /// No description provided for @setupWorking.
@@ -2485,13 +2659,13 @@ abstract class AppLocalizations {
   /// No description provided for @noEnvelopesYet.
   ///
   /// In en, this message translates to:
-  /// **'No envelopes yet — create your first one from the Budgets tab to start tracking spending.'**
+  /// **'No budgets yet - create one from the Budgets tab to start planning your spending.'**
   String get noEnvelopesYet;
 
   /// No description provided for @noActivityYet.
   ///
   /// In en, this message translates to:
-  /// **'Nothing recorded yet. Tap + to add your first transaction.'**
+  /// **'No activity yet. Tap + to record money coming in or spending.'**
   String get noActivityYet;
 
   /// No description provided for @setupBanner.
@@ -2521,19 +2695,19 @@ abstract class AppLocalizations {
   /// No description provided for @errInviteCode.
   ///
   /// In en, this message translates to:
-  /// **'Enter the invite code from the family owner — it looks like MHRI-4F2A.'**
+  /// **'Enter the invite code from the family owner - it looks like MHRI-4F2A.'**
   String get errInviteCode;
 
   /// No description provided for @errFamilyNameTaken.
   ///
   /// In en, this message translates to:
-  /// **'That family name is already taken — try another name.'**
+  /// **'That family name is already taken - try another name.'**
   String get errFamilyNameTaken;
 
   /// No description provided for @authErrEmailNotConfirmed.
   ///
   /// In en, this message translates to:
-  /// **'Check your inbox — tap the confirmation link first, then sign in.'**
+  /// **'Check your inbox - tap the confirmation link first, then sign in.'**
   String get authErrEmailNotConfirmed;
 
   /// No description provided for @authErrBadCredentials.
@@ -2545,19 +2719,19 @@ abstract class AppLocalizations {
   /// No description provided for @authErrAlreadyRegistered.
   ///
   /// In en, this message translates to:
-  /// **'An account with this email already exists — sign in instead.'**
+  /// **'An account with this email already exists - sign in instead.'**
   String get authErrAlreadyRegistered;
 
   /// No description provided for @authErrRateLimited.
   ///
   /// In en, this message translates to:
-  /// **'Too many attempts — wait a minute and try again.'**
+  /// **'Too many attempts - wait a minute and try again.'**
   String get authErrRateLimited;
 
   /// No description provided for @authErrNetwork.
   ///
   /// In en, this message translates to:
-  /// **'No connection — check your internet and try again.'**
+  /// **'No connection - check your internet and try again.'**
   String get authErrNetwork;
 
   /// No description provided for @authResend.
@@ -2569,7 +2743,7 @@ abstract class AppLocalizations {
   /// No description provided for @authResent.
   ///
   /// In en, this message translates to:
-  /// **'Confirmation email sent — check your inbox.'**
+  /// **'Confirmation email sent - check your inbox.'**
   String get authResent;
 
   /// No description provided for @mukandoOn.
@@ -2581,13 +2755,13 @@ abstract class AppLocalizations {
   /// No description provided for @mukandoEnableTitle.
   ///
   /// In en, this message translates to:
-  /// **'Mukando — rotating savings'**
+  /// **'Mukando - rotating savings'**
   String get mukandoEnableTitle;
 
   /// No description provided for @mukandoEnableSub.
   ///
   /// In en, this message translates to:
-  /// **'Save in turns with your family. Off by default — turn it on if your circle does rounds.'**
+  /// **'Save in turns with your family. Off by default - turn it on if your circle does rounds.'**
   String get mukandoEnableSub;
 
   /// No description provided for @mukandoEnableCta.
@@ -2617,13 +2791,13 @@ abstract class AppLocalizations {
   /// No description provided for @photoFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not upload the photo — check your connection and try again.'**
+  /// **'Could not upload the photo - check your connection and try again.'**
   String get photoFailed;
 
   /// No description provided for @photoSaved.
   ///
   /// In en, this message translates to:
-  /// **'Photo saved — your family will see it too.'**
+  /// **'Photo saved - your family will see it too.'**
   String get photoSaved;
 
   /// No description provided for @newSavingsGoal.
@@ -2671,7 +2845,7 @@ abstract class AppLocalizations {
   /// No description provided for @shoppingLogged.
   ///
   /// In en, this message translates to:
-  /// **'Shopping logged'**
+  /// **'No shopping to record'**
   String get shoppingLogged;
 
   /// No description provided for @loggedItem.
@@ -2679,6 +2853,990 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logged'**
   String get loggedItem;
+
+  /// No description provided for @syncDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync & data'**
+  String get syncDataTitle;
+
+  /// No description provided for @syncStateSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing…'**
+  String get syncStateSyncing;
+
+  /// No description provided for @syncStateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to retry'**
+  String get syncStateError;
+
+  /// No description provided for @syncStateOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline - changes save on this phone'**
+  String get syncStateOffline;
+
+  /// No description provided for @syncStateNeedsSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to sync'**
+  String get syncStateNeedsSignIn;
+
+  /// No description provided for @syncStateSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this phone'**
+  String get syncStateSaved;
+
+  /// No description provided for @syncNowBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get syncNowBtn;
+
+  /// No description provided for @syncLastSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sync'**
+  String get syncLastSync;
+
+  /// No description provided for @syncNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet'**
+  String get syncNever;
+
+  /// No description provided for @syncPendingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to sync'**
+  String get syncPendingLabel;
+
+  /// No description provided for @syncUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is saved and up to date'**
+  String get syncUpToDate;
+
+  /// No description provided for @syncErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last issue'**
+  String get syncErrorLabel;
+
+  /// No description provided for @syncWhereTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where your data lives'**
+  String get syncWhereTitle;
+
+  /// No description provided for @syncConnectedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Family cloud:'**
+  String get syncConnectedTo;
+
+  /// No description provided for @syncNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'This device only - no family cloud connected yet.'**
+  String get syncNotConnected;
+
+  /// No description provided for @syncBackupNote.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no separate backup to switch on. Every change is saved on this phone the moment you make it and syncs to the family cloud whenever you have data. Export a CSV below anytime for a copy you keep.'**
+  String get syncBackupNote;
+
+  /// No description provided for @previewBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Previewing as {name}'**
+  String previewBanner(Object name);
+
+  /// No description provided for @previewExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get previewExit;
+
+  /// No description provided for @resetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new password'**
+  String get resetTitle;
+
+  /// No description provided for @resetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You are signed in from the reset link - now pick a new password.'**
+  String get resetSubtitle;
+
+  /// No description provided for @resetNewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get resetNewLabel;
+
+  /// No description provided for @resetConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get resetConfirmLabel;
+
+  /// No description provided for @resetMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The two passwords do not match'**
+  String get resetMismatch;
+
+  /// No description provided for @resetRuleLength.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get resetRuleLength;
+
+  /// No description provided for @resetRuleMix.
+  ///
+  /// In en, this message translates to:
+  /// **'Has a letter and a number'**
+  String get resetRuleMix;
+
+  /// No description provided for @resetRuleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 8 characters, with a letter and a number.'**
+  String get resetRuleHint;
+
+  /// No description provided for @resetCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get resetCta;
+
+  /// No description provided for @resetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed - sign in with your new password'**
+  String get resetSuccess;
+
+  /// No description provided for @resetShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show or hide password'**
+  String get resetShow;
+
+  /// No description provided for @resetExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This link has expired'**
+  String get resetExpiredTitle;
+
+  /// No description provided for @resetExpiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset links work once and only for a short time. Send a fresh one and try again.'**
+  String get resetExpiredBody;
+
+  /// No description provided for @resetSendNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a new reset link'**
+  String get resetSendNew;
+
+  /// No description provided for @listDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete item'**
+  String get listDelete;
+
+  /// No description provided for @listDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" removed from the list'**
+  String listDeleted(Object name);
+
+  /// No description provided for @memberAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create member account'**
+  String get memberAccountTitle;
+
+  /// No description provided for @memberAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up an account for someone who should join this family immediately.'**
+  String get memberAccountSubtitle;
+
+  /// No description provided for @memberAccountAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account for member'**
+  String get memberAccountAction;
+
+  /// No description provided for @memberAccountSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'They can sign in immediately without using an invite code.'**
+  String get memberAccountSheetSubtitle;
+
+  /// No description provided for @memberAccountName.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred name'**
+  String get memberAccountName;
+
+  /// No description provided for @memberAccountEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get memberAccountEmail;
+
+  /// No description provided for @memberAccountTemporaryPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary password'**
+  String get memberAccountTemporaryPassword;
+
+  /// No description provided for @memberAccountPasswordRule.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 10 characters, with a letter and a number'**
+  String get memberAccountPasswordRule;
+
+  /// No description provided for @memberAccountRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Family role'**
+  String get memberAccountRole;
+
+  /// No description provided for @memberAccountSecurityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the temporary password privately. Ask them to use Forgot password to choose their own password after signing in.'**
+  String get memberAccountSecurityNote;
+
+  /// No description provided for @memberAccountCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create member account'**
+  String get memberAccountCreate;
+
+  /// No description provided for @memberAccountCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Member account created and added to your family.'**
+  String get memberAccountCreated;
+
+  /// No description provided for @memberAccountBadName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter their preferred name.'**
+  String get memberAccountBadName;
+
+  /// No description provided for @memberAccountEmailExists.
+  ///
+  /// In en, this message translates to:
+  /// **'That email already has an account. Use the regular invite flow instead.'**
+  String get memberAccountEmailExists;
+
+  /// No description provided for @memberAccountOwnerRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the family owner can create another parent or adult account.'**
+  String get memberAccountOwnerRole;
+
+  /// No description provided for @memberAccountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the member account. Check your connection and try again.'**
+  String get memberAccountFailed;
+
+  /// No description provided for @inviteNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New invite'**
+  String get inviteNew;
+
+  /// No description provided for @inviteEmailOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Their email (optional - only they can use it)'**
+  String get inviteEmailOptional;
+
+  /// No description provided for @inviteCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create invite'**
+  String get inviteCreate;
+
+  /// No description provided for @inviteCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this code or QR to them'**
+  String get inviteCreated;
+
+  /// No description provided for @inviteScanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'They scan the QR with their camera, or tap the link - it opens this app ready to join.'**
+  String get inviteScanHint;
+
+  /// No description provided for @inviteShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get inviteShare;
+
+  /// No description provided for @inviteShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Join our family on Mhuri - your invite:'**
+  String get inviteShareText;
+
+  /// No description provided for @invitePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Open invites'**
+  String get invitePending;
+
+  /// No description provided for @inviteNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No open invites.'**
+  String get inviteNone;
+
+  /// No description provided for @inviteHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier invites'**
+  String get inviteHistory;
+
+  /// No description provided for @inviteAcceptedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{code} - joined ({role})'**
+  String inviteAcceptedLabel(Object code, Object role);
+
+  /// No description provided for @inviteRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get inviteRevoke;
+
+  /// No description provided for @inviteRevokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke invite {code}? They will not be able to join with it.'**
+  String inviteRevokeBody(Object code);
+
+  /// No description provided for @inviteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the invite - check your connection and try again.'**
+  String get inviteFailed;
+
+  /// No description provided for @inviteTooMany.
+  ///
+  /// In en, this message translates to:
+  /// **'There are already 5 open invites - revoke one first.'**
+  String get inviteTooMany;
+
+  /// No description provided for @inviteOwnerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the family owner manages invites.'**
+  String get inviteOwnerOnly;
+
+  /// No description provided for @inviteLinkReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite {code} is waiting - join the family below.'**
+  String inviteLinkReady(Object code);
+
+  /// No description provided for @inviteAlreadyInFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'You are already in a family - invites are for joining a new one.'**
+  String get inviteAlreadyInFamily;
+
+  /// No description provided for @makeOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Make owner'**
+  String get makeOwner;
+
+  /// No description provided for @makeOwnerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Make {name} the family owner? You become a regular adult member and they manage invites and settings.'**
+  String makeOwnerBody(Object name);
+
+  /// No description provided for @makeOwnerDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is now the family owner'**
+  String makeOwnerDone(Object name);
+
+  /// No description provided for @makeOwnerFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not transfer ownership - check your connection and try again.'**
+  String get makeOwnerFailed;
+
+  /// No description provided for @roleParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent'**
+  String get roleParent;
+
+  /// No description provided for @roleChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Child'**
+  String get roleChild;
+
+  /// No description provided for @syncProblemsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes that need you'**
+  String get syncProblemsTitle;
+
+  /// No description provided for @syncProblemsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These changes could not reach the family cloud after several tries. Retry them, or discard them - nothing is removed without your say-so.'**
+  String get syncProblemsBody;
+
+  /// No description provided for @syncRetryThis.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get syncRetryThis;
+
+  /// No description provided for @syncDiscardThis.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get syncDiscardThis;
+
+  /// No description provided for @syncDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this change?'**
+  String get syncDiscardTitle;
+
+  /// No description provided for @syncDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{what}” stays only on this phone and will never reach the family cloud. Discard it?'**
+  String syncDiscardBody(Object what);
+
+  /// No description provided for @syncTries.
+  ///
+  /// In en, this message translates to:
+  /// **'{tries} tries so far'**
+  String syncTries(Object tries);
+
+  /// No description provided for @syncKindTx.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get syncKindTx;
+
+  /// No description provided for @syncKindEnvelope.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get syncKindEnvelope;
+
+  /// No description provided for @syncKindGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings goal'**
+  String get syncKindGoal;
+
+  /// No description provided for @syncKindItem.
+  ///
+  /// In en, this message translates to:
+  /// **'List item'**
+  String get syncKindItem;
+
+  /// No description provided for @syncKindRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get syncKindRequest;
+
+  /// No description provided for @syncKindOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get syncKindOther;
+
+  /// No description provided for @setupInviteCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite copied.'**
+  String get setupInviteCopied;
+
+  /// No description provided for @setupBadEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get setupBadEmail;
+
+  /// No description provided for @setupInviteText.
+  ///
+  /// In en, this message translates to:
+  /// **'Join {family} on Mhuri with invite code {code}. Suggested role: {role}.'**
+  String setupInviteText(Object family, Object code, Object role);
+
+  /// No description provided for @setupInviteSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Join {family} on Mhuri'**
+  String setupInviteSubject(Object family);
+
+  /// No description provided for @setupTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'One family. One plan.'**
+  String get setupTagline;
+
+  /// No description provided for @setupPhotoOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Add profile photo (optional)'**
+  String get setupPhotoOptional;
+
+  /// No description provided for @setupHaveCode.
+  ///
+  /// In en, this message translates to:
+  /// **'I have an invite code'**
+  String get setupHaveCode;
+
+  /// No description provided for @setupCreateInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a family instead'**
+  String get setupCreateInstead;
+
+  /// No description provided for @setupCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get setupCopy;
+
+  /// No description provided for @setupScanToJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to join'**
+  String get setupScanToJoin;
+
+  /// No description provided for @setupCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your family'**
+  String get setupCreateTitle;
+
+  /// No description provided for @setupCreateSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what your family calls you.'**
+  String get setupCreateSub;
+
+  /// No description provided for @setupPreferredName.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred name'**
+  String get setupPreferredName;
+
+  /// No description provided for @setupFamilyNameField.
+  ///
+  /// In en, this message translates to:
+  /// **'Family name (for example, The Moyos)'**
+  String get setupFamilyNameField;
+
+  /// No description provided for @setupCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary currency'**
+  String get setupCurrency;
+
+  /// No description provided for @setupJoinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join your family'**
+  String get setupJoinTitle;
+
+  /// No description provided for @setupJoinSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the code shared by a family member.'**
+  String get setupJoinSub;
+
+  /// No description provided for @setupInviteSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring everyone into the same family space.'**
+  String get setupInviteSub;
+
+  /// No description provided for @setupRoleSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'The role is included as a suggestion. Confirm it in Family settings after they join.'**
+  String get setupRoleSuggestion;
+
+  /// No description provided for @setupSendInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Send invite'**
+  String get setupSendInvite;
+
+  /// No description provided for @setupContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue  →'**
+  String get setupContinue;
+
+  /// No description provided for @setupInviteLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite later'**
+  String get setupInviteLater;
+
+  /// No description provided for @setupPermsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set permissions'**
+  String get setupPermsTitle;
+
+  /// No description provided for @setupPermsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended access is ready. You can change it later in Family settings.'**
+  String get setupPermsSub;
+
+  /// No description provided for @setupPermWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'View own wallet'**
+  String get setupPermWallet;
+
+  /// No description provided for @setupPermTx.
+  ///
+  /// In en, this message translates to:
+  /// **'Log transactions'**
+  String get setupPermTx;
+
+  /// No description provided for @setupPermBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'View family budget'**
+  String get setupPermBudget;
+
+  /// No description provided for @setupFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish setup'**
+  String get setupFinish;
+
+  /// No description provided for @setupStepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {n} of 3'**
+  String setupStepOf(Object n);
+
+  /// No description provided for @deleteWhatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens when you delete'**
+  String get deleteWhatTitle;
+
+  /// No description provided for @deleteWhatOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'You are the family owner: the whole family space is deleted - every account, budget, transaction and list, for everyone. This cannot be undone.'**
+  String get deleteWhatOwner;
+
+  /// No description provided for @deleteWhatMember.
+  ///
+  /// In en, this message translates to:
+  /// **'You leave the family. Your membership ends, your photo and email are removed, and your past transactions remain but show as “Former member”. Everyone else keeps their data.'**
+  String get deleteWhatMember;
+
+  /// No description provided for @deleteWhatSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Every sign-in on every device is signed out.'**
+  String get deleteWhatSessions;
+
+  /// No description provided for @deleteStepLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaving the family…'**
+  String get deleteStepLeave;
+
+  /// No description provided for @deleteStepAnonymize.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing your personal details…'**
+  String get deleteStepAnonymize;
+
+  /// No description provided for @deleteStepSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoking sign-ins…'**
+  String get deleteStepSessions;
+
+  /// No description provided for @deleteStepIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account…'**
+  String get deleteStepIdentity;
+
+  /// No description provided for @discardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get discardChangesTitle;
+
+  /// No description provided for @discardChangesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not saved yet. Leave anyway?'**
+  String get discardChangesBody;
+
+  /// No description provided for @stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get stay;
+
+  /// No description provided for @leave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leave;
+
+  /// No description provided for @btnCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get btnCreate;
+
+  /// No description provided for @btnJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get btnJoin;
+
+  /// No description provided for @hintFamilyExample.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. The Taylor Family'**
+  String get hintFamilyExample;
+
+  /// No description provided for @transferFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get transferFrom;
+
+  /// No description provided for @transferTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get transferTo;
+
+  /// No description provided for @transferWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why?'**
+  String get transferWhy;
+
+  /// No description provided for @listNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get listNameLabel;
+
+  /// No description provided for @listQtyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get listQtyLabel;
+
+  /// No description provided for @kidsPinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New PIN (4–6 digits)'**
+  String get kidsPinHint;
+
+  /// No description provided for @kidsPinUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids Mode PIN updated ✓'**
+  String get kidsPinUpdated;
+
+  /// No description provided for @setupEnterBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your preferred name and family name.'**
+  String get setupEnterBoth;
+
+  /// No description provided for @setupNeedsConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'A connection is required to create your family.'**
+  String get setupNeedsConnection;
+
+  /// No description provided for @setupNameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'That family name is already taken. Try another.'**
+  String get setupNameTaken;
+
+  /// No description provided for @setupEnterJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your preferred name and invite code.'**
+  String get setupEnterJoin;
+
+  /// No description provided for @avatarError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update that photo. Try another one.'**
+  String get avatarError;
+
+  /// No description provided for @invitesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load invites. Pull to refresh.'**
+  String get invitesLoadFailed;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All ({n})'**
+  String filterAll(Object n);
+
+  /// No description provided for @envLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment'**
+  String get envLabel;
+
+  /// No description provided for @syncStateNeedsSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your family to sync'**
+  String get syncStateNeedsSetup;
+
+  /// No description provided for @tourTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A quick tour'**
+  String get tourTitle;
+
+  /// No description provided for @tourPoolTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Know what is available'**
+  String get tourPoolTitle;
+
+  /// No description provided for @tourPoolBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Home shows your family pool, recent activity and the budgets that need attention.'**
+  String get tourPoolBody;
+
+  /// No description provided for @tourPlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Give every dollar a job'**
+  String get tourPlanTitle;
+
+  /// No description provided for @tourPlanBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Budgets to plan spending, Savings for goals, and Shopping for the shared family list.'**
+  String get tourPlanBody;
+
+  /// No description provided for @tourAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add money in seconds'**
+  String get tourAddTitle;
+
+  /// No description provided for @tourAddBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Start here. Add money you\'ve spent or received.'**
+  String get tourAddBody;
+
+  /// No description provided for @reminderBills.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills due (3 days before)'**
+  String get reminderBills;
+
+  /// No description provided for @reminderBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget running low'**
+  String get reminderBudget;
+
+  /// No description provided for @reminderKids.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids: requests & chore approvals'**
+  String get reminderKids;
+
+  /// No description provided for @reminderCircle.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings group reminder (Sunday)'**
+  String get reminderCircle;
+
+  /// No description provided for @reminderGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal milestones'**
+  String get reminderGoals;
+
+  /// No description provided for @reminderMeeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Family meeting day'**
+  String get reminderMeeting;
+
+  /// No description provided for @reminderDigest.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly digest (Sunday 6pm)'**
+  String get reminderDigest;
+
+  /// No description provided for @notificationsDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are disabled for Mhuri. Enable them in your device settings.'**
+  String get notificationsDenied;
+
+  /// No description provided for @testNotificationSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Test notification sent.'**
+  String get testNotificationSent;
+
+  /// No description provided for @testNotificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the test notification.'**
+  String get testNotificationFailed;
 }
 
 class _AppLocalizationsDelegate
@@ -2726,448 +3884,4 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       'an issue with the localizations generation tool. Please file an issue '
       'on GitHub with a reproducible sample app and the gen-l10n configuration '
       'that was used.');
-
-  /// No description provided for @syncDataTitle.
-  String get syncDataTitle;
-
-  /// No description provided for @syncStateSyncing.
-  String get syncStateSyncing;
-
-  /// No description provided for @syncStateError.
-  String get syncStateError;
-
-  /// No description provided for @syncStateOffline.
-  String get syncStateOffline;
-
-  /// No description provided for @syncStateNeedsSignIn.
-  String get syncStateNeedsSignIn;
-
-  /// No description provided for @syncStateSaved.
-  String get syncStateSaved;
-
-  /// No description provided for @syncNowBtn.
-  String get syncNowBtn;
-
-  /// No description provided for @syncLastSync.
-  String get syncLastSync;
-
-  /// No description provided for @syncNever.
-  String get syncNever;
-
-  /// No description provided for @syncPendingLabel.
-  String get syncPendingLabel;
-
-  /// No description provided for @syncUpToDate.
-  String get syncUpToDate;
-
-  /// No description provided for @syncErrorLabel.
-  String get syncErrorLabel;
-
-  /// No description provided for @syncWhereTitle.
-  String get syncWhereTitle;
-
-  /// No description provided for @syncConnectedTo.
-  String get syncConnectedTo;
-
-  /// No description provided for @syncNotConnected.
-  String get syncNotConnected;
-
-  /// No description provided for @syncBackupNote.
-  String get syncBackupNote;
-
-  /// No description provided for @previewExit.
-  String get previewExit;
-
-  /// No description provided for @previewBanner.
-  String previewBanner(Object name);
-
-  /// No description provided for @resetTitle.
-  String get resetTitle;
-
-  /// No description provided for @resetSubtitle.
-  String get resetSubtitle;
-
-  /// No description provided for @resetNewLabel.
-  String get resetNewLabel;
-
-  /// No description provided for @resetConfirmLabel.
-  String get resetConfirmLabel;
-
-  /// No description provided for @resetMismatch.
-  String get resetMismatch;
-
-  /// No description provided for @resetRuleLength.
-  String get resetRuleLength;
-
-  /// No description provided for @resetRuleMix.
-  String get resetRuleMix;
-
-  /// No description provided for @resetRuleHint.
-  String get resetRuleHint;
-
-  /// No description provided for @resetCta.
-  String get resetCta;
-
-  /// No description provided for @resetSuccess.
-  String get resetSuccess;
-
-  /// No description provided for @resetShow.
-  String get resetShow;
-
-  /// No description provided for @resetExpiredTitle.
-  String get resetExpiredTitle;
-
-  /// No description provided for @resetExpiredBody.
-  String get resetExpiredBody;
-
-  /// No description provided for @resetSendNew.
-  String get resetSendNew;
-
-  /// No description provided for @listDelete.
-  String get listDelete;
-
-  /// No description provided for @listDeleted.
-  String listDeleted(Object name);
-
-  /// No description provided for @roleAdult.
-  String get roleAdult;
-
-  /// No description provided for @roleTeen.
-  String get roleTeen;
-
-  /// No description provided for @roleViewer.
-  String get roleViewer;
-
-  /// No description provided for @inviteCode.
-  String get inviteCode;
-
-  /// No description provided for @inviteTitle.
-  String get inviteTitle;
-
-  /// No description provided for @inviteHowTo.
-  String get inviteHowTo;
-
-  /// No description provided for @inviteNew.
-  String get inviteNew;
-
-  /// No description provided for @inviteEmailOptional.
-  String get inviteEmailOptional;
-
-  /// No description provided for @inviteCreate.
-  String get inviteCreate;
-
-  /// No description provided for @inviteCreated.
-  String get inviteCreated;
-
-  /// No description provided for @inviteScanHint.
-  String get inviteScanHint;
-
-  /// No description provided for @inviteShare.
-  String get inviteShare;
-
-  /// No description provided for @inviteShareText.
-  String get inviteShareText;
-
-  /// No description provided for @invitePending.
-  String get invitePending;
-
-  /// No description provided for @inviteNone.
-  String get inviteNone;
-
-  /// No description provided for @inviteHistory.
-  String get inviteHistory;
-
-  /// No description provided for @inviteRevoke.
-  String get inviteRevoke;
-
-  /// No description provided for @inviteFailed.
-  String get inviteFailed;
-
-  /// No description provided for @inviteTooMany.
-  String get inviteTooMany;
-
-  /// No description provided for @inviteOwnerOnly.
-  String get inviteOwnerOnly;
-
-  /// No description provided for @inviteAlreadyInFamily.
-  String get inviteAlreadyInFamily;
-
-  /// No description provided for @makeOwner.
-  String get makeOwner;
-
-  /// No description provided for @makeOwnerFailed.
-  String get makeOwnerFailed;
-
-  /// No description provided for @roleParent.
-  String get roleParent;
-
-  /// No description provided for @roleChild.
-  String get roleChild;
-
-  /// No description provided for @inviteAcceptedLabel.
-  String inviteAcceptedLabel(Object code, Object role);
-
-  /// No description provided for @makeOwnerBody.
-  String makeOwnerBody(Object name);
-
-  /// No description provided for @makeOwnerDone.
-  String makeOwnerDone(Object name);
-
-  /// No description provided for @inviteRevokeBody.
-  String inviteRevokeBody(Object code);
-
-  /// No description provided for @inviteLinkReady.
-  String inviteLinkReady(Object code);
-
-  /// No description provided for @syncProblemsTitle.
-  String get syncProblemsTitle;
-
-  /// No description provided for @syncProblemsBody.
-  String get syncProblemsBody;
-
-  /// No description provided for @syncRetryThis.
-  String get syncRetryThis;
-
-  /// No description provided for @syncDiscardThis.
-  String get syncDiscardThis;
-
-  /// No description provided for @syncDiscardTitle.
-  String get syncDiscardTitle;
-
-  /// No description provided for @syncKindTx.
-  String get syncKindTx;
-
-  /// No description provided for @syncKindEnvelope.
-  String get syncKindEnvelope;
-
-  /// No description provided for @syncKindGoal.
-  String get syncKindGoal;
-
-  /// No description provided for @syncKindItem.
-  String get syncKindItem;
-
-  /// No description provided for @syncKindRequest.
-  String get syncKindRequest;
-
-  /// No description provided for @syncKindOther.
-  String get syncKindOther;
-
-  /// No description provided for @syncDiscardBody.
-  String syncDiscardBody(Object what);
-
-  /// No description provided for @syncTries.
-  String syncTries(Object tries);
-
-  /// No description provided for @setupInviteCopied.
-  String get setupInviteCopied;
-
-  /// No description provided for @setupBadEmail.
-  String get setupBadEmail;
-
-  /// No description provided for @setupTagline.
-  String get setupTagline;
-
-  /// No description provided for @setupPhotoOptional.
-  String get setupPhotoOptional;
-
-  /// No description provided for @setupHaveCode.
-  String get setupHaveCode;
-
-  /// No description provided for @setupCreateInstead.
-  String get setupCreateInstead;
-
-  /// No description provided for @setupCopy.
-  String get setupCopy;
-
-  /// No description provided for @setupScanToJoin.
-  String get setupScanToJoin;
-
-  /// No description provided for @setupCreateTitle.
-  String get setupCreateTitle;
-
-  /// No description provided for @setupCreateSub.
-  String get setupCreateSub;
-
-  /// No description provided for @setupPreferredName.
-  String get setupPreferredName;
-
-  /// No description provided for @setupFamilyNameField.
-  String get setupFamilyNameField;
-
-  /// No description provided for @setupCurrency.
-  String get setupCurrency;
-
-  /// No description provided for @setupJoinTitle.
-  String get setupJoinTitle;
-
-  /// No description provided for @setupJoinSub.
-  String get setupJoinSub;
-
-  /// No description provided for @setupInviteTitle.
-  String get setupInviteTitle;
-
-  /// No description provided for @setupInviteSub.
-  String get setupInviteSub;
-
-  /// No description provided for @setupRoleSuggestion.
-  String get setupRoleSuggestion;
-
-  /// No description provided for @setupSendInvite.
-  String get setupSendInvite;
-
-  /// No description provided for @setupContinue.
-  String get setupContinue;
-
-  /// No description provided for @setupInviteLater.
-  String get setupInviteLater;
-
-  /// No description provided for @setupPermsTitle.
-  String get setupPermsTitle;
-
-  /// No description provided for @setupPermsSub.
-  String get setupPermsSub;
-
-  /// No description provided for @setupPermWallet.
-  String get setupPermWallet;
-
-  /// No description provided for @setupPermTx.
-  String get setupPermTx;
-
-  /// No description provided for @setupPermBudget.
-  String get setupPermBudget;
-
-  /// No description provided for @setupFinish.
-  String get setupFinish;
-
-  /// No description provided for @deleteWhatTitle.
-  String get deleteWhatTitle;
-
-  /// No description provided for @deleteWhatOwner.
-  String get deleteWhatOwner;
-
-  /// No description provided for @deleteWhatMember.
-  String get deleteWhatMember;
-
-  /// No description provided for @deleteWhatSessions.
-  String get deleteWhatSessions;
-
-  /// No description provided for @deleteStepLeave.
-  String get deleteStepLeave;
-
-  /// No description provided for @deleteStepAnonymize.
-  String get deleteStepAnonymize;
-
-  /// No description provided for @deleteStepSessions.
-  String get deleteStepSessions;
-
-  /// No description provided for @deleteStepIdentity.
-  String get deleteStepIdentity;
-
-  /// No description provided for @setupInviteText.
-  String setupInviteText(Object family, Object code, Object role);
-
-  /// No description provided for @setupInviteSubject.
-  String setupInviteSubject(Object family);
-
-  /// No description provided for @setupStepOf.
-  String setupStepOf(Object n);
-
-  /// No description provided for @kidsGoalSaved.
-  String kidsGoalSaved(Object goal, Object pct);
-
-  /// No description provided for @kidsHi.
-  String kidsHi(Object name);
-
-  /// No description provided for @kidsWishItem.
-  String kidsWishItem(Object amount);
-
-  /// No description provided for @loginSentCode.
-  String loginSentCode(Object phone);
-
-  /// No description provided for @recSkipped.
-  String recSkipped(Object date);
-
-  /// No description provided for @safeToSpend.
-  String safeToSpend(Object amount);
-
-  /// No description provided for @scheduledOn.
-  String scheduledOn(Object from, Object to);
-
-  /// No description provided for @setCurrencySub.
-  String setCurrencySub(Object rate);
-
-  /// No description provided for @syncPill.
-  String syncPill(Object count);
-
-  /// No description provided for @teenSplitHint.
-  String teenSplitHint(Object amount);
-
-  /// No description provided for @discardChangesTitle.
-  String get discardChangesTitle;
-
-  /// No description provided for @discardChangesBody.
-  String get discardChangesBody;
-
-  /// No description provided for @stay.
-  String get stay;
-
-  /// No description provided for @leave.
-  String get leave;
-
-  /// No description provided for @btnCreate.
-  String get btnCreate;
-
-  /// No description provided for @btnJoin.
-  String get btnJoin;
-
-  /// No description provided for @hintFamilyExample.
-  String get hintFamilyExample;
-
-  /// No description provided for @transferFrom.
-  String get transferFrom;
-
-  /// No description provided for @transferTo.
-  String get transferTo;
-
-  /// No description provided for @transferWhy.
-  String get transferWhy;
-
-  /// No description provided for @listNameLabel.
-  String get listNameLabel;
-
-  /// No description provided for @listQtyLabel.
-  String get listQtyLabel;
-
-  /// No description provided for @kidsPinHint.
-  String get kidsPinHint;
-
-  /// No description provided for @kidsPinUpdated.
-  String get kidsPinUpdated;
-
-  /// No description provided for @setupEnterBoth.
-  String get setupEnterBoth;
-
-  /// No description provided for @setupNeedsConnection.
-  String get setupNeedsConnection;
-
-  /// No description provided for @setupNameTaken.
-  String get setupNameTaken;
-
-  /// No description provided for @setupEnterJoin.
-  String get setupEnterJoin;
-
-  /// No description provided for @avatarError.
-  String get avatarError;
-
-  /// No description provided for @invitesLoadFailed.
-  String get invitesLoadFailed;
-
-  /// No description provided for @filterAll.
-  String filterAll(Object n);
-
-  /// No description provided for @envLabel.
-  String get envLabel;
-
-  /// No description provided for @syncStateNeedsSetup.
-  String get syncStateNeedsSetup;
 }

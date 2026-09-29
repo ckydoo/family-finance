@@ -1,10 +1,10 @@
 -- 005: profile pictures, unique family names, mukando groundwork (2026-09-22)
--- Idempotent — safe to re-run. Run in the Supabase SQL editor after 004.
+-- Idempotent - safe to re-run. Run in the Supabase SQL editor after 004.
 --
--- 1. user_profile.avatar_url  — public URL of the member's picture
--- 2. storage bucket 'avatars' — public read, per-user write folders
--- 3. family names unique      — no two families with the same name
--- 4. family_name_taken()      — inline availability check for the create form
+-- 1. user_profile.avatar_url  - public URL of the member's picture
+-- 2. storage bucket 'avatars' - public read, per-user write folders
+-- 3. family names unique      - no two families with the same name
+-- 4. family_name_taken()      - inline availability check for the create form
 
 -- ── 1. avatar_url on user_profile ───────────────────────────────────────────
 alter table public.user_profile
@@ -47,7 +47,7 @@ create policy "avatar_owner_delete" on storage.objects
 
 -- ── 3. unique family names ──────────────────────────────────────────────────
 -- Case/space-insensitive: "Moyo Family" == "moyo  family ".
--- NOTE: if old test rows already share a name this index creation fails —
+-- NOTE: if old test rows already share a name this index creation fails -
 -- delete or rename the duplicates first (fresh live DBs are unaffected).
 create unique index if not exists family_space_name_uni
   on public.family_space (lower(btrim(name)));

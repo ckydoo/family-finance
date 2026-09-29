@@ -1,11 +1,11 @@
 -- 010: REAL INVITATIONS + OWNERSHIP TRANSFER (Phase 2).
 --
 -- Invitations become unique, role-bound, expiring, revocable records instead
--- of the one static family code (that code keeps working — join_space is
--- untouched — so nothing breaks; the new flow adds control on top).
+-- of the one static family code (that code keeps working - join_space is
+-- untouched - so nothing breaks; the new flow adds control on top).
 --
 -- Anti-enumeration: join_invite answers INVALID_CODE for not-found, expired,
--- revoked, already-used AND email-mismatch — a guessed or dead code is
+-- revoked, already-used AND email-mismatch - a guessed or dead code is
 -- indistinguishable. Codes are 6 chars (~16.7M space) and never reused.
 -- No uncontrolled reuse: an invite is SINGLE-USE (accepted_* set) and each
 -- space can hold at most 5 unredeemed invites.
@@ -148,7 +148,7 @@ declare
 begin
   if v_user is null then raise exception 'NOT_AUTHENTICATED'; end if;
 
-  -- Already in a family? Joining again would orphan shared data — refuse.
+  -- Already in a family? Joining again would orphan shared data - refuse.
   if exists (select 1 from membership
               where user_id = v_user and invite_status = 'active') then
     raise exception 'ALREADY_IN_FAMILY';
@@ -232,7 +232,7 @@ begin
 
   -- The family's static code lives on the owner's membership row; it moves
   -- with the crown so join_space (old clients, printed papers) keeps working.
-  -- (Clear it on the way out — the unique index allows it on one row only.)
+  -- (Clear it on the way out - the unique index allows it on one row only.)
   select invite_code into v_code from membership
    where space_id = v_space and user_id = v_user;
 

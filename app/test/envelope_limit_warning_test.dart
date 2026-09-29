@@ -48,7 +48,7 @@ void main() {
 
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    expect(find.text('This envelope will be over budget'), findsOneWidget);
+    expect(find.text('This budget will be over its limit'), findsOneWidget);
     expect(state.txs, hasLength(before));
 
     await tester.tap(find.text('Adjust amount'));

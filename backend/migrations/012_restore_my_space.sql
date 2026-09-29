@@ -1,7 +1,7 @@
 -- 012: REINSTALL RECONCILIATION.
 --
 -- A reinstall (or a second phone) wipes local kv: no space_id, so the app
--- shows family setup and the member would have to re-enter the code — or
+-- shows family setup and the member would have to re-enter the code - or
 -- worse, create a duplicate family. restore_my_space() answers "am I still
 -- in a family?" using the auth token alone: the active membership (if any)
 -- with the family's name and the static code. The engine adopts it and

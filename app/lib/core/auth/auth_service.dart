@@ -68,7 +68,7 @@ abstract class AuthService {
   Future<bool> adoptRecoverySession(String accessToken, String refreshToken);
 
   /// Best-effort fresh access token for the sync layer (null when the
-  /// session cannot be renewed — the caller must treat the user as signed
+  /// session cannot be renewed - the caller must treat the user as signed
   /// out rather than sending an empty credential).
   Future<String?> refreshAccessToken();
 
@@ -76,4 +76,7 @@ abstract class AuthService {
 
   /// Permanently deletes the authenticated account and its server identity.
   Future<AuthResult> deleteAccount();
+
+  /// Confirms password before sensitive operations like account deletion.
+  Future<bool> reauthenticate(String password);
 }

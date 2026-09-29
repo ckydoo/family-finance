@@ -5,9 +5,9 @@ actual codebase. Fill the bracketed items before submitting.
 
 ## Listing copy
 
-- **App name**: Mhuri Hub — Family Money
+- **App name**: Mhuri Hub - Family Money
 - **Short description (80 chars)**: Budgets, savings circles (ROSCA), shopping
-  lists & kids' money habits — one family, one plan.
+  lists & kids' money habits - one family, one plan.
 - **Full description**: built from PRODUCT_SPEC's promise: offline-first
   family budgets in USD and ZiG, shared envelopes, savings goals and ROSCA
   circles, shopping lists that sync over 2G, bill reminders that fire
@@ -17,13 +17,13 @@ actual codebase. Fill the bracketed items before submitting.
 - **Localizations at launch**: en (sn/nd copy is in-app; store listing
   English first, add sn/nd store text when reviewed by native speakers).
 
-## Data safety form (Play) — mapped to reality
+## Data safety form (Play) - mapped to reality
 
 | Question | Answer | Because |
 |---|---|---|
 | Does your app collect or share user data? | Collects, does **not** share | RLS keeps data in the family's own space; no third parties |
 | Data collected | Email, name, profile photo (optional), user financial content, app activity (sync events) | see PRIVACY_POLICY.md table |
-| Purpose | App functionality, account management | — |
+| Purpose | App functionality, account management | - |
 | Encrypted in transit | Yes | Supabase HTTPS/TLS everywhere |
 | Users can request deletion | Yes | In-app: Settings → account → Delete (typed confirmation) |
 | Committed to Play Families policy? | **Yes** if kids' mode is advertised | kids use a parent's device + PIN; no kid PII collected |
@@ -31,17 +31,17 @@ actual codebase. Fill the bracketed items before submitting.
 ## Content rating questionnaire
 
 No violence, gambling or user-generated sharing beyond the family space.
-The savings circle (ROSCA) is a family savings arrangement, not betting —
+The savings circle (ROSCA) is a family savings arrangement, not betting -
 answer "no" to gambling.
 
 ## Screenshots to capture (device, before submission)
 
-1. Home — safe-to-spend + recent activity
-2. Budgets — envelope rings mid-month
-3. Savings — goal + circle (ROSCA) turn view
-4. Lists — shared shopping list
-5. Family — members with roles
-6. Kids Mode — child's own screen
+1. Home - safe-to-spend + recent activity
+2. Budgets - envelope rings mid-month
+3. Savings - goal + circle (ROSCA) turn view
+4. Lists - shared shopping list
+5. Family - members with roles
+6. Kids Mode - child's own screen
 Take phone + 7" tablet sets, light theme, real-looking but **demo-free**
 content (use your own family's test space, blur any real names you would
 not publish).

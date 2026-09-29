@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../core/notifications/reminders.dart';
 import '../../core/state/app_state.dart';
-import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ui.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 /// Home bell (§7.5) → what will actually notify on this device.
 void showRemindersSheet(BuildContext context) {
-  showModalBottomSheet<void>(
+  showMhuriSheet<void>(
     context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
     builder: (context) => const _RemindersSheet(),
   );
 }
@@ -22,70 +21,37 @@ class _RemindersSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final plan = s.planReminders();
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 520),
-      decoration: BoxDecoration(
-        color: context.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.inkSoft.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
+    final l10n = AppLocalizations.of(context)!;
+    final subtitle = s.notifyEnabled
+        ? l10n.scheduledOn(_hh(s.quietStart), _hh(s.quietEnd))
+        : l10n.remindersOff;
+
+    return MhuriSheetShell(
+      title: l10n.remindersTitle,
+      subtitle: subtitle,
+      child: !s.notifyEnabled
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  l10n.remindersOff,
+                  style: TextStyle(color: context.inkSoft),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              AppLocalizations.of(context)!.remindersTitle,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: context.ink,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              s.notifyEnabled
-                  ? AppLocalizations.of(context)!
-                      .scheduledOn(_hh(s.quietStart), _hh(s.quietEnd))
-                  : AppLocalizations.of(context)!.remindersOff,
-              style: TextStyle(fontSize: 12, color: context.inkSoft),
-            ),
-            const SizedBox(height: 12),
-            if (!s.notifyEnabled)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.remindersOff,
-                    style: TextStyle(color: context.inkSoft),
+            )
+          : plan.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      l10n.nothingComing,
+                      style: TextStyle(color: context.inkSoft),
+                    ),
                   ),
-                ),
-              )
-            else if (plan.isEmpty)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.nothingComing,
-                    style: TextStyle(color: context.inkSoft),
-                  ),
-                ),
-              )
-            else
-              Flexible(
-                child: ListView.builder(
+                )
+              : ListView.builder(
                   shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: plan.length,
                   itemBuilder: (context, i) {
                     final r = plan[i];
@@ -120,10 +86,6 @@ class _RemindersSheet extends StatelessWidget {
                     );
                   },
                 ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

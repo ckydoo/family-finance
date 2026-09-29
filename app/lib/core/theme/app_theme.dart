@@ -1,12 +1,13 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // ── Design tokens (see PRODUCT_SPEC.md §6.3) ────────────────────────────────
-const Color kPrimary = Color(0xFF0E7C66); // deep teal — trust/growth
+const Color kPrimary = Color(0xFF0E7C66); // deep teal - trust/growth
 const Color kPrimaryDark = Color(0xFF0A5A4B);
 const Color kPrimarySoft = Color(0xFFE3F0EC); // teal wash (containers, chips)
-const Color kAccent = Color(0xFFF4A81D); // warm amber — action
+const Color kAccent = Color(0xFFF4A81D); // warm amber - action
 const Color kAccentSoft = Color(0xFFFCF1DC); // amber wash
 const Color kBg = Color(0xFFF6F5F1); // off-white background
 const Color kCard = Color(0xFFFFFFFF); // card surface
@@ -19,7 +20,7 @@ const Color kIncomeGreen = Color(0xFF1B8A5A);
 const Color kExpenseRed = Color(0xFFB3423E);
 const Color kTrack = Color(0xFFECEAE4); // progress track
 const Color kHairline = Color(0xFFE8E6DF); // soft borders/dividers
-const Color kShadow = Color(0x1417251F); // 8% ink — soft elevation
+const Color kShadow = Color(0x1417251F); // 8% ink - soft elevation
 
 // Kids Mode palette
 const Color kKidBg = Color(0xFFFFC93C); // sunny yellow
@@ -28,7 +29,7 @@ const Color kKidSky = Color(0xFF7EC8F2);
 const Color kKidCard = Color(0xFFFFFDF4);
 const Color kKidInk = Color(0xFF5B3A00);
 
-/// App-wide font family (bundled — see pubspec + assets/fonts/poppins/OFL.txt).
+/// App-wide font family (bundled - see pubspec + assets/fonts/poppins/OFL.txt).
 const String kFontFamily = 'Poppins';
 
 /// ── Named type ramp (G8) ───────────────────────────────────────────────────
@@ -74,6 +75,15 @@ const double kRadiusM = 18;
 const double kRadiusL = 24;
 const double kRadiusSheet = 28;
 
+/// Responsive page gutters used by every full-screen, scrollable surface.
+/// SafeArea supplies the device inset; these values supply the visual breathing
+/// room after it, so headers never sit against a notch or status bar.
+const EdgeInsets kPageInsets = EdgeInsets.fromLTRB(20, 24, 20, 32);
+const EdgeInsets kWidePageInsets = EdgeInsets.fromLTRB(24, 24, 24, 32);
+
+/// Extra clearance for tab pages beneath the center-docked action button.
+const EdgeInsets kTabPageInsets = EdgeInsets.fromLTRB(20, 24, 20, 88);
+
 /// Design-system radius helpers.
 final BorderRadius kBRadiusS = BorderRadius.circular(kRadiusS);
 final BorderRadius kBRadiusM = BorderRadius.circular(kRadiusM);
@@ -83,7 +93,6 @@ final BorderRadius kBRadiusL = BorderRadius.circular(kRadiusL);
 const List<BoxShadow> kCardShadow = [
   BoxShadow(color: kShadow, blurRadius: 18, offset: Offset(0, 6)),
 ];
-
 
 /// ── Dark-mode palette ──────────────────────────────────────────────────────
 /// One object, two instances: every screen reads colors through [MhuriCtx]
@@ -96,23 +105,47 @@ class MhuriColors {
   final List<BoxShadow> cardShadow;
 
   const MhuriColors({
-    required this.bg, required this.card, required this.ink,
-    required this.inkSoft, required this.inkFaint, required this.hairline,
-    required this.primary, required this.primaryDark, required this.primarySoft,
-    required this.accent, required this.accentSoft,
-    required this.danger, required this.dangerSoft,
-    required this.incomeGreen, required this.expenseRed,
-    required this.track, required this.shadowColor, required this.onSolid,
+    required this.bg,
+    required this.card,
+    required this.ink,
+    required this.inkSoft,
+    required this.inkFaint,
+    required this.hairline,
+    required this.primary,
+    required this.primaryDark,
+    required this.primarySoft,
+    required this.accent,
+    required this.accentSoft,
+    required this.danger,
+    required this.dangerSoft,
+    required this.incomeGreen,
+    required this.expenseRed,
+    required this.track,
+    required this.shadowColor,
+    required this.onSolid,
     required this.cardShadow,
   });
 
   static const light = MhuriColors(
-    bg: kBg, card: kCard, ink: kInk, inkSoft: kInkSoft, inkFaint: kInkFaint,
-    hairline: kHairline, primary: kPrimary, primaryDark: kPrimaryDark,
-    primarySoft: kPrimarySoft, accent: kAccent, accentSoft: kAccentSoft,
-    danger: kDanger, dangerSoft: kDangerSoft, incomeGreen: kIncomeGreen,
-    expenseRed: kExpenseRed, track: kTrack, shadowColor: kShadow,
-    onSolid: Colors.white, cardShadow: kCardShadow,
+    bg: kBg,
+    card: kCard,
+    ink: kInk,
+    inkSoft: kInkSoft,
+    inkFaint: kInkFaint,
+    hairline: kHairline,
+    primary: kPrimary,
+    primaryDark: kPrimaryDark,
+    primarySoft: kPrimarySoft,
+    accent: kAccent,
+    accentSoft: kAccentSoft,
+    danger: kDanger,
+    dangerSoft: kDangerSoft,
+    incomeGreen: kIncomeGreen,
+    expenseRed: kExpenseRed,
+    track: kTrack,
+    shadowColor: kShadow,
+    onSolid: Colors.white,
+    cardShadow: kCardShadow,
   );
 
   static const dark = MhuriColors(
@@ -134,7 +167,9 @@ class MhuriColors {
     track: Color(0xFF223029),
     shadowColor: Color(0x66000000),
     onSolid: Color(0xFF0C1411),
-    cardShadow: [BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, 6))],
+    cardShadow: [
+      BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, 6))
+    ],
   );
 
   static MhuriColors of(BuildContext c) =>
@@ -166,7 +201,10 @@ extension MhuriCtx on BuildContext {
 }
 
 ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
-  final scheme = ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness).copyWith(
+  final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+  final scheme =
+      ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness)
+          .copyWith(
     primary: p.primary,
     onPrimary: p.onSolid,
     primaryContainer: p.primarySoft,
@@ -193,7 +231,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     scaffoldBackgroundColor: p.bg,
     colorScheme: scheme,
     visualDensity: VisualDensity.standard,
-    splashFactory: InkSparkle.splashFactory,
+    splashFactory: isIOS ? NoSplash.splashFactory : InkSparkle.splashFactory,
   );
 
   // ── Type scale ──────────────────────────────────────────────────────────
@@ -264,12 +302,14 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
       backgroundColor: p.bg,
       // Status-bar icons always contrast the surface (light→dark icons).
       systemOverlayStyle: brightness == Brightness.dark
-          ? SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent)
-          : SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+          ? SystemUiOverlayStyle.light
+              .copyWith(statusBarColor: Colors.transparent)
+          : SystemUiOverlayStyle.dark
+              .copyWith(statusBarColor: Colors.transparent),
       foregroundColor: p.ink,
       elevation: 0,
       scrolledUnderElevation: 0,
-      centerTitle: false,
+      centerTitle: isIOS || defaultTargetPlatform == TargetPlatform.macOS,
       titleSpacing: 20,
       titleTextStyle: TextStyle(
         fontFamily: kFontFamily,
@@ -291,7 +331,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
         shape: const StadiumBorder(),
-        textStyle: TextStyle(
+        textStyle: const TextStyle(
           fontFamily: kFontFamily,
           fontSize: 14.5,
           fontWeight: FontWeight.w700,
@@ -306,7 +346,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: const StadiumBorder(),
-        textStyle: TextStyle(
+        textStyle: const TextStyle(
           fontFamily: kFontFamily,
           fontSize: 14.5,
           fontWeight: FontWeight.w700,
@@ -318,7 +358,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
         foregroundColor: p.primary,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         shape: const StadiumBorder(),
-        textStyle: TextStyle(
+        textStyle: const TextStyle(
           fontFamily: kFontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w700,
@@ -331,7 +371,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
         side: BorderSide(color: p.hairline, width: 1.2),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: const StadiumBorder(),
-        textStyle: TextStyle(
+        textStyle: const TextStyle(
           fontFamily: kFontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -341,8 +381,9 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(
         foregroundColor: p.ink,
-        highlightColor: p.primarySoft,
-        splashFactory: InkSparkle.splashFactory,
+        highlightColor: isIOS ? Colors.transparent : p.primarySoft,
+        splashFactory:
+            isIOS ? NoSplash.splashFactory : InkSparkle.splashFactory,
       ),
     ),
 
@@ -408,7 +449,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
       surfaceTintColor: Colors.transparent,
       elevation: 8,
       modalElevation: 8,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusSheet)),
       ),
       showDragHandle: true,
@@ -462,7 +503,8 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? p.onSolid : p.inkFaint,
+        (states) =>
+            states.contains(WidgetState.selected) ? p.onSolid : p.inkFaint,
       ),
       trackColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected) ? p.primary : p.track,
@@ -500,10 +542,21 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
       ),
     ),
 
+    cupertinoOverrideTheme: CupertinoThemeData(
+      primaryColor: p.primary,
+      barBackgroundColor: p.bg,
+      scaffoldBackgroundColor: p.bg,
+      brightness: brightness,
+      textTheme: CupertinoTextThemeData(
+        primaryColor: p.ink,
+        textStyle: TextStyle(fontFamily: kFontFamily, color: p.ink),
+      ),
+    ),
+
     // ── Motion ────────────────────────────────────────────────────────────
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
-        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         TargetPlatform.fuchsia: ZoomPageTransitionsBuilder(),
         TargetPlatform.linux: ZoomPageTransitionsBuilder(),
@@ -513,9 +566,9 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     ),
   );
 }
+
 /// Light theme (the original look).
 ThemeData buildAppTheme() => _buildTheme(MhuriColors.light, Brightness.light);
 
 /// Dark theme (G1): same structure, OLED-leaning dark surfaces.
 ThemeData buildAppDarkTheme() => _buildTheme(MhuriColors.dark, Brightness.dark);
-

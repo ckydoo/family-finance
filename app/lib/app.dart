@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:app_links/app_links.dart';
 
 import 'core/auth/auth_controller.dart';
+import 'core/auth/recovery_link.dart';
 import 'core/config/app_env.dart';
 import 'core/db/app_database.dart';
 import 'core/l10n/localization_delegates.dart';
@@ -14,7 +16,6 @@ import 'core/sync/supabase_sync_client.dart';
 import 'core/sync/sync_engine.dart';
 import 'core/observability/reporter.dart';
 import 'core/theme/app_theme.dart';
-import 'core/widgets/motion.dart';
 import 'core/money/money.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/reset_password_screen.dart';
@@ -26,13 +27,14 @@ import 'features/teen/teen_zone.dart';
 /// Root widget. Owns the [AppState] and [AuthController] and exposes state to
 /// the whole tree via [AppScope]. Production (main) always passes a working
 /// local database + configured env; widget tests may pass nothing (an empty
-/// unconfigured app — no sync, no fixtures).
+/// unconfigured app - no sync, no fixtures).
 class MhuriMoneyApp extends StatefulWidget {
-  const MhuriMoneyApp({super.key, this.db, this.env, this.auth});
+  const MhuriMoneyApp({super.key, this.db, this.env, this.auth, this.state});
 
   final AppDatabase? db;
   final AppEnv? env;
   final AuthController? auth;
+  final AppState? state;
 
   @override
   State<MhuriMoneyApp> createState() => _MhuriMoneyAppState();
@@ -44,6 +46,14 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
   late final AuthController _auth;
   late final bool _configured;
   SyncEngine? _engine;
+  StreamSubscription<Uri>? _linkSub;
+  final GlobalKey<NavigatorState> _navKey = GlobalKey<NavigatorState>();
+  bool _resumeReset = false;
+  String? _pendingResetEmail;
+  bool _resolvingFamily = false;
+  bool _familyResolutionFailed = false;
+  String? _resolvedFamilyForUser;
+  bool _switchingAccount = false;
 
   @override
   void initState() {
@@ -52,7 +62,8 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     final env = widget.env ?? const AppEnv();
     _configured = env.isConfigured;
     _auth = widget.auth ?? AuthController(env: env);
-    _state = AppState(db: widget.db, env: env, auth: _auth);
+    _state = widget.state ?? AppState(db: widget.db, env: env, auth: _auth);
+    _auth.addListener(_onAuthChanged);
 
     // #1 recovery + invite deep links, and the resume-your-reset banner.
     // Fire-and-forget: they only subscribe listeners / read local kv.
@@ -64,7 +75,9 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     _state.reminderHook = (plan) {
       if (plan.isNotEmpty && !permissionAsked) {
         permissionAsked = true;
-        Notifier.requestPermission().then((_) => Notifier.apply(plan));
+        Notifier.requestPermission().then((granted) {
+          if (granted) Notifier.apply(plan);
+        });
         return;
       }
       Notifier.apply(plan);
@@ -94,7 +107,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         // 401 mid-session → force one token refresh, retry once (#8).
         retryAuth: () async => await _auth.refreshAccessToken() != null,
       );
-      // Phase 4 #19: one observability seam — errors AND sync-health
+      // Phase 4 #19: one observability seam - errors AND sync-health
       // events flow through the active reporter. Swapping in Sentry or
       // Crashlytics later = implement MhuriReporter, assign activeReporter
       // here. Never log secrets/amounts (enforced in reporter.dart).
@@ -105,6 +118,84 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       _engine = engine;
       engine.start();
     }
+    _scheduleFamilyResolution(notify: false);
+  }
+
+  void _onAuthChanged() {
+    if (!_auth.isLoggedIn) {
+      _resolvedFamilyForUser = null;
+      _resolvingFamily = false;
+      _familyResolutionFailed = false;
+      return;
+    }
+    final userId = _auth.session!.userId;
+    final engine = _engine;
+    if (engine == null) {
+      _scheduleFamilyResolution();
+      return;
+    }
+    _switchingAccount = true;
+    if (mounted) setState(() {});
+    unawaited(() async {
+      await engine.ensureUserIsolation(
+        userId,
+        email: _auth.session?.email,
+      );
+      if (!mounted || _auth.session?.userId != userId) return;
+      setState(() => _switchingAccount = false);
+      _resolvedFamilyForUser = null;
+      _scheduleFamilyResolution();
+    }());
+  }
+
+  void _scheduleFamilyResolution({bool notify = true}) {
+    final userId = _auth.session?.userId;
+    if (userId == null || userId.isEmpty || _state.onboardingComplete) return;
+    if (_resolvingFamily || _resolvedFamilyForUser == userId) return;
+
+    final engine = _engine;
+    // Unconfigured/test builds have no remote membership to resolve.
+    if (engine == null) {
+      _resolvedFamilyForUser = userId;
+      return;
+    }
+
+    _resolvingFamily = true;
+    _familyResolutionFailed = false;
+    if (notify && mounted) setState(() {});
+    unawaited(_resolveFamily(userId, engine));
+  }
+
+  Future<void> _resolveFamily(String userId, SyncEngine engine) async {
+    await _state.ready();
+    if (!mounted || _auth.session?.userId != userId) return;
+
+    // Hydration may already have found the locally persisted family while we
+    // were waiting. In that case no network round-trip is necessary.
+    if (_state.onboardingComplete) {
+      setState(() {
+        _resolvedFamilyForUser = userId;
+        _resolvingFamily = false;
+        _familyResolutionFailed = false;
+      });
+      return;
+    }
+
+    final result = await engine.restoreFamily();
+    if (!mounted || _auth.session?.userId != userId) return;
+    setState(() {
+      _resolvingFamily = false;
+      _familyResolutionFailed = result == FamilyRestoreResult.unavailable;
+      if (result != FamilyRestoreResult.unavailable) {
+        _resolvedFamilyForUser = userId;
+      }
+    });
+  }
+
+  void _retryFamilyResolution() {
+    _familyResolutionFailed = false;
+    _resolvedFamilyForUser = null;
+    _scheduleFamilyResolution();
   }
 
   @override
@@ -129,8 +220,9 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
   void dispose() {
     _linkSub?.cancel();
     _engine?.dispose();
-    _state.dispose();
-    _auth.dispose();
+    _auth.removeListener(_onAuthChanged);
+    if (widget.state == null) _state.dispose();
+    if (widget.auth == null) _auth.dispose();
     super.dispose();
   }
 
@@ -143,7 +235,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       final initial = await links.getInitialLink();
       if (initial != null) _onRecoveryLink(initial);
     } catch (_) {
-      // Deep links unavailable (unsupported platform/plugin) — password
+      // Deep links unavailable (unsupported platform/plugin) - password
       // recovery still works through the ordinary sign-in path.
     }
   }
@@ -154,35 +246,40 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     if (inviteCode != null) {
       final db = widget.db;
       if (db != null) await db.kvSet('pending_invite_code', inviteCode);
+      if (!mounted) return;
       final ctx = _navKey.currentContext;
-      if (ctx != null && mounted) {
-        if (!_auth.isLoggedIn || !_state.onboardingComplete) {
-          // Login / family setup will pick the code up from kv.
-          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-            content:
-                Text(AppLocalizations.of(ctx)!.inviteLinkReady(inviteCode)),
-            behavior: SnackBarBehavior.floating,
-          ));
-        } else {
-          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-            content: Text(AppLocalizations.of(ctx)!.inviteAlreadyInFamily),
-            behavior: SnackBarBehavior.floating,
-          ));
+      if (ctx != null && ctx.mounted) {
+        final messenger = ScaffoldMessenger.maybeOf(ctx);
+        final loc = AppLocalizations.of(ctx);
+        if (messenger != null && loc != null) {
+          if (!_auth.isLoggedIn || !_state.onboardingComplete) {
+            // Login / family setup will pick the code up from kv.
+            messenger.showSnackBar(SnackBar(
+              content: Text(loc.inviteLinkReady(inviteCode)),
+              behavior: SnackBarBehavior.floating,
+            ));
+          } else {
+            messenger.showSnackBar(SnackBar(
+              content: Text(loc.inviteAlreadyInFamily),
+              behavior: SnackBarBehavior.floating,
+            ));
+          }
         }
       }
       return;
     }
 
     final link = parseRecoveryLink(uri.toString());
-    if (!link.isRecovery) return; // some other deep link — not ours
+    if (!link.isRecovery) return; // some other deep link - not ours
+    if (!mounted) return;
     final ctx = _navKey.currentContext;
-    if (ctx == null || !mounted) return;
+    if (ctx == null || !ctx.mounted) return;
     final navigator = Navigator.of(ctx);
     if (link.kind == RecoveryKind.tokens) {
       final ok = await _auth.adoptRecoverySession(
           link.accessToken!, link.refreshToken!);
       if (!mounted) return;
-      // A broken token still gets a screen — the expired state with a
+      // A broken token still gets a screen - the expired state with a
       // "send a new link" action, never a dead end.
       navigator.push(MaterialPageRoute<void>(
         builder: (_) => ok
@@ -190,9 +287,9 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
             : _ResetExpired(_auth),
       ));
     } else {
-      // PKCE-style (?code=) link — cannot be exchanged by this client.
-      navigator.push(
-          MaterialPageRoute<void>(builder: (_) => _ResetExpired(_auth)));
+      // PKCE-style (?code=) link - cannot be exchanged by this client.
+      navigator
+          .push(MaterialPageRoute<void>(builder: (_) => _ResetExpired(_auth)));
     }
   }
 
@@ -214,7 +311,6 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     } catch (_) {}
   }
 
-
   @override
   Widget build(BuildContext context) {
     return AppScope(
@@ -225,7 +321,8 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
           // G7: money grouping follows the app locale (es/fr/pt via intl).
           Money.localeTag = _state.localeCode;
           return MaterialApp(
-            title: 'Mhuri Hub',
+            navigatorKey: _navKey,
+            title: 'Mhuri',
             debugShowCheckedModeBanner: false,
             theme: buildAppTheme(),
             darkTheme: buildAppDarkTheme(),
@@ -247,7 +344,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
               child: child ?? const SizedBox.shrink(),
             ),
             home: AnimatedBuilder(
-              animation: _auth,
+              animation: Listenable.merge([_auth, _state]),
               builder: (context, _) {
                 // Hydration splash: local database is loading.
                 if (_state.hydrating) {
@@ -262,14 +359,26 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 if (!_auth.isLoggedIn) {
                   return LoginScreen(auth: _auth);
                 }
+                if (_switchingAccount) return const _Splash();
                 // Closed the app mid-recovery? Finish choosing the new
                 // password before anything else.
                 if (_resumeReset) {
                   return ResetPasswordScreen(
                       auth: _auth, email: _pendingResetEmail);
                 }
+                final userId = _auth.session?.userId;
+                if (!_state.onboardingComplete &&
+                    (_resolvingFamily ||
+                        (_engine != null &&
+                            !_familyResolutionFailed &&
+                            _resolvedFamilyForUser != userId))) {
+                  return const _Splash();
+                }
+                if (!_state.onboardingComplete && _familyResolutionFailed) {
+                  return _ErrorPane(onRetry: _retryFamilyResolution);
+                }
                 // First-run family setup (skip writes kv): create a family
-                // or join one — that IS the onboarding.
+                // or join one - that IS the onboarding.
                 if (_auth.isLoggedIn && !_state.onboardingComplete) {
                   return FamilySetupScreen(state: _state);
                 }
@@ -321,7 +430,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
         child: Image.asset(
-          'assets/branding/splash.png',
+          'assets/branding/app_icon.png',
           width: 92,
           height: 92,
           fit: BoxFit.cover,
@@ -345,7 +454,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                   ),
             const SizedBox(height: 22),
             Text(
-              'Mhuri Hub',
+              'Mhuri',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -359,15 +468,16 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
               style: TextStyle(fontSize: 12.5, color: context.inkSoft),
             ),
             const SizedBox(height: 30),
-            // Skeleton bars instead of a spinner: the shape of what loads.
-            const Column(
-              children: [
-                Skeleton(width: 200),
-                SizedBox(height: 10),
-                Skeleton(width: 156),
-                SizedBox(height: 10),
-                Skeleton(width: 112),
-              ],
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: SizedBox(
+                width: 112,
+                child: LinearProgressIndicator(
+                  minHeight: 4,
+                  backgroundColor: context.primarySoft,
+                  color: context.primary,
+                ),
+              ),
             ),
           ],
         ),
@@ -405,7 +515,7 @@ class _ErrorPane extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Your data stays safe on this device — try again.',
+                'Your data stays safe on this device - try again.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12.5, color: context.inkSoft),
               ),
@@ -428,7 +538,7 @@ class _ErrorPane extends StatelessWidget {
 }
 
 /// Routes to the right shell based on the signed-in member's role.
-/// Kids get the sealed, playful Kids Mode; teens get the Teen Zone —
+/// Kids get the sealed, playful Kids Mode; teens get the Teen Zone -
 /// never the full adult app.
 class RoleGate extends StatelessWidget {
   const RoleGate({super.key});
@@ -447,11 +557,12 @@ class RoleGate extends StatelessWidget {
 /// The reset link is dead (single-use already used, expired, or PKCE-style):
 /// show the honest expired state with a "send a new link" action.
 class _ResetExpired extends StatelessWidget {
-  const _ResetExpired();
+  const _ResetExpired(this.auth);
+
+  final AuthController auth;
 
   @override
   Widget build(BuildContext context) {
-    final auth = AppScope.of(context).auth;
     return ResetPasswordScreen(auth: auth, startExpired: true);
   }
 }

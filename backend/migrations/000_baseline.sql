@@ -1,5 +1,5 @@
 -- ============================================================================
--- 000_baseline.sql — TABLE BASELINE as a migration (the missing "from zero").
+-- 000_baseline.sql - TABLE BASELINE as a migration (the missing "from zero").
 -- Extracted verbatim from schema.sql (Phase 1 DDL): tables, indexes, base RLS.
 -- Outdated pieces it still contains (global profile_read, old
 -- delete_own_account) are deliberately left and are REPLACED by the end of
@@ -7,12 +7,12 @@
 -- so the end state after 000→008 is the hardened one. CI proves this on
 -- every push by applying 000→N to a clean Postgres.
 -- ============================================================================
--- Mhuri Money — Supabase / PostgreSQL schema (Phase 1)
--- Mhuri Money — Supabase / PostgreSQL schema (Phase 1)
+-- Mhuri Money - Supabase / PostgreSQL schema (Phase 1)
+-- Mhuri Money - Supabase / PostgreSQL schema (Phase 1)
 -- Maps to PRODUCT_SPEC.md §8 (Data Model) and §10 (Security, Privacy).
 --
 -- Money rule: amounts are ALWAYS bigint minor units + currency.
--- No floats. Conversion happens in the app using rate_snapshots — never
+-- No floats. Conversion happens in the app using rate_snapshots - never
 -- re-value stored amounts.
 --
 -- Run in the Supabase SQL editor (or `supabase db push`) on a fresh project.
@@ -511,7 +511,7 @@ create policy log_read  on activity_log for select using (space_role(space_id) i
 -- ═════════════════════════════════════════════════════════════════════════════
 -- Sync-scope completion (premium pass, 2026-09-21)
 -- * updated_at + triggers on EVERY synced table (the pull API orders by
---   updated_at — tables missing it would fail on first live sync);
+--   updated_at - tables missing it would fail on first live sync);
 -- * chore gains `state` (local ChoreState), assignee becomes nullable,
 --   mukando gains `round_order` (member names, v1 simplification);
 -- * new recurring_rule table (budget rules now sync across the family).

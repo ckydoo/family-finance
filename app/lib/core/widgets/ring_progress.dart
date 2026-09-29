@@ -25,9 +25,8 @@ class RingProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final target = value.clamp(0.0, 1.0).toDouble();
     // G2: the ring draws in on first build and eases to new values.
-    final painterValue = MediaQuery.disableAnimationsOf(context)
-        ? target
-        : null;
+    final painterValue =
+        MediaQuery.disableAnimationsOf(context) ? target : null;
     return SizedBox(
       width: size,
       height: size,

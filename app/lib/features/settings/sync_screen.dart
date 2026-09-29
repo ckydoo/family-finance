@@ -7,9 +7,9 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-/// Sync & data — the honest state of where this family's data lives.
+/// Sync & data - the honest state of where this family's data lives.
 ///
-/// Replaces the old "Backup — coming soon" placeholder: there is no separate
+/// Replaces the old "Backup - coming soon" placeholder: there is no separate
 /// backup to turn on. Changes save on this device immediately and sync to the
 /// family's cloud account (Supabase) whenever there is a connection. This
 /// screen shows exactly that: connection, last sync, pending changes, and a
@@ -52,8 +52,8 @@ class SyncScreen extends StatelessWidget {
                       Container(
                         width: 10,
                         height: 10,
-                        decoration:
-                            BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                            color: statusColor, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 8),
                       Text(statusLabel,
@@ -61,14 +61,13 @@ class SyncScreen extends StatelessWidget {
                               fontSize: 15, fontWeight: FontWeight.w800)),
                       const Spacer(),
                       TextButton(
-                        onPressed: () => s.syncNow(),
+                        onPressed: () => s.syncNow(force: true),
                         child: Text(l.syncNowBtn),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  _row(l.syncLastSync,
-                      last == null ? l.syncNever : _fmt(last)),
+                  _row(l.syncLastSync, last == null ? l.syncNever : _fmt(last)),
                   _row(l.syncPendingLabel,
                       s.pendingOps == 0 ? l.syncUpToDate : '${s.pendingOps}'),
                   _row(l.envLabel, s.env.environment),
@@ -101,11 +100,33 @@ class SyncScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(l.syncProblemsTitle,
-                          style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.orange.shade900)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(l.syncProblemsTitle,
+                                style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.orange.shade900)),
+                          ),
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                            icon: const Icon(Icons.refresh, size: 16),
+                            label: Text(l.syncRetryThis),
+                            onPressed: () async {
+                              final engine = s.sync;
+                              if (engine != null) {
+                                await engine.retryAllParked();
+                                await engine.syncNow(force: true);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 4),
                       Text(l.syncProblemsBody,
                           style: TextStyle(
@@ -140,9 +161,10 @@ class SyncScreen extends StatelessWidget {
                               ),
                               IconButton(
                                 tooltip: l.syncDiscardThis,
-                                icon: const Icon(Icons.delete_outline,
-                                    size: 20),
-                                onPressed: () => _confirmDiscard(context, s, op),
+                                icon:
+                                    const Icon(Icons.delete_outline, size: 20),
+                                onPressed: () =>
+                                    _confirmDiscard(context, s, op),
                               ),
                             ],
                           ),
@@ -213,12 +235,22 @@ class SyncScreen extends StatelessWidget {
   }
 
   String _month(int m) => const [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ][m - 1];
 
   /// A parked change described with the user's own words (name/reason/note)
-  /// and its kind — never a raw table name or UUID.
+  /// and its kind - never a raw table name or UUID.
   String _parkedTitle(AppLocalizations l, OutboxOp op) {
     final kind = switch (op.entity) {
       'tx' => l.syncKindTx,
@@ -228,11 +260,9 @@ class SyncScreen extends StatelessWidget {
       'kid_request' => l.syncKindRequest,
       _ => l.syncKindOther,
     };
-    final hint = (op.payload['name'] ??
-            op.payload['reason'] ??
-            op.payload['note'] ??
-            '')
-        .toString();
+    final hint =
+        (op.payload['name'] ?? op.payload['reason'] ?? op.payload['note'] ?? '')
+            .toString();
     return hint.isEmpty ? kind : '$kind · $hint';
   }
 

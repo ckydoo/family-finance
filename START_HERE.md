@@ -1,11 +1,11 @@
-# 🚀 START HERE — Run Mhuri Hub on your device
+# 🚀 START HERE - Run Mhuri Hub on your device
 
 **Family finance management · live + offline-first · USD + ZiG · Envelopes ·
 Savings circles · Shopping lists · Teen Zone · Kids Mode**
 
 This folder contains everything: the product spec, UI mockups, the Flutter
 app source, and the Supabase backend schema. The app is a real client of
-your Supabase project — every account is a real login, every family is
+your Supabase project - every account is a real login, every family is
 shared across devices. There is no demo mode.
 
 ---
@@ -26,7 +26,7 @@ shared across devices. There is no demo mode.
 2. **CI/release build flags:**
    `flutter run --dart-define=MHURI_SUPABASE_URL=… --dart-define=MHURI_SUPABASE_ANON_KEY=…`
 
-A build with neither source shows a setup error screen — it never runs
+A build with neither source shows a setup error screen - it never runs
 "offline pretend" mode.
 
 ## 3. Run it (3 commands)
@@ -50,14 +50,14 @@ flutter test
 ```
 
 > If `flutter analyze` reports anything on your Flutter version, paste the
-> output back to me and I'll fix it — different Flutter versions occasionally
+> output back to me and I'll fix it - different Flutter versions occasionally
 > have small API differences.
 
 ## 4. First real run
 
 | # | Do this | You'll see |
 |---|---|---|
-| 1 | Open the app | **Login** — create an account (email + password, confirm via inbox) |
+| 1 | Open the app | **Login** - create an account (email + password, confirm via inbox) |
 | 2 | Family setup | **Create a family** (you're the owner) or **join with a code** from the owner |
 | 3 | Add a real envelope | Budgets → new envelope, e.g. *Groceries* |
 | 4 | Tap the amber **＋** | Quick add → real amount in **USD or ZiG** → pick envelope → Save |
@@ -81,13 +81,13 @@ mhuri-money/
 │   ├── test/              money rules, sync, persistence + screen smoke tests
 │   └── README.md          deep dive: structure, spec-traceability, next steps
 └── backend/
-    ├── schema.sql         Supabase schema — 21 tables, role-based row security
+    ├── schema.sql         Supabase schema - 21 tables, role-based row security
     └── README.md          10-minute backend setup
 ```
 
 ## 6. Current limitations (by design)
 
-- Reminders are device-local (bills, budgets, kids, goals, savings circle, meeting, weekly digest — set them up in Settings); server push comes later
+- Reminders are device-local (bills, budgets, kids, goals, savings circle, meeting, weekly digest - set them up in Settings); server push comes later
 - Receipts/OCR & PDF share: post-8 backlog · recurring expenses are review-based by design
 - Accounts are device-local "records only" per spec §5
 - FX rate: server snapshot (run migration 004 + seed a `rate_snapshot` row) or a custom rate in Settings

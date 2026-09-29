@@ -1,4 +1,4 @@
--- 008: integrity round (2026-09-22) — idempotent, run after 007.
+-- 008: integrity round (2026-09-22) - idempotent, run after 007.
 --
 -- 1. Profiles become FAMILY-SCOPED (were globally readable via profile_read
 --    using (true)). Roster pulls still work: members of a shared space can
@@ -100,12 +100,12 @@ begin
       from membership where space_id = v_space and invite_status = 'active';
     if v_members > 1 then
       -- Deliberate dead end: an owner cannot delete the account while other
-      -- members exist — transfer ownership first (prevents orphaning a
+      -- members exist - transfer ownership first (prevents orphaning a
       -- family with no admin and losing shared history silently).
       raise exception 'OWNERSHIP_TRANSFER_REQUIRED';
     end if;
     -- Sole owner: the family and all its data (cascades), then the identity
-    -- itself — nothing outside the family references the profile by then.
+    -- itself - nothing outside the family references the profile by then.
     delete from family_space where id = v_space;
     delete from storage.objects
       where bucket_id = 'avatars'
@@ -130,7 +130,7 @@ begin
   end;
 
   -- …and neuter the auth identity: password invalidated, email freed for a
-  -- future signup, confirmation gate re-armed. The row itself must remain —
+  -- future signup, confirmation gate re-armed. The row itself must remain -
   -- retained financial history FKs to the profile that cascades from it.
   update auth.users
     set encrypted_password = '!',

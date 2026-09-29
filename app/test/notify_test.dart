@@ -5,11 +5,15 @@ import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/notifications/reminders.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'seed.dart';
 
-/// M5 — the reminder planner (pure, spec J2/J3) and notification settings
+/// M5 - the reminder planner (pure, spec J2/J3) and notification settings
 /// persistence. Plugin calls themselves are device-only (Notifier no-ops
 /// off Android/iOS), so tests cover the plan, not the platform channel.
 void main() {
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
   final now = DateTime(2026, 9, 21, 10); // Monday, 10:00
   const config = NotifyConfig(
     enabled: true,
@@ -53,20 +57,21 @@ void main() {
       envelopes: envelopes,
       chores: chores,
       requests: requests,
-      circle: SavingsCircle(
-        name: 'Circle',
-        contribution: Money.fromMajor(10, Currency.usd),
-        totalRounds: 4,
-        currentRound: 2,
-        order: const ['m_leo', 'm_zoe'],
-      ),
+      circle: circle ??
+          SavingsCircle(
+            name: 'Circle',
+            contribution: Money.fromMajor(10, Currency.usd),
+            totalRounds: 4,
+            currentRound: 2,
+            order: const ['m_leo', 'm_zoe'],
+          ),
       memberNames: const {'m_leo': 'Leo', 'm_zoe': 'Zoe'},
       monthStartDay: 25,
       extra: extra,
     );
   }
 
-  group('planner — bills due (C7: 3-day reminder)', () {
+  group('planner - bills due (C7: 3-day reminder)', () {
     test('due in 2 days → morning-of reminder', () {
       final out =
           plan(recurring: [rule('rc_x', now.add(const Duration(days: 2)))]);
@@ -101,7 +106,7 @@ void main() {
     });
   });
 
-  group('planner — budget & kids (J2)', () {
+  group('planner - budget & kids (J2)', () {
     test('envelope at 80% warns; at 50% stays quiet', () {
       final env = Envelope(
         id: 'e_x',
@@ -154,7 +159,7 @@ void main() {
     });
   });
 
-  group('planner — weekly beats & meeting', () {
+  group('planner - weekly beats & meeting', () {
     test('savings-circle reminder is weekly on Sunday 17:00', () {
       final muk = SavingsCircle(
         name: 'Circle',
@@ -190,7 +195,7 @@ void main() {
     });
   });
 
-  group('planner — quiet hours, gating, extras, cap (J3)', () {
+  group('planner - quiet hours, gating, extras, cap (J3)', () {
     test('reminders inside the DND window slide to its end', () {
       const quietCfg = NotifyConfig(
         enabled: true,
@@ -246,7 +251,7 @@ void main() {
     });
 
     test('category switched off → that category stays quiet', () {
-      final noBills = NotifyConfig(
+      const noBills = NotifyConfig(
         enabled: true,
         allowed: {
           ReminderCategory.budget,
@@ -305,6 +310,7 @@ void main() {
         ),
       );
       db = AppDatabase.wrap(raw);
+      await seedDb(db.raw);
     });
 
     tearDown(() async {
@@ -340,6 +346,36 @@ void main() {
         s.planReminders().any((r) => r.key.startsWith('milestone_')),
         isTrue,
         reason: 'jumping straight past 25% and 50% fires a nudge',
+      );
+      await s.flushWrites();
+    });
+
+    test('Mukando switch immediately controls circle reminders', () async {
+      final s = AppState(db: db);
+      await s.ready();
+      s.circle = SavingsCircle(
+        name: 'Family circle',
+        contribution: Money.fromMajor(10, Currency.usd),
+        totalRounds: 4,
+        currentRound: 1,
+        order: const ['m_david', 'm_rudo'],
+      );
+      s.setReminderPref(ReminderCategory.circle, true);
+
+      s.setMukandoEnabled(true);
+      expect(
+        s.planReminders(now: now).any(
+              (r) => r.category == ReminderCategory.circle,
+            ),
+        isTrue,
+      );
+
+      s.setMukandoEnabled(false);
+      expect(
+        s.planReminders(now: now).any(
+              (r) => r.category == ReminderCategory.circle,
+            ),
+        isFalse,
       );
       await s.flushWrites();
     });

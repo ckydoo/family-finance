@@ -4,14 +4,15 @@ import 'package:sqflite/sqflite.dart';
 
 /// The M3 outbox: every live-mode mutation lands here first (ordered,
 /// idempotent), and the SyncEngine flushes it to Supabase. Survives restarts
-/// and offline stretches; nothing is dropped on failure — attempts increment
+/// and offline stretches; nothing is dropped on failure - attempts increment
 /// and the next sync retries.
 class Outbox {
   Outbox(this.db);
 
   final Database db;
 
-  Future<void> enqueue(String entity, String opId, Map<String, Object?> payload) async {
+  Future<void> enqueue(
+      String entity, String opId, Map<String, Object?> payload) async {
     await db.insert(
       'outbox',
       {
@@ -39,7 +40,7 @@ class Outbox {
     return [for (final r in rows) _opFrom(r)];
   }
 
-  /// Held-back ops ([minAttempts] failed pushes or more) — surfaced in
+  /// Held-back ops ([minAttempts] failed pushes or more) - surfaced in
   /// Sync & data with per-item retry/discard; never dropped silently.
   Future<List<OutboxOp>> parked(int minAttempts) async {
     final rows = await db.query(
@@ -53,17 +54,18 @@ class Outbox {
 
   Future<int> countParked(int minAttempts) async {
     final r = await db.rawQuery(
-        'SELECT COUNT(*) AS c FROM outbox WHERE attempts >= ?',
-        [minAttempts]);
+        'SELECT COUNT(*) AS c FROM outbox WHERE attempts >= ?', [minAttempts]);
     return Sqflite.firstIntValue(r) ?? 0;
   }
 
   /// "Try again": clear the failure count so the next sync pushes it.
   Future<void> resetAttempts(int rowId) async =>
-      db.update('outbox', {'attempts': 0},
-          where: 'id = ?', whereArgs: [rowId]);
+      db.update('outbox', {'attempts': 0}, where: 'id = ?', whereArgs: [rowId]);
 
-  /// Explicit user discard (confirmed in the UI) — the only way a row
+  /// "Try again all": clear the failure count for all ops so the next sync pushes them.
+  Future<void> resetAllAttempts() async => db.update('outbox', {'attempts': 0});
+
+  /// Explicit user discard (confirmed in the UI) - the only way a row
   /// leaves the outbox besides a successful push.
   Future<void> deleteRow(int rowId) async =>
       db.delete('outbox', where: 'id = ?', whereArgs: [rowId]);
@@ -110,7 +112,7 @@ class OutboxOp {
 
   final Map<String, Object?> payload;
 
-  /// When the change was made (epoch ms) — shown in the parked list.
+  /// When the change was made (epoch ms) - shown in the parked list.
   final int createdMs;
 
   const OutboxOp({

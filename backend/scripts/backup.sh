@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mhuri Hub — database backup export (roadmap #20).
+# Mhuri Hub - database backup export (roadmap #20).
 # Run on YOUR machine: either logged-in Supabase CLI, or DATABASE_URL set
 # (Supabase dashboard → Connect → connection string / pooler).
 # NEVER commit the dump or the connection string.

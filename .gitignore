@@ -1,4 +1,4 @@
-# ── secrets — NEVER commit ──────────────────────────────────────────────────
+# ── secrets - NEVER commit ──────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
@@ -18,7 +18,7 @@ key.properties
 **/.packages
 **/pubspec.lock
 
-# gen-l10n output — regenerates on `flutter pub get`; never edit, never commit
+# gen-l10n output - regenerates on `flutter pub get`; never edit, never commit
 app/lib/l10n/generated/
 
 # ── Android ─────────────────────────────────────────────────────────────────

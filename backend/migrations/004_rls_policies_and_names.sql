@@ -1,9 +1,9 @@
 -- 004: RLS on live + human display names (2026-09-22)
--- Idempotent — safe to re-run. Run ONCE in the Supabase SQL editor.
+-- Idempotent - safe to re-run. Run ONCE in the Supabase SQL editor.
 --
 -- Why: the app now pulls membership/user_profile (family roster, Sprint A)
 -- and envelope_tx/rate_snapshot (Sprint B). Live DBs created from migration
--- 001 alone have NO row-level security on the synced tables — every pull
+-- 001 alone have NO row-level security on the synced tables - every pull
 -- would return empty. This installs the same policy set as schema.sql,
 -- guarded so re-running never duplicates.
 

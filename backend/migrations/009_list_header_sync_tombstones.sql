@@ -1,10 +1,10 @@
 -- 009: shopping-list HEADER sync + tombstones (closes the Phase-1 gap where
--- only list_item rows synced — a second device never learned the list
+-- only list_item rows synced - a second device never learned the list
 -- existed, and items were pushed with a null list_id and rejected).
 --
--- 1. shopping_list.updated_at — the pull cursor requires it (001 added it to
+-- 1. shopping_list.updated_at - the pull cursor requires it (001 added it to
 --    list_item but missed the header table).
--- 2. deleted_at on shopping_list AND list_item — tombstones so a delete on
+-- 2. deleted_at on shopping_list AND list_item - tombstones so a delete on
 --    device A reaches device B (hard deletes cannot sync).
 -- 3. create_space now also returns default_list_id so the creating device
 --    can stamp every item push with the real list id (joiners learn it by

@@ -4,7 +4,6 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/state/app_state.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/when.dart';
 import '../../core/money/money.dart';
 import '../../core/models/models.dart';
 import '../../core/widgets/charts.dart';
@@ -12,19 +11,142 @@ import '../../core/widgets/ring_progress.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../meeting/family_meeting_screen.dart';
 
-/// Monthly report card (spec Module I1/I2) — one screen the family can
+/// Monthly report card (spec Module I1/I2) - one screen the family can
 /// review together at the monthly Family Meeting.
-class ReportsScreen extends StatelessWidget {
+class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
+
+  @override
+  State<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  int _cycleOffset = 0;
+
+  DateTime _cycleStart(AppState state, int offset) => DateTime(
+        state.cycleStart.year,
+        state.cycleStart.month - offset,
+        state.monthStartDay,
+      );
+
+  String _periodLabel(BuildContext context, DateTime start, DateTime end) {
+    final language = Localizations.localeOf(context).languageCode;
+    final locale =
+        const {'es', 'fr', 'pt'}.contains(language) ? language : 'en';
+    return '${DateFormat.MMMd(locale).format(start)} – '
+        '${DateFormat.yMMMd(locale).format(end.subtract(const Duration(days: 1)))}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final periodStart = _cycleStart(s, _cycleOffset);
+    final periodEnd = _cycleStart(s, _cycleOffset - 1);
+    final periodLabel = _periodLabel(context, periodStart, periodEnd);
+    final transactions = s.txs
+        .where((tx) =>
+            !tx.when.isBefore(periodStart) && tx.when.isBefore(periodEnd))
+        .toList();
+    final savings = s.goalTxs
+        .where(
+            (tx) => !tx.at.isBefore(periodStart) && tx.at.isBefore(periodEnd))
+        .toList();
+
+    final displayCur = s.displayCurrency;
+    final envelopeById = {for (final e in s.envelopes) e.id: e};
+    final spentByEnvelope = <String, int>{};
+    final spentUsdByEnvelope = <String, int>{};
+    var incomeMinor = 0;
+    var spentMinor = 0;
+    var cashSpent = 0;
+    for (final tx in transactions) {
+      final inDisplay = tx.amount.inCurrency(displayCur, s.rate).minor;
+      if (tx.type == TxType.income) {
+        incomeMinor += inDisplay;
+        continue;
+      }
+      spentMinor += inDisplay;
+      if (tx.method == Method.cash) cashSpent += inDisplay;
+      final envelope = envelopeById[tx.envelopeId];
+      if (envelope != null) {
+        spentByEnvelope.update(
+          envelope.id,
+          (value) =>
+              value +
+              tx.amount.inCurrency(envelope.limit.currency, s.rate).minor,
+          ifAbsent: () =>
+              tx.amount.inCurrency(envelope.limit.currency, s.rate).minor,
+        );
+        spentUsdByEnvelope.update(
+          envelope.id,
+          (value) => value + inDisplay,
+          ifAbsent: () => inDisplay,
+        );
+      }
+    }
+    final income = Money(incomeMinor, displayCur);
+    final spent = Money(spentMinor, displayCur);
+    final saved = Money(
+      savings.fold(
+          0, (sum, tx) => sum + tx.amount.inCurrency(displayCur, s.rate).minor),
+      displayCur,
+    );
+    final cashLeakShare = spent.minor == 0 ? 0.0 : cashSpent / spent.minor;
+
+    final trackedEnvelopes = s.envelopes.where((e) => !e.isPersonal).toList();
+    final onTrack = trackedEnvelopes
+        .where((e) =>
+            (spentByEnvelope[e.id] ?? 0) <=
+            (_cycleOffset == 0 ? s.effectiveLimit(e) : e.limit).minor)
+        .length;
+    final envelopeHealth =
+        trackedEnvelopes.isEmpty ? 1.0 : onTrack / trackedEnvelopes.length;
+    final days = periodEnd.difference(periodStart).inDays;
+    final historicDaily = days <= 0
+        ? 0
+        : ((income.minor - spent.minor - saved.minor) / days).floor();
+    final safePerDay = _cycleOffset == 0
+        ? s.safeToSpend
+        : Money(historicDaily < 0 ? 0 : historicDaily, displayCur);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            '${tStr(context, 'reportTitle')} — ${monthTitle(DateTime.now())}'),
+        title: Text(tStr(context, 'reportTitle')),
+        actions: [
+          PopupMenuButton<int>(
+            tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+            icon: const Icon(Icons.tune_rounded),
+            initialValue: _cycleOffset,
+            onSelected: (value) => setState(() => _cycleOffset = value),
+            itemBuilder: (context) => [
+              for (var offset = 0; offset < 3; offset++)
+                PopupMenuItem<int>(
+                  value: offset,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 28,
+                        child: offset == _cycleOffset
+                            ? Icon(Icons.check,
+                                size: 19, color: context.primary)
+                            : null,
+                      ),
+                      Expanded(
+                        child: Text(
+                          _periodLabel(
+                            context,
+                            _cycleStart(s, offset),
+                            _cycleStart(s, offset - 1),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -32,6 +154,34 @@ class ReportsScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
               children: [
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: context.card,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_month_outlined,
+                            size: 17, color: context.primary),
+                        const SizedBox(width: 7),
+                        Text(
+                          periodLabel,
+                          style: TextStyle(
+                            color: context.inkSoft,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 // ── Stat grid ────────────────────────────────────────────────
                 Row(
                   children: [
@@ -39,7 +189,7 @@ class ReportsScreen extends StatelessWidget {
                       child: _stat(
                         context,
                         tStr(context, 'income'),
-                        s.monthIncome.text,
+                        income.text,
                         context.incomeGreen,
                         Icons.trending_up,
                       ),
@@ -49,7 +199,7 @@ class ReportsScreen extends StatelessWidget {
                       child: _stat(
                         context,
                         tStr(context, 'spent'),
-                        s.monthSpend.text,
+                        spent.text,
                         context.expenseRed,
                         Icons.trending_down,
                       ),
@@ -63,7 +213,7 @@ class ReportsScreen extends StatelessWidget {
                       child: _stat(
                         context,
                         tStr(context, 'saved'),
-                        s.monthSaved.text,
+                        saved.text,
                         context.primary,
                         Icons.track_changes,
                       ),
@@ -73,7 +223,7 @@ class ReportsScreen extends StatelessWidget {
                       child: _stat(
                         context,
                         tStr(context, 'safePerDay'),
-                        s.safeToSpend.text,
+                        safePerDay.text,
                         context.ink,
                         Icons.wb_twilight,
                       ),
@@ -92,14 +242,14 @@ class ReportsScreen extends StatelessWidget {
                   child: Row(
                     children: [
                       RingProgress(
-                        value: s.envelopeHealth,
+                        value: envelopeHealth,
                         size: 74,
                         stroke: 9,
-                        color: s.envelopeHealth >= 0.7
+                        color: envelopeHealth >= 0.7
                             ? context.primary
                             : context.accent,
                         child: Text(
-                          '${(s.envelopeHealth * 100).round()}%',
+                          '${(envelopeHealth * 100).round()}%',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 15,
@@ -123,10 +273,8 @@ class ReportsScreen extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               AppLocalizations.of(context)!.reachedMove(
-                                s.envelopes
-                                    .where((e) => s.paceOf(e) != Pace.over)
-                                    .length,
-                                s.envelopes.length,
+                                onTrack,
+                                trackedEnvelopes.length,
                               ),
                               style: TextStyle(
                                 fontSize: 12,
@@ -166,7 +314,7 @@ class ReportsScreen extends StatelessWidget {
                           ),
                           Text(
                             AppLocalizations.of(context)!
-                                .cashShare((s.cashLeakShare * 100).round()),
+                                .cashShare((cashLeakShare * 100).round()),
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
@@ -179,7 +327,7 @@ class ReportsScreen extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(5),
                         child: LinearProgressIndicator(
-                          value: s.cashLeakShare,
+                          value: cashLeakShare,
                           minHeight: 8,
                           backgroundColor: context.track,
                           color: context.accent,
@@ -217,7 +365,10 @@ class ReportsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      _WhereItWent(state: s),
+                      _WhereItWent(
+                        state: s,
+                        spentUsdByEnvelope: spentUsdByEnvelope,
+                      ),
                       const SizedBox(height: 14),
                       _TrendCard(state: s),
                     ],
@@ -239,7 +390,7 @@ class ReportsScreen extends StatelessWidget {
                   icon: const Icon(Icons.groups),
                   label: Text(
                     AppLocalizations.of(context)!.meetingCta,
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -283,10 +434,9 @@ class ReportsScreen extends StatelessWidget {
   Widget _stat(BuildContext context, String label, String value, Color color,
           IconData icon) =>
       Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(4, 10, 4, 12),
         decoration: BoxDecoration(
-          color: context.card,
-          borderRadius: BorderRadius.circular(20),
+          border: Border(bottom: BorderSide(color: context.hairline)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,8 +467,12 @@ class ReportsScreen extends StatelessWidget {
 /// ── G4: interactive spend donut ─────────────────────────────────────────────
 class _WhereItWent extends StatefulWidget {
   final AppState state;
+  final Map<String, int> spentUsdByEnvelope;
 
-  const _WhereItWent({required this.state});
+  const _WhereItWent({
+    required this.state,
+    required this.spentUsdByEnvelope,
+  });
 
   @override
   State<_WhereItWent> createState() => _WhereItWentState();
@@ -339,14 +493,15 @@ class _WhereItWentState extends State<_WhereItWent> {
       const Color(0xFF7EC8F2),
       const Color(0xFFFF6B6B),
     ];
+
     final spent = <MapEntry<String, (double, Color)>>[
       for (var i = 0; i < s.envelopes.length; i++)
-        if (!s.envelopes[i].isPersonal && s.spentOn(s.envelopes[i]).minor > 0)
+        if (!s.envelopes[i].isPersonal &&
+            (widget.spentUsdByEnvelope[s.envelopes[i].id] ?? 0) > 0)
           MapEntry(
             s.envelopes[i].name,
             (
-              s.spentOn(s.envelopes[i]).inCurrency(Currency.usd, s.rate).minor /
-                  100.0,
+              (widget.spentUsdByEnvelope[s.envelopes[i].id] ?? 0) / 100.0,
               palette[i % palette.length],
             ),
           ),
@@ -483,18 +638,26 @@ class _TrendCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = state;
     final now = DateTime.now();
+    final firstMonth = DateTime(now.year, now.month - 5, 1);
+    final afterLastMonth = DateTime(now.year, now.month + 1, 1);
+    final totals = <int, double>{};
+    for (final tx in s.txs) {
+      if (tx.when.isBefore(firstMonth) || !tx.when.isBefore(afterLastMonth)) {
+        continue;
+      }
+      final key = tx.when.year * 12 + tx.when.month;
+      final amt = tx.amount.inCurrency(s.displayCurrency, s.rate).minor / 100.0;
+      totals.update(
+        key,
+        (value) => value + (tx.type == TxType.income ? amt : -amt),
+        ifAbsent: () => tx.type == TxType.income ? amt : -amt,
+      );
+    }
     final bars = <(String, double)>[];
     for (var i = 5; i >= 0; i--) {
       final start = DateTime(now.year, now.month - i, 1);
-      final end = DateTime(now.year, now.month - i + 1, 1);
-      var net = 0.0;
-      for (final t in s.txs) {
-        if (!t.when.isBefore(start) && t.when.isBefore(end)) {
-          final usd = t.amount.inCurrency(Currency.usd, s.rate).minor / 100.0;
-          net += t.type == TxType.income ? usd : -usd;
-        }
-      }
-      bars.add((DateFormat('MMM').format(start), net));
+      final key = start.year * 12 + start.month;
+      bars.add((DateFormat('MMM').format(start), totals[key] ?? 0));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

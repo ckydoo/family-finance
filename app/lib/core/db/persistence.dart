@@ -25,6 +25,8 @@ class DbSnapshot {
   final int stars;
   final String? locale;
   final String? displayCurrency;
+  final String? primaryCurrency;
+  final String? secondaryCurrency;
   final int? monthStartDay;
   final bool onboardingDone;
   final bool? notifyEnabled;
@@ -54,6 +56,8 @@ class DbSnapshot {
     required this.stars,
     this.locale,
     this.displayCurrency,
+    this.primaryCurrency,
+    this.secondaryCurrency,
     this.monthStartDay,
     required this.onboardingDone,
     this.notifyEnabled,
@@ -94,7 +98,7 @@ class Persistence {
   }
 
   /// Writes the current in-memory state to the local database
-  /// into a fresh database. One transaction — all or nothing.
+  /// into a fresh database. One transaction - all or nothing.
   Future<void> seedAll(AppState s) async {
     final batch = _d.batch();
     for (final a in s.accounts) {
@@ -187,6 +191,16 @@ class Persistence {
       {'k': 'displayCurrency', 'v': s.displayCurrency.name},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    batch.insert(
+      'kv',
+      {'k': 'primary_currency', 'v': s.primaryCurrency.name},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    batch.insert(
+      'kv',
+      {'k': 'secondary_currency', 'v': s.secondaryCurrency?.name ?? 'none'},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     await batch.commit(noResult: true);
   }
 
@@ -194,10 +208,16 @@ class Persistence {
 
   Future<DbSnapshot> loadAll() async {
     final accounts = (await _d.query('account')).map(_accountFrom).toList();
-    final envelopes = (await _d.query('envelope')).map(_envelopeFrom).toList();
-    final txs =
-        (await _d.query('tx', orderBy: 'when_ms DESC')).map(_txFrom).toList();
-    final goals = (await _d.query('goal')).map(_goalFrom).toList();
+    final envelopes = (await _d.query('envelope', where: 'is_archived = 0'))
+        .map(_envelopeFrom)
+        .toList();
+    final txs = (await _d.query('tx',
+            where: 'deleted_at IS NULL', orderBy: 'when_ms DESC'))
+        .map(_txFrom)
+        .toList();
+    final goals = (await _d.query('goal', where: "status <> 'archived'"))
+        .map(_goalFrom)
+        .toList();
     final goalTxs = (await _d.query('goal_tx', orderBy: 'at_ms ASC'))
         .map(_goalTxFrom)
         .toList();
@@ -205,13 +225,16 @@ class Persistence {
             where: 'deleted_at IS NULL', orderBy: 'rowid DESC'))
         .map(_itemFrom)
         .toList();
-    final chores = (await _d.query('chore')).map(_choreFrom).toList();
+    final chores = (await _d.query('chore', where: 'is_archived = 0'))
+        .map(_choreFrom)
+        .toList();
     final requests = (await _d.query('kid_request')).map(_requestFrom).toList();
     final proposals = (await _d.query('proposal')).map(_proposalFrom).toList();
     final earnings = (await _d.query('earning', orderBy: 'when_ms DESC'))
         .map(_earningFrom)
         .toList();
-    final recurring = (await _d.query('recurring', orderBy: 'next_due_ms ASC'))
+    final recurring = (await _d.query('recurring',
+            where: 'is_archived = 0', orderBy: 'next_due_ms ASC'))
         .map(_recurringFrom)
         .toList();
 
@@ -239,6 +262,8 @@ class Persistence {
       stars: int.tryParse(kv['stars'] ?? '') ?? 0,
       locale: kv['locale'],
       displayCurrency: kv['displayCurrency'],
+      primaryCurrency: kv['primary_currency'],
+      secondaryCurrency: kv['secondary_currency'],
       monthStartDay: int.tryParse(kv['month_start_day'] ?? ''),
       onboardingDone: kv['onboarding_done'] == '1',
       notifyEnabled: kv['notify_enabled'] != '0',
@@ -317,8 +342,12 @@ class Persistence {
     for (final row in rows) {
       switch (entity) {
         case 'tx':
-          batch.insert('tx', _txRow(adapter.decode(row) as Tx),
-              conflictAlgorithm: ConflictAlgorithm.replace);
+          if (row['deleted_at'] != null) {
+            batch.delete('tx', where: 'id = ?', whereArgs: [row['id']]);
+          } else {
+            batch.insert('tx', _txRow(adapter.decode(row) as Tx),
+                conflictAlgorithm: ConflictAlgorithm.replace);
+          }
         case 'envelope':
           batch.insert(
               'envelope', _envelopeRow(adapter.decode(row) as Envelope),
@@ -336,7 +365,7 @@ class Persistence {
         case 'list_item':
           final li = adapter.decode(row) as ListItem;
           if (li.deletedAt != null) {
-            // Tombstone from another device — remove our local copy.
+            // Tombstone from another device - remove our local copy.
             batch.delete('list_item', where: 'id = ?', whereArgs: [li.id]);
           } else {
             batch.insert('list_item', _itemRow(li),
@@ -375,8 +404,8 @@ class Persistence {
   }
 
   /// Clears the synced entity set (used when adopting a family space, so the
-  /// local-only rows never leak into the family's server data). Local-only data —
-  /// accounts, chores, savings circles, kv — is kept.
+  /// local-only rows never leak into the family's server data). Local-only data -
+  /// accounts, chores, savings circles, kv - is kept.
   Future<void> wipeSynced() async {
     final batch = _d.batch();
     for (final t in [
@@ -416,6 +445,7 @@ class Persistence {
         'limit_currency': e.limit.currency.name,
         'rollover': e.rollover.name,
         'is_personal': e.isPersonal ? 1 : 0,
+        'is_archived': e.isArchived ? 1 : 0,
       };
 
   Map<String, Object?> _txRow(Tx t) => {
@@ -428,6 +458,7 @@ class Persistence {
         'method': t.method.name,
         'note': t.note,
         'when_ms': t.when.millisecondsSinceEpoch,
+        'deleted_at': t.deletedAt?.toIso8601String(),
       };
 
   Map<String, Object?> _goalRow(Goal g) => {
@@ -439,10 +470,11 @@ class Persistence {
         'auto_save': g.autoSave,
         'is_kid_jar': g.isKidJar ? 1 : 0,
         'owner_member_id': g.ownerMemberId,
+        'status': g.status,
       };
 
   Map<String, Object?> _goalTxRow(GoalTx t, {String? serverId}) => {
-        if (serverId != null) 'server_id': serverId,
+        if ((serverId ?? t.id) != null) 'server_id': serverId ?? t.id,
         'goal_id': t.goalId,
         'member_id': t.byMemberId,
         'amount_minor': t.amount.minor,
@@ -475,6 +507,8 @@ class Persistence {
         'name': c.name,
         'stars': c.stars,
         'state': c.state.name,
+        'assignee_member_id': c.assigneeMemberId,
+        'is_archived': c.isArchived ? 1 : 0,
       };
 
   Map<String, Object?> _requestRow(KidRequest r) => {
@@ -517,6 +551,7 @@ class Persistence {
         'frequency': r.frequency.name,
         'next_due_ms': r.nextDue.millisecondsSinceEpoch,
         'active': r.active ? 1 : 0,
+        'is_archived': r.isArchived ? 1 : 0,
       };
 
   RecurringRule _recurringFrom(Map<String, Object?> m) => RecurringRule(
@@ -533,6 +568,7 @@ class Persistence {
         frequency: Frequency.values.byName(m['frequency'] as String),
         nextDue: DateTime.fromMillisecondsSinceEpoch(m['next_due_ms'] as int),
         active: (m['active'] as int? ?? 1) == 1,
+        isArchived: (m['is_archived'] as int? ?? 0) == 1,
       );
 
   Map<String, Object?> _circleRow(SavingsCircle m) => {
@@ -567,6 +603,7 @@ class Persistence {
         ),
         rollover: Rollover.values.byName(m['rollover'] as String),
         isPersonal: (m['is_personal'] as int) == 1,
+        isArchived: (m['is_archived'] as int? ?? 0) == 1,
       );
 
   Tx _txFrom(Map<String, Object?> m) => Tx(
@@ -581,6 +618,9 @@ class Persistence {
         method: Method.values.byName(m['method'] as String),
         note: m['note'] as String,
         when: DateTime.fromMillisecondsSinceEpoch(m['when_ms'] as int),
+        deletedAt: m['deleted_at'] == null
+            ? null
+            : DateTime.parse(m['deleted_at'] as String),
       );
 
   Goal _goalFrom(Map<String, Object?> m) => Goal(
@@ -594,9 +634,11 @@ class Persistence {
         autoSave: m['auto_save'] as String?,
         isKidJar: (m['is_kid_jar'] as int) == 1,
         ownerMemberId: m['owner_member_id'] as String?,
+        status: m['status'] as String? ?? 'active',
       );
 
   GoalTx _goalTxFrom(Map<String, Object?> m) => GoalTx(
+        id: m['server_id'] as String?,
         goalId: m['goal_id'] as String,
         byMemberId: m['member_id'] as String,
         amount: Money(
@@ -627,6 +669,8 @@ class Persistence {
         name: m['name'] as String,
         stars: m['stars'] as int,
         state: ChoreState.values.byName(m['state'] as String),
+        assigneeMemberId: m['assignee_member_id'] as String?,
+        isArchived: (m['is_archived'] as int? ?? 0) == 1,
       );
 
   KidRequest _requestFrom(Map<String, Object?> m) => KidRequest(

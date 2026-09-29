@@ -107,7 +107,7 @@ begin
   v_list := (select ((public.create_space('ProbeList', 'solo', 'USD', 'Probe'))->>'default_list_id')::uuid);
   if v_list is null then raise exception 'FAIL: create_space does not return default_list_id'; end if;
   delete from public.family_space where name = 'ProbeList';
-  -- (that RPC errored on the name or not — we only assert the ORIGINAL list:)
+  -- (that RPC errored on the name or not - we only assert the ORIGINAL list:)
   select id into v_list from public.shopping_list
     where space_id = v_space and name = 'Groceries' and deleted_at is null
     limit 1;
@@ -205,7 +205,7 @@ exception
     raise notice 'PASS member cannot join twice';
 end $$;
 
--- The outsider joins WITH the bound email — becomes a teen.
+-- The outsider joins WITH the bound email - becomes a teen.
 select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
 do $$
 declare
@@ -273,7 +273,7 @@ declare
   v_code2 text := (select v->>'code' from _ti where k='inv2');
   v_id uuid := (select (v->>'id')::uuid from _ti where k='inv2');
 begin
-  -- Rudo has the right email — but the owner revokes it first.
+  -- Rudo has the right email - but the owner revokes it first.
   perform public.revoke_invite(v_id);
   raise notice 'PASS owner revoked invite';
 end $$;
@@ -465,7 +465,7 @@ end $$;
 reset role;
 
 -- ── 4.8 reinstall reconciliation (migration 012) ────────────────────────────
--- A reinstalled device has no local kv — the auth token alone must answer
+-- A reinstalled device has no local kv - the auth token alone must answer
 -- "am I still in a family?".
 select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
 do $$

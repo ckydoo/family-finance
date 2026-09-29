@@ -12,7 +12,7 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: mhuriLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: screen,
+          home: Material(child: screen),
         ),
       );
 
@@ -26,8 +26,10 @@ void main() {
     await tester.pumpWidget(harness(state, const SavingsScreen()));
     await tester.pumpAndSettle();
     expect(find.text('Turn on mukando'), findsNothing);
-    expect(find.textContaining('Mukando —'), findsNothing);
+    expect(find.textContaining('Mukando -'), findsNothing);
 
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
     await tester.pumpWidget(harness(state, const SettingsScreen()));
     await tester.pumpAndSettle();
     expect(find.text('Savings circle (mukando)'), findsOneWidget);

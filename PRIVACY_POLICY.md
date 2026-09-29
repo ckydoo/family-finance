@@ -1,20 +1,20 @@
-# Mhuri Hub — Privacy Policy
+# Mhuri Hub - Privacy Policy
 
 **Effective: 2026-09-23 · App: Mhuri Hub (Android/iOS) · Backend: Supabase**
 
 Mhuri Hub is a family money manager: budgets, savings goals, shopping lists,
 bills and a children's mode. This policy states exactly what the app collects,
-where it lives, and how it is removed — in plain language.
+where it lives, and how it is removed - in plain language.
 
 ## What we collect
 
 | Data | Why | Where it lives |
 |---|---|---|
-| **Email + password** | Your sign-in. Passwords are stored only as salted hashes by Supabase Auth — never readable by us. | Supabase Auth |
+| **Email + password** | Your sign-in. Passwords are stored only as salted hashes by Supabase Auth - never readable by us. | Supabase Auth |
 | **Preferred name** | Shown to your family members. | Postgres `user_profile` |
 | **Profile photo (optional)** | So family members recognise each other. | Supabase Storage (private bucket) |
 | **Family financial content** | Envelopes, transactions, savings goals, shopping lists, bills, recurring rules, invite codes, activity-log entries. This is the app's core data. | Postgres, scoped to your family space |
-| **Kid profiles** | A display name, an emoji avatar and permission switches. Kids sign in **on a parent's device with a profile PIN** — we do not collect kids' emails, phone numbers or any other identifying data. | Postgres, inside your family space |
+| **Kid profiles** | A display name, an emoji avatar and permission switches. Kids sign in **on a parent's device with a profile PIN** - we do not collect kids' emails, phone numbers or any other identifying data. | Postgres, inside your family space |
 | **Invite recipient email (optional)** | Only if you send an invite by email; the address is used once to deliver the invite. | Invite record + your mail app |
 
 ## What we do NOT collect
@@ -31,7 +31,7 @@ where it lives, and how it is removed — in plain language.
 Access is enforced by **row-level security in the database itself**, not by
 the app: a signed-in member can only read/write rows belonging to the family
 space they belong to. Role switches can hide money amounts from kids and
-teens. Nobody outside your family space — including other users — can read
+teens. Nobody outside your family space - including other users - can read
 your rows. The backup operator (you/the family admin) is the only human with
 database-level access, under the family's own control.
 
@@ -51,12 +51,12 @@ database-level access, under the family's own control.
 
 - Avatars are optional and removable in Family → your profile.
 - Export: request a copy of your family data from the family admin (the
-  data lives in the family's own Supabase project — the admin can export at
+  data lives in the family's own Supabase project - the admin can export at
   any time via `backend/scripts/backup.sh`).
 
 ## Contact
 
-Questions or deletion requests: **[family-admin contact email — fill in
+Questions or deletion requests: **[family-admin contact email - fill in
 before store submission]**.
 
 ## Changes

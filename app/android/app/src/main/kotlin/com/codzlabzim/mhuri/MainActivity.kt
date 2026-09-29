@@ -1,4 +1,4 @@
-package com.example.mhuri_money
+package com.codzlabzim.mhuri
 
 import io.flutter.embedding.android.FlutterActivity
 

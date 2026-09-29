@@ -30,35 +30,34 @@ class AvatarUploader {
     String ext = 'jpg',
   }) async {
     if (bytes.isEmpty) {
-      throw const AvatarException('The picked photo is empty — try another.');
+      throw const AvatarException('The picked photo is empty - try another.');
     }
     final token = await _tokenGet();
     if (token == null || token.isEmpty) {
-      throw const AvatarException(
-          'Your session has expired — sign in again.');
+      throw const AvatarException('Your session has expired - sign in again.');
     }
     final r = await _client
         .post(
-          Uri.parse('$_base/storage/v1/object/avatars/$userId/avatar.$ext'),
-          headers: {
-            'apikey': _anonKey,
-            'Authorization': 'Bearer $token',
-            'x-upsert': 'true',
-            'Content-Type': ext == 'png' ? 'image/png' : 'image/jpeg',
-          },
-          body: bytes,
-        )
+      Uri.parse('$_base/storage/v1/object/avatars/$userId/avatar.$ext'),
+      headers: {
+        'apikey': _anonKey,
+        'Authorization': 'Bearer $token',
+        'x-upsert': 'true',
+        'Content-Type': ext == 'png' ? 'image/png' : 'image/jpeg',
+      },
+      body: bytes,
+    )
         .timeout(const Duration(seconds: 60), onTimeout: () {
       throw const AvatarException(
-          'Upload timed out — check your connection and try again.');
+          'Upload timed out - check your connection and try again.');
     });
     if (r.statusCode < 200 || r.statusCode >= 300) {
       if (r.statusCode == 401 || r.statusCode == 403) {
         throw const AvatarException(
-            'Your session has expired — sign in again.');
+            'Your session has expired - sign in again.');
       }
       throw AvatarException(
-          'Could not upload the photo (${r.statusCode}) — check your '
+          'Could not upload the photo (${r.statusCode}) - check your '
           'connection and try again.');
     }
     return '$_base/storage/v1/object/public/avatars/$userId/avatar.$ext';

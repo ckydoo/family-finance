@@ -18,7 +18,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get tabSavings => 'Ukugcina';
 
   @override
-  String get tabLists => 'Uhlu';
+  String get tabLists => 'Ukuthenga';
 
   @override
   String get tabFamily => 'Umndeni';
@@ -39,8 +39,48 @@ class AppLocalizationsNd extends AppLocalizations {
   String get familyPool => 'imali yomndeni wonke';
 
   @override
-  String safeToSpend(String amount) {
-    return 'Kuphephile ukusebenzisa namhlanje: $amount';
+  String get availableToSpendLabel => 'Imali engasetshenziswa';
+
+  @override
+  String get savingsExceedsCashTitle => 'Imali etholakalayo ayeneli';
+
+  @override
+  String savingsExceedsCashBody(Object amount) {
+    return 'Lesi isabelo sidlula imali etholakalayo ngo-$amount.';
+  }
+
+  @override
+  String get goalOverfundTitle => 'Lokhu kudlula umgomo';
+
+  @override
+  String goalOverfundBody(Object amount) {
+    return 'Lesi isabelo sidlulisa umgomo ngo-$amount. Usengeze noma kunjalo?';
+  }
+
+  @override
+  String get addAnyway => 'Engeza noma kunjalo';
+
+  @override
+  String safeToSpend(Object amount) {
+    return 'Imali ekhululekileyo namhlanje: $amount';
+  }
+
+  @override
+  String get flexibleSpendTitle => 'Imali ekhululekileyo namhlanje';
+
+  @override
+  String get flexibleSpendExplanation =>
+      'Imali ongayisebenzisa namhlanje ngemva kokuvikela imali egciniweyo lebekelwe izikhwama.';
+
+  @override
+  String get reservedForEnvelopes => 'Ebekelwe izikhwama';
+
+  @override
+  String get freeAfterCommitments => 'Ekhululekileyo ngemva kwezibopho';
+
+  @override
+  String daysRemaining(int count) {
+    return 'Insuku eziseleyo: $count';
   }
 
   @override
@@ -96,14 +136,14 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get noActivityHint =>
-      'imali yonke ephuma, engenayo nesivumelwano sivezwa lapha — qala nge+.';
+      'imali yonke ephuma, engenayo nesivumelwano sivezwa lapha - qala nge+.';
 
   @override
   String get noGoals => 'Asikho inhloso';
 
   @override
   String get noGoalsHint =>
-      'Qala ngomkhombe wezimbeleko — ncane njalo njalo kushintja indlela ozizwa ngayo.';
+      'Qala ngomkhombe wezimbeleko - ncane njalo njalo kushintja indlela ozizwa ngayo.';
 
   @override
   String get reportTitle => 'Ikadi lembiko';
@@ -207,7 +247,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get remindersTitle => 'Izikhumbuzo';
 
   @override
-  String scheduledOn(String from, String to) {
+  String scheduledOn(Object from, Object to) {
     return 'Kulungisiwe kule foni · amahla okuthula $from–$to';
   }
 
@@ -222,14 +262,14 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get ob1Body =>
-      'Indawo eyodwa ethethekayo yazo zonke izinto umndeni ozuzayo, ezichithayo, ezigcinayo nezahlela — ngazo zonke izimali ozisebenzisayo, online noma cha.';
+      'Indawo eyodwa ethethekayo yazo zonke izinto umndeni ozuzayo, ezichithayo, ezigcinayo nezahlela - ngazo zonke izimali ozisebenzisayo, online noma cha.';
 
   @override
   String get ob2Title => 'Amabhajethi, cha ukuzilahla';
 
   @override
   String get ob2Body =>
-      'Nika idola ngalinye umsebenzi walo. Okutya, imali yesikolo, ezokuthutha — bona ngeso lesibhamu okuhamba kahle, okudinga ukugcwaliswa, nokuphephile ukusebenzisa namhlanje.';
+      'Nika idola ngalinye umsebenzi walo. Okutya, imali yesikolo, ezokuthutha - bona ngeso lesibhamu okuhamba kahle, okudinga ukugcwaliswa, nokuphephile ukusebenzisa namhlanje.';
 
   @override
   String get ob3Title => 'Yakhiwe yonke imndeni';
@@ -242,12 +282,12 @@ class AppLocalizationsNd extends AppLocalizations {
   String get ob4Title => 'Okukhumbuza okuthambile';
 
   @override
-  String syncPill(int count) {
+  String syncPill(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other:
-          '$count utshintsho olugciniwele kwesi sixhobo — kuhlanganiswa xa kukho internet',
+          '$count utshintsho olugciniwele kwesi sixhobo - kuhlanganiswa xa kukho internet',
     );
     return '$_temp0';
   }
@@ -275,23 +315,23 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get donutEmpty =>
-      'Akukho zitchitho zirekhodiweyo kule nyanga — idonuti ialala kudityaniswa.';
+      'Akukho zitchitho zirekhodiweyo kule nyanga - idonuti ialala kudityaniswa.';
 
   @override
   String get ob4Body =>
-      'Izikhumbuzo zezimali, ukubukelelwa kwesabelomali nomhlangano wesonto — kuhlonishwa amahora okuthula, kukhofoni yakho. Wena ulawula.';
+      'Izikhumbuzo zezimali, ukubukelelwa kwesabelomali nomhlangano wesonto - kuhlonishwa amahora okuthula, kukhofoni yakho. Wena ulawula.';
 
   @override
   String get next => 'Okulandelayo';
 
   @override
-  String get loginWelcome => 'Wamukeleke kuMhuri Hub';
+  String get loginWelcome => 'Wamukeleke kuMhuri';
 
   @override
   String get loginEnterCode => 'Faka ikhodi';
 
   @override
-  String loginSentCode(String phone) {
+  String loginSentCode(Object phone) {
     return 'Sithumele ikhodi ngeSMS ku$phone';
   }
 
@@ -335,10 +375,10 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get savedOffline =>
-      'Kulondoloziwe ✓ — isebenza ngaphandle kwe-inthanethi, ihlangana kusasa';
+      'Kulondoloziwe ✓ - isebenza ngaphandle kwe-inthanethi, ihlangana kusasa';
 
   @override
-  String kidsHi(String name) {
+  String kidsHi(Object name) {
     return 'Sawubona $name!';
   }
 
@@ -346,8 +386,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get kidsMyJar => 'Isigqi sami';
 
   @override
-  String kidsGoalSaved(String goal, int pct) {
-    return 'Inhloso: $goal — $pct% kilondoloziwe';
+  String kidsGoalSaved(Object goal, Object pct) {
+    return 'Inhloso: $goal - $pct% kilondoloziwe';
   }
 
   @override
@@ -357,8 +397,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get kidsWishList => 'Uhlu zifiso';
 
   @override
-  String kidsWishItem(String amount) {
-    return 'Ibhola — US\$25 · kilondoloziwe $amount';
+  String kidsWishItem(Object amount) {
+    return 'Ibhola - US\$25 · kilondoloziwe $amount';
   }
 
   @override
@@ -372,6 +412,62 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get kidsParents => 'Abazali';
+
+  @override
+  String get kidsNoChores =>
+      'Akulamsebenzi olindileyo. Cela umzali afake omunye nxa usulungile.';
+
+  @override
+  String get kidsParentArea => 'Indawo yabazali';
+
+  @override
+  String get kidsAndChores => 'Abantwana lemisebenzi';
+
+  @override
+  String get addChore => 'Faka umsebenzi';
+
+  @override
+  String get addChoreHint => 'Dala umsebenzi wemuli ubeke umvuzo wezinkanyezi.';
+
+  @override
+  String get choreName => 'Ibizo lomsebenzi';
+
+  @override
+  String get starReward => 'Umvuzo wezinkanyezi';
+
+  @override
+  String get choreFieldsRequired =>
+      'Bhala umsebenzi lenkanyezi eyodwa loba ezingaphezulu.';
+
+  @override
+  String choreAdded(Object name) {
+    return '$name yengezwe ebantwaneni.';
+  }
+
+  @override
+  String get noFamilyChores => 'Akulamsebenzi. Faka owokuqala wabantwana.';
+
+  @override
+  String choreStars(Object stars) {
+    return 'Izinkanyezi $stars';
+  }
+
+  @override
+  String get kidsNoWish => 'Akulasifiso esikhethiwe';
+
+  @override
+  String kidsWishProgress(Object name, Object target, Object saved) {
+    return '$name · inhloso $target · $saved kugciniwe';
+  }
+
+  @override
+  String get kidsJars => 'Imbiza zabantwana';
+
+  @override
+  String get addKidWish => 'Faka isifiso somntwana';
+
+  @override
+  String get childLabel => 'Umntwana';
 
   @override
   String get kidsAskTitle => 'Cela ku mama no baba';
@@ -390,7 +486,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get teenEarnHint =>
-      'Gezaimoto, siza emaveni — bhala ubone isigqi sikhula.';
+      'Gezaimoto, siza emaveni - bhala ubone isigqi sikhula.';
 
   @override
   String get teenSpend => 'Chitha 50%';
@@ -402,12 +498,16 @@ class AppLocalizationsNd extends AppLocalizations {
   String get teenGive => 'Nika 10%';
 
   @override
-  String teenSplitHint(String amount) {
+  String teenSplitHint(Object amount) {
     return 'Ukwahlukaniswa kwe$amount okutholakele kule nyanga';
   }
 
   @override
-  String get teenSavedJar => 'Kulondoloziwe esigqini — abazali balingana 50%';
+  String get teenSavedJar => 'Kulondoloziwe esigqini - abazali balingana 50%';
+
+  @override
+  String get teenJarCreateFailed =>
+      'Asikwazanga ukulungisa isigqoko sakho semali. Hlola uxhumano uzame futhi.';
 
   @override
   String get teenWhatDid => 'Wenzani?';
@@ -419,14 +519,19 @@ class AppLocalizationsNd extends AppLocalizations {
   String get membersDesc => 'Abazali nezingane · inyanga iqala ngo-1';
 
   @override
+  String membersCycleDesc(int day) {
+    return 'Umjikelezo webhajethi uqala ngosuku $day';
+  }
+
+  @override
   String get membersInviteHint =>
-      'Yabelana ngekhodi noma skanela ubize umndeni';
+      'Dala isimemo esivikelekileyo esilendima yelunga ngalinye';
 
   @override
   String get setCurrency => 'Imali & izinga';
 
   @override
-  String setCurrencySub(String rate) {
+  String setCurrencySub(Object rate) {
     return 'USD eyinhloko · ZiG yesibili · $rate';
   }
 
@@ -435,13 +540,13 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get setPrivacySub =>
-      'Amakhava siqu: cha — umlingani ubona okwabiwe kuphela';
+      'Amakhava siqu: cha - umlingani ubona okwabiwe kuphela';
 
   @override
   String get setMonthStart => 'Ukuqala kwenyanga';
 
   @override
-  String get setMonthStartSub => 'Usuku 1 — kuhambisana nomjikelezo wemholo';
+  String get setMonthStartSub => 'Usuku 1 - kuhambisana nomjikelezo wemholo';
 
   @override
   String get setNotif => 'Izaziso';
@@ -476,7 +581,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get mReachedTalk =>
-      'Khuluma ngezikhava ezithi \"Kufinyelele\". Zigcwaliseni ndawonye, ngokuthula.';
+      'Xoxani ngezimvilophu ezibhalwe \"Sekufikile\". Zigcwaliseni ndawonye - ngokuzola.';
 
   @override
   String get mGoals => 'Izinhloso zokulondoloza';
@@ -488,8 +593,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get mImprove => 'Into eyodwa yokuthuthukisa';
 
   @override
-  String recSkipped(String date) {
-    return 'Kweyekiwe — elandelayo: $date';
+  String recSkipped(Object date) {
+    return 'Kweyekiwe - elandelayo: $date';
   }
 
   @override
@@ -497,7 +602,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get recReview =>
-      'Akukho okuthathiwa ngokuzenzakalela — wena uhlole ubhale konke.';
+      'Akukho okuthathiwa ngokuzenzakalela - wena uhlole ubhale konke.';
 
   @override
   String get recNoEnvelope => 'Ayikho ikhava';
@@ -521,13 +626,13 @@ class AppLocalizationsNd extends AppLocalizations {
   String get roleAdult => 'Omdala';
 
   @override
-  String get roleTeen => 'Intsha';
+  String get roleTeen => 'Lijaha/Intombazane';
 
   @override
   String get roleKid => 'Ingane';
 
   @override
-  String get roleViewer => 'UGogo · Obukelayo';
+  String get roleViewer => 'Um-bukeli';
 
   @override
   String get methodCash => 'Imali eqinile';
@@ -585,21 +690,21 @@ class AppLocalizationsNd extends AppLocalizations {
       'Izikhava yizabelomali ozibonayo: ukudla, isikole, ezokuthutha. Yenza eyokuqala ngezansi.';
 
   @override
-  String get newEnvStub => 'Ikhava entsha — izayo (isigaba 1)';
+  String get newEnvStub => 'Ikhava entsha - izayo (isigaba 1)';
 
   @override
   String get addRecurringTip => 'Engeza isabelomali ephindaphindayo';
 
   @override
   String get recReviewed =>
-      'Ihlolwa ngaphambi kokubhala — akukho okuthathiwa thula.';
+      'Ihlolwa ngaphambi kokubhala - akukho okuthathiwa thula.';
 
   @override
   String get noRecurring => 'Azikho izabelomali eziphindaphindayo okuqala';
 
   @override
   String get recurringHint =>
-      'Engeza imithetho yesikole, carenselo noma airtime — sikukhumbuza uma sekufike isikhathi.';
+      'Engeza imithetho yesikole, carenselo noma airtime - sikukhumbuza uma sekufike isikhathi.';
 
   @override
   String get chipOnTrack => 'Kulungile';
@@ -635,7 +740,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get meetingNoteHint =>
-      'isb. \"Pheka ngemihlobo — imali yemakethe iyakhuphuka.\"';
+      'isib. \"Phekani kakhulu ngamaSonto - indleko zasesitolo ziyakhula.\"';
 
   @override
   String get meetingSaveNote => 'Gcina ithiphu lethu';
@@ -644,7 +749,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get savedTick => 'Kugcinwe ✓';
 
   @override
-  String get meetingDone => 'Kwenziwe — sobonana ngenyanga ezayo';
+  String get meetingDone => 'Kwenziwe - sobonana ngenyanga ezayo';
 
   @override
   String get reportCard => 'Ikhardi lembiko';
@@ -718,13 +823,13 @@ class AppLocalizationsNd extends AppLocalizations {
   String get joinWithCode => 'Ngena ngekhodi';
 
   @override
-  String get offlineRetry => 'Nge-inthanethi — izazama yodwa';
+  String get offlineRetry => 'Nge-inthanethi - izazama yodwa';
 
   @override
   String get syncProblem => 'Inkinga yokuhlanganisa';
 
   @override
-  String get signinExpired => 'Ukungena kuphelelwe — phuma ubuyele';
+  String get signinExpired => 'Ukungena kuphelelwe - phuma ubuyele';
 
   @override
   String get syncing => 'Iyahlanganisa…';
@@ -748,7 +853,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get localizedNote =>
-      'I-app yonke manje ikhuluma izilimi eziyisithupha — azisalayo izinkomba zesiNgisi.';
+      'I-app yonke manje ikhuluma izilimi eziyisithupha - azisalayo izinkomba zesiNgisi.';
 
   @override
   String get nextCreateSpace =>
@@ -756,7 +861,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String reachedMove(Object on, Object total) {
-    return '$on kwezikhava ezingu$total zisakulungile. Vula ezithi \"Kufikelelwe\" uhambise imali — ngokuthula, hhayi ngokuphelele.';
+    return '$on kokungu-$total kwezimvilophu kusasendleleni efanele. Vulani ezibhalwe \"Sekufikile\" lifake imali phakathi - ngokuzola, kungabi ngokuphelele.';
   }
 
   @override
@@ -789,8 +894,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get markRound => 'Phawula uthathiwe';
 
   @override
-  String get recordsOnly =>
-      'I-Mhuri Hub ayisoze yagcina imali — ibhala kuphela.';
+  String get recordsOnly => 'I-Mhuri ayisoze yagcina imali - ibhala kuphela.';
 
   @override
   String get saveContribution => 'Gcina isabelo';
@@ -806,7 +910,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get paydayAlign =>
-      'Izabelomali zihambisana nomholo — umjikelezo uqala ngalolusuku futhi isikhumbuzo somhlangano sifika ngobusuku ngaphambili';
+      'Izabelomali zihambisana nomholo - umjikelezo uqala ngalolusuku futhi isikhumbuzo somhlangano sifika ngobusuku ngaphambili';
 
   @override
   String get backupComing => 'Ibackup & ukubuyisa (izayo)';
@@ -872,12 +976,12 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String choreDoneTitle(Object name) {
-    return '\"$name\" kwenziwe — qinisekisa?';
+    return '\"$name\" sekuqedwe - qinisekisa?';
   }
 
   @override
   String choreDoneSub(Object stars) {
-    return '$stars izigqi — qinisekisa isigqi sikhule';
+    return '$stars izigqi - qinisekisa isigqi sikhule';
   }
 
   @override
@@ -918,12 +1022,12 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String circleTitle(Object round, Object total) {
-    return 'Isigqi sokulondoloza — Isigaba $round esi$total';
+    return 'Isigqi sokulondoloza - Isigaba $round esi$total';
   }
 
   @override
   String postedSnack(Object name) {
-    return '$name kubhaliwe ✓ — ikhava ivuselelwe';
+    return '$name kubhaliwe ✓ - ikhava ivuselelwe';
   }
 
   @override
@@ -933,7 +1037,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String approvedReq(Object amount, Object name) {
-    return 'Kuvunyelwe ✓ — kengezwe ku$name';
+    return 'Kuvunyelwe ✓ - $amount kengezwe ku$name';
   }
 
   @override
@@ -943,16 +1047,16 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String approvedProp(Object amount, Object env) {
-    return 'Kuvunyelwe ✓ — $amount kubhaliwe ku$env';
+    return 'Kuvunyelwe ✓ - $amount kubhaliwe ku$env';
   }
 
   @override
   String sentKid(Object name) {
-    return '\"$name\" kuthunyelwe ku mama no baba';
+    return '\"$name\" kuthunyelwe kuMama loBaba';
   }
 
   @override
-  String get listEmptyAdd => 'Akukho lapha — engeza into nge ＋';
+  String get listEmptyAdd => 'Akukho lapha - engeza into nge ＋';
 
   @override
   String usesPct(Object pct, Object name) {
@@ -961,7 +1065,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String loggedTo(Object amount, Object name) {
-    return 'Kubhaliwe $amount ku$name ✓ — ikhava ivuselelwe';
+    return 'Kubhaliwe $amount ku$name ✓ - ikhava ivuselelwe';
   }
 
   @override
@@ -981,7 +1085,7 @@ class AppLocalizationsNd extends AppLocalizations {
   }
 
   @override
-  String get createFail => 'Ayikwazi ukudala isikhala — zama futhi';
+  String get createFail => 'Ayikwazi ukudala isikhala - zama futhi';
 
   @override
   String get joinSpaceTitle => 'Ngena isikhala somndeni';
@@ -990,17 +1094,17 @@ class AppLocalizationsNd extends AppLocalizations {
   String get inviteCode => 'Ikhodi yesimemo';
 
   @override
-  String get joinedOk => 'Kungeniwe ✓ — idatha yakho iyahlangana';
+  String get joinedOk => 'Kungeniwe ✓ - idatha yakho iyahlangana';
 
   @override
-  String get joinFail => 'Ayikwazi ukungena — zama futhi';
+  String get joinFail => 'Ayikwazi ukungena - zama futhi';
 
   @override
   String get kidsPin => 'Iphinikhodi yokuphuma endaweni yezingane';
 
   @override
   String get kidsPinSub =>
-      'Idingekha ukuphuma endaweni yezingane — thepha ukushintsha';
+      'Idingekha ukuphuma endaweni yezingane - thepha ukushintsha';
 
   @override
   String signedInAs(Object masked) {
@@ -1025,7 +1129,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String starsHome(Object stars) {
-    return '$stars izigqi — qinisekisa izimpahla ekhaya ukhazigqi zikhule';
+    return '$stars izigqi - qinisekisa izimpahla ekhaya ukhazigqi zikhule';
   }
 
   @override
@@ -1039,7 +1143,7 @@ class AppLocalizationsNd extends AppLocalizations {
   }
 
   @override
-  String get roundOk => 'Isigaba sibhaliwe ✓ — sibhala kuphela, asigcini imali';
+  String get roundOk => 'Isigaba sibhaliwe ✓ - sibhala kuphela, asigcini imali';
 
   @override
   String addToGoal(Object name) {
@@ -1125,24 +1229,23 @@ class AppLocalizationsNd extends AppLocalizations {
   String get pickCurrency => 'Imali eboniswayo';
 
   @override
-  String get rateField => 'ZiG ngo-1 USD';
+  String get rateField => 'Isilinganiso sokutshintshisana';
 
   @override
   String get rateSave => 'Gcina izinga';
 
   @override
-  String get rateReset => 'Buyela kuRBZ yokuqala';
+  String get rateReset => 'Buyela kusilinganiso sokuqala';
 
   @override
-  String get rateCustomNote =>
-      'Isetshenziselwa ukubuka amaZiG ku-app yonke. EyRBZ yokuqala ngu-15,27.';
+  String get rateCustomNote => 'Isetshenziselwa ukuguqula imali ku-app yonke.';
 
   @override
   String get autoHide => 'Fihla imali ngapha ngiphuma';
 
   @override
   String get autoHideSub =>
-      'Izibalo ziyafihlana i-app iya ngasemuva — yivala ungathanda.';
+      'Izibalo ziyafihlana i-app iya ngasemuva - yivala ungathanda.';
 
   @override
   String get hideNow => 'Fihla imali manje';
@@ -1157,7 +1260,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get copied => 'Kukopishiwe ✓';
 
   @override
-  String get inviteTitle => 'Memela ilunga lomndeni';
+  String get inviteTitle => 'Menyukela umndeni';
 
   @override
   String get editProfile => 'Hlela iphrofayili';
@@ -1245,14 +1348,14 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get passwordResetSent =>
-      'Imeyili yokulungisa ipasiwedi ithunyelwe — vula ilinkhi kulefonha, uhlelo luzogcwalisela.';
+      'Imeyili yokulungisa ipasiwedi ithunyelwe - vula ilinkhi kulefonha, uhlelo luzogcwalisela.';
 
   @override
   String get passwordResetFailed =>
       'Asenelisanga ukuthumela i-imeyili. Hlola uxhumano uzame futhi.';
 
   @override
-  String get newToMhuri => 'Umutsha kuMhuri Hub?';
+  String get newToMhuri => 'Umutsha kuMhuri?';
 
   @override
   String get alreadyHaveAccount => 'Usuvele ule-akhawunti?';
@@ -1265,7 +1368,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get checkYourEmail =>
-      'Siseduze — hlola i-imeyili yakho uyiqinisekise, bese ungena.';
+      'Siseduze - hlola i-imeyili yakho uyiqinisekise, bese ungena.';
 
   @override
   String get togglePassword => 'Khombisa noma ficela ipasiwedi';
@@ -1282,7 +1385,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get setupChoiceBody =>
-      'I-Mhuri Hub isebenza nomndeni owodwa, ndawonye. Yakha lowakho, noma joyina lowo owungulowo.';
+      'I-Mhuri isebenza nomndeni owodwa, ndawonye. Yakha lowakho, noma joyina lowo owungulowo.';
 
   @override
   String get setupCreateCard => 'Yakha umndeni';
@@ -1296,7 +1399,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get setupJoinCardBody =>
-      'Umuntu ukumemele — faza ikholodi yomndeni wakhe ujoyine.';
+      'Umuntu ukumemele - faza ikholodi yomndeni wakhe ujoyine.';
 
   @override
   String get createFamilyCta => 'Yakha umndeni';
@@ -1341,14 +1444,14 @@ class AppLocalizationsNd extends AppLocalizations {
   String get skipForNow => 'Yeqela okwesikhashana';
 
   @override
-  String get setupInviteTitle => 'Memela abantu bakho';
+  String get setupInviteTitle => 'Menyukela abantu';
 
   @override
   String get setupWorking => 'Kulungisa konke…';
 
   @override
   String get noEnvelopesYet =>
-      'Ayikho imibhajeti okhona — yakha leyonqaba kuthebha leziBajeti.';
+      'Ayikho imibhajeti okhona - yakha leyonqaba kuthebha leziBajeti.';
 
   @override
   String get noActivityYet =>
@@ -1369,15 +1472,15 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get errInviteCode =>
-      'Faka ikhodi yemenyu eyanikwa umnikazi womndeni — ifana le MHRI-4F2A.';
+      'Faka ikhodi yemenyu eyanikwa umnikazi womndeni - ifana le MHRI-4F2A.';
 
   @override
   String get errFamilyNameTaken =>
-      'Igama leli lomndeni selisetshenzisiwe — zama elinye.';
+      'Igama leli lomndeni selisetshenzisiwe - zama elinye.';
 
   @override
   String get authErrEmailNotConfirmed =>
-      'Hlola inboksi yakho — qala uthele isixhumanisi sokucacisa, ubuye ungene.';
+      'Hlola inboksi yakho - qala uthele isixhumanisi sokucacisa, ubuye ungene.';
 
   @override
   String get authErrBadCredentials =>
@@ -1385,32 +1488,32 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get authErrAlreadyRegistered =>
-      'I-akhawunti ngele-imeyili leli isenkhona — ngena ngayo.';
+      'I-akhawunti ngele-imeyili leli isenkhona - ngena ngayo.';
 
   @override
   String get authErrRateLimited =>
-      'Kuzama okunengi — linda umzuzu uphinde uzame.';
+      'Kuzama okunengi - linda umzuzu uphinde uzame.';
 
   @override
   String get authErrNetwork =>
-      'Ayikho i-intanethi — hlola uxhumano uphinde uzame.';
+      'Ayikho i-intanethi - hlola uxhumano uphinde uzame.';
 
   @override
   String get authResend => 'Thumela kabusha i-imeyili yokucacisa';
 
   @override
   String get authResent =>
-      'I-imeyili yokucacisa ithunyelwe — hlola inboksi yakho.';
+      'I-imeyili yokucacisa ithunyelwe - hlola inboksi yakho.';
 
   @override
   String get mukandoOn => 'Isiqutho sezokulondoloza (mukando)';
 
   @override
-  String get mukandoEnableTitle => 'Mukando — izokulondoloza ezajikelezayo';
+  String get mukandoEnableTitle => 'Mukando - izokulondoloza ezajikelezayo';
 
   @override
   String get mukandoEnableSub =>
-      'Londoloza ngokulandelana nomndeni wakho. Kuvaliwe ngesikhathi sento — vula uma isiqutho sakho siyajika.';
+      'Londoloza ngokulandelana nomndeni wakho. Kuvaliwe ngesikhathi sento - vula uma isiqutho sakho siyajika.';
 
   @override
   String get mukandoEnableCta => 'Vula i-mukando';
@@ -1426,10 +1529,10 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get photoFailed =>
-      'Isithombe asithunyelwanga — hlola uxhumano uphinde uzame.';
+      'Isithombe asithunyelwanga - hlola uxhumano uphinde uzame.';
 
   @override
-  String get photoSaved => 'Isithombe sigciniwe — umndeni wakho uzosibona.';
+  String get photoSaved => 'Isithombe sigciniwe - umndeni wakho uzosibona.';
 
   @override
   String get newSavingsGoal => 'Inhloso entsha yokonga';
@@ -1468,7 +1571,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get syncStateError => 'Kulindile ukuzama futhi';
 
   @override
-  String get syncStateOffline => 'Awukho emoyeni — izinguquko zigcinwa lefonha';
+  String get syncStateOffline => 'Awukho emoyeni - izinguquko zigcinwa lefonha';
 
   @override
   String get syncStateNeedsSignIn => 'Ngena ngemvume ukuze uxhumane';
@@ -1501,13 +1604,12 @@ class AppLocalizationsNd extends AppLocalizations {
   String get syncConnectedTo => 'Ifu yomndeni:';
 
   @override
-  String get syncNotConnected => 'Le lfona kuphela — ifu yomndeni ayikaxhumekile.';
+  String get syncNotConnected =>
+      'Le lfona kuphela - ifu yomndeni ayikaxhumekile.';
 
   @override
-  String get syncBackupNote => 'Ayikho i-backup edinga ukuvulwa. Zonke izinguquko ziyagcinwa lefonha masinyane futhi ziyaxhumana nefu yomndeni uma unethiwekhi. Khipha i-CSV ngezansi noma nini uthole ikhophi oyilawulayo.';
-
-  @override
-  String get previewExit => 'Phuma';
+  String get syncBackupNote =>
+      'Ayikho i-backup edinga ukuvulwa. Zonke izinguquko ziyagcinwa lefonha masinyane futhi ziyaxhumana nefu yomndeni uma unethiwekhi. Khipha i-CSV ngezansi noma nini uthole ikhophi oyilawulayo.';
 
   @override
   String previewBanner(Object name) {
@@ -1515,10 +1617,14 @@ class AppLocalizationsNd extends AppLocalizations {
   }
 
   @override
+  String get previewExit => 'Phuma';
+
+  @override
   String get resetTitle => 'Khetha ipasiwedi entsha';
 
   @override
-  String get resetSubtitle => 'Ungene ngomqondiso wokulungisa — manje khetha ipasiwedi entsha.';
+  String get resetSubtitle =>
+      'Ungene ngomqondiso wokulungisa - manje khetha ipasiwedi entsha.';
 
   @override
   String get resetNewLabel => 'Ipayiwedi entsha';
@@ -1536,13 +1642,14 @@ class AppLocalizationsNd extends AppLocalizations {
   String get resetRuleMix => 'Inezinhlamvu nenombolo';
 
   @override
-  String get resetRuleHint => 'Sebenzisa okungani okungu-8 noma ngaphezulu okunezinhlamvu nenombolo.';
+  String get resetRuleHint =>
+      'Sebenzisa okungani okungu-8 noma ngaphezulu okunezinhlamvu nenombolo.';
 
   @override
   String get resetCta => 'Guqula ipasiwedi';
 
   @override
-  String get resetSuccess => 'Ipayiwedi iguqulwe — ngena ngaleyakho entsha';
+  String get resetSuccess => 'Ipayiwedi iguqulwe - ngena ngaleyakho entsha';
 
   @override
   String get resetShow => 'Veza nomcowe ipasiwedi';
@@ -1551,7 +1658,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get resetExpiredTitle => 'Le link liphelelwe yisikhathi';
 
   @override
-  String get resetExpiredBody => 'Amalinka okulungisa asebenza kanye kuphela ngesikhathi esifushana. Thumela entsha futhi uzame.';
+  String get resetExpiredBody =>
+      'Amalinka okulungisa asebenza kanye kuphela ngesikhathi esifushana. Thumela entsha futhi uzame.';
 
   @override
   String get resetSendNew => 'Thumela link entsha';
@@ -1561,32 +1669,70 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String listDeleted(Object name) {
-    return '"$name" likhishwe ohlwini';
+    return '\"$name\" isusiwe ohlwini';
   }
 
   @override
-  String get roleAdult => 'Omdala';
+  String get memberAccountTitle => 'Dala i-akhawunti yelunga';
 
   @override
-  String get roleTeen => 'Lijaha/Intombazane';
+  String get memberAccountSubtitle =>
+      'Lungisela umuntu i-akhawunti ukuze angene emulini khonapho.';
 
   @override
-  String get roleViewer => 'Um-bukeli';
+  String get memberAccountAction => 'Dala i-akhawunti yelunga';
 
   @override
-  String get inviteCode => 'Ikhodi yesimemo';
+  String get memberAccountSheetSubtitle =>
+      'Uzangena khonapho ngaphandle kwekhodi yesimemo.';
 
   @override
-  String get inviteTitle => 'Menyukela umndeni';
+  String get memberAccountName => 'Ibizo alithandayo';
 
   @override
-  String get inviteHowTo => 'Uyakha i-akhawunti nge-imeyili yakhe, bese afaka lekhodi ukuba ajoyine umndeni wakho.';
+  String get memberAccountEmail => 'Ikheli le-email';
+
+  @override
+  String get memberAccountTemporaryPassword => 'I-password yesikhatshana';
+
+  @override
+  String get memberAccountPasswordRule =>
+      'Okungenani izinhlamvu eziyi-10, kube lohlamvu lenombolo';
+
+  @override
+  String get memberAccountRole => 'Indima emulini';
+
+  @override
+  String get memberAccountSecurityNote =>
+      'Yabelana i-password yesikhatshana ngasese. Mcele asebenzise Forgot password akhethe eyakhe.';
+
+  @override
+  String get memberAccountCreate => 'Dala i-akhawunti yelunga';
+
+  @override
+  String get memberAccountCreated => 'I-akhawunti idaliwe yengezwa emulini.';
+
+  @override
+  String get memberAccountBadName => 'Faka ibizo alithandayo.';
+
+  @override
+  String get memberAccountEmailExists =>
+      'I-email le isivele ile-akhawunti. Sebenzisa isimemo esijwayelekileyo.';
+
+  @override
+  String get memberAccountOwnerRole =>
+      'Umnikazi womuli kuphela ongadala enye i-akhawunti yomzali loba umuntu omdala.';
+
+  @override
+  String get memberAccountFailed =>
+      'I-akhawunti ayidalekanga. Hlola uxhumano uphinde uzame.';
 
   @override
   String get inviteNew => 'Isimemo esisha';
 
   @override
-  String get inviteEmailOptional => 'I-imeyili yabo (ngokukhetha — bona kuphela bangayisebenzisa)';
+  String get inviteEmailOptional =>
+      'I-imeyili yabo (ngokukhetha - bona kuphela bangayisebenzisa)';
 
   @override
   String get inviteCreate => 'Yenza isimemo';
@@ -1595,13 +1741,15 @@ class AppLocalizationsNd extends AppLocalizations {
   String get inviteCreated => 'Bonisa le khowudi noma i-QR kubo';
 
   @override
-  String get inviteScanHint => 'Bhalansa i-QR ngekhamera yabo, noma betha ilinkhi — livula lohlelo lukulungele ukungena.';
+  String get inviteScanHint =>
+      'Bhalansa i-QR ngekhamera yabo, noma betha ilinkhi - livula lohlelo lukulungele ukungena.';
 
   @override
   String get inviteShare => 'Thumela';
 
   @override
-  String get inviteShareText => 'Ngenani nomndeni wethu ku-Mhuri Hub — isimemo sakho:';
+  String get inviteShareText =>
+      'Ngenani nomndeni wethu ku-Mhuri - isimemo sakho:';
 
   @override
   String get invitePending => 'Izimemo ezivulekile';
@@ -1613,36 +1761,40 @@ class AppLocalizationsNd extends AppLocalizations {
   String get inviteHistory => 'Izimemo zangaphambili';
 
   @override
+  String inviteAcceptedLabel(Object code, Object role) {
+    return '$code - ungene ($role)';
+  }
+
+  @override
   String get inviteRevoke => 'Khansela';
 
   @override
-  String get inviteFailed => 'Isimemo asihlanganiswanga — bhheka uxhumano uzame futhi.';
+  String inviteRevokeBody(Object code) {
+    return 'Khansela isimemo $code? Angeke bangena ngeso.';
+  }
 
   @override
-  String get inviteTooMany => 'Kunezimemo ezi-5 ezingakasebenziswanga — khansela eyodwa kuqala.';
+  String get inviteFailed =>
+      'Isimemo asihlanganiswanga - bhheka uxhumano uzame futhi.';
+
+  @override
+  String get inviteTooMany =>
+      'Kunezimemo ezi-5 ezingakasebenziswanga - khansela eyodwa kuqala.';
 
   @override
   String get inviteOwnerOnly => 'Umnikhi kuphela ulawula izimemo.';
 
   @override
-  String get inviteAlreadyInFamily => 'Usengumndeni — izimemo zingokungena komndeni omusha.';
+  String inviteLinkReady(Object code) {
+    return 'Isimemo $code silindile - ngena umndeni ngezansi.';
+  }
+
+  @override
+  String get inviteAlreadyInFamily =>
+      'Usengumndeni - izimemo zingokungena komndeni omusha.';
 
   @override
   String get makeOwner => 'Yenza umnikhi';
-
-  @override
-  String get makeOwnerFailed => 'Ukudluliselwa kwembusa kwehlulekile — bhheka uxhumano uzame futhi.';
-
-  @override
-  String get roleParent => 'Umzali';
-
-  @override
-  String get roleChild => 'Ingane';
-
-  @override
-  String inviteAcceptedLabel(Object code, Object role) {
-    return '$code — ungene';
-  }
 
   @override
   String makeOwnerBody(Object name) {
@@ -1655,20 +1807,21 @@ class AppLocalizationsNd extends AppLocalizations {
   }
 
   @override
-  String inviteRevokeBody(Object code) {
-    return 'Khansela isimemo $code? Angeke bangena ngeso.';
-  }
+  String get makeOwnerFailed =>
+      'Ukudluliselwa kwembusa kwehlulekile - bhheka uxhumano uzame futhi.';
 
   @override
-  String inviteLinkReady(Object code) {
-    return 'Isimemo $code silindile — ngena umndeni ngezansi.';
-  }
+  String get roleParent => 'Umzali';
+
+  @override
+  String get roleChild => 'Ingane';
 
   @override
   String get syncProblemsTitle => 'Izingququko ezidinga wena';
 
   @override
-  String get syncProblemsBody => 'Lezingququko azifikanga efu yomndeni ngemizamo eminingana. Zame futhi, noma zishiye — akukho okukhishwa ngaphandle komyalo wakho.';
+  String get syncProblemsBody =>
+      'Lezingququko azifikanga efu yomndeni ngemizamo eminingana. Zame futhi, noma zishiye - akukho okukhishwa ngaphandle komyalo wakho.';
 
   @override
   String get syncRetryThis => 'Zame futhi';
@@ -1678,6 +1831,16 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get syncDiscardTitle => 'Yekela lentlelele?';
+
+  @override
+  String syncDiscardBody(Object what) {
+    return '“$what” ihlala lefonha kuphela futhi ayisoze yafika efu yomndeni. Uyayekela?';
+  }
+
+  @override
+  String syncTries(Object tries) {
+    return '$tries imizamo';
+  }
 
   @override
   String get syncKindTx => 'Isiphendimvu';
@@ -1698,20 +1861,20 @@ class AppLocalizationsNd extends AppLocalizations {
   String get syncKindOther => 'Ingququko';
 
   @override
-  String syncDiscardBody(Object what) {
-    return '“$what” ihlala lefonha kuphela futhi ayisoze yafika efu yomndeni. Uyayekela?';
-  }
-
-  @override
-  String syncTries(Object tries) {
-    return '$tries imizamo';
-  }
-
-  @override
   String get setupInviteCopied => 'Isimemo sikopishiwe.';
 
   @override
   String get setupBadEmail => 'Faka i-imeyili esebenzayo.';
+
+  @override
+  String setupInviteText(Object family, Object code, Object role) {
+    return 'Ngena nomndeni ka$family ku-Mhuri ngekhowudi $code. Ilanga eliphakamisiwe: $role.';
+  }
+
+  @override
+  String setupInviteSubject(Object family) {
+    return 'Ngena nomndeni ka$family ku-Mhuri';
+  }
 
   @override
   String get setupTagline => 'Umndeni oyedwa. Uhlelo olulodwa.';
@@ -1753,13 +1916,11 @@ class AppLocalizationsNd extends AppLocalizations {
   String get setupJoinSub => 'Sebenzisa ikhowudi obabelwe ngumndeni.';
 
   @override
-  String get setupInviteTitle => 'Menyukela abantu';
-
-  @override
   String get setupInviteSub => 'Uletsabo bonke emndenini oyedwa.';
 
   @override
-  String get setupRoleSuggestion => 'Ilanga lifakwe njengesiphakamiso. Litsantsa kutakhiwelo kwefemeli bayishintsha.';
+  String get setupRoleSuggestion =>
+      'Ilanga lifakwe njengesiphakamiso. Litsantsa kutakhiwelo kwefemeli bayishintsha.';
 
   @override
   String get setupSendInvite => 'Thumela isimemo';
@@ -1774,7 +1935,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get setupPermsTitle => 'Izimvume';
 
   @override
-  String get setupPermsSub => 'Ukungena okufanele sekulungile. Ungakwazi ukukushintsha kwitakhiwelo yefemeli.';
+  String get setupPermsSub =>
+      'Ukungena okufanele sekulungile. Ungakwazi ukukushintsha kwitakhiwelo yefemeli.';
 
   @override
   String get setupPermWallet => 'Bheka iwali yabo';
@@ -1789,13 +1951,20 @@ class AppLocalizationsNd extends AppLocalizations {
   String get setupFinish => 'Qedza ukulungisa';
 
   @override
+  String setupStepOf(Object n) {
+    return 'Isinyathelo $n sa3';
+  }
+
+  @override
   String get deleteWhatTitle => 'Okwenzeka ususa i-akhawunti';
 
   @override
-  String get deleteWhatOwner => 'Unguvikazi womndeni: yonke into yomndeni iyasuswa — ama-akhawunti, izabelomali, ezimali nohlu, kubo bonke. Akubuyi emuva.';
+  String get deleteWhatOwner =>
+      'Unguvikazi womndeni: yonke into yomndeni iyasuswa - ama-akhawunti, izabelomali, ezimali nohlu, kubo bonke. Akubuyi emuva.';
 
   @override
-  String get deleteWhatMember => 'Uyaphuma emndenini. Ubulungu bakho buqala, isithombe ne-imeyili yakho kuyasuswa, izenzo zakho zangaphambili ziyeke zibonakala njengo “Former member”. Abanye bagcina nedatha yabo.';
+  String get deleteWhatMember =>
+      'Uyaphuma emndenini. Ubulungu bakho buqala, isithombe ne-imeyili yakho kuyasuswa, izenzo zakho zangaphambili ziyeke zibonakala njengo “Former member”. Abanye bagcina nedatha yabo.';
 
   @override
   String get deleteWhatSessions => 'Ukungena ngemvume konke kuzofa kwenziwa.';
@@ -1811,71 +1980,6 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get deleteStepIdentity => 'Kususa i-akhawunti yakho…';
-
-  @override
-  String setupInviteText(Object family, Object code, Object role) {
-    return 'Ngena nomndeni ka$family ku-Mhuri Hub ngekhowudi $code. Ilanga eliphakamisiwe: $role.';
-  }
-
-  @override
-  String setupInviteSubject(Object family) {
-    return 'Ngena nomndeni ka$family ku-Mhuri Hub';
-  }
-
-  @override
-  String setupStepOf(Object n) {
-    return 'Isinyathelo $n sa3';
-  }
-
-  @override
-  String kidsGoalSaved(Object goal, Object pct) {
-    return 'Inhloso: $goal — $pct% kilondoloziwe';
-  }
-
-  @override
-  String kidsHi(Object name) {
-    return 'Sawubona $name!';
-  }
-
-  @override
-  String kidsWishItem(Object amount) {
-    return 'Ibhola — US$25 · kilondoloziwe $amount';
-  }
-
-  @override
-  String loginSentCode(Object phone) {
-    return 'Sithumele ikhodi ngeSMS ku$phone';
-  }
-
-  @override
-  String recSkipped(Object date) {
-    return 'Kweyekiwe — elandelayo: $date';
-  }
-
-  @override
-  String safeToSpend(Object amount) {
-    return 'Kuphephile ukusebenzisa namhlanje: $amount';
-  }
-
-  @override
-  String scheduledOn(Object from, Object to) {
-    return 'Kulungisiwe kule foni · amahla okuthula $from–$to';
-  }
-
-  @override
-  String setCurrencySub(Object rate) {
-    return 'USD eyinhloko · ZiG yesibili · $rate';
-  }
-
-  @override
-  String syncPill(Object count) {
-    return '{count, plural, other{$count utshintsho olugciniwele kwesi sixhobo — kuhlanganiswa xa kukho internet}}';
-  }
-
-  @override
-  String teenSplitHint(Object amount) {
-    return 'Ukwahlukaniswa kwe$amount okutholakele kule nyanga';
-  }
 
   @override
   String get discardChangesTitle => 'Yekela izingququko?';
@@ -1923,7 +2027,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get setupEnterBoth => 'Faka igama lolakho negama lomndeni.';
 
   @override
-  String get setupNeedsConnection => 'Udinga ukuxhumana ukuze udale umndeni wakho.';
+  String get setupNeedsConnection =>
+      'Udinga ukuxhumana ukuze udale umndeni wakho.';
 
   @override
   String get setupNameTaken => 'Igama lelomndeni selithathiwe. Zama elinye.';
@@ -1932,7 +2037,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get setupEnterJoin => 'Faka igama lakho nekhodi yesimemo.';
 
   @override
-  String get avatarError => 'Ifoto ayiphumelelanga ukutshintshwa. Zamanini enye.';
+  String get avatarError =>
+      'Ifoto ayiphumelelanga ukutshintshwa. Zamanini enye.';
 
   @override
   String get invitesLoadFailed => 'Iimvito azifunyanisanga. Zama kwakhona.';
@@ -1947,4 +2053,62 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get syncStateNeedsSetup => 'Hlela umndeni wakho ukuxhumana';
+
+  @override
+  String get tourTitle => 'Uhambo olufitshane';
+
+  @override
+  String get tourPoolTitle => 'Yazi imali ekhona';
+
+  @override
+  String get tourPoolBody =>
+      'Ikhaya litshengisa imali yomndeni, okwenziwe muva kanye lamabhajethi adinga ukunakwa.';
+
+  @override
+  String get tourPlanTitle => 'Nika yonke imali umsebenzi';
+
+  @override
+  String get tourPlanBody =>
+      'Sebenzisa Ibhajeti ezimvilophini, Ukugcina ezinhlosweni, loHlu ekuthengeni komndeni.';
+
+  @override
+  String get tourAddTitle => 'Faka imali ngemizuzwana';
+
+  @override
+  String get tourAddBody =>
+      'Cindezela + ukubhala imali engenayo kumbe ephumayo. Vula Umndeni ukunxusa abantu lokuphatha izindima.';
+
+  @override
+  String get reminderBills =>
+      'Izikwelede ezizabhadalwa (insuku ezi-3 ngaphambili)';
+
+  @override
+  String get reminderBudget =>
+      'Izixwayiso zemvilophu ku-80% lalapho isiphelile';
+
+  @override
+  String get reminderKids => 'Abantwana: izicelo lemisebenzi yokuvunywa';
+
+  @override
+  String get reminderCircle => 'Iqembu lokonga (ngeSonto)';
+
+  @override
+  String get reminderGoals => 'Amanyathelo ezinhloso';
+
+  @override
+  String get reminderMeeting => 'Usuku lomhlangano wemuli';
+
+  @override
+  String get reminderDigest => 'Isifinyezo seviki (ngeSonto 6pm)';
+
+  @override
+  String get notificationsDenied =>
+      'Izaziso zeMhuri zivaliwe. Zivumele kuzilungiselelo zefoni yakho.';
+
+  @override
+  String get testNotificationSent => 'Isaziso sokuhlola sithunyelwe.';
+
+  @override
+  String get testNotificationFailed =>
+      'Asenelisanga ukuthumela isaziso sokuhlola.';
 }

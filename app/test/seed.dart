@@ -5,12 +5,17 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// Minimal REAL-data baseline for tests. The app itself boots empty;
 /// tests that exercise math over named envelopes/goals insert exactly the
-/// rows they reference — nothing ships from here.
+/// rows they reference - nothing ships from here.
 ///
 /// Two flavors:
-///   * [seedDb]   — rows in the local database, so simulated restarts see them.
-///   * [seedMemory] — rows in an in-memory state (no-db test states).
+///   * [seedDb]   - rows in the local database, so simulated restarts see them.
+///   * [seedMemory] - rows in an in-memory state (no-db test states).
 Future<void> seedDb(Database raw) async {
+  await raw.insert(
+    'kv',
+    {'k': 'live_purged_v1', 'v': '1'},
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
   const envelopes = [
     {
       'id': 'e1', 'name': 'Groceries', 'emoji': 'cart',
@@ -59,22 +64,22 @@ void seedMemory(AppState s) {
         id: 'e1',
         name: 'Groceries',
         emoji: 'cart',
-        limit: Money(40000, Currency.usd)),
+        limit: const Money(40000, Currency.usd)),
     Envelope(
         id: 'e2',
         name: 'School fees',
         emoji: 'school',
-        limit: Money(25000, Currency.usd)),
+        limit: const Money(25000, Currency.usd)),
     Envelope(
         id: 'e3',
         name: 'Transport',
         emoji: 'bus',
-        limit: Money(15000, Currency.usd)),
+        limit: const Money(15000, Currency.usd)),
     Envelope(
         id: 'e7',
         name: 'Emergency buffer',
         emoji: 'shield',
-        limit: Money(50000, Currency.usd),
+        limit: const Money(50000, Currency.usd),
         rollover: Rollover.roll),
   ]);
   s.goals.addAll(const [

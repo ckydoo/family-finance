@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Shared friendly empty state (M4) — used by Activity, Lists, Savings,
+/// Shared friendly empty state (M4) - used by Activity, Lists, Savings,
 /// Budgets and Teen Zone so a brand-new family space never shows a blank,
 /// dead screen.
 class EmptyState extends StatelessWidget {
@@ -27,16 +27,7 @@ class EmptyState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
-            width: 74,
-            height: 74,
-            decoration: BoxDecoration(
-              color: context.primarySoft,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, size: 36, color: context.primaryDark),
-          ),
+          Icon(icon, size: 46, color: context.primaryDark),
           const SizedBox(height: 12),
           Text(
             title,

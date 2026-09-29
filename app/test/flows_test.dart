@@ -7,7 +7,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'seed.dart';
 
-/// M7 — the five core family flows (START_HERE's spine), end to end through
+/// M7 - the five core family flows (START_HERE's spine), end to end through
 /// real AppState + SQLite:
 ///   1. money in & out → envelopes + pool
 ///   2. goal contribution → milestone nudge
@@ -42,7 +42,7 @@ void main() {
     return s;
   }
 
-  test('flow 1 — money in & out hits envelopes and the family pool', () async {
+  test('flow 1 - money in & out hits envelopes and the family pool', () async {
     final s = await fresh();
     s.txs.clear();
     final groceries = s.envelopes.firstWhere(
@@ -69,10 +69,10 @@ void main() {
       method: Method.bankTransfer,
       note: 'Side hustle',
     );
-    expect(s.poolCombined(Currency.usd).minor, poolBefore + 10000);
+    expect(s.poolCombined(Currency.usd).minor, poolBefore - 1250 + 10000);
   });
 
-  test('flow 2 — goal contribution saves and nudges a milestone', () async {
+  test('flow 2 - goal contribution saves and nudges a milestone', () async {
     final s = await fresh();
     s.goalTxs.clear();
     final g = s.goal('g_fees')!; // seeded: US$900 target
@@ -88,9 +88,9 @@ void main() {
     await s.flushWrites();
   });
 
-  test('flow 3 — kid asks, parent approves, jar and nudges follow', () async {
+  test('flow 3 - kid asks, parent approves, jar and nudges follow', () async {
     final s = await fresh();
-    final jar = s.kidJarGoal!;
+    final jar = s.kidJarFor('m_leo')!;
     final jarBefore = s.savedOn(jar).minor;
 
     final req = KidRequest(
@@ -117,7 +117,7 @@ void main() {
     );
   });
 
-  test('flow 4 — shopping run posts to the Groceries envelope', () async {
+  test('flow 4 - shopping run posts to the Groceries envelope', () async {
     final s = await fresh();
     s.items.clear();
     s.addItem('Rice', 2, Money.fromMajor(5, Currency.usd));
@@ -129,13 +129,13 @@ void main() {
 
     final total = s.finishShopping();
     expect(total.minor, 1800);
-    expect(s.txs.first.note, 'Groceries run — FreshMart');
+    expect(s.txs.first.note, 'Groceries run - FreshMart');
     expect(s.txs.first.envelopeId, isNotNull);
     final target = s.envelope(s.txs.first.envelopeId)!;
     expect(target.name.toLowerCase().contains('grocer'), isTrue);
   });
 
-  test('flow 5 — recurring bill is posted on review and survives a restart',
+  test('flow 5 - recurring bill is posted on review and survives a restart',
       () async {
     final s = await fresh();
     s.addRecurring(

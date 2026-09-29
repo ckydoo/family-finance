@@ -61,6 +61,78 @@ Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
   }
 }
 
+Future<void> _addChoreSheet(BuildContext context, AppState s) async {
+  final l = AppLocalizations.of(context)!;
+  var name = '';
+  var stars = '3';
+  String? error;
+  await showMhuriSheet<void>(
+    context: context,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setSheet) => MhuriSheetShell(
+        title: l.addChore,
+        subtitle: l.addChoreHint,
+        footer: PrimaryButton(
+          label: l.addChore,
+          onPressed: () {
+            final reward = int.tryParse(stars.trim());
+            if (name.trim().isEmpty || reward == null || reward < 1) {
+              setSheet(() => error = l.choreFieldsRequired);
+              return;
+            }
+            final added = s.addChore(
+              name: name,
+              starsReward: reward,
+            );
+            if (added == null) {
+              setSheet(() => error = l.choreFieldsRequired);
+              return;
+            }
+            Navigator.pop(sheetContext);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l.choreAdded(added.name)),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(labelText: l.choreName),
+              onChanged: (value) {
+                name = value;
+                if (error != null) setSheet(() => error = null);
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              initialValue: stars,
+              keyboardType: TextInputType.number,
+              inputFormatters: integerInputFormatters,
+              decoration: InputDecoration(labelText: l.starReward),
+              onChanged: (value) {
+                stars = value;
+                if (error != null) setSheet(() => error = null);
+              },
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(error!, style: TextStyle(color: context.danger)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 void _editProfileSheet(BuildContext context, AppState s, Member m) {
   final l = AppLocalizations.of(context)!;
   final nameCtrl = TextEditingController(text: m.name);
@@ -74,88 +146,76 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
     'student',
     'grandma'
   ];
-  showModalBottomSheet<void>(
+  showMhuriSheet<void>(
     context: context,
-    backgroundColor: context.bg,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setSheet) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-              20, 18, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l.editProfile,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink,
-                ),
+      builder: (ctx, setSheet) => MhuriSheetShell(
+        title: l.editProfile,
+        subtitle: l.editProfileSub,
+        footer: PrimaryButton(
+          label: l.save,
+          onPressed: () {
+            s.updateMember(m.id, name: nameCtrl.text, emoji: avatar);
+            Navigator.pop(ctx);
+          },
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: InputDecoration(
+                labelText: m.name,
+                filled: true,
+                fillColor: context.card,
+                border: const OutlineInputBorder(borderSide: BorderSide.none),
               ),
-              const SizedBox(height: 2),
-              Text(
-                l.editProfileSub,
-                style: TextStyle(fontSize: 12.5, color: context.inkSoft),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(
-                  labelText: m.name,
-                  filled: true,
-                  fillColor: context.card,
-                  border: const OutlineInputBorder(borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  for (final k in avatarKeys)
-                    InkWell(
-                      onTap: () => setSheet(() => avatar = k),
-                      borderRadius: BorderRadius.circular(30),
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: avatar == k
-                                ? context.primary
-                                : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 21,
-                          backgroundColor: context.card,
-                          child: Icon(iconForKey(k) ?? Icons.person,
-                              size: 20, color: context.ink),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final k in avatarKeys)
+                  InkWell(
+                    onTap: () => setSheet(() => avatar = k),
+                    borderRadius: BorderRadius.circular(30),
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: avatar == k
+                              ? context.primary
+                              : Colors.transparent,
+                          width: 2,
                         ),
                       ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: SecondaryButton(
-                      onPressed: () => _pickAndUploadPhoto(context, s),
-                      icon: Icons.photo_outlined,
-                      label: l.addPhoto,
+                      child: CircleAvatar(
+                        radius: 21,
+                        backgroundColor: context.card,
+                        child: Icon(iconForKey(k) ?? Icons.person,
+                            size: 20, color: context.ink),
+                      ),
                     ),
                   ),
-                  if (m.avatarUrl != null) ...[
-                    const SizedBox(width: 8),
-                    SecondaryButton(
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: SecondaryButton(
+                    onPressed: () => _pickAndUploadPhoto(context, s),
+                    icon: Icons.photo_outlined,
+                    label: l.addPhoto,
+                  ),
+                ),
+                if (m.avatarUrl != null) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SecondaryButton(
                       onPressed: () {
                         s.setMyAvatar('');
                         Navigator.pop(ctx);
@@ -163,25 +223,11 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
                       danger: true,
                       label: l.removePhoto,
                     ),
-                  ],
+                  ),
                 ],
-              ),
-              const SizedBox(height: 14),
-              FilledButton(
-                onPressed: () {
-                  s.updateMember(m.id, name: nameCtrl.text, emoji: avatar);
-                  Navigator.pop(ctx);
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.primary,
-                  foregroundColor: context.onSolid,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: const StadiumBorder(),
-                ),
-                child: Text(l.save),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     ),
@@ -203,6 +249,10 @@ class MembersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final l = AppLocalizations.of(context)!;
+    final syncedName = s.spaceName?.trim();
+    final familyName =
+        syncedName != null && syncedName.isNotEmpty ? syncedName : s.space.name;
 
     return Scaffold(
       appBar: AppBar(
@@ -238,39 +288,43 @@ class MembersScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'The Taylor Family',
-                          style: TextStyle(
+                          familyName,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          AppLocalizations.of(context)!.membersDesc,
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                          l.membersCycleDesc(s.monthStartDay),
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                  if (s.canAdmin)
+                    PopupMenuButton<String>(
+                      color: context.card,
+                      iconColor: Colors.white,
+                      tooltip: 'Manage family',
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _editFamilySheet(context, s, familyName);
+                        } else if (value == 'invite') {
+                          Navigator.of(context).push(MaterialPageRoute<void>(
+                            builder: (_) => const InviteScreen(),
+                          ));
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                            value: 'edit', child: Text('Edit family')),
+                        PopupMenuItem(
+                            value: 'invite', child: Text('Invite member')),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Text(
-                      'MHRI-4F2K',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -291,7 +345,13 @@ class MembersScreen extends StatelessWidget {
 
             const SizedBox(height: 14),
             OutlinedButton.icon(
-              onPressed: () => _inviteSheet(context, s),
+              onPressed: s.canInvite
+                  ? () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const InviteScreen(),
+                        ),
+                      )
+                  : null,
               style: OutlinedButton.styleFrom(
                 foregroundColor: context.primary,
                 side: BorderSide(color: context.primary),
@@ -301,6 +361,75 @@ class MembersScreen extends StatelessWidget {
               icon: const Icon(Icons.person_add_alt_1, size: 19),
               label: Text(AppLocalizations.of(context)!.inviteTitle),
             ),
+            if (s.canApprove) ...[
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l.kidsAndChores,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: context.ink,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _addChoreSheet(context, s),
+                    icon: const Icon(Icons.add_task_rounded, size: 19),
+                    label: Text(l.addChore),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              if (s.chores.isEmpty)
+                Text(
+                  l.noFamilyChores,
+                  style: TextStyle(color: context.inkSoft, fontSize: 13),
+                )
+              else
+                for (final chore in s.chores)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      chore.state == ChoreState.confirmed
+                          ? Icons.check_circle_rounded
+                          : Icons.task_alt_rounded,
+                      color: context.primary,
+                    ),
+                    title: Text(chore.name),
+                    subtitle: Text(l.choreStars(chore.stars)),
+                    trailing: PopupMenuButton<String>(
+                      tooltip: 'Chore actions',
+                      onSelected: (action) async {
+                        if (action == 'edit') {
+                          _editChoreSheet(context, s, chore);
+                          return;
+                        }
+                        final ok = await confirmDialog(
+                          context,
+                          title: 'Remove ${chore.name}?',
+                          body: 'The chore will leave the active kids list.',
+                          confirmLabel: 'Remove chore',
+                          danger: true,
+                        );
+                        if (ok && context.mounted) {
+                          s.archiveChore(chore);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Chore removed'),
+                                  behavior: SnackBarBehavior.floating));
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Edit chore')),
+                        PopupMenuItem(
+                            value: 'archive', child: Text('Remove chore')),
+                      ],
+                    ),
+                  ),
+            ],
             const SizedBox(height: 8),
             const SizedBox(height: 16),
 
@@ -348,7 +477,7 @@ class MembersScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               ),
             ),
-            if (s.isLive) _spaceCard(context, s),
+            if (s.isLive && !s.hasSpace) _spaceCard(context, s),
             _pinRow(context, s),
             if (s.auth?.isLoggedIn ?? false) _accountRow(context, s),
             _settingAction(
@@ -365,13 +494,10 @@ class MembersScreen extends StatelessWidget {
 
   Widget _languageRow(BuildContext context, AppState s) => InkWell(
         onTap: () => _pickLanguage(context, s),
-        borderRadius: BorderRadius.circular(18),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: context.card,
-            borderRadius: BorderRadius.circular(18),
+            border: Border(bottom: BorderSide(color: context.hairline)),
           ),
           child: Row(
             children: [
@@ -434,7 +560,7 @@ class MembersScreen extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Text(
               AppLocalizations.of(context)!.localizedNote,
               style: TextStyle(fontSize: 11.5, color: context.inkSoft),
@@ -598,7 +724,7 @@ class MembersScreen extends StatelessWidget {
                 icon: const Icon(Icons.sync, size: 16, color: Colors.white),
                 label: Text(
                   AppLocalizations.of(context)!.syncNow,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
@@ -680,7 +806,7 @@ class MembersScreen extends StatelessWidget {
             hintText: 'MHRI-XXXX',
             filled: true,
             fillColor: context.bg,
-            border: OutlineInputBorder(borderSide: BorderSide.none),
+            border: const OutlineInputBorder(borderSide: BorderSide.none),
           ),
         ),
         actions: [
@@ -716,13 +842,10 @@ class MembersScreen extends StatelessWidget {
 
   Widget _pinRow(BuildContext context, AppState s) => InkWell(
         onTap: () => _editParentPin(context, s),
-        borderRadius: BorderRadius.circular(18),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: context.card,
-            borderRadius: BorderRadius.circular(18),
+            border: Border(bottom: BorderSide(color: context.hairline)),
           ),
           child: Row(
             children: [
@@ -755,52 +878,64 @@ class MembersScreen extends StatelessWidget {
   void _editParentPin(BuildContext context, AppState s) {
     final l = AppLocalizations.of(context)!;
     final pin = TextEditingController();
+    String? pinError;
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(AppLocalizations.of(context)!.kidsPin),
-        content: TextField(
-          controller: pin,
-          keyboardType: TextInputType.number,
-          obscureText: true,
-          maxLength: 6,
-          decoration: InputDecoration(
-            hintText: l.kidsPinHint,
-            counterText: '',
-            filled: true,
-            fillColor: context.bg,
-            border: OutlineInputBorder(borderSide: BorderSide.none),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.primary,
-              foregroundColor: context.onSolid,
-            ),
-            onPressed: () async {
-              final v = pin.text.trim();
-              if (v.length >= 4) {
-                await s.pinStore.setPin(PinStore.parentKey, v);
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l.kidsPinUpdated),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(AppLocalizations.of(context)!.kidsPin),
+          content: TextField(
+            controller: pin,
+            keyboardType: TextInputType.number,
+            inputFormatters: pinInputFormatters,
+            obscureText: true,
+            maxLength: 6,
+            onChanged: (_) {
+              if (pinError != null) setDialogState(() => pinError = null);
             },
-            child: Text(MaterialLocalizations.of(ctx).saveButtonLabel),
+            decoration: InputDecoration(
+              hintText: l.kidsPinHint,
+              counterText: '',
+              errorText: pinError,
+              errorStyle: TextStyle(color: context.danger),
+              filled: true,
+              fillColor: context.bg,
+              border: const OutlineInputBorder(borderSide: BorderSide.none),
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.primary,
+                foregroundColor: context.onSolid,
+              ),
+              onPressed: () async {
+                final v = pin.text.trim();
+                if (v.length < 4) {
+                  setDialogState(() => pinError = l.kidsPinHint);
+                  return;
+                }
+                await s.pinStore.setPin(PinStore.parentKey, v);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(l.kidsPinUpdated),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: Text(MaterialLocalizations.of(ctx).saveButtonLabel),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -870,74 +1005,200 @@ class MembersScreen extends StatelessWidget {
     final l = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
 
-    // Step 1 of 3 — what actually happens (owner and member differ; the
-    // server enforces the real rules, migration 008).
-    final proceed = await showModalBottomSheet<bool>(
+    // Rule: Owner cannot delete or abandon family while other members exist
+    if (s.canDeleteSpace && s.members.length > 1) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(l.makeOwner),
+          content: const Text(
+            'You are the owner of this family space. Please transfer ownership to another adult member before deleting your account, or remove all other members first.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Reauthentication step: verify current password before account deletion
+    final passwordCtrl = TextEditingController();
+    var obscurePw = true;
+    String? reauthError;
+    var reauthBusy = false;
+
+    final reauthenticated = await showDialog<bool>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Column(
+      builder: (reauthCtx) => StatefulBuilder(
+        builder: (reauthCtx, setReauth) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Confirm your password'),
+          content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l.deleteWhatTitle,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 12),
               Text(
-                s.user.role == Role.owner
-                    ? l.deleteWhatOwner
-                    : l.deleteWhatMember,
+                'For security, enter your current password to confirm account deletion.',
                 style: TextStyle(
-                    fontSize: 13.5, color: context.ink, height: 1.45),
+                    fontSize: 13, color: context.inkSoft, height: 1.4),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.logout, size: 16, color: Colors.orange),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(l.deleteWhatSessions,
-                        style: TextStyle(
-                            fontSize: 12.5, color: context.inkSoft)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordCtrl,
+                obscureText: obscurePw,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: l.passwordLabel,
+                  errorText: reauthError,
+                  filled: true,
+                  fillColor: context.card,
+                  border: const OutlineInputBorder(borderSide: BorderSide.none),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscurePw
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                    onPressed: () => setReauth(() => obscurePw = !obscurePw),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.danger,
-                    foregroundColor: context.onSolid,
-                  ),
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    Navigator.pop(sheetContext, true);
-                  },
-                  child: Text(l.deletePermanently),
-                ),
-              ),
-              const SizedBox(height: 4),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(sheetContext, false),
-                  child: Text(MaterialLocalizations.of(sheetContext)
-                      .cancelButtonLabel),
                 ),
               ),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed:
+                  reauthBusy ? null : () => Navigator.pop(reauthCtx, false),
+              child:
+                  Text(MaterialLocalizations.of(reauthCtx).cancelButtonLabel),
+            ),
+            FilledButton(
+              onPressed: reauthBusy
+                  ? null
+                  : () async {
+                      final pw = passwordCtrl.text.trim();
+                      if (pw.isEmpty) {
+                        setReauth(() => reauthError = l.loginShortPassword);
+                        return;
+                      }
+                      setReauth(() {
+                        reauthBusy = true;
+                        reauthError = null;
+                      });
+                      final ok = await auth.reauthenticate(pw);
+                      if (!reauthCtx.mounted) return;
+                      if (ok) {
+                        Navigator.pop(reauthCtx, true);
+                      } else {
+                        setReauth(() {
+                          reauthBusy = false;
+                          reauthError =
+                              auth.lastError ?? l.authErrBadCredentials;
+                        });
+                      }
+                    },
+              child: reauthBusy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+                    )
+                  : const Text('Verify'),
+            ),
+          ],
         ),
       ),
-    ) ??
+    );
+    if (reauthenticated != true) return;
+    if (!context.mounted) return;
+
+    // Step 1 of 3 - what actually happens (owner and member differ; the
+    // server enforces the real rules, migration 008).
+    final proceed = await showMhuriSheet<bool>(
+          context: context,
+          builder: (sheetContext) => MhuriSheetShell(
+            title: l.deleteWhatTitle,
+            footer: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.danger,
+                      foregroundColor: context.onSolid,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.pop(sheetContext, true);
+                    },
+                    child: Text(l.deletePermanently),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(sheetContext, false),
+                    child: Text(MaterialLocalizations.of(sheetContext)
+                        .cancelButtonLabel),
+                  ),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.canDeleteSpace ? l.deleteWhatOwner : l.deleteWhatMember,
+                  style: TextStyle(
+                      fontSize: 13.5, color: context.ink, height: 1.45),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.logout, size: 16, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(l.deleteWhatSessions,
+                          style: TextStyle(
+                              fontSize: 12.5, color: context.inkSoft)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.shield_outlined,
+                        size: 16, color: Colors.green),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        s.canDeleteSpace
+                            ? 'All family ledger entries and balances will be permanently erased.'
+                            : 'Past transactions remain preserved with your name anonymized to keep balances balanced.',
+                        style:
+                            TextStyle(fontSize: 12.5, color: context.inkSoft),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ) ??
         false;
     if (!proceed) return;
+    if (!context.mounted) return;
 
     final typeCtrl = TextEditingController();
-    // P5: destructive tier — typing DELETE + a button that stays disabled
+    // P5: destructive tier - typing DELETE + a button that stays disabled
     // until the exact word matches. Never pops on the happy path by accident.
     final confirmed = await showDialog<bool>(
           context: context,
@@ -960,7 +1221,8 @@ class MembersScreen extends StatelessWidget {
                       hintText: l.deleteTypeHint,
                       filled: true,
                       fillColor: context.card,
-                      border: OutlineInputBorder(borderSide: BorderSide.none),
+                      border:
+                          const OutlineInputBorder(borderSide: BorderSide.none),
                     ),
                   ),
                 ],
@@ -990,9 +1252,10 @@ class MembersScreen extends StatelessWidget {
         false;
 
     if (!confirmed) return;
+    if (!context.mounted) return;
     mhuriEvent('account.delete.requested',
-        {'role': s.user.role.name}); // no identifiers — see reporter.dart
-    // Step 3 of 3 — progress while the server does the four phases; the
+        {'role': s.user.role.name}); // no identifiers - see reporter.dart
+    // Step 3 of 3 - progress while the server does the four phases; the
     // dialog is not dismissible and pops with the outcome.
     final deleted = await showDialog<bool>(
           context: context,
@@ -1018,13 +1281,10 @@ class MembersScreen extends StatelessWidget {
           VoidCallback onTap) =>
       InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: context.card,
-            borderRadius: BorderRadius.circular(18),
+            border: Border(bottom: BorderSide(color: context.hairline)),
           ),
           child: Row(
             children: [
@@ -1054,137 +1314,28 @@ class MembersScreen extends StatelessWidget {
         ),
       );
 
-  void _inviteSheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(context)!;
-    final code = s.inviteCode ?? '';
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: context.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l.inviteTitle,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l.inviteHowTo,
-                style: TextStyle(
-                    fontSize: 12.5, color: context.inkSoft, height: 1.4),
-              ),
-              const SizedBox(height: 14),
-              if (code.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    color: context.card,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: context.primary, width: 1.4),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    code,
-                    style: TextStyle(
-                      fontSize: 26,
-                      letterSpacing: 4,
-                      fontWeight: FontWeight.w800,
-                      color: context.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: () {
-                    final messenger = ScaffoldMessenger.of(context);
-                    Clipboard.setData(ClipboardData(text: code));
-                    Navigator.pop(ctx);
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(l.copied),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.onSolid,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: const StadiumBorder(),
-                  ),
-                  icon: const Icon(Icons.copy, size: 18),
-                  label: Text(l.copyInvite),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _switchProfileSheet(BuildContext context, AppState s) async {
     final l = AppLocalizations.of(context)!;
     final navigator = Navigator.of(context);
-    final selected = await showModalBottomSheet<Member>(
+    final selected = await showMhuriSheet<Member>(
       context: context,
-      backgroundColor: context.bg,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => FractionallySizedBox(
-        heightFactor: 0.8,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l.switchProfile,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l.switchProfileSub,
-                style: TextStyle(fontSize: 12.5, color: context.inkSoft),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: s.members.length,
-                  itemBuilder: (ctx, index) {
-                    final member = s.members[index];
-                    return _profileTile(
-                      ctx,
-                      s,
-                      member,
-                      () => Navigator.pop(ctx, member),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+      builder: (ctx) => MhuriSheetShell(
+        title: l.switchProfile,
+        subtitle: l.switchProfileSub,
+        child: ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: s.members.length,
+          itemBuilder: (ctx, index) {
+            final member = s.members[index];
+            return _profileTile(
+              ctx,
+              s,
+              member,
+              () => Navigator.pop(ctx, member),
+            );
+          },
         ),
       ),
     );
@@ -1235,76 +1386,103 @@ class MembersScreen extends StatelessWidget {
 
   void _currencySheet(BuildContext context, AppState s) {
     final l = AppLocalizations.of(context)!;
-    final rateCtrl = TextEditingController(text: s.rate.toStringAsFixed(2));
-    showModalBottomSheet<void>(
+    if (s.secondaryCurrency != null) {
+      final isZwgPair = s.primaryCurrency == Currency.zwg ||
+          s.secondaryCurrency == Currency.zwg;
+      if (!isZwgPair && s.rate > 15) {
+        final def = s.primaryCurrency.defaultRateTo(s.secondaryCurrency!);
+        s.setCustomRate(def);
+      }
+    }
+    final rateCtrl = TextEditingController(text: s.rate.toString());
+    showMhuriSheet<void>(
       context: context,
-      backgroundColor: context.bg,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) => AnimatedBuilder(
         animation: s,
-        builder: (ctx, _) => SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                20, 16, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l.setCurrency,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: ctx.ink,
+        builder: (ctx, _) => MhuriSheetShell(
+          title: l.setCurrency,
+          footer: PrimaryButton(
+            label: l.rateSave,
+            onPressed: () {
+              final v = double.tryParse(rateCtrl.text.trim());
+              if (v != null && v > 0) s.setCustomRate(v);
+              Navigator.pop(ctx);
+            },
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Primary Family Currency',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: ctx.inkSoft,
+                ),
+              ),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<Currency>(
+                initialValue: s.primaryCurrency,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: ctx.card,
+                  border: const OutlineInputBorder(borderSide: BorderSide.none),
+                ),
+                items: [
+                  for (final c in Currency.values)
+                    DropdownMenuItem(
+                      value: c,
+                      child: Text('${c.long} (${c.symbol})'),
+                    ),
+                ],
+                onChanged: (v) {
+                  if (v != null) {
+                    s.setPrimaryCurrency(v);
+                    rateCtrl.text = s.rate.toString();
+                  }
+                },
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Secondary Currency (Optional Dual-Currency)',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: ctx.inkSoft,
+                ),
+              ),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<Currency?>(
+                initialValue: s.secondaryCurrency,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: ctx.card,
+                  border: const OutlineInputBorder(borderSide: BorderSide.none),
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('None (Single Currency Mode)'),
                   ),
-                ),
-                const SizedBox(height: 14),
+                  for (final c
+                      in Currency.values.where((c) => c != s.primaryCurrency))
+                    DropdownMenuItem(
+                      value: c,
+                      child: Text('${c.long} (${c.symbol})'),
+                    ),
+                ],
+                onChanged: (v) {
+                  s.setSecondaryCurrency(v);
+                  rateCtrl.text = s.rate.toString();
+                },
+              ),
+              const SizedBox(height: 14),
+              if (s.secondaryCurrency != null) ...[
                 Text(
-                  l.pickCurrency,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: ctx.inkSoft,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    for (final c in Currency.values)
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => s.setDisplayCurrency(c),
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: s.displayCurrency == c
-                                  ? ctx.primary
-                                  : ctx.card,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              c == Currency.usd ? 'USD' : 'ZiG',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: s.displayCurrency == c
-                                    ? ctx.onSolid
-                                    : ctx.ink,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l.rateField,
+                  'Exchange Rate (1 ${s.primaryCurrency.short} = ? ${s.secondaryCurrency!.short})',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
@@ -1316,6 +1494,7 @@ class MembersScreen extends StatelessWidget {
                   controller: rateCtrl,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: amountInputFormatters,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: ctx.card,
@@ -1323,8 +1502,12 @@ class MembersScreen extends StatelessWidget {
                         const OutlineInputBorder(borderSide: BorderSide.none),
                     suffixIcon: TextButton(
                       onPressed: () {
-                        s.setCustomRate(15.27);
-                        rateCtrl.text = '15.27';
+                        if (s.secondaryCurrency != null) {
+                          final def = s.primaryCurrency
+                              .defaultRateTo(s.secondaryCurrency!);
+                          s.setCustomRate(def);
+                          rateCtrl.text = def.toString();
+                        }
                       },
                       child: Text(l.rateReset),
                     ),
@@ -1332,26 +1515,51 @@ class MembersScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  l.rateCustomNote,
+                  'Used for conversion between ${s.primaryCurrency.short} and ${s.secondaryCurrency!.short} across the app.',
                   style: TextStyle(fontSize: 11.5, color: ctx.inkSoft),
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    final v = double.tryParse(rateCtrl.text.trim());
-                    if (v != null && v > 0) s.setCustomRate(v);
-                    Navigator.pop(ctx);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ctx.primary,
-                    foregroundColor: ctx.onSolid,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: const StadiumBorder(),
-                  ),
-                  child: Text(l.rateSave),
-                ),
+                const SizedBox(height: 14),
               ],
-            ),
+              Text(
+                'Current Display View',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: ctx.inkSoft,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  for (final c in s.activeCurrencies)
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => s.setDisplayCurrency(c),
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color:
+                                s.displayCurrency == c ? ctx.primary : ctx.card,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            c.short,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: s.displayCurrency == c
+                                  ? ctx.onSolid
+                                  : ctx.ink,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -1360,61 +1568,43 @@ class MembersScreen extends StatelessWidget {
 
   void _privacySheet(BuildContext context, AppState s) {
     final l = AppLocalizations.of(context)!;
-    showModalBottomSheet<void>(
+    showMhuriSheet<void>(
       context: context,
-      backgroundColor: context.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) => AnimatedBuilder(
         animation: s,
-        builder: (ctx, _) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 16, 8, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    l.setPrivacy,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: ctx.ink,
-                    ),
-                  ),
+        builder: (ctx, _) => MhuriSheetShell(
+          title: l.setPrivacy,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile.adaptive(
+                value: s.autoHideAmounts,
+                onChanged: s.setAutoHideAmounts,
+                title: Text(
+                  l.autoHide,
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: ctx.ink),
                 ),
-                const SizedBox(height: 6),
-                SwitchListTile(
-                  value: s.autoHideAmounts,
-                  onChanged: s.setAutoHideAmounts,
-                  title: Text(
-                    l.autoHide,
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: ctx.ink),
-                  ),
-                  subtitle: Text(
-                    l.autoHideSub,
-                    style: TextStyle(fontSize: 12, color: ctx.inkSoft),
-                  ),
+                subtitle: Text(
+                  l.autoHideSub,
+                  style: TextStyle(fontSize: 12, color: ctx.inkSoft),
                 ),
-                SwitchListTile(
-                  value: s.hideAmounts,
-                  onChanged: s.setHideAmounts,
-                  title: Text(
-                    l.hideNow,
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: ctx.ink),
-                  ),
+              ),
+              SwitchListTile.adaptive(
+                value: s.hideAmounts,
+                onChanged: s.setHideAmounts,
+                title: Text(
+                  l.hideNow,
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: ctx.ink),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1423,98 +1613,41 @@ class MembersScreen extends StatelessWidget {
 
   void _backupSheet(BuildContext context, AppState s) {
     final l = AppLocalizations.of(context)!;
-    showModalBottomSheet<void>(
+    showMhuriSheet<void>(
       context: context,
-      backgroundColor: context.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 16, 8, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  l.setBackup,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: ctx.ink,
-                  ),
-                ),
+      builder: (ctx) => MhuriSheetShell(
+        title: l.setBackup,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: Icon(Icons.ios_share, color: ctx.primary),
+              title: Text(
+                l.exportCsvRow,
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w700, color: ctx.ink),
               ),
-              const SizedBox(height: 6),
-              ListTile(
-                leading: Icon(Icons.ios_share, color: ctx.primary),
-                title: Text(
-                  l.exportCsvRow,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: ctx.ink),
-                ),
-                onTap: () async {
-                  final path = await s.exportCsv();
-                  if (!ctx.mounted) return;
-                  final messenger = ScaffoldMessenger.of(context);
-                  Navigator.pop(ctx);
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        path == null ? l.exportReal : l.exportedPath(path),
-                      ),
-                      behavior: SnackBarBehavior.floating,
+              onTap: () async {
+                final path = await s.exportCsv();
+                if (!ctx.mounted) return;
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.pop(ctx);
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      path == null ? l.exportReal : l.exportedPath(path),
                     ),
-                  );
-                },
-              ),
-              if (s.isLive && (s.inviteCode ?? '').isNotEmpty) ...[
-                ListTile(
-                  leading: Icon(Icons.person_add_alt, color: ctx.primary),
-                  title: Text(
-                    l.inviteTitle,
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: ctx.ink),
+                    behavior: SnackBarBehavior.floating,
                   ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const InviteScreen(),
-                    ));
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.link, color: ctx.primary),
-                  title: Text(
-                    l.copyInvite,
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: ctx.ink),
-                  ),
-                  onTap: () {
-                    final messenger = ScaffoldMessenger.of(context);
-                    Clipboard.setData(ClipboardData(text: s.inviteCode ?? ''));
-                    Navigator.pop(ctx);
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(l.copied),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                ),
-              ],
+                );
+              },
+            ),
+            if (s.isLive && (s.inviteCode ?? '').isNotEmpty) ...[
               ListTile(
-                leading: Icon(Icons.cloud_sync_outlined, color: ctx.primary),
+                leading: Icon(Icons.person_add_alt, color: ctx.primary),
                 title: Text(
-                  l.syncDataTitle,
+                  l.inviteTitle,
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -1523,16 +1656,170 @@ class MembersScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(ctx);
                   Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => const SyncScreen(),
+                    builder: (_) => const InviteScreen(),
                   ));
                 },
               ),
+              ListTile(
+                leading: Icon(Icons.link, color: ctx.primary),
+                title: Text(
+                  l.copyInvite,
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: ctx.ink),
+                ),
+                onTap: () {
+                  final messenger = ScaffoldMessenger.of(context);
+                  Clipboard.setData(ClipboardData(text: s.inviteCode ?? ''));
+                  Navigator.pop(ctx);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(l.copied),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
             ],
-          ),
+            ListTile(
+              leading: Icon(Icons.cloud_sync_outlined, color: ctx.primary),
+              title: Text(
+                l.syncDataTitle,
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w700, color: ctx.ink),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const SyncScreen(),
+                ));
+              },
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+Future<void> _editFamilySheet(
+    BuildContext context, AppState state, String currentName) async {
+  final controller = TextEditingController(text: currentName);
+  var saving = false;
+  String? error;
+  await showMhuriSheet<void>(
+    context: context,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setSheet) => MhuriSheetShell(
+        title: 'Edit family',
+        subtitle: 'The updated name will sync to every family member.',
+        footer: PrimaryButton(
+          label: saving ? 'Saving…' : 'Save changes',
+          onPressed: saving
+              ? null
+              : () async {
+                  final name = controller.text.trim();
+                  if (name.length < 2) {
+                    setSheet(() => error = 'Enter a family name.');
+                    return;
+                  }
+                  setSheet(() {
+                    saving = true;
+                    error = null;
+                  });
+                  try {
+                    await state.sync?.updateFamilyName(name);
+                    if (!sheetContext.mounted) return;
+                    final messenger = ScaffoldMessenger.of(context);
+                    Navigator.pop(sheetContext);
+                    messenger.showSnackBar(const SnackBar(
+                      content: Text('Family name changed'),
+                      behavior: SnackBarBehavior.floating,
+                    ));
+                  } catch (_) {
+                    if (sheetContext.mounted) {
+                      setSheet(() {
+                        saving = false;
+                        error = 'Could not change the family name. Try again.';
+                      });
+                    }
+                  }
+                },
+        ),
+        child: TextField(
+          controller: controller,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            labelText: 'Family name',
+            errorText: error,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Future<void> _editChoreSheet(
+    BuildContext context, AppState state, Chore chore) async {
+  final name = TextEditingController(text: chore.name);
+  final stars = TextEditingController(text: '${chore.stars}');
+  var assignee = chore.assigneeMemberId;
+  String? error;
+  await showMhuriSheet<void>(
+    context: context,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setSheet) => MhuriSheetShell(
+        title: 'Edit chore',
+        footer: PrimaryButton(
+          label: 'Save changes',
+          onPressed: () {
+            final reward = int.tryParse(stars.text);
+            if (name.text.trim().isEmpty || reward == null || reward < 1) {
+              setSheet(() => error = 'Enter a chore name and star reward.');
+              return;
+            }
+            state.updateChore(chore,
+                name: name.text, starsReward: reward, assigneeId: assignee);
+            final messenger = ScaffoldMessenger.of(context);
+            Navigator.pop(sheetContext);
+            messenger.showSnackBar(const SnackBar(
+                content: Text('Chore updated'),
+                behavior: SnackBarBehavior.floating));
+          },
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+              controller: name,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Chore name')),
+          const SizedBox(height: 12),
+          TextField(
+              controller: stars,
+              keyboardType: TextInputType.number,
+              inputFormatters: integerInputFormatters,
+              decoration: const InputDecoration(labelText: 'Star reward')),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            initialValue: assignee,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Assign to'),
+            items: [
+              const DropdownMenuItem<String?>(
+                  value: null, child: Text('Any child')),
+              for (final member in state.members
+                  .where((m) => m.role == Role.kid || m.role == Role.teen))
+                DropdownMenuItem<String?>(
+                    value: member.id, child: Text(member.name)),
+            ],
+            onChanged: (value) => setSheet(() => assignee = value),
+          ),
+          if (error != null) ErrorNotice(error!),
+        ]),
+      ),
+    ),
+  );
 }
 
 class _MemberRow extends StatelessWidget {
@@ -1557,86 +1844,89 @@ class _MemberRow extends StatelessWidget {
         children: [
           Row(
             children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: _roleBg(m.role),
-            backgroundImage:
-                m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
-            child: m.avatarUrl != null
-                ? null
-                : Icon(
-                    iconForKey(m.emoji) ?? Icons.person,
-                    size: 20,
-                    color: context.ink,
-                  ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: InkWell(
-              onTap: isMe ? () => _editProfileSheet(context, s, m) : null,
-              borderRadius: BorderRadius.circular(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        m.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          color: context.ink,
-                        ),
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: _roleBg(m.role),
+                backgroundImage:
+                    m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
+                child: m.avatarUrl != null
+                    ? null
+                    : Icon(
+                        iconForKey(m.emoji) ?? Icons.person,
+                        size: 20,
+                        color: context.ink,
                       ),
-                      if (isMe) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          AppLocalizations.of(context)!.youTag,
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: context.primary,
-                              fontWeight: FontWeight.w700),
-                        ),
-                      ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: InkWell(
+                  onTap: isMe ? () => _editProfileSheet(context, s, m) : null,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              m.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: context.ink,
+                              ),
+                            ),
+                          ),
+                          if (isMe) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              AppLocalizations.of(context)!.youTag,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.primary,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        roleLabel(AppLocalizations.of(context)!, m.role),
+                        style: TextStyle(fontSize: 12, color: context.inkSoft),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    roleLabel(AppLocalizations.of(context)!, m.role),
-                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                ),
+              ),
+              if (isMe)
+                InkWell(
+                  onTap: () => _editProfileSheet(context, s, m),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(Icons.edit, size: 18, color: context.primary),
                   ),
-                ],
-              ),
-            ),
-          ),
-          if (isMe)
-            InkWell(
-              onTap: () => _editProfileSheet(context, s, m),
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Icon(Icons.edit, size: 18, color: context.primary),
-              ),
-            ),
-          if (!isMe)
-            OutlinedButton(
-              onPressed: () {
-                final navigator = Navigator.of(context);
-                s.switchUser(m);
-                navigator.popUntil((r) => r.isFirst);
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: context.primary,
-                side: BorderSide(color: context.primary),
-                shape: const StadiumBorder(),
-              ),
-              child: Text(AppLocalizations.of(context)!.viewAs),
-            ),
-          ],
+                ),
+              if (!isMe)
+                OutlinedButton(
+                  onPressed: () {
+                    final navigator = Navigator.of(context);
+                    s.switchUser(m);
+                    navigator.popUntil((r) => r.isFirst);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.primary,
+                    side: BorderSide(color: context.primary),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Text(AppLocalizations.of(context)!.viewAs),
+                ),
+            ],
           ),
           // Owner handing the family over (server: roles swap, the family
-          // code moves, audit row — migration 010).
-          if (!isMe && s.user.role == Role.owner && m.role == Role.adult)
+          // code moves, audit row - migration 010).
+          if (!isMe && s.canTransferOwnership && m.role == Role.adult)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: SizedBox(
@@ -1648,13 +1938,46 @@ class _MemberRow extends StatelessWidget {
                 ),
               ),
             ),
+          if (!isMe && s.canAdmin) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: PopupMenuButton<String>(
+                tooltip: 'Manage ${m.name}',
+                onSelected: (action) => _manageMember(context, s, m, action),
+                itemBuilder: (_) => [
+                  if ((m.serverRole ?? m.role.name) == 'adult')
+                    const PopupMenuItem(
+                      value: 'promote',
+                      child: Text('Make Family Admin'),
+                    ),
+                  if ((m.serverRole ?? m.role.name) == 'co_parent')
+                    const PopupMenuItem(
+                      value: 'adult',
+                      child: Text('Change to Adult Member'),
+                    ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'remove',
+                    child: Text('Remove from family'),
+                  ),
+                ],
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text('Manage',
+                      style: TextStyle(
+                          color: context.primary, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Future<void> _makeOwner(
-      BuildContext context, AppState s, Member m) async {
+  Future<void> _makeOwner(BuildContext context, AppState s, Member m) async {
     final l = AppLocalizations.of(context)!;
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
@@ -1689,12 +2012,63 @@ class _MemberRow extends StatelessWidget {
       ));
     }
   }
-}
 
+  Future<void> _manageMember(
+      BuildContext context, AppState s, Member m, String action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (action == 'remove') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          scrollable: true,
+          title: Text('Remove ${m.name}?'),
+          content: const Text(
+            'They will lose access to this family. Their previous financial activity will remain in the family history.',
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Remove member')),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      try {
+        await s.sync?.removeFamilyMember(m.id);
+        messenger.showSnackBar(const SnackBar(
+            content: Text('Member removed'),
+            behavior: SnackBarBehavior.floating));
+      } catch (_) {
+        messenger.showSnackBar(const SnackBar(
+            content: Text(
+                'Could not remove this member. The family must always have an admin.'),
+            behavior: SnackBarBehavior.floating));
+      }
+      return;
+    }
+    final targetRole = action == 'promote' ? 'co_parent' : 'adult';
+    try {
+      await s.sync?.changeMemberRole(m.id, targetRole);
+      messenger.showSnackBar(SnackBar(
+        content: Text(action == 'promote'
+            ? '${m.name} is now a Family Admin'
+            : '${m.name} is now an Adult Member'),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not change this member\'s role.'),
+          behavior: SnackBarBehavior.floating));
+    }
+  }
+}
 
 /// Step 3 of account deletion: shows the four server phases while the RPC
 /// runs (not dismissible), marks them done on completion, pops with the
-/// outcome. The server performs all phases in one call — the list explains
+/// outcome. The server performs all phases in one call - the list explains
 /// what is happening, it does not fake per-step timing.
 class _DeleteProgressDialog extends StatefulWidget {
   const _DeleteProgressDialog({required this.auth});
@@ -1750,11 +2124,11 @@ class _DeleteProgressDialogState extends State<_DeleteProgressDialog> {
                         width: 18,
                         height: 18,
                         child:
-                            CircularProgressIndicator(strokeWidth: 2)),
+                            CircularProgressIndicator.adaptive(strokeWidth: 2)),
                   const SizedBox(width: 10),
                   Expanded(
-                      child: Text(step,
-                          style: const TextStyle(fontSize: 13.5))),
+                      child:
+                          Text(step, style: const TextStyle(fontSize: 13.5))),
                 ],
               ),
             ),

@@ -9,7 +9,7 @@ import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/core/theme/app_theme.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-/// Premium frontend pass (G1–G13) — the parts that are pure Dart:
+/// Premium frontend pass (G1–G13) - the parts that are pure Dart:
 ///   G1 dark palette exists and differs; themeMode clamps + persists
 ///   G5 balance privacy toggle + persistence round-trip
 ///   G7 locale-aware money grouping (intl) with en default untouched
@@ -63,6 +63,7 @@ void main() {
     expect(s.themeMode, 0);
     s.setThemeMode(2);
     expect(s.themeMode, 2);
+    await s.flushWrites();
 
     final s2 = await fresh();
     expect(s2.themeMode, 2);
@@ -74,6 +75,7 @@ void main() {
     expect(s.hideAmounts, isFalse);
     s.setHideAmounts(true);
     expect(s.hideAmounts, isTrue);
+    await s.flushWrites();
 
     final s2 = await fresh();
     expect(s2.hideAmounts, isTrue);
@@ -83,7 +85,7 @@ void main() {
   test('G7: money grouping stays en-US by default (tests + boot)', () {
     Money.localeTag = null;
     expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1,240.50');
-    expect(Money(18940, Currency.zwg).text, 'ZiG 18,940');
+    expect(Money.fromMajor(18940, Currency.zwg).text, 'ZiG 18,940');
   });
 
   test('G7: es/fr/pt locales regroup amounts (1.234,56)', () {
@@ -119,21 +121,37 @@ void main() {
 
   test('Interface pass 3: circle collect is undoable (records only)', () async {
     final s = await fresh();
+    s.circle = SavingsCircle(
+      name: 'Mukando',
+      contribution: const Money(100, Currency.usd),
+      totalRounds: 4,
+      currentRound: 1,
+      order: const ['Mai', 'Baba'],
+    );
     final before = s.circle.currentRound;
     s.circleCollect();
     expect(s.circle.currentRound, before + 1);
     s.undoCircleCollect();
     expect(s.circle.currentRound, before);
+    await s.flushWrites();
   });
 
   test('Interface pass 3: chore confirm is undoable (stars returned)',
       () async {
     final s = await fresh();
-    final chore = s.chores.firstWhere((c) => c.state == ChoreState.confirmed);
+    final chore = Chore(
+      id: 'ch1',
+      name: 'Dishes',
+      stars: 3,
+      state: ChoreState.confirmed,
+    );
+    s.chores.add(chore);
+    s.stars = 3;
     final starsBefore = s.stars;
     s.unconfirmChore(chore);
     expect(chore.state, ChoreState.waiting);
     expect(s.stars, starsBefore - chore.stars);
+    await s.flushWrites();
   });
 
   // ── Premium pass: sync-scope completion (chore / mukando / recurring) ────
@@ -144,7 +162,7 @@ void main() {
       id: 'rc1',
       name: 'School fees',
       emoji: '🎓',
-      amount: Money(2500, Currency.usd),
+      amount: const Money(2500, Currency.usd),
       memberId: 'm1',
       method: Method.bankTransfer,
       frequency: Frequency.term,
@@ -175,7 +193,7 @@ void main() {
   test('mukando adapter uses a deterministic per-space id', () {
     final circle = SavingsCircle(
       name: 'Mukando',
-      contribution: Money(2000, Currency.zwg),
+      contribution: const Money(2000, Currency.zwg),
       totalRounds: 6,
       currentRound: 2,
       order: const ['Mai', 'Baba', 'Sekuru', 'Gogo', 'Zoe', 'Tapiwa'],

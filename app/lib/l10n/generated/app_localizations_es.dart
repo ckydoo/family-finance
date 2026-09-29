@@ -18,7 +18,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tabSavings => 'Ahorros';
 
   @override
-  String get tabLists => 'Listas';
+  String get tabLists => 'Compras';
 
   @override
   String get tabFamily => 'Familia';
@@ -39,8 +39,48 @@ class AppLocalizationsEs extends AppLocalizations {
   String get familyPool => 'Fondo familiar';
 
   @override
-  String safeToSpend(String amount) {
-    return 'Seguro para gastar hoy: $amount';
+  String get availableToSpendLabel => 'Disponible para gastar';
+
+  @override
+  String get savingsExceedsCashTitle => 'No hay suficiente efectivo disponible';
+
+  @override
+  String savingsExceedsCashBody(Object amount) {
+    return 'Este aporte supera en $amount el efectivo disponible.';
+  }
+
+  @override
+  String get goalOverfundTitle => 'Esto supera la meta';
+
+  @override
+  String goalOverfundBody(Object amount) {
+    return 'El aporte deja la meta $amount por encima del objetivo. ¿Añadirlo igualmente?';
+  }
+
+  @override
+  String get addAnyway => 'Añadir igualmente';
+
+  @override
+  String safeToSpend(Object amount) {
+    return 'Gasto flexible de hoy: $amount';
+  }
+
+  @override
+  String get flexibleSpendTitle => 'Gasto flexible de hoy';
+
+  @override
+  String get flexibleSpendExplanation =>
+      'Lo que puede gastar hoy después de proteger los ahorros y el dinero reservado en sus sobres.';
+
+  @override
+  String get reservedForEnvelopes => 'Reservado para sobres';
+
+  @override
+  String get freeAfterCommitments => 'Libre después de compromisos';
+
+  @override
+  String daysRemaining(int count) {
+    return 'Días restantes: $count';
   }
 
   @override
@@ -96,14 +136,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noActivityHint =>
-      'Cada gasto, ingreso y aprobación aparece aquí — añade el primero con el botón +.';
+      'Cada gasto, ingreso y aprobación aparece aquí - añade el primero con el botón +.';
 
   @override
   String get noGoals => 'Aún no hay metas';
 
   @override
   String get noGoalsHint =>
-      'Empieza con un fondo de emergencia — aunque sea poco cada semana, cambia cómo se sienten las emergencias.';
+      'Empieza con un fondo de emergencia - aunque sea poco cada semana, cambia cómo se sienten las emergencias.';
 
   @override
   String get reportTitle => 'Boleta de progreso';
@@ -208,7 +248,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get remindersTitle => 'Recordatorios';
 
   @override
-  String scheduledOn(String from, String to) {
+  String scheduledOn(Object from, Object to) {
     return 'Programados en este dispositivo · horas de silencio $from–$to';
   }
 
@@ -223,14 +263,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get ob1Body =>
-      'Un lugar tranquilo para todo lo que tu familia gana, gasta, ahorra y planifica — en todas tus monedas, con o sin internet.';
+      'Un lugar tranquilo para todo lo que tu familia gana, gasta, ahorra y planifica - en todas tus monedas, con o sin internet.';
 
   @override
   String get ob2Title => 'Sobres, no culpa';
 
   @override
   String get ob2Body =>
-      'Dale a cada dólar un trabajo. Comida, escuela, transporte — ve de un vistazo qué va bien, qué necesita un repaso y qué es seguro gastar hoy.';
+      'Dale a cada dólar un trabajo. Comida, escuela, transporte - ve de un vistazo qué va bien, qué necesita un repaso y qué es seguro gastar hoy.';
 
   @override
   String get ob3Title => 'Hecho para toda la familia';
@@ -243,14 +283,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get ob4Title => 'Recordatorios amables';
 
   @override
-  String syncPill(int count) {
+  String syncPill(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other:
-          '$count cambios guardados en este dispositivo — se sincronizan al haber internet',
+          '$count cambios guardados en este dispositivo - se sincronizan al haber internet',
       one:
-          '1 cambio guardado en este dispositivo — se sincroniza al haber internet',
+          '1 cambio guardado en este dispositivo - se sincroniza al haber internet',
     );
     return '$_temp0';
   }
@@ -278,23 +318,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get donutEmpty =>
-      'Sin gastos registrados este ciclo — el anillo se llena al añadir gastos.';
+      'Sin gastos registrados este ciclo - el anillo se llena al añadir gastos.';
 
   @override
   String get ob4Body =>
-      'Avisos de facturas, alertas de presupuesto y el resumen familiar semanal — con horario de silencio, todo en tu teléfono. Tú decides.';
+      'Avisos de facturas, alertas de presupuesto y el resumen familiar semanal - con horario de silencio, todo en tu teléfono. Tú decides.';
 
   @override
   String get next => 'Siguiente';
 
   @override
-  String get loginWelcome => 'Te damos la bienvenida a Mhuri Hub';
+  String get loginWelcome => 'Te damos la bienvenida a Mhuri';
 
   @override
   String get loginEnterCode => 'Introduce el código';
 
   @override
-  String loginSentCode(String phone) {
+  String loginSentCode(Object phone) {
     return 'Enviamos un código por SMS al $phone';
   }
 
@@ -338,10 +378,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get savedOffline =>
-      'Guardado ✓ — funciona sin internet, se sincroniza al conectar';
+      'Guardado ✓ - funciona sin internet, se sincroniza al conectar';
 
   @override
-  String kidsHi(String name) {
+  String kidsHi(Object name) {
     return '¡Hola $name!';
   }
 
@@ -349,8 +389,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get kidsMyJar => 'Mi tarro';
 
   @override
-  String kidsGoalSaved(String goal, int pct) {
-    return 'Meta: $goal — $pct% ahorrado';
+  String kidsGoalSaved(Object goal, Object pct) {
+    return 'Meta: $goal - $pct% ahorrado';
   }
 
   @override
@@ -360,8 +400,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get kidsWishList => 'Lista de deseos';
 
   @override
-  String kidsWishItem(String amount) {
-    return 'Pelota — US\$25 · ahorrado $amount';
+  String kidsWishItem(Object amount) {
+    return 'Pelota - US\$25 · ahorrado $amount';
   }
 
   @override
@@ -375,6 +415,63 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get kidsParents => 'Papás';
+
+  @override
+  String get kidsNoChores =>
+      'No hay tareas pendientes. Pide a un adulto que añada una cuando estés listo.';
+
+  @override
+  String get kidsParentArea => 'Área para adultos';
+
+  @override
+  String get kidsAndChores => 'Niños y tareas';
+
+  @override
+  String get addChore => 'Añadir tarea';
+
+  @override
+  String get addChoreHint =>
+      'Crea una tarea familiar y elige su recompensa en estrellas.';
+
+  @override
+  String get choreName => 'Nombre de la tarea';
+
+  @override
+  String get starReward => 'Recompensa en estrellas';
+
+  @override
+  String get choreFieldsRequired => 'Escribe una tarea y al menos 1 estrella.';
+
+  @override
+  String choreAdded(Object name) {
+    return '$name se añadió para los niños.';
+  }
+
+  @override
+  String get noFamilyChores =>
+      'Aún no hay tareas. Añade la primera para los niños.';
+
+  @override
+  String choreStars(Object stars) {
+    return '$stars estrellas';
+  }
+
+  @override
+  String get kidsNoWish => 'Aún no hay un deseo elegido';
+
+  @override
+  String kidsWishProgress(Object name, Object target, Object saved) {
+    return '$name · meta $target · $saved ahorrado';
+  }
+
+  @override
+  String get kidsJars => 'Tarros de los niños';
+
+  @override
+  String get addKidWish => 'Añadir un deseo infantil';
+
+  @override
+  String get childLabel => 'Niño';
 
   @override
   String get kidsAskTitle => 'Pedir a mamá y papá';
@@ -393,7 +490,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get teenEarnHint =>
-      'Lava un coche, ayuda en la tienda — regístralo y mira crecer tu tarro.';
+      'Lava un coche, ayuda en la tienda - regístralo y mira crecer tu tarro.';
 
   @override
   String get teenSpend => 'Gastar 50%';
@@ -405,12 +502,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get teenGive => 'Dar 10%';
 
   @override
-  String teenSplitHint(String amount) {
+  String teenSplitHint(Object amount) {
     return 'Reparto sugerido de $amount ganado este mes';
   }
 
   @override
-  String get teenSavedJar => 'Guardado en tu tarro — papás igualan el 50%';
+  String get teenSavedJar => 'Guardado en tu tarro - papás igualan el 50%';
+
+  @override
+  String get teenJarCreateFailed =>
+      'No se pudo preparar tu ahorro. Comprueba la conexión e inténtalo de nuevo.';
 
   @override
   String get teenWhatDid => '¿Qué hiciste?';
@@ -422,14 +523,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get membersDesc => 'Pareja + niños · el mes empieza el 1';
 
   @override
+  String membersCycleDesc(int day) {
+    return 'El ciclo presupuestario comienza el día $day';
+  }
+
+  @override
   String get membersInviteHint =>
-      'Comparte el código o escanea para invitar a un familiar';
+      'Crea una invitación segura con un rol para cada familiar';
 
   @override
   String get setCurrency => 'Moneda y tasas';
 
   @override
-  String setCurrencySub(String rate) {
+  String setCurrencySub(Object rate) {
     return 'USD principal · ZiG secundaria · $rate';
   }
 
@@ -438,13 +544,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get setPrivacySub =>
-      'Bolsillos privados: no — la pareja ve solo lo compartido';
+      'Bolsillos privados: no - la pareja ve solo lo compartido';
 
   @override
   String get setMonthStart => 'Inicio de mes';
 
   @override
-  String get setMonthStartSub => 'Día 1 — alineado con el ciclo de sueldo';
+  String get setMonthStartSub => 'Día 1 - alineado con el ciclo de sueldo';
 
   @override
   String get setNotif => 'Notificaciones';
@@ -480,7 +586,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get mReachedTalk =>
-      'Habla de los sobres marcados \"Alcanzado\". Rellénenlos juntos, con calma.';
+      'Hable sobre los sobres marcados como \"Alcanzado\". Recárguelos juntos, con calma.';
 
   @override
   String get mGoals => 'Metas de ahorro';
@@ -492,8 +598,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get mImprove => 'Una cosa a mejorar';
 
   @override
-  String recSkipped(String date) {
-    return 'Omitido — próximo: $date';
+  String recSkipped(Object date) {
+    return 'Omitido - próximo: $date';
   }
 
   @override
@@ -501,7 +607,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get recReview =>
-      'Nada se cobra automáticamente — tú revisas y registras todo.';
+      'Nada se cobra automáticamente - tú revisas y registras todo.';
 
   @override
   String get recNoEnvelope => 'Sin sobre';
@@ -531,7 +637,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get roleKid => 'Niño';
 
   @override
-  String get roleViewer => 'Abuelo · Espectador';
+  String get roleViewer => 'Observador';
 
   @override
   String get methodCash => 'Efectivo';
@@ -589,21 +695,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Los sobres son presupuestos visibles: comida, escuela, transporte. Crea el primero abajo.';
 
   @override
-  String get newEnvStub => 'Nuevo sobre — en camino (Fase 1)';
+  String get newEnvStub => 'Nuevo sobre - en camino (Fase 1)';
 
   @override
   String get addRecurringTip => 'Añadir gasto recurrente';
 
   @override
   String get recReviewed =>
-      'Se revisa antes de registrar — nada se cobra en silencio.';
+      'Se revisa antes de registrar - nada se cobra en silencio.';
 
   @override
   String get noRecurring => 'Aún no hay gastos recurrentes';
 
   @override
   String get recurringHint =>
-      'Añade reglas de escuela, alquiler o aire — te avisamos cuando vence cada una.';
+      'Añade reglas de escuela, alquiler o aire - te avisamos cuando vence cada una.';
 
   @override
   String get chipOnTrack => 'En rumbo';
@@ -639,7 +745,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get meetingNoteHint =>
-      'p. ej. «Cocinar más los domingos — el gasto del mercado sube.»';
+      'p. ej. «Cocinar más los domingos - el gasto del mercado sube.»';
 
   @override
   String get meetingSaveNote => 'Guardar nuestra nota';
@@ -648,7 +754,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get savedTick => 'Guardado ✓';
 
   @override
-  String get meetingDone => 'Listo — nos vemos el mes que viene';
+  String get meetingDone => 'Listo - nos vemos el mes que viene';
 
   @override
   String get reportCard => 'Boletín';
@@ -722,13 +828,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get joinWithCode => 'Unirse con código';
 
   @override
-  String get offlineRetry => 'Sin conexión — reintento automático';
+  String get offlineRetry => 'Sin conexión - reintento automático';
 
   @override
   String get syncProblem => 'Problema de sincronización';
 
   @override
-  String get signinExpired => 'Sesión caducada — sal y vuelve a entrar';
+  String get signinExpired => 'Sesión caducada - sal y vuelve a entrar';
 
   @override
   String get syncing => 'Sincronizando…';
@@ -752,7 +858,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get localizedNote =>
-      'La app entera ya habla seis idiomas — nada queda solo en inglés.';
+      'La app entera ya habla seis idiomas - nada queda solo en inglés.';
 
   @override
   String get nextCreateSpace =>
@@ -760,7 +866,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String reachedMove(Object on, Object total) {
-    return '$on de $total sobres siguen en rumbo. Abre los marcados «Alcanzado» y mueve dinero ahí — con calma, sin perfección.';
+    return '$on de $total sobres siguen en rumbo. Abre los marcados «Alcanzado» y mueve dinero ahí - con calma, sin perfección.';
   }
 
   @override
@@ -793,7 +899,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get markRound => 'Marcar ronda recaudada';
 
   @override
-  String get recordsOnly => 'Mhuri Hub nunca guarda el dinero — solo registra.';
+  String get recordsOnly => 'Mhuri nunca guarda el dinero - solo registra.';
 
   @override
   String get saveContribution => 'Guardar aporte';
@@ -809,7 +915,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get paydayAlign =>
-      'Presupuestos alineados al sueldo — los ciclos se reinician este día y el aviso de la reunión llega la noche anterior';
+      'Presupuestos alineados al sueldo - los ciclos se reinician este día y el aviso de la reunión llega la noche anterior';
 
   @override
   String get backupComing => 'Copia y restauración (pronto)';
@@ -875,12 +981,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String choreDoneTitle(Object name) {
-    return '«$name» hecho — ¿confirmar?';
+    return '«$name» hecho - ¿confirmar?';
   }
 
   @override
   String choreDoneSub(Object stars) {
-    return '$stars estrellas — confirma para hacer crecer el tarro';
+    return '$stars estrellas - confirma para hacer crecer el tarro';
   }
 
   @override
@@ -921,12 +1027,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String circleTitle(Object round, Object total) {
-    return 'Círculo de ahorro — Ronda $round de $total';
+    return 'Círculo de ahorro - Ronda $round de $total';
   }
 
   @override
   String postedSnack(Object name) {
-    return '$name registrado ✓ — sobre actualizado';
+    return '$name registrado ✓ - sobre actualizado';
   }
 
   @override
@@ -936,7 +1042,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String approvedReq(Object amount, Object name) {
-    return 'Aprobado ✓ — $amount añadido a $name';
+    return 'Aprobado ✓ - $amount añadido a $name';
   }
 
   @override
@@ -946,7 +1052,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String approvedProp(Object amount, Object env) {
-    return 'Aprobado ✓ — $amount registrado en $env';
+    return 'Aprobado ✓ - $amount registrado en $env';
   }
 
   @override
@@ -955,7 +1061,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get listEmptyAdd => 'Nada aquí — añade un artículo con ＋';
+  String get listEmptyAdd => 'Nada aquí - añade un artículo con ＋';
 
   @override
   String usesPct(Object pct, Object name) {
@@ -964,7 +1070,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String loggedTo(Object amount, Object name) {
-    return 'Registrado $amount en $name ✓ — sobre actualizado';
+    return 'Registrado $amount en $name ✓ - sobre actualizado';
   }
 
   @override
@@ -984,7 +1090,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get createFail => 'No se pudo crear el espacio — inténtalo de nuevo';
+  String get createFail => 'No se pudo crear el espacio - inténtalo de nuevo';
 
   @override
   String get joinSpaceTitle => 'Unirse a un espacio familiar';
@@ -993,17 +1099,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inviteCode => 'Código de invitación';
 
   @override
-  String get joinedOk => 'Unido ✓ — tus datos se están sincronizando';
+  String get joinedOk => 'Unido ✓ - tus datos se están sincronizando';
 
   @override
-  String get joinFail => 'No se pudo unir — inténtalo de nuevo';
+  String get joinFail => 'No se pudo unir - inténtalo de nuevo';
 
   @override
   String get kidsPin => 'PIN de salida del Modo Niños';
 
   @override
   String get kidsPinSub =>
-      'Necesario para salir del Modo Niños — toca para cambiarlo';
+      'Necesario para salir del Modo Niños - toca para cambiarlo';
 
   @override
   String signedInAs(Object masked) {
@@ -1028,7 +1134,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String starsHome(Object stars) {
-    return '$stars estrellas — confirma tareas en Inicio para llenar tarros';
+    return '$stars estrellas - confirma tareas en Inicio para llenar tarros';
   }
 
   @override
@@ -1043,7 +1149,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get roundOk =>
-      'Ronda registrada ✓ — solo registros, nunca guardamos dinero';
+      'Ronda registrada ✓ - solo registros, nunca guardamos dinero';
 
   @override
   String addToGoal(Object name) {
@@ -1129,24 +1235,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pickCurrency => 'Moneda de vista';
 
   @override
-  String get rateField => 'ZiG por 1 USD';
+  String get rateField => 'Tipo de cambio';
 
   @override
   String get rateSave => 'Guardar tasa';
 
   @override
-  String get rateReset => 'Volver a la referencia RBZ';
+  String get rateReset => 'Restablecer a la tasa predeterminada';
 
   @override
   String get rateCustomNote =>
-      'Se usa para la vista en ZiG en toda la app. La referencia RBZ incluida es 15,27.';
+      'Se usa para la conversión de monedas en toda la app.';
 
   @override
   String get autoHide => 'Ocultar importes al salir de la app';
 
   @override
   String get autoHideSub =>
-      'Los saldos se ocultan al pasar la app a segundo plano — desactívalo si lo prefieres.';
+      'Los saldos se ocultan al pasar la app a segundo plano - desactívalo si lo prefieres.';
 
   @override
   String get hideNow => 'Ocultar importes ahora';
@@ -1161,7 +1267,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get copied => 'Copiado ✓';
 
   @override
-  String get inviteTitle => 'Invitar a un familiar';
+  String get inviteTitle => 'Invitar a la familia';
 
   @override
   String get editProfile => 'Editar perfil';
@@ -1250,14 +1356,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get passwordResetSent =>
-      'Email de restablecimiento enviado — abre el enlace en este teléfono y la app terminará el cambio.';
+      'Email de restablecimiento enviado - abre el enlace en este teléfono y la app terminará el cambio.';
 
   @override
   String get passwordResetFailed =>
       'No pudimos enviar el correo. Comprueba tu conexión e inténtalo de nuevo.';
 
   @override
-  String get newToMhuri => '¿Primera vez en Mhuri Hub?';
+  String get newToMhuri => '¿Primera vez en Mhuri?';
 
   @override
   String get alreadyHaveAccount => '¿Ya tienes una cuenta?';
@@ -1288,7 +1394,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get setupChoiceBody =>
-      'Mhuri Hub funciona para una familia, juntos. Crea la tuya o únete a la que perteneces.';
+      'Mhuri funciona para una familia, juntos. Crea la tuya o únete a la que perteneces.';
 
   @override
   String get setupCreateCard => 'Crear una familia';
@@ -1347,7 +1453,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get skipForNow => 'Omitir por ahora';
 
   @override
-  String get setupInviteTitle => 'Invita a los tuyos';
+  String get setupInviteTitle => 'Invitar miembros';
 
   @override
   String get setupWorking => 'Preparando todo…';
@@ -1375,15 +1481,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get errInviteCode =>
-      'Introduce el código de invitación del dueño de la familia — tiene el formato MHRI-4F2A.';
+      'Introduce el código de invitación del dueño de la familia - tiene el formato MHRI-4F2A.';
 
   @override
   String get errFamilyNameTaken =>
-      'Ese nombre de familia ya está en uso — prueba con otro.';
+      'Ese nombre de familia ya está en uso - prueba con otro.';
 
   @override
   String get authErrEmailNotConfirmed =>
-      'Revisa tu correo — toca primero el enlace de confirmación y luego inicia sesión.';
+      'Revisa tu correo - toca primero el enlace de confirmación y luego inicia sesión.';
 
   @override
   String get authErrBadCredentials =>
@@ -1391,32 +1497,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authErrAlreadyRegistered =>
-      'Ya existe una cuenta con este correo — inicia sesión.';
+      'Ya existe una cuenta con este correo - inicia sesión.';
 
   @override
   String get authErrRateLimited =>
-      'Demasiados intentos — espera un minuto y vuelve a probar.';
+      'Demasiados intentos - espera un minuto y vuelve a probar.';
 
   @override
   String get authErrNetwork =>
-      'Sin conexión — revisa tu internet e inténtalo de nuevo.';
+      'Sin conexión - revisa tu internet e inténtalo de nuevo.';
 
   @override
   String get authResend => 'Reenviar correo de confirmación';
 
   @override
   String get authResent =>
-      'Correo de confirmación enviado — revisa tu bandeja.';
+      'Correo de confirmación enviado - revisa tu bandeja.';
 
   @override
   String get mukandoOn => 'Círculo de ahorros (mukando)';
 
   @override
-  String get mukandoEnableTitle => 'Mukando — ahorros rotativos';
+  String get mukandoEnableTitle => 'Mukando - ahorros rotativos';
 
   @override
   String get mukandoEnableSub =>
-      'Ahorra por turnos con tu familia. Apagado por defecto — actívalo si tu círculo hace rondas.';
+      'Ahorra por turnos con tu familia. Apagado por defecto - actívalo si tu círculo hace rondas.';
 
   @override
   String get mukandoEnableCta => 'Activar mukando';
@@ -1432,10 +1538,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get photoFailed =>
-      'No se pudo subir la foto — revisa tu conexión e inténtalo de nuevo.';
+      'No se pudo subir la foto - revisa tu conexión e inténtalo de nuevo.';
 
   @override
-  String get photoSaved => 'Foto guardada — tu familia también la verá.';
+  String get photoSaved => 'Foto guardada - tu familia también la verá.';
 
   @override
   String get newSavingsGoal => 'Nueva meta de ahorro';
@@ -1475,7 +1581,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncStateError => 'Esperando para reintentar';
 
   @override
-  String get syncStateOffline => 'Sin conexión — los cambios se guardan en este teléfono';
+  String get syncStateOffline =>
+      'Sin conexión - los cambios se guardan en este teléfono';
 
   @override
   String get syncStateNeedsSignIn => 'Inicia sesión para sincronizar';
@@ -1508,13 +1615,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncConnectedTo => 'Nube familiar:';
 
   @override
-  String get syncNotConnected => 'Solo este dispositivo — aún no hay nube familiar conectada.';
+  String get syncNotConnected =>
+      'Solo este dispositivo - aún no hay nube familiar conectada.';
 
   @override
-  String get syncBackupNote => 'No hay ninguna copia de seguridad aparte que activar. Cada cambio se guarda en este teléfono en el momento en que lo haces y se sincroniza con la nube familiar siempre que tengas datos. Exporta un CSV abajo cuando quieras para una copia que controlas.';
-
-  @override
-  String get previewExit => 'Salir';
+  String get syncBackupNote =>
+      'No hay ninguna copia de seguridad aparte que activar. Cada cambio se guarda en este teléfono en el momento en que lo haces y se sincroniza con la nube familiar siempre que tengas datos. Exporta un CSV abajo cuando quieras para una copia que controlas.';
 
   @override
   String previewBanner(Object name) {
@@ -1522,10 +1628,14 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get previewExit => 'Salir';
+
+  @override
   String get resetTitle => 'Elige una contraseña nueva';
 
   @override
-  String get resetSubtitle => 'Iniciaste sesión desde el enlace de restablecimiento — ahora elige una contraseña nueva.';
+  String get resetSubtitle =>
+      'Iniciaste sesión desde el enlace de restablecimiento - ahora elige una contraseña nueva.';
 
   @override
   String get resetNewLabel => 'Contraseña nueva';
@@ -1543,13 +1653,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get resetRuleMix => 'Con una letra y un número';
 
   @override
-  String get resetRuleHint => 'Usa al menos 8 caracteres, con una letra y un número.';
+  String get resetRuleHint =>
+      'Usa al menos 8 caracteres, con una letra y un número.';
 
   @override
   String get resetCta => 'Cambiar contraseña';
 
   @override
-  String get resetSuccess => 'Contraseña cambiada — inicia sesión con la nueva';
+  String get resetSuccess => 'Contraseña cambiada - inicia sesión con la nueva';
 
   @override
   String get resetShow => 'Mostrar u ocultar la contraseña';
@@ -1558,7 +1669,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get resetExpiredTitle => 'Este enlace ha caducado';
 
   @override
-  String get resetExpiredBody => 'Los enlaces de restablecimiento funcionan una sola vez y por poco tiempo. Envía uno nuevo e inténtalo otra vez.';
+  String get resetExpiredBody =>
+      'Los enlaces de restablecimiento funcionan una sola vez y por poco tiempo. Envía uno nuevo e inténtalo otra vez.';
 
   @override
   String get resetSendNew => 'Enviar un enlace nuevo';
@@ -1568,32 +1680,70 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String listDeleted(Object name) {
-    return '"$name" eliminado de la lista';
+    return '\"$name\" se eliminó de la lista';
   }
 
   @override
-  String get roleAdult => 'Adulto';
+  String get memberAccountTitle => 'Crear cuenta de miembro';
 
   @override
-  String get roleTeen => 'Adolescente';
+  String get memberAccountSubtitle =>
+      'Configura una cuenta para alguien que debe unirse inmediatamente a esta familia.';
 
   @override
-  String get roleViewer => 'Observador';
+  String get memberAccountAction => 'Crear cuenta para miembro';
 
   @override
-  String get inviteCode => 'Código de invitación';
+  String get memberAccountSheetSubtitle =>
+      'Podrá iniciar sesión inmediatamente sin usar un código de invitación.';
 
   @override
-  String get inviteTitle => 'Invitar a la familia';
+  String get memberAccountName => 'Nombre preferido';
 
   @override
-  String get inviteHowTo => 'Crea una cuenta con su correo y luego introduce este código para unirse a tu familia.';
+  String get memberAccountEmail => 'Correo electrónico';
+
+  @override
+  String get memberAccountTemporaryPassword => 'Contraseña temporal';
+
+  @override
+  String get memberAccountPasswordRule =>
+      'Al menos 10 caracteres, con una letra y un número';
+
+  @override
+  String get memberAccountRole => 'Rol familiar';
+
+  @override
+  String get memberAccountSecurityNote =>
+      'Comparte la contraseña temporal en privado. Pídele que use Olvidé mi contraseña para elegir su propia contraseña.';
+
+  @override
+  String get memberAccountCreate => 'Crear cuenta de miembro';
+
+  @override
+  String get memberAccountCreated => 'Cuenta creada y añadida a tu familia.';
+
+  @override
+  String get memberAccountBadName => 'Introduce su nombre preferido.';
+
+  @override
+  String get memberAccountEmailExists =>
+      'Ese correo ya tiene una cuenta. Usa la invitación normal.';
+
+  @override
+  String get memberAccountOwnerRole =>
+      'Solo el propietario puede crear otra cuenta de padre o adulto.';
+
+  @override
+  String get memberAccountFailed =>
+      'No se pudo crear la cuenta. Comprueba tu conexión e inténtalo de nuevo.';
 
   @override
   String get inviteNew => 'Nueva invitación';
 
   @override
-  String get inviteEmailOptional => 'Su email (opcional — solo esa persona podrá usarla)';
+  String get inviteEmailOptional =>
+      'Su email (opcional - solo esa persona podrá usarla)';
 
   @override
   String get inviteCreate => 'Crear invitación';
@@ -1602,13 +1752,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inviteCreated => 'Muéstrales este código o QR';
 
   @override
-  String get inviteScanHint => 'Escanean el QR con la cámara o tocan el enlace — abre la app lista para unirse.';
+  String get inviteScanHint =>
+      'Escanean el QR con la cámara o tocan el enlace - abre la app lista para unirse.';
 
   @override
   String get inviteShare => 'Compartir';
 
   @override
-  String get inviteShareText => 'Únete a nuestra familia en Mhuri Hub — tu invitación:';
+  String get inviteShareText =>
+      'Únete a nuestra familia en Mhuri - tu invitación:';
 
   @override
   String get invitePending => 'Invitaciones abiertas';
@@ -1620,36 +1772,41 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inviteHistory => 'Invitaciones anteriores';
 
   @override
+  String inviteAcceptedLabel(Object code, Object role) {
+    return '$code - se unió ($role)';
+  }
+
+  @override
   String get inviteRevoke => 'Revocar';
 
   @override
-  String get inviteFailed => 'No se pudo crear la invitación — revisa tu conexión e inténtalo otra vez.';
+  String inviteRevokeBody(Object code) {
+    return '¿Revocar la invitación $code? Ya no podrán unirse con ella.';
+  }
 
   @override
-  String get inviteTooMany => 'Ya hay 5 invitaciones abiertas — revoca una primero.';
+  String get inviteFailed =>
+      'No se pudo crear la invitación - revisa tu conexión e inténtalo otra vez.';
 
   @override
-  String get inviteOwnerOnly => 'Solo el dueño de la familia gestiona invitaciones.';
+  String get inviteTooMany =>
+      'Ya hay 5 invitaciones abiertas - revoca una primero.';
 
   @override
-  String get inviteAlreadyInFamily => 'Ya perteneces a una familia — las invitaciones son para unirte a una nueva.';
+  String get inviteOwnerOnly =>
+      'Solo el dueño de la familia gestiona invitaciones.';
+
+  @override
+  String inviteLinkReady(Object code) {
+    return 'La invitación $code te espera - únete a la familia abajo.';
+  }
+
+  @override
+  String get inviteAlreadyInFamily =>
+      'Ya perteneces a una familia - las invitaciones son para unirte a una nueva.';
 
   @override
   String get makeOwner => 'Hacer dueño';
-
-  @override
-  String get makeOwnerFailed => 'No se pudo transferir la propiedad — revisa tu conexión e inténtalo otra vez.';
-
-  @override
-  String get roleParent => 'Padre/Madre';
-
-  @override
-  String get roleChild => 'Niño/a';
-
-  @override
-  String inviteAcceptedLabel(Object code, Object role) {
-    return '$code — se unió';
-  }
 
   @override
   String makeOwnerBody(Object name) {
@@ -1662,20 +1819,21 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String inviteRevokeBody(Object code) {
-    return '¿Revocar la invitación $code? Ya no podrán unirse con ella.';
-  }
+  String get makeOwnerFailed =>
+      'No se pudo transferir la propiedad - revisa tu conexión e inténtalo otra vez.';
 
   @override
-  String inviteLinkReady(Object code) {
-    return 'La invitación $code te espera — únete a la familia abajo.';
-  }
+  String get roleParent => 'Padre/Madre';
+
+  @override
+  String get roleChild => 'Niño/a';
 
   @override
   String get syncProblemsTitle => 'Cambios que te necesitan';
 
   @override
-  String get syncProblemsBody => 'Estos cambios no llegaron a la nube familiar tras varios intentos. Reinténtalos o descártalos — nada se elimina sin tu confirmación.';
+  String get syncProblemsBody =>
+      'Estos cambios no llegaron a la nube familiar tras varios intentos. Reinténtalos o descártalos - nada se elimina sin tu confirmación.';
 
   @override
   String get syncRetryThis => 'Reintentar';
@@ -1685,6 +1843,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncDiscardTitle => '¿Descartar este cambio?';
+
+  @override
+  String syncDiscardBody(Object what) {
+    return '“$what” queda solo en este teléfono y nunca llegará a la nube familiar. ¿Descartarlo?';
+  }
+
+  @override
+  String syncTries(Object tries) {
+    return '$tries intentos hasta ahora';
+  }
 
   @override
   String get syncKindTx => 'Gasto';
@@ -1705,20 +1873,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncKindOther => 'Cambio';
 
   @override
-  String syncDiscardBody(Object what) {
-    return '“$what” queda solo en este teléfono y nunca llegará a la nube familiar. ¿Descartarlo?';
-  }
-
-  @override
-  String syncTries(Object tries) {
-    return '$tries intentos hasta ahora';
-  }
-
-  @override
   String get setupInviteCopied => 'Invitación copiada.';
 
   @override
   String get setupBadEmail => 'Introduce un email válido.';
+
+  @override
+  String setupInviteText(Object family, Object code, Object role) {
+    return 'Únete a $family en Mhuri con el código $code. Rol sugerido: $role.';
+  }
+
+  @override
+  String setupInviteSubject(Object family) {
+    return 'Únete a $family en Mhuri';
+  }
 
   @override
   String get setupTagline => 'Una familia. Un plan.';
@@ -1748,7 +1916,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setupPreferredName => 'Nombre preferido';
 
   @override
-  String get setupFamilyNameField => 'Nombre de familia (por ejemplo, los Moyo)';
+  String get setupFamilyNameField =>
+      'Nombre de familia (por ejemplo, los Moyo)';
 
   @override
   String get setupCurrency => 'Moneda principal';
@@ -1760,13 +1929,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setupJoinSub => 'Usa el código que te compartió un familiar.';
 
   @override
-  String get setupInviteTitle => 'Invitar miembros';
-
-  @override
   String get setupInviteSub => 'Trae a todos al mismo espacio familiar.';
 
   @override
-  String get setupRoleSuggestion => 'El rol va como sugerencia. Confírmalo en los ajustes de Familia cuando se unan.';
+  String get setupRoleSuggestion =>
+      'El rol va como sugerencia. Confírmalo en los ajustes de Familia cuando se unan.';
 
   @override
   String get setupSendInvite => 'Enviar invitación';
@@ -1781,7 +1948,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setupPermsTitle => 'Permisos';
 
   @override
-  String get setupPermsSub => 'El acceso recomendado está listo. Puedes cambiarlo después en los ajustes de Familia.';
+  String get setupPermsSub =>
+      'El acceso recomendado está listo. Puedes cambiarlo después en los ajustes de Familia.';
 
   @override
   String get setupPermWallet => 'Ver su billetera';
@@ -1796,16 +1964,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setupFinish => 'Terminar configuración';
 
   @override
+  String setupStepOf(Object n) {
+    return 'Paso $n de 3';
+  }
+
+  @override
   String get deleteWhatTitle => 'Qué pasa al eliminar tu cuenta';
 
   @override
-  String get deleteWhatOwner => 'Eres el dueño de la familia: se elimina todo el espacio familiar — cuentas, presupuestos, transacciones y listas, para todos. No se puede deshacer.';
+  String get deleteWhatOwner =>
+      'Eres el dueño de la familia: se elimina todo el espacio familiar - cuentas, presupuestos, transacciones y listas, para todos. No se puede deshacer.';
 
   @override
-  String get deleteWhatMember => 'Sales de la familia. Tu membresía termina, tu foto y email se eliminan, y tus transacciones pasadas quedan como “Former member”. Los demás conservan sus datos.';
+  String get deleteWhatMember =>
+      'Sales de la familia. Tu membresía termina, tu foto y email se eliminan, y tus transacciones pasadas quedan como “Former member”. Los demás conservan sus datos.';
 
   @override
-  String get deleteWhatSessions => 'Todas las sesiones en todos los dispositivos se cierran.';
+  String get deleteWhatSessions =>
+      'Todas las sesiones en todos los dispositivos se cierran.';
 
   @override
   String get deleteStepLeave => 'Saliendo de la familia…';
@@ -1818,71 +1994,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteStepIdentity => 'Eliminando tu cuenta…';
-
-  @override
-  String setupInviteText(Object family, Object code, Object role) {
-    return 'Únete a $family en Mhuri Hub con el código $code. Rol sugerido: $role.';
-  }
-
-  @override
-  String setupInviteSubject(Object family) {
-    return 'Únete a $family en Mhuri Hub';
-  }
-
-  @override
-  String setupStepOf(Object n) {
-    return 'Paso $n de 3';
-  }
-
-  @override
-  String kidsGoalSaved(Object goal, Object pct) {
-    return 'Meta: $goal — $pct% ahorrado';
-  }
-
-  @override
-  String kidsHi(Object name) {
-    return '¡Hola $name!';
-  }
-
-  @override
-  String kidsWishItem(Object amount) {
-    return 'Pelota — US$25 · ahorrado $amount';
-  }
-
-  @override
-  String loginSentCode(Object phone) {
-    return 'Enviamos un código por SMS al $phone';
-  }
-
-  @override
-  String recSkipped(Object date) {
-    return 'Omitido — próximo: $date';
-  }
-
-  @override
-  String safeToSpend(Object amount) {
-    return 'Seguro para gastar hoy: $amount';
-  }
-
-  @override
-  String scheduledOn(Object from, Object to) {
-    return 'Programados en este dispositivo · horas de silencio $from–$to';
-  }
-
-  @override
-  String setCurrencySub(Object rate) {
-    return 'USD principal · ZiG secundaria · $rate';
-  }
-
-  @override
-  String syncPill(Object count) {
-    return '{count, plural, =1{1 cambio guardado en este dispositivo — se sincroniza al haber internet} other{$count cambios guardados en este dispositivo — se sincronizan al haber internet}}';
-  }
-
-  @override
-  String teenSplitHint(Object amount) {
-    return 'Reparto sugerido de $amount ganado este mes';
-  }
 
   @override
   String get discardChangesTitle => '¿Descartar cambios?';
@@ -1930,7 +2041,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setupEnterBoth => 'Escribe tu nombre y el nombre de la familia.';
 
   @override
-  String get setupNeedsConnection => 'Necesitas conexión para crear tu familia.';
+  String get setupNeedsConnection =>
+      'Necesitas conexión para crear tu familia.';
 
   @override
   String get setupNameTaken => 'Ese nombre de familia ya existe. Prueba otro.';
@@ -1942,7 +2054,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get avatarError => 'No se pudo actualizar la foto. Prueba otra.';
 
   @override
-  String get invitesLoadFailed => 'No se pudieron cargar las invitaciones. Desliza para actualizar.';
+  String get invitesLoadFailed =>
+      'No se pudieron cargar las invitaciones. Desliza para actualizar.';
 
   @override
   String filterAll(Object n) {
@@ -1954,4 +2067,60 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncStateNeedsSetup => 'Configura tu familia para sincronizar';
+
+  @override
+  String get tourTitle => 'Guía rápida';
+
+  @override
+  String get tourPoolTitle => 'Conoce lo que está disponible';
+
+  @override
+  String get tourPoolBody =>
+      'Inicio muestra el fondo familiar, la actividad reciente y los presupuestos que requieren atención.';
+
+  @override
+  String get tourPlanTitle => 'Dale un trabajo a cada cantidad';
+
+  @override
+  String get tourPlanBody =>
+      'Usa Presupuestos para sobres, Ahorros para metas y Listas para compras compartidas.';
+
+  @override
+  String get tourAddTitle => 'Añade dinero en segundos';
+
+  @override
+  String get tourAddBody =>
+      'Pulsa + para registrar ingresos o gastos. Abre Familia para invitar personas y gestionar roles.';
+
+  @override
+  String get reminderBills => 'Facturas pendientes (3 días antes)';
+
+  @override
+  String get reminderBudget => 'Avisos de sobres al 80 % y vacíos';
+
+  @override
+  String get reminderKids => 'Niños: solicitudes y tareas por aprobar';
+
+  @override
+  String get reminderCircle => 'Círculo de ahorro (domingo)';
+
+  @override
+  String get reminderGoals => 'Hitos de objetivos';
+
+  @override
+  String get reminderMeeting => 'Día de reunión familiar';
+
+  @override
+  String get reminderDigest => 'Resumen semanal (domingo, 18:00)';
+
+  @override
+  String get notificationsDenied =>
+      'Las notificaciones están desactivadas para Mhuri. Actívalas en los ajustes del dispositivo.';
+
+  @override
+  String get testNotificationSent => 'Notificación de prueba enviada.';
+
+  @override
+  String get testNotificationFailed =>
+      'No se pudo enviar la notificación de prueba.';
 }

@@ -3,7 +3,7 @@
 -- The onboarding permission switches (stored in family_space.settings ->
 -- 'role_permissions' by set_role_permissions) are now REAL: RLS consults
 -- them at query time through role_perm(). Before this migration, the
--- switches were cosmetic — tx_write allowed teens always and kids never,
+-- switches were cosmetic - tx_write allowed teens always and kids never,
 -- no matter what the owner chose.
 --
 -- Defaults mirror the onboarding map exactly:
@@ -14,7 +14,7 @@
 -- existing families see no change until the owner flips a switch).
 --
 -- AUDIT COMPLETION (#9): trigger-written activity_log rows for money moves
--- and request decisions — 'tx.create', 'goal.contribute', 'request.approve',
+-- and request decisions - 'tx.create', 'goal.contribute', 'request.approve',
 -- 'request.decline'. Rows are APPENDED; the hash columns stay placeholders
 -- (no tamper-evidence claim until real chaining ships).
 

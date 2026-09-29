@@ -4,10 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mhuri_money/core/auth/recovery_link.dart';
 
-String _b64url(String s) => base64Url.encode(utf8.encode(s)).replaceAll('=', '');
+String _b64url(String s) =>
+    base64Url.encode(utf8.encode(s)).replaceAll('=', '');
 
 String _jwt({String sub = 'uid-1', String email = 'ama@example.com'}) =>
-    '${_b64url('{"alg":"HS256","typ":"JWT"}').}${_b64url(jsonEncode({"sub": sub, "email": email}))}.sig';
+    '${_b64url('{"alg":"HS256","typ":"JWT"}')}.${_b64url(jsonEncode({
+          "sub": sub,
+          "email": email
+        }))}.sig';
 
 void main() {
   group('parseRecoveryLink', () {
@@ -39,8 +43,8 @@ void main() {
                   'https://evil.example.com/#access_token=x&refresh_token=y')
               .kind,
           RecoveryKind.none);
-      expect(parseRecoveryLink('mhuri://something-else').kind,
-          RecoveryKind.none);
+      expect(
+          parseRecoveryLink('mhuri://something-else').kind, RecoveryKind.none);
       expect(
           parseRecoveryLink('mhuri://reset-callback').kind, RecoveryKind.none);
     });
@@ -72,8 +76,7 @@ void main() {
     });
 
     test('non-invite and garbage links are ignored', () {
-      expect(parseInviteCode('mhuri://reset-callback#access_token=x'),
-          isNull);
+      expect(parseInviteCode('mhuri://reset-callback#access_token=x'), isNull);
       expect(parseInviteCode('https://example.com/join?c=MHRI-AB12CD'), isNull);
       expect(parseInviteCode('mhuri://join'), isNull);
       expect(parseInviteCode('mhuri://join?c=DROP TABLE'), isNull);

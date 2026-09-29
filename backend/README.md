@@ -1,10 +1,10 @@
-# Mhuri Money — Backend (Supabase / PostgreSQL)
+# Mhuri Money - Backend (Supabase / PostgreSQL)
 
 Phase-1 backend per **PRODUCT_SPEC.md §8 (Data Model) + §9 (Architecture) + §10 (Security)**.
 
 ## Contents
 
-- `schema.sql` — full schema: 20 tables, CHECK-constrained enums, soft-delete
+- `schema.sql` - full schema: 20 tables, CHECK-constrained enums, soft-delete
   trash, updated-at trigger, hash-chained activity log, **row-level security**
   for the family role model (owner / adult / teen / kid / viewer), and storage
   bucket stubs for receipts, voice notes and mukando proof photos.
@@ -14,12 +14,29 @@ Phase-1 backend per **PRODUCT_SPEC.md §8 (Data Model) + §9 (Architecture) + §
 1. Create a project at [supabase.com](https://supabase.com) (region `af-south-1`
    is closest to Zimbabwe).
 2. SQL Editor → run the migration chain IN ORDER: `migrations/000_baseline.sql`,
-   then `001` … `008`. Each file is a single paste-and-run. (schema.sql is a
-   human-readable reference of the end state — do NOT run it against the
+   then every numbered migration through `016`. Each file is a single
+   paste-and-run. (schema.sql is a
+   human-readable reference of the end state - do NOT run it against the
    database.) CI applies the same chain to a clean Postgres on every push.
 3. Auth → Providers → **Email** (email + password; no phone OTP).
 4. Storage → the `avatars` bucket is created by migration 005.
 5. Copy the project URL + anon key into the Flutter app (see *Wiring* below).
+
+### Assisted member accounts
+
+The app's existing QR/code invitation remains the default. Owners and parents
+also have a separate **Create account for member** action backed by the
+`create-family-member` Edge Function. Deploy it to each environment:
+
+```bash
+supabase functions deploy create-family-member
+```
+
+Supabase supplies `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to deployed
+functions. Never copy the service-role key into `app/.env`: Flutter contains
+only the project URL and anon key. The function validates the caller's access
+token and active family role before using the admin API. Only owners may grant
+adult/parent roles; parents may provision teen, child, or viewer accounts.
 
 ## Design decisions (why it looks like this)
 
@@ -29,19 +46,19 @@ Phase-1 backend per **PRODUCT_SPEC.md §8 (Data Model) + §9 (Architecture) + §
 | Text + CHECK enums instead of native enums | Cheap, safe migrations as the model evolves in beta |
 | `space_role()` SECURITY DEFINER helper | Avoids recursive RLS policy scans on `membership` |
 | Soft delete (`transaction.deleted_at`) | 7-day trash + audit trail (spec §3.4) |
-| `activity_log` with `prev_hash`/`hash` | Audit trail of family events (create/join/leave + money moves as they get wired). Columns exist for hash-chaining, but rows are appended, not yet chained or verified — do not claim tamper-evidence until that ships |
+| `activity_log` with `prev_hash`/`hash` | Audit trail of family events (create/join/leave + money moves as they get wired). Columns exist for hash-chaining, but rows are appended, not yet chained or verified - do not claim tamper-evidence until that ships |
 | Kids see only their own rows (`tx_read`, `req_read`) | Privacy by role enforced **server-side**, not just hidden in UI (spec §10) |
 | `rate_snapshot(day, source)` | RBZ daily rate history; monthly reports snapshot month-end rates and never re-value (spec §5.3) |
 
 ## Server-side jobs to add next
 
-1. **Daily rate upsert** — Supabase Edge Function (cron): fetch RBZ mid-rate →
+1. **Daily rate upsert** - Supabase Edge Function (cron): fetch RBZ mid-rate →
    `insert into rate_snapshot (day, source, usd_zwg) values (current_date,'rbz',…)
    on conflict (day, source) do update`.
-2. **`log_activity` RPC** — inserts into `activity_log` computing
+2. **`log_activity` RPC** - inserts into `activity_log` computing
    `hash = sha256(prev_hash || action || entity_id || detail || at)`.
-3. **Trash purge** — scheduled SQL: delete transactions `where deleted_at < now() - interval '7 days'`.
-4. **Backup reminder cron** — weekly `pg_dump` to cold storage.
+3. **Trash purge** - scheduled SQL: delete transactions `where deleted_at < now() - interval '7 days'`.
+4. **Backup reminder cron** - weekly `pg_dump` to cold storage.
 
 ## Wiring the Flutter app (Phase 1, next milestone)
 

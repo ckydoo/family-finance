@@ -1,10 +1,12 @@
+import 'dart:convert';
+
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 /// Local SQLite database (M1 persistence).
 ///
 /// Hand-written schema mirroring `backend/schema.sql` (single family space,
-/// local scope). No code generation — everything here is plain Dart/SQL so it
+/// local scope). No code generation - everything here is plain Dart/SQL so it
 /// can be written and statically verified without a Dart toolchain.
 ///
 /// `open()` returns null on any failure and the app silently falls back to
@@ -16,6 +18,48 @@ class AppDatabase {
 
   /// Public wrapper for tests (sqflite_common_ffi in-memory databases).
   factory AppDatabase.wrap(Database raw) => AppDatabase._(raw);
+
+  static const List<String> _accountTables = [
+    'account',
+    'envelope',
+    'tx',
+    'goal',
+    'goal_tx',
+    'recurring',
+    'outbox',
+    'shopping_list',
+    'list_item',
+    'chore',
+    'kid_request',
+    'proposal',
+    'earning',
+    'circle',
+  ];
+
+  static const Set<String> _familyKvKeys = {
+    'space_id',
+    'space_name',
+    'invite_code',
+    'default_list_id',
+    'members_v1',
+    'me_id',
+    'onboarding_done',
+    'onboarding_stage',
+    'onboarding_templates',
+    'dismissed_getting_started',
+    'month_start_day',
+    'primary_currency',
+    'secondary_currency',
+    'displayCurrency',
+    'custom_rate',
+    'server_rate',
+    'mukando_enabled',
+    'profile_edits',
+    'stars',
+    'request_results_seen',
+    'sync_cursor',
+    'last_sync_ms',
+  };
 
   // ── Key-value helpers (session tokens, PINs, settings) ──────────────────
 
@@ -40,7 +84,7 @@ class AppDatabase {
 
   /// One-time legacy purge (first live boot): a device upgraded from a
   /// earlier build carries stale rows + markers in its local db.
-  /// Deletes every user row — kv included; the caller immediately re-flags
+  /// Deletes every user row - kv included; the caller immediately re-flags
   /// the purge. Real adopted data is never present when this may run.
   Future<void> wipeUserData() async {
     for (final t in const [
@@ -58,6 +102,7 @@ class AppDatabase {
       'earning',
       'circle',
       'kv',
+      'account_cache',
     ]) {
       await raw.delete(t);
     }
@@ -68,7 +113,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 5,
+        version: 7,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -98,6 +143,7 @@ class AppDatabase {
       limit_currency TEXT NOT NULL,
       rollover TEXT NOT NULL,
       is_personal INTEGER NOT NULL DEFAULT 0
+      ,is_archived INTEGER NOT NULL DEFAULT 0
     )
     ''',
     '''
@@ -111,6 +157,7 @@ class AppDatabase {
       method TEXT NOT NULL,
       note TEXT NOT NULL,
       when_ms INTEGER NOT NULL
+      ,deleted_at TEXT
     )
     ''',
     '''
@@ -123,6 +170,7 @@ class AppDatabase {
       auto_save TEXT,
       is_kid_jar INTEGER NOT NULL DEFAULT 0,
       owner_member_id TEXT
+      ,status TEXT NOT NULL DEFAULT 'active'
     )
     ''',
     '''
@@ -153,6 +201,7 @@ class AppDatabase {
       frequency TEXT NOT NULL,
       next_due_ms INTEGER NOT NULL,
       active INTEGER NOT NULL DEFAULT 1
+      ,is_archived INTEGER NOT NULL DEFAULT 0
     )
     ''',
     '''
@@ -193,6 +242,8 @@ class AppDatabase {
       name TEXT NOT NULL,
       stars INTEGER NOT NULL,
       state TEXT NOT NULL
+      ,assignee_member_id TEXT
+      ,is_archived INTEGER NOT NULL DEFAULT 0
     )
     ''',
     '''
@@ -243,7 +294,138 @@ class AppDatabase {
       v TEXT NOT NULL
     )
     ''',
+    '''
+    CREATE TABLE IF NOT EXISTS account_cache (
+      user_id TEXT PRIMARY KEY,
+      payload TEXT NOT NULL,
+      updated_ms INTEGER NOT NULL
+    )
+    ''',
   ];
+
+  bool _isFamilyKv(String key) =>
+      _familyKvKeys.contains(key) || key.startsWith('sync_cursor_');
+
+  /// Parks the active account's complete family cache, including its outbox.
+  /// The snapshot never contains auth tokens or device-wide preferences.
+  Future<void> parkAccountData(String userId) async {
+    if (userId.isEmpty) return;
+    await raw.transaction((txn) async {
+      final tables = <String, List<Map<String, Object?>>>{};
+      for (final table in _accountTables) {
+        tables[table] = await txn.query(table);
+      }
+      final kvRows = await txn.query('kv');
+      final familyKv = [
+        for (final row in kvRows)
+          if (_isFamilyKv(row['k']?.toString() ?? '')) row,
+      ];
+      final payload = jsonEncode({'tables': tables, 'kv': familyKv});
+      await txn.insert(
+        'account_cache',
+        {
+          'user_id': userId,
+          'payload': payload,
+          'updated_ms': DateTime.now().millisecondsSinceEpoch,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    });
+  }
+
+  /// Restores a previously parked account partition. Returns false for a
+  /// first-time account on this device.
+  Future<bool> restoreAccountData(String userId) async {
+    if (userId.isEmpty) return false;
+    final rows = await raw.query(
+      'account_cache',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return false;
+    final decoded = jsonDecode(rows.first['payload']! as String);
+    if (decoded is! Map) return false;
+    final tables = decoded['tables'];
+    final kvRows = decoded['kv'];
+    if (tables is! Map || kvRows is! List) return false;
+
+    await raw.transaction((txn) async {
+      for (final table in _accountTables) {
+        await txn.delete(table);
+      }
+      final currentKv = await txn.query('kv');
+      for (final row in currentKv) {
+        final key = row['k']?.toString() ?? '';
+        if (_isFamilyKv(key)) {
+          await txn.delete('kv', where: 'k = ?', whereArgs: [key]);
+        }
+      }
+      for (final table in _accountTables) {
+        final storedRows = tables[table];
+        if (storedRows is! List) continue;
+        for (final stored in storedRows.whereType<Map>()) {
+          final row = <String, Object?>{
+            for (final entry in stored.entries)
+              entry.key.toString(): entry.value,
+          };
+          if (table == 'outbox' || table == 'goal_tx') row.remove('id');
+          await txn.insert(
+            table,
+            row,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+      for (final stored in kvRows.whereType<Map>()) {
+        final key = stored['k']?.toString();
+        final value = stored['v']?.toString();
+        if (key == null || value == null || !_isFamilyKv(key)) continue;
+        await txn.insert(
+          'kv',
+          {'k': key, 'v': value},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+    return true;
+  }
+
+  Future<void> clearActiveAccountData() async {
+    await raw.transaction((txn) async {
+      for (final table in _accountTables) {
+        await txn.delete(table);
+      }
+      final currentKv = await txn.query('kv');
+      for (final row in currentKv) {
+        final key = row['k']?.toString() ?? '';
+        if (_isFamilyKv(key)) {
+          await txn.delete('kv', where: 'k = ?', whereArgs: [key]);
+        }
+      }
+    });
+  }
+
+  Future<void> deleteAccountCache(String userId) async {
+    if (userId.isEmpty) return;
+    await raw.delete(
+      'account_cache',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+  }
+
+  /// Family-scoped values currently loaded into the active partition.
+  /// Callers use this to keep alternate key-value adapters in step after a
+  /// cached account is restored.
+  Future<Map<String, String>> activeFamilyKv() async {
+    final rows = await raw.query('kv');
+    return {
+      for (final row in rows)
+        if (_isFamilyKv(row['k']?.toString() ?? ''))
+          row['k']!.toString(): row['v']!.toString(),
+    };
+  }
 
   static Future<void> createSchema(Database d) async {
     for (final sql in schema) {
@@ -251,9 +433,9 @@ class AppDatabase {
     }
   }
 
-  /// Migrations. ALTERs are guarded — re-running is safe.
+  /// Migrations. ALTERs are guarded - re-running is safe.
   /// v2: sync columns + outbox · v3: recurring rules · v4: checkout guard ·
-  /// v5: shopping-list header table + item tombstones.
+  /// v5: shopping-list header table + item tombstones · v7: per-user cache.
   static Future<void> upgrade(Database d, int oldVersion) async {
     if (oldVersion >= 2 && oldVersion < 2) return;
     if (oldVersion < 2) {
@@ -266,7 +448,7 @@ class AppDatabase {
         try {
           await d.execute(sql);
         } catch (_) {
-          // column/index already exists — fine.
+          // column/index already exists - fine.
         }
       }
     }
@@ -276,14 +458,30 @@ class AppDatabase {
           'ALTER TABLE list_item ADD COLUMN checked_out INTEGER NOT NULL DEFAULT 0',
         );
       } catch (_) {
-        // Column already exists — fine.
+        // Column already exists - fine.
       }
     }
     if (oldVersion < 5) {
       try {
         await d.execute('ALTER TABLE list_item ADD COLUMN deleted_at TEXT');
       } catch (_) {
-        // Column already exists — fine.
+        // Column already exists - fine.
+      }
+    }
+    if (oldVersion < 6) {
+      for (final sql in const [
+        'ALTER TABLE envelope ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0',
+        'ALTER TABLE tx ADD COLUMN deleted_at TEXT',
+        "ALTER TABLE goal ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
+        'ALTER TABLE recurring ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0',
+        'ALTER TABLE chore ADD COLUMN assignee_member_id TEXT',
+        'ALTER TABLE chore ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {
+          // Column already exists.
+        }
       }
     }
     await createSchema(d); // shopping_list & others are CREATE IF NOT EXISTS

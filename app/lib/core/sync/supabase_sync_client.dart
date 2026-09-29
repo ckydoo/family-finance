@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-/// Thin Supabase REST (PostgREST) client for sync — hand-written, no SDK.
+/// Thin Supabase REST (PostgREST) client for sync - hand-written, no SDK.
 ///
 ///  push:  POST /rest/v1/{table}?on_conflict=id
 ///         Prefer: resolution=merge-duplicates,return=minimal  (idempotent upsert)
@@ -28,7 +28,7 @@ class SupabaseSyncClient {
   final http.Client _client;
 
   /// Hard ceiling on any REST call so a dead network can't hang a sync
-  /// forever — timeouts surface as a typed SyncException(0), which the
+  /// forever - timeouts surface as a typed SyncException(0), which the
   /// engine maps to the offline/error state like any other failure.
   static const Duration _timeout = Duration(seconds: 20);
 
@@ -37,10 +37,9 @@ class SupabaseSyncClient {
       return await fn().timeout(_timeout);
     } on TimeoutException {
       throw const SyncException(
-          0, 'Connection timed out — check your internet and try again.');
+          0, 'Connection timed out - check your internet and try again.');
     }
   }
-
 
   Future<Map<String, String>> _headers() async {
     final token = await _tokenGet();
@@ -49,7 +48,7 @@ class SupabaseSyncClient {
       // cryptic "Empty JWT is sent in Authorization header"). Fail with an
       // actionable, auth-typed error the UI already maps to "sign in".
       throw const SyncException(
-          401, 'Your session has expired — sign in again.');
+          401, 'Your session has expired - sign in again.');
     }
     return {
       'apikey': _anonKey,
@@ -59,10 +58,14 @@ class SupabaseSyncClient {
   }
 
   /// Idempotent upsert of a batch. Returns true on success.
-  Future<bool> pushRows(String table, List<Map<String, Object?>> rows) async {
+  Future<bool> pushRows(
+    String table,
+    List<Map<String, Object?>> rows, {
+    String onConflict = 'id',
+  }) async {
     if (rows.isEmpty) return true;
     final r = await _client.post(
-      Uri.parse('$_base/rest/v1/$table?on_conflict=id'),
+      Uri.parse('$_base/rest/v1/$table?on_conflict=$onConflict'),
       headers: {
         ...(await _headers()),
         'Prefer': 'resolution=merge-duplicates,return=minimal',
@@ -84,22 +87,29 @@ class SupabaseSyncClient {
     bool ascending = true,
     int limit = 500,
   }) async {
-    var url = '$_base/rest/v1/$table'
-        '?select=*'
-        '&order=$orderCol.${ascending ? 'asc' : 'desc'}'
-        '&limit=$limit';
+    final query = <String, String>{
+      'select': '*',
+      'order': '$orderCol.${ascending ? 'asc' : 'desc'}',
+      'limit': '$limit',
+    };
     if (sinceIso != null && sinceIso.isNotEmpty) {
-      url += '&$orderCol=gt.$sinceIso';
+      query[orderCol] = 'gt.$sinceIso';
     }
     if (spaceCol != null && spaceId != null && spaceId.isNotEmpty) {
-      url += '&$spaceCol=eq.$spaceId';
+      query[spaceCol] = 'eq.$spaceId';
     }
     if (eqFilters != null) {
       for (final e in eqFilters.entries) {
-        url += '&${e.key}=${e.value}';
+        query[e.key] = e.value;
       }
     }
-    final r = await _client.get(Uri.parse(url), headers: await _headers());
+    // Building the URL by string concatenation turns the `+` in timezone
+    // offsets into a query-string space. Let Uri percent-encode every value so
+    // Postgres receives a valid timestamptz such as `...%2B00:00`.
+    final uri = Uri.parse('$_base/rest/v1/$table').replace(
+      queryParameters: query,
+    );
+    final r = await _client.get(uri, headers: await _headers());
     if (r.statusCode < 200 || r.statusCode >= 300) {
       throw SyncException(r.statusCode, _msg(r));
     }
@@ -116,13 +126,13 @@ class SupabaseSyncClient {
     if (values.isEmpty) return;
     final h = await _headers();
     final r = await _call(() => _client.patch(
-      Uri.parse('$_base/rest/v1/$table?id=eq.$id'),
-      headers: {
-        ...h,
-        'Prefer': 'return=minimal',
-      },
-      body: jsonEncode(values),
-    ));
+          Uri.parse('$_base/rest/v1/$table?id=eq.$id'),
+          headers: {
+            ...h,
+            'Prefer': 'return=minimal',
+          },
+          body: jsonEncode(values),
+        ));
     if (r.statusCode < 200 || r.statusCode >= 300) {
       throw SyncException(r.statusCode, _msg(r));
     }
@@ -132,15 +142,32 @@ class SupabaseSyncClient {
   Future<dynamic> rpc(String fn, Map<String, Object?> args) async {
     final h = await _headers();
     final r = await _call(() => _client.post(
-      Uri.parse('$_base/rest/v1/rpc/$fn'),
-      headers: h,
-      body: jsonEncode(args),
-    ));
+          Uri.parse('$_base/rest/v1/rpc/$fn'),
+          headers: h,
+          body: jsonEncode(args),
+        ));
     if (r.statusCode < 200 || r.statusCode >= 300) {
       throw SyncException(r.statusCode, _msg(r));
     }
     final body = r.body.isEmpty ? null : jsonDecode(r.body);
     return body;
+  }
+
+  /// Calls an authenticated Supabase Edge Function. The caller's access
+  /// token is forwarded; privileged work remains server-side and the service
+  /// role key is never shipped in the app.
+  Future<dynamic> invokeFunction(
+      String fn, Map<String, Object?> payload) async {
+    final h = await _headers();
+    final r = await _call(() => _client.post(
+          Uri.parse('$_base/functions/v1/$fn'),
+          headers: h,
+          body: jsonEncode(payload),
+        ));
+    if (r.statusCode < 200 || r.statusCode >= 300) {
+      throw SyncException(r.statusCode, _msg(r));
+    }
+    return r.body.isEmpty ? null : jsonDecode(r.body);
   }
 
   String _msg(http.Response r) {

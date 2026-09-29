@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required by auth, sync, avatars and exchange-rate requests on real
+         devices. Debug builds can appear to work because Flutter's debug
+         manifest supplies this permission; release/profile builds cannot. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="mhuri_money"
+        android:label="Mhuri"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

@@ -11,7 +11,7 @@ enum RecoveryKind {
   /// Implicit-flow redirect: fragment carries access_token + refresh_token.
   tokens,
 
-  /// The link used the PKCE flow (?code=…) — we can't exchange it without
+  /// The link used the PKCE flow (?code=…) - we can't exchange it without
   /// the original verifier. The user must request a fresh link.
   code,
 
@@ -24,8 +24,6 @@ class RecoveryLink {
   final RecoveryKind kind;
   final String? accessToken;
   final String? refreshToken;
-
-  const RecoveryLink._(this.kind, this.accessToken, this.refreshToken);
 
   const RecoveryLink.tokens(String access, String refresh)
       : kind = RecoveryKind.tokens,
@@ -48,9 +46,9 @@ class RecoveryLink {
 ///   mhuri://reset-callback#access_token=…&refresh_token=…&expires_in=…&type=recovery
 ///
 /// (Supabase's /auth/v1/verify 302s to the redirect URL with the session in
-/// the URL fragment — the fragment never reaches a server, only the app.)
+/// the URL fragment - the fragment never reaches a server, only the app.)
 /// A `?code=` link means the project is on the PKCE flow, which a
-/// hand-rolled client cannot exchange — reported as [RecoveryKind.code].
+/// hand-rolled client cannot exchange - reported as [RecoveryKind.code].
 RecoveryLink parseRecoveryLink(String url) {
   if (url.isEmpty) return const RecoveryLink.none();
   final Uri u;
@@ -77,7 +75,10 @@ RecoveryLink parseRecoveryLink(String url) {
     if (e.key == 'access_token') access = e.value;
     if (e.key == 'refresh_token') refresh = e.value;
   }
-  if (access != null && access.isNotEmpty && refresh != null && refresh.isNotEmpty) {
+  if (access != null &&
+      access.isNotEmpty &&
+      refresh != null &&
+      refresh.isNotEmpty) {
     return RecoveryLink.tokens(access, refresh);
   }
   if (u.queryParameters.containsKey('code')) return const RecoveryLink.code();
@@ -89,7 +90,7 @@ RecoveryLink parseRecoveryLink(String url) {
 ///   mhuri://join?c=MHRI-AB12CD
 ///
 /// Returns null when the link is not an invite (QR scans of other content,
-/// regular URLs) — never throws.
+/// regular URLs) - never throws.
 String? parseInviteCode(String url) {
   if (url.isEmpty) return null;
   final Uri u;
@@ -98,10 +99,18 @@ String? parseInviteCode(String url) {
   } on FormatException {
     return null;
   }
-  if (u.scheme.toLowerCase() != 'mhuri') return null;
+  final scheme = u.scheme.toLowerCase();
   final host = u.host.toLowerCase();
   final path = u.path.toLowerCase();
-  final isJoin = host == 'join' || path.contains('join');
+  final bool isJoin;
+  if (scheme == 'mhuri') {
+    isJoin = host == 'join' || path.contains('join');
+  } else if (scheme == 'https' || scheme == 'http') {
+    isJoin = host.contains('mhuri') &&
+        (path.contains('join') || path.contains('invite'));
+  } else {
+    return null;
+  }
   if (!isJoin) return null;
   final c = u.queryParameters['c'] ?? u.queryParameters['code'];
   if (c == null) return null;
@@ -110,7 +119,7 @@ String? parseInviteCode(String url) {
 }
 
 /// Pulls `email` (and `sub`) out of a JWT access token without any server
-/// call — the payload is plain base64url JSON. Returns null when the token
+/// call - the payload is plain base64url JSON. Returns null when the token
 /// is malformed; never throws.
 Map<String, String> claimsFromJwt(String jwt) {
   try {

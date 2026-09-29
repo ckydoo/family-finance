@@ -5,7 +5,7 @@ import 'package:mhuri_money/core/config/app_env.dart';
 void main() {
   test('parses a complete config (comments + quotes tolerated)', () {
     final env = AppEnv.parse('''
-# Mhuri Hub config
+# Mhuri config
 SUPABASE_URL=https://abcdefgh.supabase.co
 SUPABASE_ANON_KEY="anon-key-123"
 # optional extras

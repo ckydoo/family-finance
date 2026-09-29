@@ -45,7 +45,7 @@ class CountUpText extends StatelessWidget {
   }
 }
 
-/// A one-second confetti burst over everything — goal reached, chore done.
+/// A one-second confetti burst over everything - goal reached, chore done.
 /// Pure local overlay: no packages, no images, auto-removes itself.
 void celebrate(BuildContext context) {
   if (MediaQuery.disableAnimationsOf(context)) return;
@@ -144,9 +144,7 @@ class _ConfettiPainter extends CustomPainter {
     for (final p in particles) {
       final time = t * 1.4;
       final x = origin.dx + p.vx * time;
-      final y = origin.dy +
-          p.vy * time +
-          620 * time * time; // gravity
+      final y = origin.dy + p.vy * time + 620 * time * time; // gravity
       if (y > size.height + 20) continue;
       paint.color = p.color.withValues(alpha: (1 - t).clamp(0.0, 1.0));
       canvas.save();

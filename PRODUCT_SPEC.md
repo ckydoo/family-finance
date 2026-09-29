@@ -1,10 +1,10 @@
-# Mhuri Hub — Product Specification & Design Document
+# Mhuri Hub - Product Specification & Design Document
 
 **Family Finance Management for Every Kind of Family**
 Version 1.0 · September 2026 · Target platform: Flutter (Android & iOS)
 
 > "Mhuri" means *family* in Shona. Mhuri Hub helps couples and families in Zimbabwe
-> (and beyond) manage income, expenses, budgets, savings and shopping lists together —
+> (and beyond) manage income, expenses, budgets, savings and shopping lists together -
 > in USD and ZiG, online or offline, with a safe, fun mode for kids.
 
 ---
@@ -34,7 +34,7 @@ Version 1.0 · September 2026 · Target platform: Flutter (Android & iOS)
 
 ### 1.1 Vision
 
-Give every family — nuclear, extended, single-parent, blended, or child-free — one calm,
+Give every family - nuclear, extended, single-parent, blended, or child-free - one calm,
 shared place to see their money, plan it together, and teach kids good habits along the way.
 
 ### 1.2 The problem
@@ -43,7 +43,7 @@ Managing family money today is fragmented and stressful:
 
 | Pain point | Today's reality |
 |---|---|
-| **Money is split everywhere** | Cash at home, bank account, EcoCash wallet, ZIPIT, mukando circle — no single view of "what do we actually have?" |
+| **Money is split everywhere** | Cash at home, bank account, EcoCash wallet, ZIPIT, mukando circle - no single view of "what do we actually have?" |
 | **Two currencies** | Prices are quoted in USD and ZiG (ZWG); families must mentally convert and track both |
 | **Couples don't sync** | One partner pays school fees, the other buys groceries; nobody knows the true position until money runs out |
 | **Budgets live in notebooks** | Or in a heads-of-household memory. Invisible to everyone else, lost when the notebook is lost |
@@ -53,56 +53,56 @@ Managing family money today is fragmented and stressful:
 
 ### 1.3 Product principles
 
-1. **The family is the account** — everything is designed around a shared Family Space, not an individual wallet.
-2. **Dual-currency is native, never a bolt-on** — every amount can live in USD or ZiG and be seen in both.
-3. **Offline-first** — the app must be fully usable with no data or electricity; it syncs when connectivity returns.
-4. **Role-based trust** — partners see everything they agree to see; kids see only what is safe and fun.
-5. **Low-literacy & low-data friendly** — big touch targets, icons + color, works on low-end Android phones.
-6. **Calm, not shameful** — overspending is flagged kindly ("Fuel budget reached"), never with red alarm guilt.
+1. **The family is the account** - everything is designed around a shared Family Space, not an individual wallet.
+2. **Dual-currency is native, never a bolt-on** - every amount can live in USD or ZiG and be seen in both.
+3. **Offline-first** - the app must be fully usable with no data or electricity; it syncs when connectivity returns.
+4. **Role-based trust** - partners see everything they agree to see; kids see only what is safe and fun.
+5. **Low-literacy & low-data friendly** - big touch targets, icons + color, works on low-end Android phones.
+6. **Calm, not shameful** - overspending is flagged kindly ("Fuel budget reached"), never with red alarm guilt.
 
 ---
 
 ## 2. Target Users & Personas
 
-### Persona 1 — Tendai & Rudo (the planning couple) 👨‍👩‍👧‍👦
+### Persona 1 - Tendai & Rudo (the planning couple) 👨‍👩‍👧‍👦
 
-- **Who:** Married couple, 34 & 31, two kids (Tino, 8; Anesu, 5). Both work — Tendai in an office, Rudo runs a small business.
+- **Who:** Married couple, 34 & 31, two kids (Tino, 8; Anesu, 5). Both work - Tendai in an office, Rudo runs a small business.
 - **Income:** Tendai paid in USD; Rudo's earnings mixed USD/cash/EcoCash.
 - **Goals:** Stop money "disappearing" mid-month; agree on budgets without arguments; save for Term 2 school fees ($900) and a chest freezer.
 - **Frustrations:** "I asked him what's left and he said 'check with Rudo'." Each keeps separate records.
 
-### Persona 2 — Mai Chipo (the single parent) 👩‍👦
+### Persona 2 - Mai Chipo (the single parent) 👩‍👦
 
 - **Who:** Widow/single mother, 45, teacher; three children in school; receives remittances from a brother in the UK.
 - **Goals:** Stretch one income across school fees, food and uniforms; track remittances separately; involve her 15-year-old gently.
 - **Needs:** Solo mode (no partner required), remittance tracking, strong privacy for what she saves.
 
-### Persona 3 — Tino (the kid) 🧒
+### Persona 3 - Tino (the kid) 🧒
 
 - **Who:** 8 years old, gets $5/week pocket money + earns stars for chores.
 - **Goals:** Save for a soccer ball ($25) and a bike ($120); see his jar grow.
 - **Constraints:** Cannot see family balances, cannot move money, needs approval for anything real. **Bright, playful Kids Mode only.**
 
-### Persona 4 — Sekuru James (the elder / extended family) 👴
+### Persona 4 - Sekuru James (the elder / extended family) 👴
 
 - **Who:** Grandfather, 68, manages contributions to the extended-family mukando and funeral society; limited literacy with apps.
 - **Goals:** Record who contributed what; know the round's totals; big text, simple screens.
 - **Needs:** "Elder/Viewer" role, simplified UI mode, voice-note notes on entries.
 
-### Persona 5 — The blended / co-parenting family 🤝
+### Persona 5 - The blended / co-parenting family 🤝
 
 - **Who:** Divorced parents sharing costs for two children, living in different cities.
 - **Goals:** Transparently split school fees, medical aid and clothes; keep a shared record without sharing their personal spending.
-- **Needs:** "Co-parent Space" — a shared sub-space limited to child-related envelopes only (v2.5).
+- **Needs:** "Co-parent Space" - a shared sub-space limited to child-related envelopes only (v2.5).
 
-### Persona 6 — The child-free couple / roommates 👩‍👩
+### Persona 6 - The child-free couple / roommates 👩‍👩
 
 - **Who:** Two working partners, no kids; shared rent, groceries, car.
 - **Goals:** Split shared expenses fairly, keep personal spending private.
 - **Needs:** Family Space works fine with 2 adults and 0 kids; "shared vs personal" envelopes.
 
 **Market sizing note:** ~1.6M+ urban households in Zimbabwe, >90% adult mobile money penetration,
-heavy reliance on informal savings groups (mukando/round) — a strongly underserved segment for
+heavy reliance on informal savings groups (mukando/round) - a strongly underserved segment for
 family-oriented money tools.
 
 ---
@@ -115,7 +115,7 @@ Every user belongs to one or more **Family Spaces**. Each space has members with
 
 | Role | Who | Capabilities |
 |---|---|---|
-| **Owner** | Family head (can be a couple — up to 2 co-owners) | Everything: manage members, roles, delete space, export data, approve settings |
+| **Owner** | Family head (can be a couple - up to 2 co-owners) | Everything: manage members, roles, delete space, export data, approve settings |
 | **Adult / Partner** | Spouse, partner, adult child (18+) | Full read of shared space; add/edit transactions, budgets, lists; cannot remove members or delete space |
 | **Teen (13–17)** | Teenagers | Personal jars & wish lists, view (optional) chosen shared envelopes, propose expenses for approval, chore board. **No** access to family balances by default |
 | **Kid (6–12)** | Young children | Kids Mode only: jar, stars, chores, wish list. Everything request-based |
@@ -126,12 +126,12 @@ Every user belongs to one or more **Family Spaces**. Each space has members with
 
 Couples differ. Mhuri Hub supports three sharing levels, set per member and per account:
 
-- **Full transparency** — partner sees all shared + personal accounts (default for shared accounts).
-- **Shared-only** — partner sees shared envelopes/accounts; personal accounts show only a "spent this month" number, never line items.
-- **Private pockets** — each adult may mark accounts/goals as private; the space shows a summary placeholder "🔒 Private · $120" so totals still reconcile without revealing detail.
+- **Full transparency** - partner sees all shared + personal accounts (default for shared accounts).
+- **Shared-only** - partner sees shared envelopes/accounts; personal accounts show only a "spent this month" number, never line items.
+- **Private pockets** - each adult may mark accounts/goals as private; the space shows a summary placeholder "🔒 Private · $120" so totals still reconcile without revealing detail.
 
 > Design rule: **totals must always reconcile.** If a member hides detail, the app still shows the
-> amount is allocated — transparency about *that it exists*, privacy about *what it is*.
+> amount is allocated - transparency about *that it exists*, privacy about *what it is*.
 
 ### 3.3 Approval workflows (kids & teens)
 
@@ -151,29 +151,29 @@ Couples differ. Mhuri Hub supports three sharing levels, set per member and per 
 
 Features are grouped into modules. **MVP = modules A–E.**
 
-### Module A — Family Space & Onboarding
+### Module A - Family Space & Onboarding
 
 | # | Feature | Detail |
 |---|---|---|
-| A1 | Create Family Space | Name, household type (couple / single parent / extended / blended / partners), currency defaults (USD primary, ZiG secondary), month start day (default 1st — configurable for payday-aligned budgeting, e.g. 25th) |
+| A1 | Create Family Space | Name, household type (couple / single parent / extended / blended / partners), currency defaults (USD primary, ZiG secondary), month start day (default 1st - configurable for payday-aligned budgeting, e.g. 25th) |
 | A2 | Invite members | Phone number (app share / SMS) or QR code shown on the "Members" screen; join by code |
 | A3 | Roles & permissions | Assign per §3; change with Owner approval; kids get friendly avatars |
-| A4 | Solo mode | A single-adult space works fully — no partner needed to use any feature |
+| A4 | Solo mode | A single-adult space works fully - no partner needed to use any feature |
 | A5 | Multiple spaces | A user can belong to 2+ spaces (e.g., nuclear family + extended family mukando space) with a space switcher |
 | A6 | Profiles | Name, avatar (illustrated set + photo), language (English / Shona / Ndebele at launch), UI size (normal / large for elders) |
 | A7 | Family Activity feed | Tamper-evident log of who did what: added expense, approved request, changed budget, completed goal |
 
-### Module B — Income Tracking
+### Module B - Income Tracking
 
 | # | Feature | Detail |
 |---|---|---|
 | B1 | Income sources | Named sources (e.g., "Tendai salary", "Rudo tuckshop", "UK remittances", "Mukando payout", "Rent from cottage") with recurrence (weekly / fortnightly / monthly / irregular) |
 | B2 | Expected vs received | Each month shows expected income; users mark received in USD or ZiG; missed/late income is highlighted kindly |
 | B3 | Multi-currency income | Record in the currency received; the space shows combined totals in the display currency (user-chosen) at the current rate |
-| B4 | Remittance tagging | Tag income as remittance with sender + channel (Western Union, Mukuru, bank) — feeds a "support received this year" summary |
+| B4 | Remittance tagging | Tag income as remittance with sender + channel (Western Union, Mukuru, bank) - feeds a "support received this year" summary |
 | B5 | Payday alignment | Month cycles can start on any day (e.g., 25th) so budgets match real pay cycles |
 
-### Module C — Expenses & Transactions
+### Module C - Expenses & Transactions
 
 | # | Feature | Detail |
 |---|---|---|
@@ -181,14 +181,14 @@ Features are grouped into modules. **MVP = modules A–E.**
 | C2 | Currency on entry | USD or ZiG toggle on the keypad; live conversion preview shown with the day's rate and timestamp |
 | C3 | Receipt photo | Attach photo; OCR-assisted merchant/amount pre-fill (v2) |
 | C4 | Split transactions | Split one amount across categories, members, or "who owes what" (e.g., shared grocery run: 60/40) |
-| C5 | Payment method tag | Cash · EcoCash · Bank card · Bank transfer · ZIPIT · InnBucks · Other — enables "cash leak" analytics (how much untraceable cash the family spends) |
+| C5 | Payment method tag | Cash · EcoCash · Bank card · Bank transfer · ZIPIT · InnBucks · Other - enables "cash leak" analytics (how much untraceable cash the family spends) |
 | C6 | Notes & voice notes | Text note + attach a voice note (elder-friendly) |
-| C7 | Recurring expenses | School fees, rent, subs, insurance, DSTV/Netflix, airtime bundles — auto-posted with a review step; reminders 3 days before |
+| C7 | Recurring expenses | School fees, rent, subs, insurance, DSTV/Netflix, airtime bundles - auto-posted with a review step; reminders 3 days before |
 | C8 | Edit / delete rules | Per §3.4; all edits versioned in activity log |
 | C9 | Receipts & warranties | Long-lived purchases (fridge, solar) can be filed with warranty expiry reminder |
 | C10 | Bulk import | Import bank/EcoCash statement CSV/PDF (v2) |
 
-### Module D — Budgets (Envelope Budgeting)
+### Module D - Budgets (Envelope Budgeting)
 
 | # | Feature | Detail |
 |---|---|---|
@@ -197,36 +197,36 @@ Features are grouped into modules. **MVP = modules A–E.**
 | D3 | Progress & pace | Each envelope shows spent/limit, a pace indicator (on track / watch / over) based on day-of-month, and a projected month-end |
 | D4 | Rollover rules | Per envelope: reset monthly / roll over unspent / goal-style (accumulate for school terms) |
 | D5 | Term-based budgets | School fees envelopes follow school terms (3 terms/yr) with a term calendar for ZW schools |
-| D6 | Overspend kindness | At 100% the envelope shows "Budget reached — here's what you can top up from" with a one-tap move from a flexible envelope (requires partner confirm if enabled) |
+| D6 | Overspend kindness | At 100% the envelope shows "Budget reached - here's what you can top up from" with a one-tap move from a flexible envelope (requires partner confirm if enabled) |
 | D7 | Move money | Transfer between envelopes with a reason; logged |
 | D8 | Shared & personal envelopes | Mark each envelope shared (family) or personal (private per §3.2) |
 | D9 | Budget vs actual reports | Monthly report card: biggest moves, category trends vs last month, "cash leak" from C5, safe-to-spend/day figure |
 | D10 | Inflation helper | When a category exceeds budget 2 months running, prompt: "Prices went up? Adjust Groceries to $520?" with history of changes |
 
-### Module E — Savings Goals & Mukando
+### Module E - Savings Goals & Mukando
 
 | # | Feature | Detail |
 |---|---|---|
 | E1 | Goals | Name, target, currency, deadline, cover image/icon, auto-save rule (e.g., $25/week on Friday), owner (family, member, or kid jar) |
 | E2 | Contributions | One-tap "add to goal"; contributions logged per member; progress ring + celebrations (confetti at 25/50/75/100%) |
-| E3 | Goal types | Sinking fund (school fees), emergency fund (recommended first goal — guided setup), big purchase, family event (wedding, funeral society contributions) |
-| E4 | Mukando / Round (ROSCA) tracker | Track a rotation circle: members, contribution amount & frequency, round order, who has collected, whose turn is next, pot total, and payment proof photos. Reminders before each collection date. **Records only — Mhuri Hub never holds the money** |
+| E3 | Goal types | Sinking fund (school fees), emergency fund (recommended first goal - guided setup), big purchase, family event (wedding, funeral society contributions) |
+| E4 | Mukando / Round (ROSCA) tracker | Track a rotation circle: members, contribution amount & frequency, round order, who has collected, whose turn is next, pot total, and payment proof photos. Reminders before each collection date. **Records only - Mhuri Hub never holds the money** |
 | E5 | Burial society / community funds | Same tracker with monthly dues + claims record |
 | E6 | Emergency fund guard | Suggests moving unspent envelope money to the emergency fund at month end (opt-in) |
 
-### Module F — Shopping Lists (connected to money)
+### Module F - Shopping Lists (connected to money)
 
 | # | Feature | Detail |
 |---|---|---|
-| F1 | Lists | Multiple lists (Groceries — OK Zimbabwe, Hardware, School supplies, Markets/Musika) |
+| F1 | Lists | Multiple lists (Groceries - OK Zimbabwe, Hardware, School supplies, Markets/Musika) |
 | F2 | Real-time co-editing | Family members see updates live; assign items; avatars show who added what |
 | F3 | Price estimates | Per-item estimated price in USD or ZiG; running estimated total shown in both currencies |
 | F4 | Budget check | List total previews against the linked envelope ("This list uses 74% of this month's Groceries envelope") |
-| F5 | Complete = expense | "Finish shopping" converts checked items into one expense pre-filled with the estimate, ready for amount correction — closing the loop between list and budget |
+| F5 | Complete = expense | "Finish shopping" converts checked items into one expense pre-filled with the estimate, ready for amount correction - closing the loop between list and budget |
 | F6 | Repeat lists | Save a list as a template ("Monthly staples") and re-add with one tap |
 | F7 | Pantry mode (v2) | Track staples stock at home; auto-suggest re-adds when running low |
 
-### Module G — Kids Mode (6–12)
+### Module G - Kids Mode (6–12)
 
 | # | Feature | Detail |
 |---|---|---|
@@ -238,17 +238,17 @@ Features are grouped into modules. **MVP = modules A–E.**
 | G6 | Money lessons | Bite-sized story lessons ("What is saving?", "Needs vs wants") unlocked by stars; localized examples |
 | G7 | Pocket money automation | Parents set weekly pocket money; auto-deposits to jar; kid sees it count down/grow |
 
-### Module H — Teen Zone (13–17)
+### Module H - Teen Zone (13–17)
 
 | # | Feature | Detail |
 |---|---|---|
-| H1 | Teen dashboard | Own jars + wish list (like kids) **plus** optional visibility of chosen shared envelopes (e.g., see how "School fees" budget works) — toggled by parents |
-| H2 | Expense proposals | Teen can propose an expense (e.g., movie night $15) — enters parents' pending queue |
+| H1 | Teen dashboard | Own jars + wish list (like kids) **plus** optional visibility of chosen shared envelopes (e.g., see how "School fees" budget works) - toggled by parents |
+| H2 | Expense proposals | Teen can propose an expense (e.g., movie night $15) - enters parents' pending queue |
 | H3 | Earning tracker | Log chores/small jobs and earnings; simple earnings chart |
-| H4 | Savings matching | Parents can set "we match 50% of what you save" rules — teaches compounding |
+| H4 | Savings matching | Parents can set "we match 50% of what you save" rules - teaches compounding |
 | H5 | First budget | Guided mini-budget for their pocket money (spend/save/give split) |
 
-### Module I — Reports, Insights & Family Meetings
+### Module I - Reports, Insights & Family Meetings
 
 | # | Feature | Detail |
 |---|---|---|
@@ -259,7 +259,7 @@ Features are grouped into modules. **MVP = modules A–E.**
 | I5 | What-if simulator | "What if we save $30 more/month?" / "What if school fees rise 15%?" simple sliders (v2) |
 | I6 | CSV/PDF export | Owner-level export of all data |
 
-### Module J — Sync, Notifications & Settings
+### Module J - Sync, Notifications & Settings
 
 | # | Feature | Detail |
 |---|---|---|
@@ -294,7 +294,7 @@ Features are grouped into modules. **MVP = modules A–E.**
 ### 5.3 Edge cases
 
 - **ZiG volatility:** monthly reports snapshot the month-end rate; historical reports never re-value old months.
-- **Split-currency goals:** school fees quoted in USD but paid partly in ZiG — goal accepts contributions in both and shows progress in the goal's base currency.
+- **Split-currency goals:** school fees quoted in USD but paid partly in ZiG - goal accepts contributions in both and shows progress in the goal's base currency.
 - **Rounding:** conversions round half-up to 2dp; the receipt's original amount is always authoritative.
 
 ---
@@ -367,21 +367,21 @@ Bottom navigation (adults): **Home · Budgets · (＋) · Savings · Lists**
 
 ### 7.1 Onboarding (3 screens + setup)
 
-1. **Welcome** — "Money, managed together." Illustration of a family + phone. CTA: *Create family space* / *Join with code*.
-2. **How it works** — 3 cards: See everything in one place · Budget with envelopes · Save & teach kids.
-3. **Currency setup** — Primary display currency (USD default), ZiG shown alongside, rate explanation ("We use the RBZ daily rate; you can set your preferred rate").
-4. **Space setup** — name, household type, month start day, invite members (skippable — solo mode).
+1. **Welcome** - "Money, managed together." Illustration of a family + phone. CTA: *Create family space* / *Join with code*.
+2. **How it works** - 3 cards: See everything in one place · Budget with envelopes · Save & teach kids.
+3. **Currency setup** - Primary display currency (USD default), ZiG shown alongside, rate explanation ("We use the RBZ daily rate; you can set your preferred rate").
+4. **Space setup** - name, household type, month start day, invite members (skippable - solo mode).
 
-### 7.2 Home / Dashboard (adult) — *see mockup A*
+### 7.2 Home / Dashboard (adult) - *see mockup A*
 
 - Header: greeting by time of day ("Makadii, Tendi"), family avatar stack (tap → Members), notification bell.
 - **Family Pool card** (teal gradient): balances across tagged accounts shown in **both currencies** side-by-side with ⇄; pill: "Safe to spend today: US$ 38" (computed: flexible money left ÷ days left in cycle).
 - **Envelope chips row:** top 3 envelopes by usage with mini progress bars (tap → Budgets).
 - **Recent activity:** last 3 transactions (tap → full Activity).
-- **Smart card slot:** contextual — bill due in 3 days / mukando turn / goal milestone / monthly meeting prompt.
+- **Smart card slot:** contextual - bill due in 3 days / mukando turn / goal milestone / monthly meeting prompt.
 - Pull-down: quick month switcher + mini report.
 
-### 7.3 Budgets (envelopes) — *see mockup B*
+### 7.3 Budgets (envelopes) - *see mockup B*
 
 - Month header with cycle dates; summary card "Allocated $980 of $1,200" with segmented bar (spent/remaining/overspend marker).
 - Envelope cards: icon, name, spent/limit, progress bar colored by pace (teal on-track, amber watch, red reached), sub-label of rollover/goal mode.
@@ -394,13 +394,13 @@ Bottom navigation (adults): **Home · Budgets · (＋) · Savings · Lists**
 - Grouped by day with day totals; search by note/merchant; swipe: edit / delete (rules apply).
 - Transaction detail: full fields, receipt photo, edit history, split breakdown, linked shopping list/goal.
 
-### 7.5 Savings & Goals — *see mockup D*
+### 7.5 Savings & Goals - *see mockup D*
 
 - Goal cards with progress rings; auto-save badges; contribute sheet (amount, currency, from-envelope optional, note).
 - Mukando section: rotation tracker card (round x of y, next collector, pot total), members' status grid, proof photos, reminders.
 - Kids' jars summary (parents): each kid's jar + recent requests.
 
-### 7.6 Shopping Lists — *see mockup C*
+### 7.6 Shopping Lists - *see mockup C*
 
 - List tabs (To buy / In cart / Done); per-item: qty, unit est. price (currency toggle), assignee avatar, checked state.
 - Running estimate in both currencies; budget check bar vs linked envelope.
@@ -412,7 +412,7 @@ Bottom navigation (adults): **Home · Budgets · (＋) · Savings · Lists**
 - Big keypad, currency toggle USD/ZiG with live ≈ preview, category icon grid, member chips, account/method chips, note + voice note, receipt camera, date (defaults today), "recurring" switch.
 - Save works offline → queued banner "Will sync when online".
 
-### 7.8 Kids Mode — *see mockup E*
+### 7.8 Kids Mode - *see mockup E*
 
 - Full-screen playful shell; greeting + star count; **My Jar** card with goal ring; **My Chores** checklist with star values (parent-confirm tickles a "waiting for Mom/Dad ✨" state); **Wish list** with savings progress; bottom buttons "Ask Mom/Dad for money" (coral) and "Do a chore" (teal).
 - Lessons shelf: story cards unlocked by stars.
@@ -565,21 +565,21 @@ lib/
 
 ## 11. Product Roadmap
 
-### Phase 0 — Foundations (Weeks 1–4)
+### Phase 0 - Foundations (Weeks 1–4)
 - Finalize this spec → clickable prototype (Figma) → usability test with 8 families.
 - Design system in Flutter; project scaffold; CI; Supabase schema + RLS policies.
 
-### Phase 1 — MVP (Weeks 5–14) — *Modules A–E + J core*
+### Phase 1 - MVP (Weeks 5–14) - *Modules A–E + J core*
 - Family space, roles, invite; income & expense tracking (offline-first); envelope budgets
   with rollovers; goals + mukando tracker; basic lists with finish→expense; quick add;
   notifications; USD/ZiG with rate snapshots; EN language.
 - **Closed beta:** 30 families, 6 weeks, weekly feedback calls.
 
-### Phase 2 — Family completion (Weeks 15–24)
+### Phase 2 - Family completion (Weeks 15–24)
 - **Kids Mode + chores + requests; Teen Zone;** family meeting mode; reports & report card;
   Shona + Ndebele localization; elder/large-text mode; receipt OCR; statement import (CSV).
 
-### Phase 3 — Growth (Weeks 25–36)
+### Phase 3 - Growth (Weeks 25–36)
 - Multi-space (extended family), co-parent space; pantry mode; what-if simulator;
   mukando reminders v2 (per-member schedules); WhatsApp list sharing; widget &
   quick-tile quick add; Play Store + App Store public launch.
@@ -596,7 +596,7 @@ lib/
 | Tier | Price | Contents |
 |---|---|---|
 | **Free** | $0 | 1 space, 2 adults + all kids, core tracking, 5 envelopes, 2 goals, 1 list, 30-day history |
-| **Mhuri Plus** | ~$1.99/mo or $19/yr (mobile-money friendly, family-priced — one subscription covers the whole space) | Unlimited envelopes/goals/lists/history, mukando tracker, Kids & Teen modes, reports & meeting mode, OCR receipts, multi-space, voice notes, priority support |
+| **Mhuri Plus** | ~$1.99/mo or $19/yr (mobile-money friendly, family-priced - one subscription covers the whole space) | Unlimited envelopes/goals/lists/history, mukando tracker, Kids & Teen modes, reports & meeting mode, OCR receipts, multi-space, voice notes, priority support |
 | **Family network** | Free | Diaspora relatives get a free "supporter" view of goals they contribute to (drives viral growth) |
 
 Principles: **no ads ever, especially in Kids Mode**; price anchored to be reachable
@@ -619,7 +619,7 @@ white-label for MFIs/SACCOs and churches (v3).
 | Business | Free→Plus conversion | ≥ 4% |
 | Retention | Month-2 space retention | ≥ 45% |
 
-North-star: **"Envelope health"** — % of planned spending that actually happened inside
+North-star: **"Envelope health"** - % of planned spending that actually happened inside
 its envelope (calm budgeting, not perfection).
 
 ---
@@ -640,11 +640,11 @@ its envelope (calm budgeting, not perfection).
 
 ## 15. Future Enhancements (v3+)
 
-- **AI money mentor:** "You spend 18% more on transport in the first week of term — want a term envelope?" (on-device where possible)
+- **AI money mentor:** "You spend 18% more on transport in the first week of term - want a term envelope?" (on-device where possible)
 - **EcoCash/bank SMS auto-parse:** on-device notification parsing → draft transactions (privacy: stays local)
 - **Merchant price book:** crowd staple prices (mealie meal, oil, flour) across OK/Choppies/musika to plan lists cheapest-first
 - **Bill marketplace:** pay school fees/DSTV/prepaid electricity in-app via payment partner (licensed rails)
-- **Diaspora spaces:** multi-country currencies (USD/GBP/ZAR) with remittance-linked goals ("Gogo's solar project — 64% funded by the UK uncles")
+- **Diaspora spaces:** multi-country currencies (USD/GBP/ZAR) with remittance-linked goals ("Gogo's solar project - 64% funded by the UK uncles")
 - **Voice-first entry (Shona/Ndebele):** "Rudo, hear me: groceries two hundred" → draft expense
 - **Financial education journey:** structured curriculum for teens with certificates parents see
 
@@ -656,13 +656,13 @@ High-fidelity concept screens (in `mockups/`):
 
 | File | Screen |
 |---|---|
-| `home_dashboard.png` | Adult Home — Family Pool in USD & ZiG, safe-to-spend, envelope chips, activity |
-| `budgets.png` | Envelope budgets — allocated bar, per-envelope pace, overspend state |
-| `shopping_list.png` | Shared list — co-editing, dual-currency estimate, finish→expense loop |
+| `home_dashboard.png` | Adult Home - Family Pool in USD & ZiG, safe-to-spend, envelope chips, activity |
+| `budgets.png` | Envelope budgets - allocated bar, per-envelope pace, overspend state |
+| `shopping_list.png` | Shared list - co-editing, dual-currency estimate, finish→expense loop |
 | `savings_goals.png` | Goals with progress rings, auto-save, mukando card, kid jar |
-| `kid_mode.png` | Kids Mode — jar, stars, chores, wish list, ask-parent flow |
+| `kid_mode.png` | Kids Mode - jar, stars, chores, wish list, ask-parent flow |
 
 ---
 
-*Prepared for the Mhuri Hub project — Flutter / Supabase / offline-first / USD+ZiG.*
-*Next step: Phase 0 — clickable prototype & Flutter scaffold.*
+*Prepared for the Mhuri Hub project - Flutter / Supabase / offline-first / USD+ZiG.*
+*Next step: Phase 0 - clickable prototype & Flutter scaffold.*

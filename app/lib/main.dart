@@ -9,7 +9,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Server connection (see AppEnv): dart-defines > .env asset > constants.
-  // A build with no connection shows the setup screen below — it never
+  // A build with no connection shows the setup screen below - it never
   // runs as anything other than the real app.
   final env = await AppEnv.load();
 
@@ -18,7 +18,9 @@ Future<void> main() async {
   final db = await AppDatabase.open();
 
   if (!env.isConfigured || db == null) {
-    runApp(MhuriSetupErrorApp(reason: env.configError ?? 'Local storage is unavailable on this device.'));
+    runApp(MhuriSetupErrorApp(
+        reason:
+            env.configError ?? 'Local storage is unavailable on this device.'));
     return;
   }
 
@@ -31,8 +33,8 @@ Future<void> main() async {
 }
 
 /// Shown when a build has no Supabase connection (or the device refuses
-/// local storage). Developer-facing by nature — the build is misconfigured,
-/// not the user's data — so the text stays in plain English.
+/// local storage). Developer-facing by nature - the build is misconfigured,
+/// not the user's data - so the text stays in plain English.
 class MhuriSetupErrorApp extends StatelessWidget {
   const MhuriSetupErrorApp({super.key, required this.reason});
 
@@ -55,7 +57,7 @@ class MhuriSetupErrorApp extends StatelessWidget {
                     size: 44, color: Color(0xFF7FD1B9)),
                 const SizedBox(height: 18),
                 const Text(
-                  'Mhuri Hub — setup needed',
+                  'Mhuri - setup needed',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,

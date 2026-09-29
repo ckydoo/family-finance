@@ -1,57 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/utils/ids.dart';
+
 import '../../core/money/money.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/l10n/app_strings.dart';
 
 /// Full-screen, keyboard-safe transaction entry (UX-polish P1).
 ///
 /// Layout contract:
-///  · pinned header — 44px close + title, never scrolls away;
-///  · essentials first — type → amount+currency → envelope → person;
+///  · pinned header - 44px close + title, never scrolls away;
+///  · essentials first - type → amount+currency → envelope → person;
 ///  · note & payment method behind "More details" (collapsed by default);
 ///  · Save is pinned above the keyboard (bottomNavigationBar + viewInsets);
-///  · dismissing with entered data asks first — after save it never does.
-Future<void> showQuickAdd(BuildContext context) {
+///  · dismissing with entered data asks first - after save it never does.
+Future<void> showQuickAdd(BuildContext context, {TxType? initialType}) {
   return Navigator.of(context).push(
     MaterialPageRoute<void>(
       fullscreenDialog: true,
-      builder: (_) => const _QuickAddSheet(),
+      builder: (_) => _QuickAddSheet(initialType: initialType),
     ),
   );
 }
 
 class _QuickAddSheet extends StatefulWidget {
-  const _QuickAddSheet();
+  final TxType? initialType;
+  const _QuickAddSheet({this.initialType});
 
   @override
   State<_QuickAddSheet> createState() => _QuickAddSheetState();
 }
 
 class _QuickAddSheetState extends State<_QuickAddSheet> {
-  TxType _type = TxType.expense;
+  late TxType _type;
   Currency _cur = Currency.usd;
   Method _method = Method.cash;
   Envelope? _envelope;
   Member? _member;
   bool _more = false;
   bool _saved = false;
+  bool _saving = false;
+  String? _amountError;
   final _amount = TextEditingController();
   final _note = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _type = widget.initialType ?? TxType.expense;
     // Post-frame so inherited widget is available.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final s = AppScope.of(context);
       setState(() {
+        _cur = s.displayCurrency;
         _envelope = s.envelopes.isEmpty ? null : s.envelopes.first;
         _member = s.members.isEmpty ? null : s.user;
       });
@@ -121,14 +129,14 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   }
 
   Future<void> _save(AppState s, AppLocalizations l) async {
+    if (_saving) return;
     final amt = _parsedAmount;
-    if (amt == null || _member == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l.enterAmountFirst),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (amt == null) {
+      setState(() => _amountError = l.enterAmountFirst);
+      return;
+    }
+    if (_member == null) {
+      setState(() => _amountError = l.whoLabel);
       return;
     }
 
@@ -172,6 +180,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       }
     }
 
+    setState(() => _saving = true);
     final note = _note.text.trim().isEmpty
         ? (_type == TxType.income ? l.income : l.expense)
         : _note.text.trim();
@@ -181,6 +190,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     _saved = true;
     navigator.pop();
     s.addTx(
+      id: newUuid(),
       type: _type,
       amount: Money.fromMajor(amt, _cur),
       memberId: _member!.id,
@@ -255,14 +265,15 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Expense / Income
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   ChoiceChip(
                     label: Text(l.expense),
                     selected: _type == TxType.expense,
                     onSelected: (_) => setState(() => _type = TxType.expense),
                   ),
-                  const SizedBox(width: 8),
                   ChoiceChip(
                     label: Text(l.income),
                     selected: _type == TxType.income,
@@ -278,6 +289,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 autofocus: true,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: amountInputFormatters,
                 style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
@@ -290,34 +302,43 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       color: context.inkSoft),
                   filled: true,
                   fillColor: context.card,
+                  errorText: _amountError,
+                  errorStyle: TextStyle(
+                    color: context.danger,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                   border: const OutlineInputBorder(borderSide: BorderSide.none),
                   hintText: '0.00',
                 ),
-                onChanged: (_) => setState(() {}),
+                onChanged: (_) {
+                  if (_amountError != null) {
+                    setState(() => _amountError = null);
+                  } else {
+                    setState(() {});
+                  }
+                },
               ),
               const SizedBox(height: 10),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  ChoiceChip(
-                    label: const Text('USD'),
-                    selected: _cur == Currency.usd,
-                    onSelected: (_) => setState(() => _cur = Currency.usd),
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('ZiG'),
-                    selected: _cur == Currency.zwg,
-                    onSelected: (_) => setState(() => _cur = Currency.zwg),
-                  ),
-                  const Spacer(),
-                  Flexible(
-                    child: Text(
+                  for (final c in s.activeCurrencies) ...[
+                    ChoiceChip(
+                      label: Text(c.short),
+                      selected: _cur == c,
+                      onSelected: (_) => setState(() => _cur = c),
+                    ),
+                  ],
+                  if (s.activeCurrencies.length > 1)
+                    Text(
                       _parsedAmount == null
                           ? ''
-                          : '≈ ${Money.fromMajor(_parsedAmount!, _cur).converted(s.rate).text}',
+                          : '≈ ${Money.fromMajor(_parsedAmount!, _cur).converted(s.rate, s.otherCurrency(_cur)).text}',
                       style: TextStyle(fontSize: 12.5, color: context.inkSoft),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 6),
@@ -339,7 +360,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 const SizedBox(height: 12),
               ],
               if (_type == TxType.expense && s.envelopes.isNotEmpty) ...[
-                Text(l.envelopeLabel,
+                Text(l.fromEnvelope,
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
@@ -355,7 +376,15 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                           Icon(iconForKey(e.emoji) ?? Icons.savings,
                               size: 16, color: context.primaryDark),
                           const SizedBox(width: 8),
-                          Text(e.name),
+                          SizedBox(
+                            width: (MediaQuery.sizeOf(context).width - 140)
+                                .clamp(100, 260),
+                            child: Text(
+                              e.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ]),
                         selected: _envelope?.id == e.id,
                         onSelected: (_) => setState(() => _envelope = e),
@@ -388,7 +417,15 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                         Icon(iconForKey(m.emoji) ?? Icons.person,
                             size: 16, color: context.primaryDark),
                         const SizedBox(width: 8),
-                        Text(m.name),
+                        SizedBox(
+                          width: (MediaQuery.sizeOf(context).width - 140)
+                              .clamp(100, 260),
+                          child: Text(
+                            m.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ]),
                       selected: _member?.id == m.id,
                       onSelected: (_) => setState(() => _member = m),
@@ -433,7 +470,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     labelText: l.noteHint,
                     filled: true,
                     fillColor: context.card,
-                    border: OutlineInputBorder(borderSide: BorderSide.none),
+                    border:
+                        const OutlineInputBorder(borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -450,17 +488,26 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
               child: ElevatedButton(
-                onPressed: () => _save(s, l),
+                onPressed: _saving ? null : () => _save(s, l),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.primary,
                   foregroundColor: context.onSolid,
                   minimumSize: const Size.fromHeight(54),
                   shape: const StadiumBorder(),
                 ),
-                child: Text(
-                  l.save,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                ),
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator.adaptive(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        l.save,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w800),
+                      ),
               ),
             ),
           ),

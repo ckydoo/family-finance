@@ -6,10 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:mhuri_money/core/auth/auth_controller.dart';
-import 'package:mhuri_money/core/auth/auth_service.dart';
 import 'package:mhuri_money/core/auth/pin_store.dart';
 import 'package:mhuri_money/core/auth/supabase_auth_service.dart';
-import 'package:mhuri_money/core/config/app_env.dart';
 
 import 'fake_auth.dart';
 
@@ -153,7 +151,7 @@ void main() {
         ..add(const MapEntry(400, '{"error":"Invalid login credentials"}'));
       final r = await service.signIn('david@mhuri.app', 'wrong-password');
       expect(r.ok, isFalse);
-      expect(r.error, 'Invalid login credentials');
+      expect(r.error, 'Email or password is wrong.');
       expect(kv.containsKey('auth_access_token'), isFalse);
     });
 
@@ -278,7 +276,7 @@ void main() {
 
       final s = await service.restoreSession();
 
-      // Session survives from the stored identity; tokens NOT wiped —
+      // Session survives from the stored identity; tokens NOT wiped -
       // wiping them here produced "logged-in app sending empty JWT".
       expect(s, isNotNull);
       expect(s!.userId, 'uuid-7');

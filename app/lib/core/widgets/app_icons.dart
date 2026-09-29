@@ -1,17 +1,17 @@
-/// M8 polish — icon system. Every visual entity (envelope, goal, account,
+/// M8 polish - icon system. Every visual entity (envelope, goal, account,
 /// member, recurring rule) carries a stable SEMANTIC icon key in the data
 /// layer: 'cart', 'school', 'fuel', 'man', 'bank', 'autorenew', … No emojis
 /// exist in the database or the UI. This map is the single place that turns
 /// a key into a Material icon; unknown keys (future/remote data) fall back
 /// to a neutral icon, never blank, never a raw emoji.
 ///
-/// Notification text (reminders.dart) is the one intentional emoji zone —
+/// Notification text (reminders.dart) is the one intentional emoji zone -
 /// it renders in the OS tray, outside the app, where IconData cannot.
 library;
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-
 
 /// Semantic icon keys → Material icons.
 const Map<String, IconData> kKeyIcons = {
@@ -56,7 +56,7 @@ const Map<String, IconData> kKeyIcons = {
 /// Looks up an icon for a data emoji key (null → caller draws the fallback).
 IconData? iconForKey(String? key) => key == null ? null : kKeyIcons[key];
 
-/// Circular soft badge that renders a Material icon; unknown/remote keys
+/// Unframed semantic icon; unknown/remote keys
 /// fall back to a neutral label icon so nothing ever renders blank.
 class AppIconBadge extends StatelessWidget {
   const AppIconBadge({
@@ -86,7 +86,7 @@ class AppIconBadge extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: bg ?? context.primarySoft,
+        color: bg ?? Colors.transparent,
         borderRadius: radius,
       ),
       alignment: Alignment.center,
@@ -105,9 +105,9 @@ class AppIconBadge extends StatelessWidget {
   }
 }
 
-/// Smart-card / banner icon: filled white circle holding a colored icon.
+/// Smart-card / banner icon. It is unframed unless a background is requested.
 class AppIconBubble extends StatelessWidget {
-  AppIconBubble({
+  const AppIconBubble({
     super.key,
     required this.icon,
     this.size = 44,
@@ -126,8 +126,7 @@ class AppIconBubble extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        // Defaults resolve per-theme (dark mode): onPrimaryContainer/surface.
-        color: bg ?? Theme.of(context).colorScheme.surface,
+        color: bg ?? Colors.transparent,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,

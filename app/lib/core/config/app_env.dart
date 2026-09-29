@@ -1,8 +1,9 @@
 import 'package:flutter/services.dart' show rootBundle;
+
 ///this is the config file
 /// Server connection config (M2 → live-only).
 ///
-/// The app is always a real client of the family's Supabase project —
+/// The app is always a real client of the family's Supabase project -
 /// config decides WHERE to connect, nothing else.
 /// Sources, in precedence order:
 ///   1. `.env` bundled as a Flutter asset (see pubspec.yaml)
@@ -10,7 +11,7 @@ import 'package:flutter/services.dart' show rootBundle;
 ///      for CI/release builds that must not create a local file.
 ///
 /// A build with NO source for these values shows a setup error screen at
-/// startup — it never falls back to any offline fiction.
+/// startup - it never falls back to any offline fiction.
 class AppEnv {
   const AppEnv({
     this.supabaseUrl,
@@ -24,7 +25,7 @@ class AppEnv {
 
   /// Which environment this build targets: `dev` (default) | `staging` |
   /// `prod`. Sources: `--dart-define=MHURI_ENV=…` > `.env` `ENV=` > dev.
-  /// Never destructive-test against prod — run migrations/experiments on
+  /// Never destructive-test against prod - run migrations/experiments on
   /// the staging project first (see UPDATE_FROM_SANDBOX #17).
   final String environment;
 
@@ -38,7 +39,7 @@ class AppEnv {
   final String? sentryDsn;
   final String? rateApiUrl;
 
-  /// Non-null when the build has no usable server connection — main() shows
+  /// Non-null when the build has no usable server connection - main() shows
   /// a setup error screen with this message instead of the app.
   final String? configError;
 
@@ -79,7 +80,7 @@ class AppEnv {
         sentryDsn: env.sentryDsn,
         rateApiUrl: env.rateApiUrl,
         configError:
-            'This prod build points at a staging URL — refusing to start. '
+            'This prod build points at a staging URL - refusing to start. '
             'Fix ENV/MHURI_ENV or SUPABASE_URL.',
       );
     }

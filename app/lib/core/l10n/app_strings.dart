@@ -9,7 +9,7 @@ import '../state/app_state.dart';
 ///
 /// This is a deliberate stop-gap: Phase 2 migrates to the official
 /// `flutter gen-l10n` toolchain with `.arb` files under `lib/l10n/`
-/// (see app README). The maps below are initial drafts — have native
+/// (see app README). The maps below are initial drafts - have native
 /// Shona / Ndebele speakers review before public launch.
 const Map<String, Map<String, String>> kStrings = {
   'en': {
@@ -95,37 +95,38 @@ const kLanguageNames = {
   'pt': 'Português',
 };
 
-/// `tStr(context, 'income')` — M6: routes through the generated
+/// `tStr(context, 'income')` - M6: routes through the generated
 /// AppLocalizations (6 languages). The legacy `kStrings` maps remain as the
 /// EN/SN/ND draft source and fall back for any key not yet in the ARBs.
 String tStr(BuildContext context, String key) {
   final l = AppLocalizations.of(context);
   if (l != null) {
     return switch (key) {
-      'family' => l.family,
-      'hi' => l.hi,
-      'mySavings' => l.mySavings,
-      'addToJar' => l.addToJar,
-      'savingsMatch' => l.savingsMatch,
-      'savingsMatchNote' => l.savingsMatchNote,
-      'earnings' => l.earnings,
-      'logEarning' => l.logEarning,
-      'myProposals' => l.myProposals,
-      'proposeExpense' => l.proposeExpense,
-      'proposeTitle' => l.proposeTitle,
-      'peek' => l.peek,
-      'plan' => l.plan,
-      'reportTitle' => l.reportTitle,
-      'income' => l.income,
-      'spent' => l.spent,
-      'saved' => l.saved,
-      'safePerDay' => l.safePerDay,
-      'envelopeHealth' => l.envelopeHealth,
-      'cashLeak' => l.cashLeak,
-      'shareReport' => l.shareReport,
-      'language' => l.language,
-      _ => null,
-    } ?? _legacy(key, AppScope.of(context).localeCode);
+          'family' => l.family,
+          'hi' => l.hi,
+          'mySavings' => l.mySavings,
+          'addToJar' => l.addToJar,
+          'savingsMatch' => l.savingsMatch,
+          'savingsMatchNote' => l.savingsMatchNote,
+          'earnings' => l.earnings,
+          'logEarning' => l.logEarning,
+          'myProposals' => l.myProposals,
+          'proposeExpense' => l.proposeExpense,
+          'proposeTitle' => l.proposeTitle,
+          'peek' => l.peek,
+          'plan' => l.plan,
+          'reportTitle' => l.reportTitle,
+          'income' => l.income,
+          'spent' => l.spent,
+          'saved' => l.saved,
+          'safePerDay' => l.safePerDay,
+          'envelopeHealth' => l.envelopeHealth,
+          'cashLeak' => l.cashLeak,
+          'shareReport' => l.shareReport,
+          'language' => l.language,
+          _ => null,
+        } ??
+        _legacy(key, AppScope.of(context).localeCode);
   }
   return _legacy(key, AppScope.of(context).localeCode);
 }

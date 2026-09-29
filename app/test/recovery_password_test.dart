@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:mhuri_money/core/auth/auth_service.dart';
 import 'package:mhuri_money/core/auth/recovery_link.dart';
 import 'package:mhuri_money/core/auth/supabase_auth_service.dart';
 
@@ -27,10 +26,14 @@ class FakeClient extends http.BaseClient {
   }
 }
 
-String _b64url(String s) => base64Url.encode(utf8.encode(s)).replaceAll('=', '');
+String _b64url(String s) =>
+    base64Url.encode(utf8.encode(s)).replaceAll('=', '');
 
 String _jwt({String sub = 'uid-9', String email = 'bongi@example.com'}) =>
-    '${_b64url('{"alg":"HS256"}').}${_b64url(jsonEncode({"sub": sub, "email": email}))}.sig';
+    '${_b64url('{"alg":"HS256"}')}.${_b64url(jsonEncode({
+          "sub": sub,
+          "email": email
+        }))}.sig';
 
 void main() {
   final kv = <String, String>{};
@@ -57,8 +60,7 @@ void main() {
       expect(r.ok, isTrue);
       final req = _reqOf(client.sent.last);
       expect(req.method, 'PUT');
-      expect(req.url.toString(),
-          'https://abcdefgh.supabase.co/auth/v1/user');
+      expect(req.url.toString(), 'https://abcdefgh.supabase.co/auth/v1/user');
       expect(req.headers['Authorization'], 'Bearer ${_jwt()}');
       expect(jsonDecode(req.body), {'password': 'NewPass123'});
     });

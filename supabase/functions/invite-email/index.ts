@@ -1,6 +1,6 @@
 // Optional invite-email Edge Function (Phase 2, "backend email send").
 //
-// The app's primary invite channels are QR + share sheet (WhatsApp/SMS —
+// The app's primary invite channels are QR + share sheet (WhatsApp/SMS -
 // how Zimbabwean families actually share). This function adds email on top;
 // it is OPTIONAL and nothing in the app depends on it.
 //
@@ -15,7 +15,7 @@
 //     -d '{"email":"tino@example.com","code":"MHRI-AB12CD","role":"teen",
 //          "family":"The Moyo Family"}'
 //
-// Anti-enumeration note: the email never states whether the code is valid —
+// Anti-enumeration note: the email never states whether the code is valid -
 // it only restates what the sender already knows.
 
 Deno.serve(async (req) => {

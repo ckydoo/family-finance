@@ -1,11 +1,14 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 
 /// ── Mhuri shared component kit (Phase 3) ────────────────────────────────────
 /// One source of truth for the recurring shapes: cards, section headers,
 /// primary buttons, empty hints. Screens compose these instead of re-declaring
-/// radius/padding/weights — the design system from PRODUCT_SPEC §7 without a
+/// radius/padding/weights - the design system from PRODUCT_SPEC §7 without a
 /// theme package. Adopt a screen at a time; new code MUST use these.
 
 /// The standard rounded content card (was: per-screen Container + BoxDecoration).
@@ -15,6 +18,7 @@ class MhuriCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.highlight = false,
+    this.onTap,
   });
 
   final Widget child;
@@ -22,19 +26,29 @@ class MhuriCard extends StatelessWidget {
 
   /// Draws the primary-colored border (selection / fresh-result emphasis).
   final bool highlight;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: padding,
-        decoration: BoxDecoration(
-          color: context.card,
-          borderRadius: BorderRadius.circular(16),
-          border: highlight
-              ? Border.all(color: context.primary, width: 1.5)
-              : null,
+  Widget build(BuildContext context) {
+    final border = highlight
+        ? BorderSide(color: context.primary, width: 1.5)
+        : BorderSide.none;
+    return Material(
+      color: context.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: border,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: padding,
+          child: child,
         ),
-        child: child,
-      );
+      ),
+    );
+  }
 }
 
 /// Section header inside a settings-style page (icon + label).
@@ -53,13 +67,15 @@ class SectionHeader extends StatelessWidget {
               Icon(icon, size: 15, color: context.primaryDark),
               const SizedBox(width: 6),
             ],
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: context.inkSoft,
-                letterSpacing: 0.3,
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: context.inkSoft,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
           ],
@@ -75,34 +91,45 @@ class PrimaryButton extends StatelessWidget {
     this.onPressed,
     this.busy = false,
     this.danger = false,
+    this.icon,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final bool busy;
   final bool danger;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) => ElevatedButton(
         onPressed: busy ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-              danger ? context.danger : context.primary,
+          backgroundColor: danger ? context.danger : context.primary,
           foregroundColor: context.onSolid,
-          disabledBackgroundColor:
-              (danger ? context.danger : context.primary)
-                  .withValues(alpha: 0.5),
+          disabledBackgroundColor: (danger ? context.danger : context.primary)
+              .withValues(alpha: 0.5),
           minimumSize: const Size.fromHeight(54),
           shape: const StadiumBorder(),
         ),
         child: busy
             ? const SizedBox.square(
                 dimension: 22,
-                child: CircularProgressIndicator(
-                    color: Colors.white, strokeWidth: 2.5))
-            : Text(label,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                child: CircularProgressIndicator.adaptive(strokeWidth: 2.5))
+            : icon != null
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: 18),
+                      const SizedBox(width: 8),
+                      Text(label,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w800)),
+                    ],
+                  )
+                : Text(label,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w800)),
       );
 }
 
@@ -139,7 +166,6 @@ class EmptyHint extends StatelessWidget {
       );
 }
 
-
 /// The one confirm dialog (destructive / leave-without-saving).
 /// Resolves true when the user confirms.
 Future<bool> confirmDialog(
@@ -149,9 +175,37 @@ Future<bool> confirmDialog(
   String? confirmLabel,
   bool danger = false,
 }) async {
+  if (defaultTargetPlatform == TargetPlatform.iOS) {
+    final ok = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Text(body),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: danger,
+            isDefaultAction: !danger,
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+                confirmLabel ?? MaterialLocalizations.of(ctx).okButtonLabel),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
   final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(title),
       content: Text(body),
       actions: [
@@ -165,8 +219,8 @@ Future<bool> confirmDialog(
                   backgroundColor: Theme.of(ctx).colorScheme.error)
               : null,
           onPressed: () => Navigator.pop(ctx, true),
-          child: Text(confirmLabel ??
-              MaterialLocalizations.of(ctx).okButtonLabel),
+          child:
+              Text(confirmLabel ?? MaterialLocalizations.of(ctx).okButtonLabel),
         ),
       ],
     ),
@@ -174,9 +228,33 @@ Future<bool> confirmDialog(
   return ok ?? false;
 }
 
+/// Prevents typing or pasting any non-numeric characters into amounts (allows digits and up to 2 decimal places).
+List<TextInputFormatter> get amountInputFormatters => [
+      // 12 major-unit digits plus decimal point and cents. This stays far
+      // inside SQLite's signed 64-bit integer range after conversion to minor
+      // units, while still supporting amounts up to 999,999,999,999.99.
+      LengthLimitingTextInputFormatter(15),
+      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+    ];
+
+/// Prevents typing or pasting any non-numeric characters into integer fields (e.g. quantity).
+List<TextInputFormatter> get integerInputFormatters => [
+      // Quantities are capped to three digits so quantity x the largest
+      // accepted unit price remains safely inside the database integer range.
+      LengthLimitingTextInputFormatter(3),
+      FilteringTextInputFormatter.digitsOnly,
+    ];
+
+/// Numeric 4–6 digit PIN input. Kept separate from quantity formatters,
+/// which intentionally stop at three digits.
+List<TextInputFormatter> get pinInputFormatters => [
+      LengthLimitingTextInputFormatter(6),
+      FilteringTextInputFormatter.digitsOnly,
+    ];
+
 /// ── Form fields ─────────────────────────────────────────────────────────────
 /// The one filled, borderless field with a persistent label. [currencySymbol]
-/// switches on the money keyboard (decimal) + currency prefix — the standard
+/// switches on the money keyboard (decimal) + currency prefix - the standard
 /// currency input. Never re-declare InputDecoration per screen.
 class MhuriField extends StatelessWidget {
   const MhuriField({
@@ -194,6 +272,8 @@ class MhuriField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.onChanged,
     this.currencySymbol,
+    this.errorText,
+    this.inputFormatters,
   });
 
   final TextEditingController controller;
@@ -208,33 +288,54 @@ class MhuriField extends StatelessWidget {
   final bool autofocus;
   final TextCapitalization textCapitalization;
   final ValueChanged<String>? onChanged;
+  final String? errorText;
+  final List<TextInputFormatter>? inputFormatters;
 
-  /// When set: decimal keyboard + `symbol ` prefix — the currency input.
+  /// When set: decimal keyboard + `symbol ` prefix - the currency input.
   final String? currencySymbol;
 
   @override
-  Widget build(BuildContext context) => TextField(
-        controller: controller,
-        autofocus: autofocus,
-        onChanged: onChanged,
-        obscureText: obscureText,
-        maxLength: maxLength,
-        textCapitalization: textCapitalization,
-        keyboardType: currencySymbol != null
-            ? const TextInputType.numberWithOptions(decimal: true)
-            : keyboardType,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          counterText: '',
-          prefixIcon:
-              prefixIcon == null ? null : Icon(prefixIcon, color: context.inkSoft),
-          prefixText: prefixText,
-          filled: true,
-          fillColor: fillColor ?? context.card,
-          border: const OutlineInputBorder(borderSide: BorderSide.none),
+  Widget build(BuildContext context) {
+    final effectiveFormatters = inputFormatters ??
+        (currencySymbol != null ||
+                keyboardType ==
+                    const TextInputType.numberWithOptions(decimal: true)
+            ? amountInputFormatters
+            : (keyboardType == TextInputType.number
+                ? integerInputFormatters
+                : null));
+
+    return TextField(
+      controller: controller,
+      autofocus: autofocus,
+      onChanged: onChanged,
+      obscureText: obscureText,
+      maxLength: maxLength,
+      textCapitalization: textCapitalization,
+      keyboardType: currencySymbol != null
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : keyboardType,
+      inputFormatters: effectiveFormatters,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        counterText: '',
+        prefixIcon: prefixIcon == null
+            ? null
+            : Icon(prefixIcon, color: context.inkSoft),
+        prefixText: prefixText,
+        errorText: errorText,
+        errorStyle: TextStyle(
+          color: context.danger,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
-      );
+        filled: true,
+        fillColor: fillColor ?? context.card,
+        border: const OutlineInputBorder(borderSide: BorderSide.none),
+      ),
+    );
+  }
 }
 
 /// ── Inline error notice ─────────────────────────────────────────────────────
@@ -249,11 +350,29 @@ class ErrorNotice extends StatelessWidget {
         padding: const EdgeInsets.only(top: 12),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-              color: context.dangerSoft,
-              borderRadius: BorderRadius.circular(12)),
-          child: Text(text, style: TextStyle(color: context.expenseRed)),
+            color: context.dangerSoft,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.danger.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.error_outline_rounded,
+                  size: 18, color: context.danger),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: context.expenseRed,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }
@@ -296,7 +415,7 @@ class SecondaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
 
-  /// Red outline — the destructive-secondary look (remove photo, etc.).
+  /// Red outline - the destructive-secondary look (remove photo, etc.).
   final bool danger;
 
   @override
@@ -329,8 +448,8 @@ class PageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style:
-            TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: context.ink),
+        style: TextStyle(
+            fontSize: 26, fontWeight: FontWeight.w800, color: context.ink),
       );
 }
 
@@ -354,14 +473,14 @@ class MemberAvatar extends StatelessWidget {
   Widget build(BuildContext context) => CircleAvatar(
         radius: radius,
         backgroundColor: backgroundColor,
-        backgroundImage:
-            imageUrl != null ? NetworkImage(imageUrl!) : null,
-        child: imageUrl != null ? null : Icon(icon, size: 20, color: context.ink),
+        backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
+        child:
+            imageUrl != null ? null : Icon(icon, size: 20, color: context.ink),
       );
 }
 
 /// ── Bottom-sheet header ─────────────────────────────────────────────────────
-/// Title row + labelled close — every sheet opens with this, never a bare title.
+/// Title row + labelled close - every sheet opens with this, never a bare title.
 class SheetHeader extends StatelessWidget {
   const SheetHeader(this.title, {super.key, required this.onClose});
 
@@ -379,8 +498,7 @@ class SheetHeader extends StatelessWidget {
                     color: context.ink)),
           ),
           IconButton(
-            tooltip:
-                MaterialLocalizations.of(context).closeButtonTooltip,
+            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
             onPressed: onClose,
             icon: const Icon(Icons.close_rounded),
           ),
@@ -388,21 +506,321 @@ class SheetHeader extends StatelessWidget {
       );
 }
 
+/// ── Status banner ──────────────────────────────────────────────────────────
+/// Consistent notification / alert bar for sync health, warnings, overspend policies.
+enum BannerType { info, warning, error, success }
+
+class StatusBanner extends StatelessWidget {
+  const StatusBanner({
+    super.key,
+    required this.message,
+    this.title,
+    this.type = BannerType.info,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final String message;
+  final String? title;
+  final BannerType type;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg, icon) = switch (type) {
+      BannerType.info => (
+          context.card,
+          context.ink,
+          Icons.info_outline_rounded
+        ),
+      BannerType.warning => (
+          const Color(0xFFFFF3CD),
+          const Color(0xFF664D03),
+          Icons.warning_amber_rounded
+        ),
+      BannerType.error => (
+          context.dangerSoft,
+          context.expenseRed,
+          Icons.error_outline_rounded
+        ),
+      BannerType.success => (
+          context.primarySoft,
+          context.primaryDark,
+          Icons.check_circle_outline_rounded
+        ),
+    };
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: fg.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: fg),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title != null) ...[
+                  Text(
+                    title!,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13, color: fg),
+                  ),
+                  const SizedBox(height: 2),
+                ],
+                Text(message, style: TextStyle(fontSize: 12.5, color: fg)),
+              ],
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                foregroundColor: fg,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: const Size(48, 36),
+              ),
+              child: Text(
+                actionLabel!,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w800, fontSize: 12.5),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// ── Money card ─────────────────────────────────────────────────────────────
+/// Prominent financial summary card (balance, envelope, pool, or goal).
+class MoneyCard extends StatelessWidget {
+  const MoneyCard({
+    super.key,
+    required this.title,
+    required this.amount,
+    this.subtitle,
+    this.icon,
+    this.trailing,
+    this.onTap,
+    this.highlight = false,
+  });
+
+  final String title;
+  final String amount;
+  final String? subtitle;
+  final IconData? icon;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) => MhuriCard(
+        highlight: highlight,
+        onTap: onTap,
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(icon, color: context.primaryDark, size: 22),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.inkSoft,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    amount,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: context.ink,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) trailing!,
+          ],
+        ),
+      );
+}
+
+/// ── Modal Bottom Sheet Shell ───────────────────────────────────────────────
+/// Standardizes header, close button, progressive disclosure scrolling,
+/// keyboard awareness, max height constraints, and unsaved changes confirmation.
+class MhuriSheetShell extends StatelessWidget {
+  const MhuriSheetShell({
+    super.key,
+    required this.title,
+    required this.child,
+    this.subtitle,
+    this.onClose,
+    this.footer,
+    this.isDirty = false,
+  });
+
+  final String title;
+  final String? subtitle;
+  final Widget child;
+  final VoidCallback? onClose;
+  final Widget? footer;
+  final bool isDirty;
+
+  Future<bool> _handleClose(BuildContext context) async {
+    if (isDirty) {
+      final discard = await confirmDialog(
+        context,
+        title: 'Discard changes?',
+        body: 'You have unsaved changes that will be lost.',
+        confirmLabel: 'Discard',
+        danger: true,
+      );
+      if (!discard) return false;
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.90;
+    return PopScope(
+      canPop: !isDirty,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final ok = await _handleClose(context);
+        if (ok && context.mounted) Navigator.pop(context);
+      },
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              color: context.ink,
+                            ),
+                          ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle!,
+                              style: TextStyle(
+                                  fontSize: 12.5, color: context.inkSoft),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip:
+                          MaterialLocalizations.of(context).closeButtonTooltip,
+                      onPressed: () async {
+                        if (onClose != null) {
+                          onClose!();
+                        } else {
+                          final ok = await _handleClose(context);
+                          if (ok && context.mounted) Navigator.pop(context);
+                        }
+                      },
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Flexible(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: child,
+                ),
+              ),
+              if (footer != null) ...[
+                const Divider(height: 1),
+                SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.only(bottom: 4),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                    child: footer!,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The standard sheet host: drag handle, safe area, keyboard inset.
 /// Every bottom sheet in the app opens through this so modal layout never
 /// drifts screen-to-screen.
-Future<T?> showMhuriSheet<T>(
-  BuildContext context, {
+Future<T?> showMhuriSheet<T>({
+  required BuildContext context,
   required WidgetBuilder builder,
   bool scrollControlled = true,
+  bool isDismissible = true,
+  bool enableDrag = true,
 }) =>
     showModalBottomSheet<T>(
       context: context,
       isScrollControlled: scrollControlled,
-      isDismissible: true,
-      enableDrag: true,
+      isDismissible: isDismissible,
+      enableDrag: enableDrag,
       useSafeArea: true,
       showDragHandle: true,
       backgroundColor: context.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: builder,
     );

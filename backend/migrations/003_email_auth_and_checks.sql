@@ -1,11 +1,11 @@
 -- 003: Email auth + live-schema reconciliation (2026-09-22)
--- Run once in the Supabase SQL editor. Idempotent — safe to re-run.
+-- Run once in the Supabase SQL editor. Idempotent - safe to re-run.
 --
 -- Reconciles the deployed schema (see supabase_live_schema.sql) with the app:
---   1. user_profile.email  — email+password auth replaced phone OTP
---   2. user_profile.language — app ships 6 locales (en,es,fr,pt,sn,nd);
+--   1. user_profile.email  - email+password auth replaced phone OTP
+--   2. user_profile.language - app ships 6 locales (en,es,fr,pt,sn,nd);
 --      deployed CHECK only allows (en,sn,nd)
---   3. transaction.method / recurring_rule.method — the app uses ONE method
+--   3. transaction.method / recurring_rule.method - the app uses ONE method
 --      enum for both tables; deployed CHECKs are disjoint subsets, so a
 --      mobile-money expense (or an EcoCash bill rule) would fail to sync.
 --      Both widen to the union domain.

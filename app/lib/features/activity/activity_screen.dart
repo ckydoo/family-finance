@@ -15,48 +15,59 @@ class ActivityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final groups = <String, List<Tx>>{};
+    final rows = <Object>[];
+    String? lastDay;
     for (final t in s.txs) {
-      groups.putIfAbsent(fmtDay(t.when), () => []).add(t);
+      final day = fmtDay(t.when);
+      if (day != lastDay) {
+        rows.add(day);
+        lastDay = day;
+      }
+      rows.add(t);
     }
 
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.activityTitle)),
       body: SafeArea(
         child: RefreshIndicator(
-        onRefresh: () => s.refresh(),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          children: [
-            if (groups.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 40),
-                child: EmptyState(
-                  icon: Icons.receipt_long,
-                  title: AppLocalizations.of(context)!.noActivityTitle,
-                  subtitle: AppLocalizations.of(context)!.noActivityHint,
+          onRefresh: () => s.refresh(),
+          child: rows.isEmpty
+              ? ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
+                  children: [
+                    EmptyState(
+                      icon: Icons.receipt_long,
+                      title: AppLocalizations.of(context)!.noActivityTitle,
+                      subtitle: AppLocalizations.of(context)!.noActivityHint,
+                    ),
+                  ],
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                  itemCount: rows.length,
+                  itemBuilder: (context, index) {
+                    final row = rows[index];
+                    if (row is String) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 14, bottom: 8),
+                        child: Text(
+                          row,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: context.inkSoft,
+                          ),
+                        ),
+                      );
+                    }
+                    return TxTile(
+                      tx: row as Tx,
+                      dense: true,
+                      surface: false,
+                    );
+                  },
                 ),
-              ),
-            for (final entry in groups.entries) ...[
-              Padding(
-                padding: const EdgeInsets.only(top: 14, bottom: 8),
-                child: Text(
-                  entry.key,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: context.inkSoft,
-                  ),
-                ),
-              ),
-              for (final t in entry.value)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: TxTile(tx: t, dense: true),
-                ),
-            ],
-          ],
-        )),
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/sync/supabase_sync_client.dart';
+import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 /// Owner-managed invitations (migration 010): create role-bound invites,
@@ -30,6 +31,7 @@ class _InviteScreenState extends State<InviteScreen> {
   String _role = 'adult';
   final _email = TextEditingController();
   bool _busy = false;
+  bool _loaded = false;
   String? _newCode;
   List<InviteInfo>? _invites;
   String? _error;
@@ -37,6 +39,13 @@ class _InviteScreenState extends State<InviteScreen> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_loaded) return;
+    _loaded = true;
     _load();
   }
 
@@ -46,8 +55,7 @@ class _InviteScreenState extends State<InviteScreen> {
     super.dispose();
   }
 
-  String _roleLabel(AppLocalizations l, String role) =>
-      switch (role) {
+  String _roleLabel(AppLocalizations l, String role) => switch (role) {
         'adult' => l.roleAdult,
         'co_parent' => l.roleParent,
         'teen' => l.roleTeen,
@@ -63,13 +71,17 @@ class _InviteScreenState extends State<InviteScreen> {
       setState(() => _invites = list);
     } catch (_) {
       if (!mounted) return;
-      setState(() =>
-          _error = AppLocalizations.of(context)!.invitesLoadFailed);
+      setState(() => _error = AppLocalizations.of(context)!.invitesLoadFailed);
     }
   }
 
   Future<void> _create() async {
     final l = AppLocalizations.of(context)!;
+    final s = AppScope.of(context);
+    if (!s.canInvite) {
+      setState(() => _error = l.inviteOwnerOnly);
+      return;
+    }
     final email = _email.text.trim();
     if (email.isNotEmpty && !RegExp(r'^\S+@\S+\.\S+$').hasMatch(email)) {
       setState(() => _error = l.loginBadEmail);
@@ -126,6 +138,7 @@ class _InviteScreenState extends State<InviteScreen> {
       ),
     );
     if (ok != true) return;
+    if (!mounted) return;
     try {
       await AppScope.of(context).sync?.revokeInvite(inv.id);
       await _load();
@@ -143,9 +156,31 @@ class _InviteScreenState extends State<InviteScreen> {
     SharePlus.instance.share(
       ShareParams(
         text: '${l.inviteShareText} ${inv.link}',
-        title: 'Mhuri Hub',
+        title: 'Mhuri',
       ),
     );
+  }
+
+  Future<void> _showCreateAccount() async {
+    final s = AppScope.of(context);
+    final l = AppLocalizations.of(context)!;
+    if (!s.canInvite) {
+      setState(() => _error = l.inviteOwnerOnly);
+      return;
+    }
+    final created = await showMhuriSheet<bool>(
+      context: context,
+      builder: (_) => _CreateMemberAccountSheet(
+        state: s,
+        ownerCanGrantAdult: s.authRole == Role.owner,
+      ),
+    );
+    if (created != true || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(l.memberAccountCreated),
+      behavior: SnackBarBehavior.floating,
+    ));
+    await s.sync?.syncNow(force: true);
   }
 
   @override
@@ -203,8 +238,8 @@ class _InviteScreenState extends State<InviteScreen> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2))
+                            child: CircularProgressIndicator.adaptive(
+                                strokeWidth: 2))
                         : const Icon(Icons.person_add_alt, size: 18),
                     label: Text(l.inviteCreate),
                   ),
@@ -242,8 +277,8 @@ class _InviteScreenState extends State<InviteScreen> {
                     const SizedBox(height: 6),
                     Text(l.inviteScanHint,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 12.5, color: context.inkSoft)),
+                        style:
+                            TextStyle(fontSize: 12.5, color: context.inkSoft)),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -262,9 +297,9 @@ class _InviteScreenState extends State<InviteScreen> {
                         ),
                         const SizedBox(width: 10),
                         FilledButton.tonalIcon(
-                          onPressed: () => _share(InviteInfo(
-                              id: '', code: _newCode!, role: _role)),
-                          icon: const Icon(Icons.share, size: 16),
+                          onPressed: () => _share(
+                              InviteInfo(id: '', code: _newCode!, role: _role)),
+                          icon: Icon(Icons.adaptive.share, size: 16),
                           label: Text(l.inviteShare),
                         ),
                       ],
@@ -273,6 +308,32 @@ class _InviteScreenState extends State<InviteScreen> {
                 ),
               ),
             ],
+
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.card,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.memberAccountTitle,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text(l.memberAccountSubtitle,
+                      style: TextStyle(fontSize: 12.5, color: context.inkSoft)),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: s.canInvite ? _showCreateAccount : null,
+                    icon: const Icon(Icons.manage_accounts_outlined, size: 19),
+                    label: Text(l.memberAccountAction),
+                  ),
+                ],
+              ),
+            ),
 
             // ── pending ───────────────────────────────────────────────
             const SizedBox(height: 16),
@@ -285,7 +346,7 @@ class _InviteScreenState extends State<InviteScreen> {
             if (_invites == null)
               const Padding(
                 padding: EdgeInsets.all(12),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: CircularProgressIndicator.adaptive()),
               )
             else if (open.isEmpty)
               Padding(
@@ -303,8 +364,7 @@ class _InviteScreenState extends State<InviteScreen> {
                       style: const TextStyle(
                           fontSize: 13.5, fontWeight: FontWeight.w700)),
                   subtitle: inv.email != null
-                      ? Text(inv.email!,
-                          style: const TextStyle(fontSize: 12))
+                      ? Text(inv.email!, style: const TextStyle(fontSize: 12))
                       : null,
                   trailing: IconButton(
                     tooltip: l.inviteRevoke,
@@ -341,14 +401,13 @@ class _InviteScreenState extends State<InviteScreen> {
                     style: TextStyle(
                         fontSize: 13,
                         color: context.inkSoft,
-                        decoration:
-                            inv.revokedAt != null
-                                ? TextDecoration.lineThrough
-                                : null),
+                        decoration: inv.revokedAt != null
+                            ? TextDecoration.lineThrough
+                            : null),
                   ),
                 ),
             ],
-            if (s.user.role != Role.owner)
+            if (!s.canInvite)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
                 child: Text(l.inviteOwnerOnly,
@@ -356,6 +415,189 @@ class _InviteScreenState extends State<InviteScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CreateMemberAccountSheet extends StatefulWidget {
+  const _CreateMemberAccountSheet({
+    required this.state,
+    required this.ownerCanGrantAdult,
+  });
+
+  final AppState state;
+  final bool ownerCanGrantAdult;
+
+  @override
+  State<_CreateMemberAccountSheet> createState() =>
+      _CreateMemberAccountSheetState();
+}
+
+class _CreateMemberAccountSheetState extends State<_CreateMemberAccountSheet> {
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _obscure = true;
+  bool _busy = false;
+  String _role = 'teen';
+  String? _error;
+
+  List<String> get _roles => widget.ownerCanGrantAdult
+      ? const ['co_parent', 'adult', 'teen', 'kid', 'viewer']
+      : const ['teen', 'kid', 'viewer'];
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  String _roleLabel(AppLocalizations l, String role) => switch (role) {
+        'adult' => l.roleAdult,
+        'co_parent' => l.roleParent,
+        'teen' => l.roleTeen,
+        'kid' => l.roleChild,
+        'viewer' => l.roleViewer,
+        _ => role,
+      };
+
+  Future<void> _submit() async {
+    final l = AppLocalizations.of(context)!;
+    final name = _name.text.trim();
+    final email = _email.text.trim();
+    final password = _password.text;
+    if (name.length < 2) {
+      setState(() => _error = l.memberAccountBadName);
+      return;
+    }
+    if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(email)) {
+      setState(() => _error = l.loginBadEmail);
+      return;
+    }
+    if (password.length < 10 ||
+        !RegExp('[A-Za-z]').hasMatch(password) ||
+        !RegExp(r'\d').hasMatch(password)) {
+      setState(() => _error = l.memberAccountPasswordRule);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final engine = widget.state.sync;
+      if (engine == null) {
+        throw const SyncException(0, 'SYNC_NOT_READY');
+      }
+      await engine.createFamilyMember(
+        name: name,
+        email: email,
+        temporaryPassword: password,
+        role: _role,
+      );
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } on SyncException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message.contains('EMAIL_EXISTS')
+            ? l.memberAccountEmailExists
+            : e.message.contains('OWNER_REQUIRED_FOR_ADULT')
+                ? l.memberAccountOwnerRole
+                : l.memberAccountFailed;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = l.memberAccountFailed;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return MhuriSheetShell(
+      title: l.memberAccountTitle,
+      subtitle: l.memberAccountSheetSubtitle,
+      isDirty: _name.text.isNotEmpty ||
+          _email.text.isNotEmpty ||
+          _password.text.isNotEmpty,
+      footer: PrimaryButton(
+        label: l.memberAccountCreate,
+        onPressed: _busy ? null : _submit,
+        busy: _busy,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _name,
+            textCapitalization: TextCapitalization.words,
+            onChanged: (_) => setState(() => _error = null),
+            decoration: InputDecoration(labelText: l.memberAccountName),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            onChanged: (_) => setState(() => _error = null),
+            decoration: InputDecoration(labelText: l.memberAccountEmail),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _password,
+            obscureText: _obscure,
+            autocorrect: false,
+            enableSuggestions: false,
+            onChanged: (_) => setState(() => _error = null),
+            decoration: InputDecoration(
+              labelText: l.memberAccountTemporaryPassword,
+              helperText: l.memberAccountPasswordRule,
+              suffixIcon: IconButton(
+                tooltip: l.resetShow,
+                onPressed: () => setState(() => _obscure = !_obscure),
+                icon: Icon(_obscure
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(l.memberAccountRole,
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final role in _roles)
+                ChoiceChip(
+                  label: Text(_roleLabel(l, role)),
+                  selected: _role == role,
+                  onSelected: (_) => setState(() => _role = role),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(l.memberAccountSecurityNote,
+              style: TextStyle(fontSize: 12, color: context.inkSoft)),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(_error!,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: context.danger)),
+          ],
+        ],
       ),
     );
   }

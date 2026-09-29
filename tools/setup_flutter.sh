@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mhuri Money — sandbox Flutter toolchain setup.
+# Mhuri Money - sandbox Flutter toolchain setup.
 # Idempotent: safe to run every turn; skips work already done.
 # Usage: bash mhuri-money/tools/setup_flutter.sh
 set -e
@@ -30,6 +30,6 @@ flutter config --no-analytics >/dev/null 2>&1 || true
 
 cd /home/user/mhuri-money/app
 flutter pub get 1>/dev/null
-echo "[setup] pub get OK — ready to analyze/test:"
+echo "[setup] pub get OK - ready to analyze/test:"
 echo "  export PATH=$SDK/bin:\$PATH"
 echo "  cd /home/user/mhuri-money/app && flutter analyze && flutter test"

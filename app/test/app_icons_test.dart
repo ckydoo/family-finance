@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mhuri_money/core/widgets/app_icons.dart';
 
-/// M8 polish — icon coverage: every semantic icon KEY used by the seed data
+/// M8 polish - icon coverage: every semantic icon KEY used by the seed data
 /// (envelopes, goals, accounts, members, recurring) must resolve to a
 /// Material icon, so the UI never falls back to the neutral label icon.
 void main() {

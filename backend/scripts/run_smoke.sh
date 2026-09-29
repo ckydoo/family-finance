@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Rebuild a scratch DB from zero (shim + full migration chain) and run the
-# 27-check integrity smoke — the same gates CI runs. Needs psql.
+# 27-check integrity smoke - the same gates CI runs. Needs psql.
 #   ./backend/scripts/run_smoke.sh
 set -euo pipefail
 cd "$(dirname "$0")/../.."

@@ -1,6 +1,6 @@
 -- ============================================================================
--- LIVE SUPABASE SCHEMA — captured 2026-09-22 from the Supabase dashboard
--- (Database → Syntax viewer). REFERENCE ONLY — this is what is ACTUALLY
+-- LIVE SUPABASE SCHEMA - captured 2026-09-22 from the Supabase dashboard
+-- (Database → Syntax viewer). REFERENCE ONLY - this is what is ACTUALLY
 -- deployed. The desired state lives in schema.sql; migrations/ bridge the two.
 --
 -- Reconciliation notes (see migrations/003_email_auth_and_checks.sql):

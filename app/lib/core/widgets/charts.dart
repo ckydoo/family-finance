@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 /// Touch-scrub category donut. Tap a slice (or its legend row) to select it;
 /// the selected slice lifts slightly and [center] shows the details.
 class DonutChart extends StatelessWidget {
-  /// (label, value, color) — values are relative shares.
+  /// (label, value, color) - values are relative shares.
   final List<(String, double, Color)> segments;
   final int selected;
   final ValueChanged<int> onTap;
@@ -89,8 +89,8 @@ class _DonutPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
         ..color = const Color(0xFFECEAE4);
-      canvas.drawCircle(size.center(Offset.zero),
-          (size.width - stroke) / 2, track);
+      canvas.drawCircle(
+          size.center(Offset.zero), (size.width - stroke) / 2, track);
       return;
     }
     final radius = (size.width - stroke) / 2;
@@ -139,34 +139,34 @@ class TrendBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxAbs = bars.fold<double>(
-        1, (a, b) => math.max(a, b.$2.abs().toDouble()));
+    final maxAbs =
+        bars.fold<double>(1, (a, b) => math.max(a, b.$2.abs().toDouble()));
     final summary = 'Net trend: '
         '${bars.map((b) => '${b.$1} ${b.$2 >= 0 ? '+' : '-'}${b.$2.abs().round()}').join(', ')}';
     return Semantics(
       label: summary,
       child: ExcludeSemantics(
-      child: SizedBox(
-      height: height,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (final (label, net) in bars) ...[
-            Expanded(
-              child: _Bar(
-                fraction: (net.abs() / maxAbs).clamp(0.04, 1.0),
-                positive: net >= 0,
-                label: label,
-                positiveColor: positive,
-                negativeColor: negative,
-                track: track,
-                labelColor: labelColor,
-              ),
-            ),
-          ],
-        ],
-      ),
-      ),
+        child: SizedBox(
+          height: height,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (final (label, net) in bars) ...[
+                Expanded(
+                  child: _Bar(
+                    fraction: (net.abs() / maxAbs).clamp(0.04, 1.0),
+                    positive: net >= 0,
+                    label: label,
+                    positiveColor: positive,
+                    negativeColor: negative,
+                    track: track,
+                    labelColor: labelColor,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -213,15 +213,15 @@ class _Bar extends StatelessWidget {
                 ),
               ),
             ),
-            ),
-            const SizedBox(height: 6),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: labelColor)),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: labelColor)),
+        ],
+      ),
     );
   }
 }

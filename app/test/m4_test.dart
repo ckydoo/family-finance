@@ -61,7 +61,7 @@ void main() {
     });
   });
 
-  group('recurring expenses (C7 — reviewed, not silent)', () {
+  group('recurring expenses (C7 - reviewed, not silent)', () {
     late AppDatabase db;
 
     setUp(() async {

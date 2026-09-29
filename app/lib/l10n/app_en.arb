@@ -3,21 +3,34 @@
   "tabHome": "Home",
   "tabBudgets": "Budgets",
   "tabSavings": "Savings",
-  "tabLists": "Lists",
+  "tabLists": "Shopping",
   "tabFamily": "Family",
   "tabActivity": "Activity",
   "greetingMorning": "Good morning",
   "greetingAfternoon": "Good afternoon",
   "greetingEvening": "Good evening",
   "familyPool": "Family Pool",
-  "safeToSpend": "Safe to spend today: {amount}",
+  "availableToSpendLabel": "Available to spend",
+  "savingsExceedsCashTitle": "Not enough available cash",
+  "savingsExceedsCashBody": "This contribution is {amount} more than the cash available to spend.",
+  "@savingsExceedsCashBody": {"placeholders": {"amount": {}}},
+  "goalOverfundTitle": "This exceeds the goal",
+  "goalOverfundBody": "The contribution puts this goal {amount} above its target. Add it anyway?",
+  "@goalOverfundBody": {"placeholders": {"amount": {}}},
+  "addAnyway": "Add anyway",
+  "safeToSpend": "Available today: {amount}",
   "@safeToSpend": {
     "placeholders": {
       "amount": {
-        "type": "String"
       }
     }
   },
+  "flexibleSpendTitle": "Available today",
+  "flexibleSpendExplanation": "What remains today after protecting savings and money reserved in your budgets.",
+  "reservedForEnvelopes": "Reserved for budgets",
+  "freeAfterCommitments": "Free after commitments",
+  "daysRemaining": "Days remaining: {count}",
+  "@daysRemaining": {"placeholders": {"count": {"type": "int"}}},
   "seeAll": "See all",
   "add": "Add",
   "save": "Save",
@@ -30,21 +43,21 @@
   "done": "Done",
   "export": "Export",
   "meeting": "Meeting",
-  "newEnvelope": "New envelope",
-  "recurringExpenses": "Recurring expenses",
+  "newEnvelope": "New budget",
+  "recurringExpenses": "Regular payments",
   "shopping": "Shopping",
   "activityTitle": "Activity",
   "noActivityTitle": "No activity yet",
-  "noActivityHint": "Every expense, income and approval shows up here — add your first one with the + button.",
+  "noActivityHint": "Every expense, income and approval shows up here - add your first one with the + button.",
   "noGoals": "No goals yet",
-  "noGoalsHint": "Start with an emergency fund — even a little each week changes how emergencies feel.",
-  "reportTitle": "Report card",
+  "noGoalsHint": "Start with an emergency fund - even a little each week changes how emergencies feel.",
+  "reportTitle": "Monthly summary",
   "income": "Income",
   "spent": "Spent",
   "saved": "Saved",
-  "safePerDay": "Safe / day",
-  "envelopeHealth": "Envelope health",
-  "cashLeak": "Cash leak",
+  "safePerDay": "Available per day",
+  "envelopeHealth": "Budget progress",
+  "cashLeak": "Cash spending",
   "shareReport": "Share to family group",
   "meetingCta": "Start the family meeting",
   "exportCsv": "Export transactions (CSV)",
@@ -59,13 +72,13 @@
   "myProposals": "My proposals",
   "proposeExpense": "Propose expense",
   "proposeTitle": "Propose an expense",
-  "peek": "Parents let you see this envelope",
+  "peek": "Parents let you see this budget",
   "plan": "Spend · Save · Give plan",
   "settingsTitle": "Settings",
   "remindersOnDevice": "Reminders on this device",
   "remindersSubtitle": "Bills, budgets, kids, goals, savings circles & meetings",
-  "quietHours": "Quiet hours (no notifications inside this window)",
-  "monthStartsOn": "Month starts on",
+  "quietHours": "Quiet hours",
+  "monthStartsOn": "Starts on",
   "language": "Language",
   "largeText": "Large text (easier to read)",
   "exportCsvSettings": "Export transactions (CSV)",
@@ -75,27 +88,24 @@
   "@scheduledOn": {
     "placeholders": {
       "from": {
-        "type": "String"
       },
       "to": {
-        "type": "String"
       }
     }
   },
   "remindersOff": "Reminders are off",
   "nothingComing": "Nothing coming up",
   "ob1Title": "Money, managed together",
-  "ob1Body": "One calm place for everything your family earns, spends, saves and plans — in every currency you use, online or off.",
-  "ob2Title": "Envelopes, not guilt",
-  "ob2Body": "Give every dollar a job. Groceries, school fees, transport — see at a glance what is on track, what needs a top-up, and what is safe to spend today.",
+  "ob1Body": "One calm place for everything your family earns, spends, saves and plans - in every currency you use, online or off.",
+  "ob2Title": "Plan without the guilt",
+  "ob2Body": "Give every dollar a job. Groceries, school fees, transport - see what is on track, what needs attention, and what remains today.",
   "ob3Title": "Built for the whole family",
   "ob3Body": "Partners share the plan. Kids grow jars and stars safely. Teens propose expenses and learn with savings matches. Grandparents keep the savings-circle record.",
   "ob4Title": "Gentle reminders",
-  "syncPill": "{count, plural, =1{1 change saved on this device — syncs when online} other{{count} changes saved on this device — syncs when online}}",
+  "syncPill": "{count, plural, =1{1 change saved on this device - syncs when online} other{{count} changes saved on this device - syncs when online}}",
   "@syncPill": {
     "placeholders": {
       "count": {
-        "type": "int"
       }
     }
   },
@@ -105,17 +115,16 @@
   "themeSystem": "System",
   "themeLight": "Light",
   "themeDark": "Dark",
-  "sixMonthNet": "Six-month net (USD)",
-  "donutEmpty": "No spending recorded yet this cycle — the donut fills as you add expenses.",
-  "ob4Body": "Bill nags, budget watch and the weekly family digest — quiet hours respected, everything on your phone. You are in charge.",
+  "sixMonthNet": "Money left each month (USD)",
+  "donutEmpty": "No spending recorded yet this cycle - the donut fills as you add expenses.",
+  "ob4Body": "Bill nags, budget watch and the weekly family digest - quiet hours respected, everything on your phone. You are in charge.",
   "next": "Next",
-  "loginWelcome": "Welcome to Mhuri Hub",
+  "loginWelcome": "Welcome to Mhuri",
   "loginEnterCode": "Enter the code",
   "loginSentCode": "We sent a code by SMS to {phone}",
   "@loginSentCode": {
     "placeholders": {
       "phone": {
-        "type": "String"
       }
     }
   },
@@ -126,39 +135,35 @@
   "loginBadPhone": "Enter a valid phone number (e.g. +44 7700 900123).",
   "quickAddTitle": "Quick add",
   "expense": "Expense",
-  "envelopeLabel": "Envelope",
+  "envelopeLabel": "Budget",
   "whoLabel": "Who",
   "paidWithLabel": "Paid with",
   "noteHint": "Note (e.g. FreshMart)",
   "enterAmountFirst": "Enter an amount first",
-  "savedOffline": "Saved ✓ — works offline, syncs when online",
+  "savedOffline": "Saved ✓ - works offline, syncs when online",
   "kidsHi": "Hi {name}!",
   "@kidsHi": {
     "placeholders": {
       "name": {
-        "type": "String"
       }
     }
   },
   "kidsMyJar": "My Jar",
-  "kidsGoalSaved": "Goal: {goal} — {pct}% saved",
+  "kidsGoalSaved": "Goal: {goal} - {pct}% saved",
   "@kidsGoalSaved": {
     "placeholders": {
       "goal": {
-        "type": "String"
       },
       "pct": {
-        "type": "int"
       }
     }
   },
   "kidsMyChores": "My Chores",
   "kidsWishList": "Wish List",
-  "kidsWishItem": "Soccer ball — US$25 · saved {amount}",
+  "kidsWishItem": "Soccer ball - US$25 · saved {amount}",
   "@kidsWishItem": {
     "placeholders": {
       "amount": {
-        "type": "String"
       }
     }
   },
@@ -166,12 +171,31 @@
   "kidsDoChore": "Do a chore",
   "kidsAllDone": "All chores done!",
   "kidsParents": "Parents",
+  "kidsNoChores": "No chores are waiting. Ask a parent to add one when you are ready.",
+  "kidsParentArea": "Parent area",
+  "kidsAndChores": "Kids & chores",
+  "addChore": "Add chore",
+  "addChoreHint": "Create a family chore and choose its star reward.",
+  "choreName": "Chore name",
+  "starReward": "Star reward",
+  "choreFieldsRequired": "Enter a chore name and at least 1 star.",
+  "choreAdded": "{name} added for the kids.",
+  "@choreAdded": {"placeholders": {"name": {}}},
+  "noFamilyChores": "No chores yet. Add the first one for the kids.",
+  "choreStars": "{stars} stars",
+  "@choreStars": {"placeholders": {"stars": {}}},
+  "kidsNoWish": "No wish selected yet",
+  "kidsWishProgress": "{name} · {target} goal · {saved} saved",
+  "@kidsWishProgress": {"placeholders": {"name": {}, "target": {}, "saved": {}}},
+  "kidsJars": "Kids' savings",
+  "addKidWish": "Add a kid's wish",
+  "childLabel": "Child",
   "kidsAskTitle": "Ask Mom & Dad",
   "kidsWhatFor": "What for?",
   "kidsDefaultReason": "Pocket money",
   "teenZoneTitle": "Teen Zone · 13–17",
   "teenNoEarnings": "No earnings logged yet",
-  "teenEarnHint": "Wash a car, help at the corner shop — log it and watch your jar grow.",
+  "teenEarnHint": "Wash a car, help at the corner shop - log it and watch your jar grow.",
   "teenSpend": "Spend 50%",
   "teenSave": "Save 40%",
   "teenGive": "Give 10%",
@@ -179,28 +203,29 @@
   "@teenSplitHint": {
     "placeholders": {
       "amount": {
-        "type": "String"
       }
     }
   },
-  "teenSavedJar": "Saved to your jar — parents match 50%",
+  "teenSavedJar": "Saved to your jar - parents match 50%",
+  "teenJarCreateFailed": "Could not prepare your savings jar. Check your connection and try again.",
   "teenWhatDid": "What did you do?",
   "familyTitle": "Family",
   "membersDesc": "Couple + kids · month starts on the 1st",
-  "membersInviteHint": "Share the code or scan to invite a family member",
+  "membersCycleDesc": "Budget cycle starts on day {day}",
+  "@membersCycleDesc": {"placeholders": {"day": {"type": "int"}}},
+  "membersInviteHint": "Create a secure, role-based invitation for each family member",
   "setCurrency": "Currency & rates",
   "setCurrencySub": "USD primary · ZiG secondary · {rate}",
   "@setCurrencySub": {
     "placeholders": {
       "rate": {
-        "type": "String"
       }
     }
   },
   "setPrivacy": "Privacy",
-  "setPrivacySub": "Private pockets: off — partner sees shared only",
+  "setPrivacySub": "Private pockets: off - partner sees shared only",
   "setMonthStart": "Month start day",
-  "setMonthStartSub": "1st — aligns with salary cycle",
+  "setMonthStartSub": "1st - aligns with salary cycle",
   "setNotif": "Notifications",
   "setNotifSub": "Budget 80% warning · bills · kid requests",
   "setBackup": "Backup & export",
@@ -210,22 +235,21 @@
   "figureIncome": "Income",
   "figureSpent": "Spent",
   "figureSaved": "Saved",
-  "mEnvelopeHealth": "Envelope health",
-  "mReachedTalk": "Talk about the envelopes marked \"Reached\". Top them up together — calmly.",
+  "mEnvelopeHealth": "Budget progress",
+  "mReachedTalk": "Talk about the budgets that need attention and adjust them together.",
   "mGoals": "Savings goals",
   "mChores": "Chores, jars & requests",
   "mImprove": "One thing to improve",
-  "recSkipped": "Skipped — next: {date}",
+  "recSkipped": "Skipped - next: {date}",
   "@recSkipped": {
     "placeholders": {
       "date": {
-        "type": "String"
       }
     }
   },
-  "recNew": "New recurring expense",
-  "recReview": "Nothing is charged automatically — you review and post everything.",
-  "recNoEnvelope": "No envelope",
+  "recNew": "New regular payment",
+  "recReview": "Nothing is charged automatically - you review and post everything.",
+  "recNoEnvelope": "No budget",
   "recNextDue": "Next due:",
   "recNameAmount": "Give it a name and an amount",
   "recSaveRule": "Save rule",
@@ -251,28 +275,38 @@
   "rollAccum": "Keep accumulating",
   "freqTerm": "Per term (~3 months)",
   "budgetsTitle": "Budgets",
-  "noEnvelopes": "No envelopes yet",
-  "envelopesHint": "Envelopes are budgets you can see: Groceries, School fees, Transport. Create your first one below.",
-  "newEnvStub": "New envelope — coming in Phase 1",
-  "addRecurringTip": "Add recurring expense",
-  "recReviewed": "Reviewed before posting — nothing is charged silently.",
-  "noRecurring": "No recurring expenses yet",
-  "recurringHint": "Add school fees, rent or airtime rules — we remind you when each one comes due.",
+  "noEnvelopes": "No budgets yet",
+  "envelopesHint": "Create a budget for groceries, school, transport or anything your family plans for.",
+  "newEnvStub": "New budget",
+  "addRecurringTip": "Add regular payment",
+  "recReviewed": "Reviewed before posting - nothing is charged silently.",
+  "noRecurring": "No regular payments yet",
+  "recurringHint": "Add school fees, rent or airtime rules - we remind you when each one comes due.",
   "chipOnTrack": "On track",
   "chipReached": "Reached",
   "remaining": "Remaining",
   "moveMoney": "Move money",
-  "pickFirst": "Pick envelopes and an amount first",
+  "pickFirst": "Choose budgets and an amount first",
   "skipPeriod": "Skip this period",
   "pauseRule": "Pause rule",
   "resumeRule": "Resume rule",
   "meetingHint": "15 minutes, once a month.",
   "mChoresLine": "{stars} stars earned · {requests} request(s) waiting · {proposals} teen proposal(s) waiting.",
-  "meetingNoteHint": "e.g. \"Cook more on Sundays — musika spending is creeping.\"",
+  "@mChoresLine": {
+    "placeholders": {
+      "stars": {
+      },
+      "requests": {
+      },
+      "proposals": {
+      }
+    }
+  },
+  "meetingNoteHint": "e.g. \"Cook more on Sundays - musika spending is creeping.\"",
   "meetingSaveNote": "Save our note",
   "savedTick": "Saved ✓",
-  "meetingDone": "Done — see you next month",
-  "reportCard": "Report card",
+  "meetingDone": "Done - see you next month",
+  "reportCard": "Monthly summary",
   "recentActivity": "Recent activity",
   "swapCurrency": "Swap display currency",
   "yourChild": "Your child",
@@ -287,7 +321,7 @@
   "wrongPin": "Wrong PIN",
   "unlock": "Unlock",
   "addItem": "Add item",
-  "listSharedSub": "Family shopping list · shared with everyone",
+  "listSharedSub": "Your family's shared shopping list",
   "tickFirst": "Tick items off first",
   "namePriceFirst": "Give the item a name and price",
   "addToList": "Add to list",
@@ -295,38 +329,64 @@
   "spaceSetupSub": "Create a space for your family, or join the one your partner created with their invite code. Everything you log then syncs between your phones.",
   "createSpace": "Create space",
   "joinWithCode": "Join with code",
-  "offlineRetry": "Offline — will retry automatically",
+  "offlineRetry": "Offline - will retry automatically",
   "syncProblem": "Sync problem",
-  "signinExpired": "Sign-in expired — sign out and back in",
+  "signinExpired": "Sign-in expired - sign out and back in",
   "syncing": "Syncing…",
   "lastSync": "Last sync: {last}",
+  "@lastSync": {
+    "placeholders": {
+      "last": {
+      }
+    }
+  },
   "familySpace": "Family space",
   "syncNow": "Sync now",
   "createFamilySpace": "Create family space",
   "familyName": "Family name",
-  "localizedNote": "The whole app now speaks six languages — no more EN-only screens.",
+  "localizedNote": "The whole app now speaks six languages - no more EN-only screens.",
   "nextCreateSpace": "Next: create your family space (or join with a code) from the Family tab.",
-  "reachedMove": "{on} of {total} envelopes still on track. Open the ones marked \"Reached\" and move money in — calm, not perfect.",
+  "reachedMove": "{on} of {total} budgets are on track. Open a budget to review or move money.",
+  "@reachedMove": {
+    "placeholders": {
+      "on": {
+      },
+      "total": {
+      }
+    }
+  },
   "cashTrace": "Cash is easy to spend and hard to trace. Paying a bit more by mobile money or bank card keeps the picture clearer.",
-  "whereMoneyWent": "Where the money went",
+  "whereMoneyWent": "Your spending",
   "exportFailed": "Export failed on this device",
   "csvSaved": "CSV saved: {path}",
+  "@csvSaved": {
+    "placeholders": {
+      "path": {
+      }
+    }
+  },
   "exportedPath": "Exported ✓ {path}",
+  "@exportedPath": {
+    "placeholders": {
+      "path": {
+      }
+    }
+  },
   "bringToMeeting": "Bring this to the monthly Family Meeting",
   "savingsTitle": "Savings",
   "markRound": "Mark this round collected",
-  "recordsOnly": "Mhuri Hub never holds the money — records only.",
+  "recordsOnly": "Mhuri never holds the money - records only.",
   "saveContribution": "Save contribution",
   "sendTest": "Send a test notification",
   "testOk": "Reminders are working on this device.",
-  "monthCycle": "Month cycle",
-  "paydayAlign": "Payday-aligned budgets — cycles reset on this day, and the family meeting reminder lands the evening before",
+  "monthCycle": "Budget month",
+  "paydayAlign": "Payday-aligned budgets - cycles reset on this day, and the family meeting reminder lands the evening before",
   "backupComing": "Backup & restore (coming)",
   "fromLabel": "From",
   "addTransaction": "Add transaction",
   "logWhatAmount": "Add what you did and the amount",
   "logIt": "Log it",
-  "fromEnvelope": "From envelope",
+  "fromEnvelope": "From budget",
   "amountPurposeFirst": "Add an amount and what it is for",
   "sentApproval": "Sent to Mom & Dad for approval",
   "sendProposal": "Send proposal",
@@ -334,414 +394,258 @@
   "stApproved": "Approved ✓",
   "stDeclined": "Declined",
   "requestTitle": "{name} requested {amount}",
+  "@requestTitle": {
+    "placeholders": {
+      "name": {
+      },
+      "amount": {
+      }
+    }
+  },
   "proposalTitle": "{name} proposes {amount}",
+  "@proposalTitle": {
+    "placeholders": {
+      "name": {
+      },
+      "amount": {
+      }
+    }
+  },
   "proposalSub": "{reason} · from {env}",
+  "@proposalSub": {
+    "placeholders": {
+      "reason": {
+      },
+      "env": {
+      }
+    }
+  },
   "recDueSub": "Recurring · comes due {when} · post it when you pay it",
+  "@recDueSub": {
+    "placeholders": {
+      "when": {
+      }
+    }
+  },
   "dueNow": "now",
   "dueSoon": "soon",
-  "choreDoneTitle": "\"{name}\" done — confirm?",
-  "choreDoneSub": "{stars} stars — confirm to grow the jar",
-  "circleSub": "{who} to collect {amount} · pot {pot} so far",
-  "@mChoresLine": {
-    "placeholder": {
-      "placeholders": {
-        "stars": {
-          "type": "int"
-        },
-        "requests": {
-          "type": "int"
-        },
-        "proposals": {
-          "type": "int"
-        }
-      }
-    }
-  },
-  "@lastSync": {
-    "placeholder": {
-      "placeholders": {
-        "last": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@reachedMove": {
-    "placeholder": {
-      "placeholders": {
-        "on": {
-          "type": "int"
-        },
-        "total": {
-          "type": "int"
-        }
-      }
-    }
-  },
-  "@csvSaved": {
-    "placeholder": {
-      "placeholders": {
-        "path": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@exportedPath": {
-    "placeholder": {
-      "placeholders": {
-        "path": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@requestTitle": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        },
-        "amount": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@proposalTitle": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        },
-        "amount": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@proposalSub": {
-    "placeholder": {
-      "placeholders": {
-        "reason": {
-          "type": "String"
-        },
-        "env": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@recDueSub": {
-    "placeholder": {
-      "placeholders": {
-        "when": {
-          "type": "String"
-        }
-      }
-    }
-  },
+  "choreDoneTitle": "\"{name}\" done - confirm?",
   "@choreDoneTitle": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        }
+    "placeholders": {
+      "name": {
       }
     }
   },
+  "choreDoneSub": "{stars} stars - confirm to grow the jar",
   "@choreDoneSub": {
-    "placeholder": {
-      "placeholders": {
-        "stars": {
-          "type": "int"
-        }
+    "placeholders": {
+      "stars": {
       }
     }
   },
+  "circleSub": "{who} to collect {amount} · pot {pot} so far",
   "@circleSub": {
-    "placeholder": {
-      "placeholders": {
-        "who": {
-          "type": "String"
-        },
-        "amount": {
-          "type": "String"
-        },
-        "pot": {
-          "type": "String"
-        }
+    "placeholders": {
+      "who": {
+      },
+      "amount": {
+      },
+      "pot": {
       }
     }
   },
   "exportReal": "Export works on a real device",
   "allSynced": "✓ All changes synced",
   "familyCta": "Family ›",
-  "recentInEnv": "Recent in this envelope",
+  "recentInEnv": "Recent activity in this budget",
   "nothingLogged": "Nothing logged here yet.",
   "dueBy": "overdue by {days}d",
+  "@dueBy": {
+    "placeholders": {
+      "days": {
+      }
+    }
+  },
   "dueToday": "due today",
   "dueTomorrow": "due tomorrow",
   "dueIn": "due in {days}d",
-  "circleTitle": "Savings circle — Round {round} of {total}",
-  "postedSnack": "{name} posted ✓ — envelope updated",
+  "@dueIn": {
+    "placeholders": {
+      "days": {
+      }
+    }
+  },
+  "circleTitle": "Savings circle - Round {round} of {total}",
+  "@circleTitle": {
+    "placeholders": {
+      "round": {
+      },
+      "total": {
+      }
+    }
+  },
+  "postedSnack": "{name} posted ✓ - budget updated",
+  "@postedSnack": {
+    "placeholders": {
+      "name": {
+      }
+    }
+  },
   "starsGiven": "{stars} stars given to the kids!",
-  "approvedReq": "Approved ✓ — {amount} added to {name}",
-  "declineBody": "{reason}\n\nFrom envelope: {env}",
-  "approvedProp": "Approved ✓ — {amount} logged to {env}",
+  "@starsGiven": {
+    "placeholders": {
+      "stars": {
+      }
+    }
+  },
+  "approvedReq": "Approved ✓ - {amount} added to {name}",
+  "@approvedReq": {
+    "placeholders": {
+      "amount": {
+      },
+      "name": {
+      }
+    }
+  },
+  "declineBody": "{reason}\n\nFrom budget: {env}",
+  "@declineBody": {
+    "placeholders": {
+      "reason": {
+      },
+      "env": {
+      }
+    }
+  },
+  "approvedProp": "Approved ✓ - {amount} logged to {env}",
+  "@approvedProp": {
+    "placeholders": {
+      "amount": {
+      },
+      "env": {
+      }
+    }
+  },
   "sentKid": "\"{name}\" sent to Mom & Dad",
-  "listEmptyAdd": "Nothing here — add an item with ＋",
+  "@sentKid": {
+    "placeholders": {
+      "name": {
+      }
+    }
+  },
+  "listEmptyAdd": "Nothing here - add an item with ＋",
   "usesPct": "Uses {pct}% of the {name}",
-  "loggedTo": "Logged {amount} to {name} ✓ — envelope updated",
-  "finishShop": "Finish shopping → log expense",
+  "@usesPct": {
+    "placeholders": {
+      "pct": {
+      },
+      "name": {
+      }
+    }
+  },
+  "loggedTo": "Recorded {amount} in {name} ✓ - budget updated",
+  "@loggedTo": {
+    "placeholders": {
+      "amount": {
+      },
+      "name": {
+      }
+    }
+  },
+  "finishShop": "Record shopping expense",
   "estPrice": "Est. unit price ({symbol})",
+  "@estPrice": {
+    "placeholders": {
+      "symbol": {
+      }
+    }
+  },
   "myFamily": "My family",
   "spaceCreated": "Family space created ✓ Invite code: {code}",
-  "createFail": "Could not create the space — try again",
+  "@spaceCreated": {
+    "placeholders": {
+      "code": {
+      }
+    }
+  },
+  "createFail": "Could not create the space - try again",
   "joinSpaceTitle": "Join a family space",
   "inviteCode": "Invite code",
-  "joinedOk": "Joined ✓ — your family data is syncing",
-  "joinFail": "Could not join — try again",
+  "joinedOk": "Joined ✓ - your family data is syncing",
+  "joinFail": "Could not join - try again",
   "kidsPin": "Kids Mode exit PIN",
-  "kidsPinSub": "Required to leave Kids Mode — tap to change",
+  "kidsPinSub": "Required to leave Kids Mode - tap to change",
   "signedInAs": "Signed in: {masked}",
+  "@signedInAs": {
+    "placeholders": {
+      "masked": {
+      }
+    }
+  },
   "signOut": "Sign out",
   "viewAs": "Preview as…",
   "cashShare": "{pct}% of spending",
-  "donutA11y": "Spending by envelope, {name} selected, {share} percent",
-  "starsHome": "{stars} stars — confirm chores on Home to grow jars",
-  "circleMember": "Savings circle · {name}",
-  "potSoFar": "Pot so far: {pot}",
-  "roundOk": "Round recorded ✓ — records only, we never hold money",
-  "addToGoal": "Add to {name}",
-  "addedToGoal": "Added to {name}",
-  "goalBase": "Goal base: {short}",
-  "syncTime": "today at {t}",
-  "@dueBy": {
-    "placeholder": {
-      "placeholders": {
-        "days": {
-          "type": "int"
-        }
-      }
-    }
-  },
-  "@dueIn": {
-    "placeholder": {
-      "placeholders": {
-        "days": {
-          "type": "int"
-        }
-      }
-    }
-  },
-  "@circleTitle": {
-    "placeholder": {
-      "placeholders": {
-        "round": {
-          "type": "int"
-        },
-        "total": {
-          "type": "int"
-        }
-      }
-    }
-  },
-  "@postedSnack": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@starsGiven": {
-    "placeholder": {
-      "placeholders": {
-        "stars": {
-          "type": "int"
-        }
-      }
-    }
-  },
-  "@approvedReq": {
-    "placeholder": {
-      "placeholders": {
-        "amount": {
-          "type": "String"
-        },
-        "name": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@declineBody": {
-    "placeholder": {
-      "placeholders": {
-        "reason": {
-          "type": "String"
-        },
-        "env": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@approvedProp": {
-    "placeholder": {
-      "placeholders": {
-        "amount": {
-          "type": "String"
-        },
-        "env": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@sentKid": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@usesPct": {
-    "placeholder": {
-      "placeholders": {
-        "pct": {
-          "type": "int"
-        },
-        "name": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@loggedTo": {
-    "placeholder": {
-      "placeholders": {
-        "amount": {
-          "type": "String"
-        },
-        "name": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@estPrice": {
-    "placeholder": {
-      "placeholders": {
-        "symbol": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@spaceCreated": {
-    "placeholder": {
-      "placeholders": {
-        "code": {
-          "type": "String"
-        }
-      }
-    }
-  },
-  "@signedInAs": {
-    "placeholder": {
-      "placeholders": {
-        "masked": {
-          "type": "String"
-        }
-      }
-    }
-  },
   "@cashShare": {
-    "placeholder": {
-      "placeholders": {
-        "pct": {
-          "type": "int"
-        }
+    "placeholders": {
+      "pct": {
       }
     }
   },
+  "donutA11y": "Spending by budget, {name} selected, {share} percent",
   "@donutA11y": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        },
-        "share": {
-          "type": "String"
-        }
+    "placeholders": {
+      "name": {
+      },
+      "share": {
       }
     }
   },
+  "starsHome": "{stars} stars - confirm chores on Home to grow jars",
   "@starsHome": {
-    "placeholder": {
-      "placeholders": {
-        "stars": {
-          "type": "int"
-        }
+    "placeholders": {
+      "stars": {
       }
     }
   },
+  "circleMember": "Savings circle · {name}",
   "@circleMember": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        }
+    "placeholders": {
+      "name": {
       }
     }
   },
+  "potSoFar": "Pot so far: {pot}",
   "@potSoFar": {
-    "placeholder": {
-      "placeholders": {
-        "pot": {
-          "type": "String"
-        }
+    "placeholders": {
+      "pot": {
       }
     }
   },
+  "roundOk": "Round recorded ✓ - records only, we never hold money",
+  "addToGoal": "Add to {name}",
   "@addToGoal": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        }
+    "placeholders": {
+      "name": {
       }
     }
   },
+  "addedToGoal": "Added to {name}",
   "@addedToGoal": {
-    "placeholder": {
-      "placeholders": {
-        "name": {
-          "type": "String"
-        }
+    "placeholders": {
+      "name": {
       }
     }
   },
+  "goalBase": "Goal base: {short}",
   "@goalBase": {
-    "placeholder": {
-      "placeholders": {
-        "short": {
-          "type": "String"
-        }
+    "placeholders": {
+      "short": {
       }
     }
   },
+  "syncTime": "today at {t}",
   "@syncTime": {
-    "placeholder": {
-      "placeholders": {
-        "t": {
-          "type": "String"
-        }
+    "placeholders": {
+      "t": {
       }
     }
   },
@@ -749,27 +653,60 @@
   "spentLabel": "Spent",
   "limitLabel": "Limit",
   "envelopeRemaining": "{name} has {amount} remaining",
+  "@envelopeRemaining": {
+    "placeholders": {
+      "name": {
+      },
+      "amount": {
+      }
+    }
+  },
   "envelopeWillLeave": "This leaves {amount} in {name}",
+  "@envelopeWillLeave": {
+    "placeholders": {
+      "amount": {
+      },
+      "name": {
+      }
+    }
+  },
   "envelopeWillExceed": "This puts {name} {amount} over budget",
-  "overBudgetTitle": "This envelope will be over budget",
+  "@envelopeWillExceed": {
+    "placeholders": {
+      "name": {
+      },
+      "amount": {
+      }
+    }
+  },
+  "overBudgetTitle": "This budget will be over its limit",
   "overBudgetBody": "{name} will be over by {amount}. The expense can still be recorded.",
+  "@overBudgetBody": {
+    "placeholders": {
+      "name": {
+      },
+      "amount": {
+      }
+    }
+  },
   "adjustAmount": "Adjust amount",
   "logAnyway": "Log anyway",
   "overBy": "Over by {amount}",
+  "@overBy": {
+    "placeholders": {
+      "amount": {
+      }
+    }
+  },
   "overBudgetLabel": "Over budget",
   "memberPot": "Pot so far: {pot} · {contribution} × {count} members",
   "@memberPot": {
-    "placeholder": {
-      "placeholders": {
-        "pot": {
-          "type": "String"
-        },
-        "contribution": {
-          "type": "String"
-        },
-        "count": {
-          "type": "int"
-        }
+    "placeholders": {
+      "pot": {
+      },
+      "contribution": {
+      },
+      "count": {
       }
     }
   },
@@ -777,12 +714,12 @@
   "switchProfileSub": "Preview the app as another family member",
   "youTag": "You",
   "pickCurrency": "Display currency",
-  "rateField": "ZiG per 1 USD",
+  "rateField": "Exchange rate",
   "rateSave": "Save rate",
-  "rateReset": "Reset to RBZ snapshot",
-  "rateCustomNote": "Used for the ZiG view across the whole app. The bundled RBZ snapshot is 15.27.",
+  "rateReset": "Reset to default rate",
+  "rateCustomNote": "Used for currency conversion across the whole app.",
   "autoHide": "Hide amounts when I leave the app",
-  "autoHideSub": "Balances hide automatically when the app goes to the background — turn off if you prefer.",
+  "autoHideSub": "Balances hide automatically when the app goes to the background - turn off if you prefer.",
   "hideNow": "Hide amounts right now",
   "exportCsvRow": "Export all transactions (CSV)",
   "copyInvite": "Copy invite code",
@@ -815,22 +752,22 @@
   "createAccountHint": "Start your secure family money space.",
   "forgotPassword": "Forgot password?",
   "sendingPasswordReset": "Sending…",
-  "passwordResetSent": "Password reset email sent — open the link on this phone and the app will finish it.",
+  "passwordResetSent": "Password reset email sent - open the link on this phone and the app will finish it.",
   "passwordResetFailed": "We couldn't send the reset email. Check your connection and try again.",
-  "newToMhuri": "New to Mhuri Hub?",
+  "newToMhuri": "New to Mhuri?",
   "alreadyHaveAccount": "Already have an account?",
   "loginBadEmail": "Enter a valid email address.",
   "loginShortPassword": "Password must be at least 6 characters.",
-  "checkYourEmail": "Almost there — check your inbox and confirm your email, then sign in.",
+  "checkYourEmail": "Almost there - check your inbox and confirm your email, then sign in.",
   "togglePassword": "Show or hide password",
   "inviteHowTo": "They create an account with their email, then enter this code to join your family.",
   "obDone": "Let's get started",
   "setupChoiceTitle": "Set up your family",
-  "setupChoiceBody": "Mhuri Hub works for one family, together. Create yours, or join the one you belong to.",
+  "setupChoiceBody": "Mhuri works for one family, together. Create yours, or join the one you belong to.",
   "setupCreateCard": "Create a family",
   "setupCreateCardBody": "Name it, pick your household type, invite your people.",
   "setupJoinCard": "Join with a code",
-  "setupJoinCardBody": "Someone invited you — enter their family code to join them.",
+  "setupJoinCardBody": "Someone invited you - enter their family code to join them.",
   "createFamilyCta": "Create family",
   "joinFamilyCta": "Join family",
   "familyNameLabel": "Family name",
@@ -847,30 +784,30 @@
   "skipForNow": "Skip for now",
   "setupInviteTitle": "Invite members",
   "setupWorking": "Setting things up…",
-  "noEnvelopesYet": "No envelopes yet — create your first one from the Budgets tab to start tracking spending.",
-  "noActivityYet": "Nothing recorded yet. Tap + to add your first transaction.",
+  "noEnvelopesYet": "No budgets yet - create one from the Budgets tab to start planning your spending.",
+  "noActivityYet": "No activity yet. Tap + to record money coming in or spending.",
   "setupBanner": "Finish setting up: create your family or join with a code",
   "setupBannerCta": "Set up",
   "deleteTypeHint": "Type DELETE to confirm",
   "deletePermanently": "Delete permanently",
-  "errInviteCode": "Enter the invite code from the family owner — it looks like MHRI-4F2A.",
-  "errFamilyNameTaken": "That family name is already taken — try another name.",
-  "authErrEmailNotConfirmed": "Check your inbox — tap the confirmation link first, then sign in.",
+  "errInviteCode": "Enter the invite code from the family owner - it looks like MHRI-4F2A.",
+  "errFamilyNameTaken": "That family name is already taken - try another name.",
+  "authErrEmailNotConfirmed": "Check your inbox - tap the confirmation link first, then sign in.",
   "authErrBadCredentials": "Email or password is wrong.",
-  "authErrAlreadyRegistered": "An account with this email already exists — sign in instead.",
-  "authErrRateLimited": "Too many attempts — wait a minute and try again.",
-  "authErrNetwork": "No connection — check your internet and try again.",
+  "authErrAlreadyRegistered": "An account with this email already exists - sign in instead.",
+  "authErrRateLimited": "Too many attempts - wait a minute and try again.",
+  "authErrNetwork": "No connection - check your internet and try again.",
   "authResend": "Resend confirmation email",
-  "authResent": "Confirmation email sent — check your inbox.",
+  "authResent": "Confirmation email sent - check your inbox.",
   "mukandoOn": "Savings circle (mukando)",
-  "mukandoEnableTitle": "Mukando — rotating savings",
-  "mukandoEnableSub": "Save in turns with your family. Off by default — turn it on if your circle does rounds.",
+  "mukandoEnableTitle": "Mukando - rotating savings",
+  "mukandoEnableSub": "Save in turns with your family. Off by default - turn it on if your circle does rounds.",
   "mukandoEnableCta": "Turn on mukando",
   "addPhoto": "Use photo",
   "removePhoto": "Remove photo",
   "photoUploading": "Uploading photo…",
-  "photoFailed": "Could not upload the photo — check your connection and try again.",
-  "photoSaved": "Photo saved — your family will see it too.",
+  "photoFailed": "Could not upload the photo - check your connection and try again.",
+  "photoSaved": "Photo saved - your family will see it too.",
   "newSavingsGoal": "New savings goal",
   "createSavingsGoal": "Create savings goal",
   "goalName": "Goal name",
@@ -878,12 +815,12 @@
   "targetAmount": "Target amount",
   "createGoal": "Create goal",
   "goalNameAmountFirst": "Add a goal name and a target greater than zero.",
-  "shoppingLogged": "Shopping logged",
+  "shoppingLogged": "No shopping to record",
   "loggedItem": "Logged",
   "syncDataTitle": "Sync & data",
   "syncStateSyncing": "Syncing…",
   "syncStateError": "Waiting to retry",
-  "syncStateOffline": "Offline — changes save on this phone",
+  "syncStateOffline": "Offline - changes save on this phone",
   "syncStateNeedsSignIn": "Sign in to sync",
   "syncStateSaved": "Saved on this phone",
   "syncNowBtn": "Sync now",
@@ -894,12 +831,18 @@
   "syncErrorLabel": "Last issue",
   "syncWhereTitle": "Where your data lives",
   "syncConnectedTo": "Family cloud:",
-  "syncNotConnected": "This device only — no family cloud connected yet.",
+  "syncNotConnected": "This device only - no family cloud connected yet.",
   "syncBackupNote": "There is no separate backup to switch on. Every change is saved on this phone the moment you make it and syncs to the family cloud whenever you have data. Export a CSV below anytime for a copy you keep.",
   "previewBanner": "Previewing as {name}",
+  "@previewBanner": {
+    "placeholders": {
+      "name": {
+      }
+    }
+  },
   "previewExit": "Exit",
   "resetTitle": "Choose a new password",
-  "resetSubtitle": "You are signed in from the reset link — now pick a new password.",
+  "resetSubtitle": "You are signed in from the reset link - now pick a new password.",
   "resetNewLabel": "New password",
   "resetConfirmLabel": "Confirm new password",
   "resetMismatch": "The two passwords do not match",
@@ -907,44 +850,110 @@
   "resetRuleMix": "Has a letter and a number",
   "resetRuleHint": "Use at least 8 characters, with a letter and a number.",
   "resetCta": "Change password",
-  "resetSuccess": "Password changed — sign in with your new password",
+  "resetSuccess": "Password changed - sign in with your new password",
   "resetShow": "Show or hide password",
   "resetExpiredTitle": "This link has expired",
   "resetExpiredBody": "Reset links work once and only for a short time. Send a fresh one and try again.",
   "resetSendNew": "Send a new reset link",
   "listDelete": "Delete item",
   "listDeleted": "\"{name}\" removed from the list",
+  "@listDeleted": {
+    "placeholders": {
+      "name": {
+      }
+    }
+  },
+  "memberAccountTitle": "Create member account",
+  "memberAccountSubtitle": "Set up an account for someone who should join this family immediately.",
+  "memberAccountAction": "Create account for member",
+  "memberAccountSheetSubtitle": "They can sign in immediately without using an invite code.",
+  "memberAccountName": "Preferred name",
+  "memberAccountEmail": "Email address",
+  "memberAccountTemporaryPassword": "Temporary password",
+  "memberAccountPasswordRule": "At least 10 characters, with a letter and a number",
+  "memberAccountRole": "Family role",
+  "memberAccountSecurityNote": "Share the temporary password privately. Ask them to use Forgot password to choose their own password after signing in.",
+  "memberAccountCreate": "Create member account",
+  "memberAccountCreated": "Member account created and added to your family.",
+  "memberAccountBadName": "Enter their preferred name.",
+  "memberAccountEmailExists": "That email already has an account. Use the regular invite flow instead.",
+  "memberAccountOwnerRole": "Only the family owner can create another parent or adult account.",
+  "memberAccountFailed": "Could not create the member account. Check your connection and try again.",
   "inviteNew": "New invite",
-  "inviteEmailOptional": "Their email (optional — only they can use it)",
+  "inviteEmailOptional": "Their email (optional - only they can use it)",
   "inviteCreate": "Create invite",
   "inviteCreated": "Show this code or QR to them",
-  "inviteScanHint": "They scan the QR with their camera, or tap the link — it opens this app ready to join.",
+  "inviteScanHint": "They scan the QR with their camera, or tap the link - it opens this app ready to join.",
   "inviteShare": "Share",
-  "inviteShareText": "Join our family on Mhuri Hub — your invite:",
+  "inviteShareText": "Join our family on Mhuri - your invite:",
   "invitePending": "Open invites",
   "inviteNone": "No open invites.",
   "inviteHistory": "Earlier invites",
-  "inviteAcceptedLabel": "{code} — joined ({role})",
+  "inviteAcceptedLabel": "{code} - joined ({role})",
+  "@inviteAcceptedLabel": {
+    "placeholders": {
+      "code": {
+      },
+      "role": {
+      }
+    }
+  },
   "inviteRevoke": "Revoke",
   "inviteRevokeBody": "Revoke invite {code}? They will not be able to join with it.",
-  "inviteFailed": "Could not create the invite — check your connection and try again.",
-  "inviteTooMany": "There are already 5 open invites — revoke one first.",
+  "@inviteRevokeBody": {
+    "placeholders": {
+      "code": {
+      }
+    }
+  },
+  "inviteFailed": "Could not create the invite - check your connection and try again.",
+  "inviteTooMany": "There are already 5 open invites - revoke one first.",
   "inviteOwnerOnly": "Only the family owner manages invites.",
-  "inviteLinkReady": "Invite {code} is waiting — join the family below.",
-  "inviteAlreadyInFamily": "You are already in a family — invites are for joining a new one.",
+  "inviteLinkReady": "Invite {code} is waiting - join the family below.",
+  "@inviteLinkReady": {
+    "placeholders": {
+      "code": {
+      }
+    }
+  },
+  "inviteAlreadyInFamily": "You are already in a family - invites are for joining a new one.",
   "makeOwner": "Make owner",
   "makeOwnerBody": "Make {name} the family owner? You become a regular adult member and they manage invites and settings.",
+  "@makeOwnerBody": {
+    "placeholders": {
+      "name": {
+      }
+    }
+  },
   "makeOwnerDone": "{name} is now the family owner",
-  "makeOwnerFailed": "Could not transfer ownership — check your connection and try again.",
+  "@makeOwnerDone": {
+    "placeholders": {
+      "name": {
+      }
+    }
+  },
+  "makeOwnerFailed": "Could not transfer ownership - check your connection and try again.",
   "roleParent": "Parent",
   "roleChild": "Child",
   "syncProblemsTitle": "Changes that need you",
-  "syncProblemsBody": "These changes could not reach the family cloud after several tries. Retry them, or discard them — nothing is removed without your say-so.",
+  "syncProblemsBody": "These changes could not reach the family cloud after several tries. Retry them, or discard them - nothing is removed without your say-so.",
   "syncRetryThis": "Try again",
   "syncDiscardThis": "Discard",
   "syncDiscardTitle": "Discard this change?",
   "syncDiscardBody": "“{what}” stays only on this phone and will never reach the family cloud. Discard it?",
+  "@syncDiscardBody": {
+    "placeholders": {
+      "what": {
+      }
+    }
+  },
   "syncTries": "{tries} tries so far",
+  "@syncTries": {
+    "placeholders": {
+      "tries": {
+      }
+    }
+  },
   "syncKindTx": "Expense",
   "syncKindEnvelope": "Budget",
   "syncKindGoal": "Savings goal",
@@ -953,8 +962,24 @@
   "syncKindOther": "Change",
   "setupInviteCopied": "Invite copied.",
   "setupBadEmail": "Enter a valid email address.",
-  "setupInviteText": "Join {family} on Mhuri Hub with invite code {code}. Suggested role: {role}.",
-  "setupInviteSubject": "Join {family} on Mhuri Hub",
+  "setupInviteText": "Join {family} on Mhuri with invite code {code}. Suggested role: {role}.",
+  "@setupInviteText": {
+    "placeholders": {
+      "family": {
+      },
+      "code": {
+      },
+      "role": {
+      }
+    }
+  },
+  "setupInviteSubject": "Join {family} on Mhuri",
+  "@setupInviteSubject": {
+    "placeholders": {
+      "family": {
+      }
+    }
+  },
   "setupTagline": "One family. One plan.",
   "setupPhotoOptional": "Add profile photo (optional)",
   "setupHaveCode": "I have an invite code",
@@ -980,8 +1005,14 @@
   "setupPermBudget": "View family budget",
   "setupFinish": "Finish setup",
   "setupStepOf": "Step {n} of 3",
+  "@setupStepOf": {
+    "placeholders": {
+      "n": {
+      }
+    }
+  },
   "deleteWhatTitle": "What happens when you delete",
-  "deleteWhatOwner": "You are the family owner: the whole family space is deleted — every account, budget, transaction and list, for everyone. This cannot be undone.",
+  "deleteWhatOwner": "You are the family owner: the whole family space is deleted - every account, budget, transaction and list, for everyone. This cannot be undone.",
   "deleteWhatMember": "You leave the family. Your membership ends, your photo and email are removed, and your past transactions remain but show as “Former member”. Everyone else keeps their data.",
   "deleteWhatSessions": "Every sign-in on every device is signed out.",
   "deleteStepLeave": "Leaving the family…",
@@ -1009,6 +1040,29 @@
   "avatarError": "Couldn't update that photo. Try another one.",
   "invitesLoadFailed": "Could not load invites. Pull to refresh.",
   "filterAll": "All ({n})",
+  "@filterAll": {
+    "placeholders": {
+      "n": {
+      }
+    }
+  },
   "envLabel": "Environment",
-  "syncStateNeedsSetup": "Set up your family to sync"
+  "syncStateNeedsSetup": "Set up your family to sync",
+  "tourTitle": "A quick tour",
+  "tourPoolTitle": "Know what is available",
+  "tourPoolBody": "Home shows your family pool, recent activity and the budgets that need attention.",
+  "tourPlanTitle": "Give every dollar a job",
+  "tourPlanBody": "Use Budgets to plan spending, Savings for goals, and Shopping for the shared family list.",
+  "tourAddTitle": "Add money in seconds",
+  "tourAddBody": "Start here. Add money you've spent or received.",
+  "reminderBills": "Bills due (3 days before)",
+  "reminderBudget": "Budget running low",
+  "reminderKids": "Kids: requests & chore approvals",
+  "reminderCircle": "Savings group reminder (Sunday)",
+  "reminderGoals": "Goal milestones",
+  "reminderMeeting": "Family meeting day",
+  "reminderDigest": "Weekly digest (Sunday 6pm)",
+  "notificationsDenied": "Notifications are disabled for Mhuri. Enable them in your device settings.",
+  "testNotificationSent": "Test notification sent.",
+  "testNotificationFailed": "Could not send the test notification."
 }

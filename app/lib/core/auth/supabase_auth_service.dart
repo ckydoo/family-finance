@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -12,7 +13,7 @@ import 'recovery_link.dart';
 typedef KvGetter = Future<String?> Function(String key);
 typedef KvSetter = Future<void> Function(String key, String value);
 
-/// Real email+password auth against Supabase's GoTrue REST API — hand-written
+/// Real email+password auth against Supabase's GoTrue REST API - hand-written
 /// so the app does not need the Supabase SDK. Only four stable endpoints are
 /// used, and the HTTP client is injectable, so the whole flow is testable
 /// offline (see test/auth_test.dart).
@@ -56,11 +57,43 @@ class SupabaseAuthService implements AuthService {
 
   Future<http.Response> _post(Uri url,
       {Map<String, String>? headers, Object? body}) async {
-    try {
-      return await _post(url, headers: headers, body: body).timeout(_timeout);
-    } on TimeoutException {
-      throw Exception('Request timed out — check your internet connection.');
+    return _client.post(url, headers: headers, body: body).timeout(_timeout);
+  }
+
+  Future<http.Response> _put(Uri url,
+      {Map<String, String>? headers, Object? body}) async {
+    return _client.put(url, headers: headers, body: body).timeout(_timeout);
+  }
+
+  AuthResult _connectionFailure(Object error) {
+    if (error is TimeoutException) {
+      return const AuthResult.failure(
+        'The server took too long to respond. Try again.',
+        code: 'network',
+      );
     }
+    if (error is HandshakeException) {
+      return const AuthResult.failure(
+        'Could not establish a secure connection. Check the device date and network security settings.',
+        code: 'network',
+      );
+    }
+    if (error is SocketException) {
+      return const AuthResult.failure(
+        'Could not reach the Mhuri server. Check DNS, VPN or mobile-data access and try again.',
+        code: 'network',
+      );
+    }
+    if (error is FormatException) {
+      return const AuthResult.failure(
+        'The server returned an invalid response. Please try again shortly.',
+        code: 'network',
+      );
+    }
+    return const AuthResult.failure(
+      'Could not contact the Mhuri server. Try again.',
+      code: 'network',
+    );
   }
 
   @override
@@ -78,15 +111,13 @@ class SupabaseAuthService implements AuthService {
         final e = _errorInfo(r);
         return AuthResult.failure(e.$1, code: e.$2);
       }
-      final session = _sessionFrom(r.body);
+      final session = await _sessionFrom(r.body);
       if (session == null) {
-        return const AuthResult.failure('Sign-in failed — try again.');
+        return const AuthResult.failure('Sign-in failed - try again.');
       }
       return const AuthResult.success();
-    } catch (_) {
-      return const AuthResult.failure(
-          'Network error — check your connection and try again.',
-          code: 'network');
+    } catch (error) {
+      return _connectionFailure(error);
     }
   }
 
@@ -105,7 +136,7 @@ class SupabaseAuthService implements AuthService {
       final body = jsonDecode(r.body) as Map<String, dynamic>;
       if (body['access_token'] is String &&
           (body['access_token'] as String).isNotEmpty) {
-        _sessionFrom(r.body);
+        await _sessionFrom(r.body);
         return const AuthResult.success();
       }
       // Any successful sessionless signup means Supabase accepted the account
@@ -113,10 +144,8 @@ class SupabaseAuthService implements AuthService {
       // exact success payload differs across GoTrue versions, so do not depend
       // on a nested `user` field being present.
       return const AuthResult.confirmationNeeded();
-    } catch (_) {
-      return const AuthResult.failure(
-          'Network error — check your connection and try again.',
-          code: 'network');
+    } catch (error) {
+      return _connectionFailure(error);
     }
   }
 
@@ -160,11 +189,11 @@ class SupabaseAuthService implements AuthService {
     final access = await _kvGet?.call('auth_access_token');
     if (access == null || access.isEmpty) {
       return const AuthResult.failure(
-          'This reset link has expired — request a new one.',
+          'This reset link has expired - request a new one.',
           code: 'reset_expired');
     }
     try {
-      final response = await _post(
+      final response = await _put(
         Uri.parse('$_base/auth/v1/user'),
         headers: {..._headers, 'Authorization': 'Bearer $access'},
         body: jsonEncode({'password': newPassword}),
@@ -175,15 +204,13 @@ class SupabaseAuthService implements AuthService {
       if (response.statusCode == 401) {
         // The recovery session from the (single-use) link is gone.
         return const AuthResult.failure(
-            'This reset link has expired — request a new one.',
+            'This reset link has expired - request a new one.',
             code: 'reset_expired');
       }
       final e = _errorInfo(response);
       return AuthResult.failure(e.$1, code: e.$2);
-    } catch (_) {
-      return const AuthResult.failure(
-          'Network error — check your connection and try again.',
-          code: 'network');
+    } catch (error) {
+      return _connectionFailure(error);
     }
   }
 
@@ -208,7 +235,7 @@ class SupabaseAuthService implements AuthService {
 
   /// Parses tokens out of a GoTrue response body, caches the session and
   /// persists it. Returns the session, or null when the body has no tokens.
-  AuthSession? _sessionFrom(String body) {
+  Future<AuthSession?> _sessionFrom(String body) async {
     final map = jsonDecode(body) as Map<String, dynamic>;
     final access = map['access_token'] as String?;
     final refresh = map['refresh_token'] as String?;
@@ -217,7 +244,7 @@ class SupabaseAuthService implements AuthService {
     final email = (user?['email'] ?? map['email'] ?? '').toString();
     if (access == null || access.isEmpty) return null;
     _session = AuthSession(userId: userId, email: email);
-    _persistTokens(
+    await _persistTokens(
         access: access, refresh: refresh, userId: userId, email: email);
     return _session;
   }
@@ -237,7 +264,7 @@ class SupabaseAuthService implements AuthService {
       return _session;
     }
 
-    // Try to refresh; only a definite rejection (400/401 — dead refresh
+    // Try to refresh; only a definite rejection (400/401 - dead refresh
     // token) clears the session for a clean re-login. Transient failures
     // (5xx, rate limits, offline bodies) MUST NOT wipe the stored tokens:
     // that produced a "logged-in app with empty JWT" state.
@@ -320,7 +347,7 @@ class SupabaseAuthService implements AuthService {
         );
       }
     } catch (_) {
-      // Best effort — local sign-out always succeeds.
+      // Best effort - local sign-out always succeeds.
     }
     _session = null;
     await _clearTokens();
@@ -348,8 +375,16 @@ class SupabaseAuthService implements AuthService {
       return const AuthResult.success();
     } catch (_) {
       return const AuthResult.failure(
-          'Network error — check your connection and try again.');
+          'Network error - check your connection and try again.');
     }
+  }
+
+  @override
+  Future<bool> reauthenticate(String password) async {
+    final email = _session?.email;
+    if (email == null || email.isEmpty) return false;
+    final res = await signIn(email, password);
+    return res.ok;
   }
 
   Future<void> _persistTokens({
@@ -374,7 +409,7 @@ class SupabaseAuthService implements AuthService {
   }
 
   /// Maps a GoTrue error response to (message, code) so the UI can explain
-  /// what actually happened — "confirm your email" says exactly that.
+  /// what actually happened - "confirm your email" says exactly that.
   (String, String?) _errorInfo(http.Response r) {
     String raw = '';
     try {
@@ -392,7 +427,7 @@ class SupabaseAuthService implements AuthService {
 
     if (low.contains('email_not_confirmed') || low.contains('not confirmed')) {
       return (
-        'Check your inbox — tap the confirmation link first, then sign in.',
+        'Check your inbox - tap the confirmation link first, then sign in.',
         'email_not_confirmed'
       );
     }
@@ -400,7 +435,7 @@ class SupabaseAuthService implements AuthService {
         low.contains('user_already_exists') ||
         low.contains('already exists')) {
       return (
-        'An account with this email already exists — sign in instead.',
+        'An account with this email already exists - sign in instead.',
         'already_registered'
       );
     }
@@ -408,7 +443,7 @@ class SupabaseAuthService implements AuthService {
         low.contains('over_request') ||
         r.statusCode == 429) {
       return (
-        'Too many attempts — wait a minute and try again.',
+        'Too many attempts - wait a minute and try again.',
         'rate_limited'
       );
     }
@@ -417,11 +452,11 @@ class SupabaseAuthService implements AuthService {
       return ('Email or password is wrong.', 'invalid_credentials');
     }
     if (low.contains('ownership_transfer_required')) {
-      // delete_own_account refuses while other members exist — the owner
+      // delete_own_account refuses while other members exist - the owner
       // must hand the family to another adult first (migration 008 rule).
       return (
         'You are the family owner. Make another adult the owner first '
-        '(Family → their profile), then delete your account.',
+            '(Family → their profile), then delete your account.',
         'ownership_transfer_required'
       );
     }

@@ -16,8 +16,8 @@ class AuthController extends ChangeNotifier {
     KvSetter? kvSet,
   }) : _service = service ??
             SupabaseAuthService(
-              baseUrl: env.supabaseUrl!,
-              anonKey: env.supabaseAnonKey!,
+              baseUrl: env.supabaseUrl ?? '',
+              anonKey: env.supabaseAnonKey ?? '',
               kvGet: kvGet,
               kvSet: kvSet,
             );
@@ -39,7 +39,7 @@ class AuthController extends ChangeNotifier {
   /// invalid_credentials, already_registered, rate_limited, network…).
   String? get lastErrorCode => _lastErrorCode;
 
-  /// True after a sign-up that requires email confirmation — the login screen
+  /// True after a sign-up that requires email confirmation - the login screen
   /// shows "check your inbox" and returns to sign-in mode.
   bool get needsConfirmation => _needsConfirmation;
   bool get busy => _busy;
@@ -59,12 +59,12 @@ class AuthController extends ChangeNotifier {
     final r = await _service.signIn(email, password);
     _busy = false;
     if (r.ok) {
-      // The service cached the session while persisting its tokens — use it
+      // The service cached the session while persisting its tokens - use it
       // directly. (Never fabricate one: a session without stored tokens sent
       // empty JWTs to the server.)
       _session = _service.session;
       if (_session == null) {
-        _lastError = 'Sign-in could not be completed — try again.';
+        _lastError = 'Sign-in could not be completed - try again.';
         notifyListeners();
         return false;
       }
@@ -93,7 +93,7 @@ class AuthController extends ChangeNotifier {
       }
       _session = _service.session;
       if (_session == null) {
-        _lastError = 'Account created but sign-in could not be completed — '
+        _lastError = 'Account created but sign-in could not be completed - '
             'sign in with your new password.';
         notifyListeners();
         return false;
@@ -118,14 +118,13 @@ class AuthController extends ChangeNotifier {
   Future<AuthResult> updatePassword(String newPassword) =>
       _service.updatePassword(newPassword);
 
-  /// Recovery step 1: the app opened the reset link — adopt the session it
+  /// Recovery step 1: the app opened the reset link - adopt the session it
   /// carries so the user can pick a new password. The controller mirrors the
   /// service session so the UI (and a mid-flow restart) knows we're signed
   /// in with a recovery session.
   Future<bool> adoptRecoverySession(
       String accessToken, String refreshToken) async {
-    final ok =
-        await _service.adoptRecoverySession(accessToken, refreshToken);
+    final ok = await _service.adoptRecoverySession(accessToken, refreshToken);
     if (ok) {
       _session = _service.session;
       notifyListeners();
@@ -159,5 +158,29 @@ class AuthController extends ChangeNotifier {
     _session = null;
     notifyListeners();
     return true;
+  }
+
+  Future<bool> reauthenticate(String password) async {
+    _lastError = null;
+    _busy = true;
+    notifyListeners();
+    final ok = await _service.reauthenticate(password);
+    _busy = false;
+    if (!ok) {
+      _lastError = 'Incorrect password.';
+    }
+    notifyListeners();
+    return ok;
+  }
+
+  /// Called when the server revokes the user's session or token refresh fails (401).
+  /// Clears the active session so the app routes to sign-in, while preserving
+  /// local database and pending outbox changes for recovery upon re-authenticating.
+  void handleForcedLogout({String? reason}) {
+    _session = null;
+    _lastError =
+        reason ?? 'Your session expired or was revoked. Please sign in again.';
+    _lastErrorCode = 'session_revoked';
+    notifyListeners();
   }
 }

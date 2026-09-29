@@ -2,13 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/auth/auth_controller.dart';
 import 'package:mhuri_money/core/auth/auth_service.dart';
 import 'package:mhuri_money/core/config/app_env.dart';
+import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/core/sync/sync_mappers.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:mhuri_money/core/db/app_database.dart';
 
-/// REAL-DATA GUARANTEE: the app is live-only — a fresh install boots EMPTY,
+/// REAL-DATA GUARANTEE: the app is live-only - a fresh install boots EMPTY,
 /// no fixtures anywhere. Identity is bootstrapped only by adopting a family
 /// space (create/join). The fake auth below is a deterministic test double
 /// for the AuthService interface (no network).
@@ -52,9 +53,28 @@ class FakeAuthService implements AuthService {
   Future<bool> sendPasswordReset(String email) async => true;
 
   @override
+  Future<AuthResult> updatePassword(String newPassword) async => _session ==
+          null
+      ? const AuthResult.failure('No recovery session.', code: 'reset_expired')
+      : const AuthResult.success();
+
+  @override
+  Future<bool> adoptRecoverySession(
+      String accessToken, String refreshToken) async {
+    _session = const AuthSession(
+      userId: 'test-user-1',
+      email: 'reset@example.com',
+    );
+    return true;
+  }
+
+  @override
   Future<void> signOut() async {
     _session = null;
   }
+
+  @override
+  Future<bool> reauthenticate(String password) async => password.length >= 6;
 
   @override
   Future<AuthResult> deleteAccount() async {
@@ -72,8 +92,11 @@ void main() {
   Future<(AppState, AuthController)> liveState() async {
     final raw = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
-      version: 1,
-      onCreate: (d, v) async => await AppDatabase.createSchema(d),
+      options: OpenDatabaseOptions(
+        version: 1,
+        singleInstance: false,
+        onCreate: (d, v) async => AppDatabase.createSchema(d),
+      ),
     );
     final env = AppEnv.parse(
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
@@ -87,7 +110,7 @@ void main() {
   }
 
   /// Builds a live AppState over an EXISTING raw database (for upgrade /
-  /// legacy-purge scenarios). Untyped raw on purpose — ffi Database type.
+  /// legacy-purge scenarios). Untyped raw on purpose - ffi Database type.
   Future<(AppState, AuthController)> stateOn(raw) async {
     final env = AppEnv.parse(
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
@@ -105,8 +128,11 @@ void main() {
   Future<(AppState, AuthController, Database)> liveStateRaw() async {
     final raw = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
-      version: 1,
-      onCreate: (d, v) async => await AppDatabase.createSchema(d),
+      options: OpenDatabaseOptions(
+        version: 1,
+        singleInstance: false,
+        onCreate: (d, v) async => AppDatabase.createSchema(d),
+      ),
     );
     final env = AppEnv.parse(
       'SUPABASE_URL=https://abcdefgh.supabase.co\n'
@@ -182,7 +208,8 @@ void main() {
     expect(roster.first.id, meId); // me first
     expect(roster, hasLength(3));
     final mai = roster.firstWhere((m) => m.id == 'uuid-mai');
-    expect(mai.role, Role.adult); // co_parent maps to adult
+    expect(mai.role, Role.owner); // co_parent is an additional Family Admin
+    expect(mai.serverRole, 'co_parent');
     expect(mai.name, 'Mai');
     expect(roster.firstWhere((m) => m.id == 'uuid-zoe').role, Role.kid);
   });
@@ -196,13 +223,54 @@ void main() {
     // Server still says 'Member' for me (003/SQL rename not yet applied).
     await s.setFamilyMembers([
       Member(id: meId, name: 'Member', emoji: 'person', role: Role.owner),
-      Member(id: 'uuid-mai', name: 'Mai', emoji: 'person', role: Role.adult),
+      const Member(
+          id: 'uuid-mai', name: 'Mai', emoji: 'person', role: Role.adult),
     ]);
 
     expect(s.members, hasLength(2));
     expect(s.user.id, meId); // binding survives the merge
     expect(s.user.name, 'tendi'); // local display name kept
     expect(s.members.any((m) => m.id == 'uuid-mai' && m.name == 'Mai'), isTrue);
+  });
+
+  test('profile avatar survives roster refresh and profile edits', () async {
+    final (s, _) = await liveState();
+    s.onSpaceAdopted(spaceName: 'Marufu');
+    final meId = s.user.id;
+    const avatar = 'https://example.test/storage/avatar.jpg';
+    s.setMyAvatar(avatar);
+
+    // A startup pull may briefly return an older profile row with no avatar.
+    await s.setFamilyMembers([
+      Member(id: meId, name: 'Member', emoji: 'person', role: Role.owner),
+    ]);
+    expect(s.user.avatarUrl, avatar);
+    expect(s.members.single.avatarUrl, avatar);
+
+    // Editing the display name/avatar icon must not clear the photo URL.
+    s.updateMember(meId, name: 'Tendai', emoji: 'woman');
+    expect(s.user.avatarUrl, avatar);
+    expect(s.members.single.avatarUrl, avatar);
+  });
+
+  test('server profile avatar is retained in the family roster', () async {
+    final (s, _) = await liveState();
+    s.onSpaceAdopted(spaceName: 'Marufu');
+    final meId = s.user.id;
+    const avatar = 'https://example.test/storage/server-avatar.jpg';
+
+    await s.setFamilyMembers([
+      Member(
+        id: meId,
+        name: 'Tendai',
+        emoji: 'person',
+        role: Role.owner,
+        avatarUrl: avatar,
+      ),
+    ]);
+
+    expect(s.user.avatarUrl, avatar);
+    expect(s.members.single.avatarUrl, avatar);
   });
 
   test('applyEnvelopeLinks mirrors server links, persists, skips no-ops',
@@ -249,7 +317,7 @@ void main() {
 
   test('server FX fills the gap; a custom user rate wins', () async {
     final (s, _, raw) = await liveStateRaw();
-    expect(s.rate, 15.27); // boot default
+    expect(s.rate, Currency.usd.defaultRateTo(Currency.zwg));
 
     await s.applyServerRate(15.95);
     expect(s.rate, 15.95);
@@ -285,8 +353,11 @@ void main() {
     // no adoption/session keys anywhere.
     final raw = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
-      version: 1,
-      onCreate: (d, v) async => await AppDatabase.createSchema(d),
+      options: OpenDatabaseOptions(
+        version: 1,
+        singleInstance: false,
+        onCreate: (d, v) async => AppDatabase.createSchema(d),
+      ),
     );
     await raw.insert('tx', {
       'id': 'legacy-t1',
@@ -304,7 +375,7 @@ void main() {
 
     final (s, _) = await stateOn(raw);
 
-    // Wiped on first live boot — the app is genuinely empty, onboarding
+    // Wiped on first live boot - the app is genuinely empty, onboarding
     // restarts, and the purge is flagged so it never runs again.
     expect(s.txs, isEmpty);
     expect(s.envelopes, isEmpty);
@@ -337,8 +408,11 @@ void main() {
   test('go-live purge never touches a real adopted install', () async {
     final raw = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
-      version: 1,
-      onCreate: (d, v) async => await AppDatabase.createSchema(d),
+      options: OpenDatabaseOptions(
+        version: 1,
+        singleInstance: false,
+        onCreate: (d, v) async => AppDatabase.createSchema(d),
+      ),
     );
     // Real family marker (space_name) + a real recorded transaction.
     await raw.insert('kv', {'k': 'space_name', 'v': 'The Marufu Family'});

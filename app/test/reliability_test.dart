@@ -12,7 +12,9 @@ import 'package:mhuri_money/core/sync/supabase_sync_client.dart';
 import 'package:mhuri_money/core/sync/sync_engine.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-/// M7 — sync reliability: exponential backoff, poison-batch parking, and
+import 'fake_auth.dart';
+
+/// M7 - sync reliability: exponential backoff, poison-batch parking, and
 /// the pluggable error-report hook, exercised against a server that keeps
 /// failing pushes with a 500.
 class FakeServer extends http.BaseClient {
@@ -50,8 +52,10 @@ void main() {
   final errorWheres = <String>[];
 
   int txPosts() => server.sent
-      .where(
-          (r) => r.method == 'POST' && r.url.toString().contains('/rest/v1/tx'))
+      .where((r) =>
+          r.method == 'POST' &&
+          (r.url.toString().contains('/rest/v1/transaction') ||
+              r.url.toString().contains('/rest/v1/tx')))
       .length;
 
   setUp(() async {
@@ -60,6 +64,7 @@ void main() {
     kv = {};
     server = FakeServer((request) async {
       final url = request.url.toString();
+      if (url.contains('/rpc/family_name_taken')) return _json(false);
       if (url.contains('/rpc/create_space')) {
         return _json({'id': 'sp_new', 'invite_code': 'MHRI-T7'});
       }
@@ -74,13 +79,13 @@ void main() {
       ),
     );
     db = AppDatabase.wrap(raw);
-    state = AppState(db: db);
+    state = AppState(db: db, env: testEnv());
     await state.ready();
     engine = SyncEngine(
       client: SupabaseSyncClient(
         baseUrl: 'https://abcdefgh.supabase.co',
         anonKey: 'anon',
-        tokenGet: () async => null,
+        tokenGet: () async => 'test-token',
         client: server,
       ),
       database: db.raw,
@@ -89,10 +94,12 @@ void main() {
       kvGet: (k) async => kv[k],
       kvSet: (k, v) async => kv[k] = v,
     );
+    state.attachSync(engine);
   });
 
   tearDown(() async {
     SyncEngine.reportError = null;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
     await db.raw.close();
   });
 
@@ -109,6 +116,7 @@ void main() {
       method: Method.cash,
       note: 'Backoff test',
     );
+    await Future<void>.delayed(const Duration(milliseconds: 50));
     await engine.syncNow();
     expect(engine.status, SyncStatus.error);
     expect(txPosts(), before + 1, reason: 'one push attempt was made');
@@ -116,7 +124,7 @@ void main() {
     expect(await engine.pendingCount(), 1, reason: 'the op is kept');
 
     await engine.syncNow();
-    expect(txPosts(), before + 1, reason: 'backing off — nothing sent');
+    expect(txPosts(), before + 1, reason: 'backing off - nothing sent');
 
     await engine.syncNow(force: true);
     expect(txPosts(), before + 2, reason: 'force bypasses the backoff');
@@ -132,6 +140,7 @@ void main() {
       method: Method.cash,
       note: 'Reset test',
     );
+    await Future<void>.delayed(const Duration(milliseconds: 50));
     await engine.syncNow(); // fails
     expect(engine.status, SyncStatus.error);
 
@@ -144,7 +153,7 @@ void main() {
     expect(engine.status, SyncStatus.idle);
     expect(await engine.pendingCount(), 0);
 
-    // The backoff was reset — a normal sync runs immediately.
+    // The backoff was reset - a normal sync runs immediately.
     state.addTx(
       type: TxType.expense,
       amount: Money.fromMajor(1, Currency.usd),
@@ -152,6 +161,7 @@ void main() {
       method: Method.cash,
       note: 'Reset test 2',
     );
+    await Future<void>.delayed(const Duration(milliseconds: 50));
     final posts = txPosts();
     await engine.syncNow();
     expect(engine.status, SyncStatus.idle);
@@ -167,6 +177,7 @@ void main() {
       method: Method.cash,
       note: 'Parking test',
     );
+    await Future<void>.delayed(const Duration(milliseconds: 50));
 
     for (var i = 0; i < SyncEngine.maxAttempts; i++) {
       await engine.syncNow(force: true);

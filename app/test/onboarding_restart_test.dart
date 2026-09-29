@@ -43,4 +43,27 @@ void main() {
     await restarted.ready();
     expect(restarted.onboardingComplete, isTrue);
   });
+
+  test('starter selections survive an interrupted onboarding restart',
+      () async {
+    final db = await freshDb();
+    addTearDown(db.raw.close);
+    final first = AppState(db: db);
+    await first.ready();
+
+    await first.applyFamilySetupSettings(
+      stage: 'ready',
+      templates: const [
+        {'key': 'groceries', 'name': 'Groceries', 'icon': 'cart'},
+        {'key': 'custom_farm', 'name': 'Farm', 'icon': 'money'},
+      ],
+    );
+
+    final restarted = AppState(db: db);
+    await restarted.ready();
+    expect(restarted.onboardingStage, 'ready');
+    expect(restarted.onboardingComplete, isFalse);
+    expect(restarted.onboardingTemplates, hasLength(2));
+    expect(restarted.onboardingTemplates.last['name'], 'Farm');
+  });
 }

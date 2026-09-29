@@ -11,9 +11,12 @@ import 'package:mhuri_money/features/lists/lists_screen.dart';
 import 'package:mhuri_money/features/onboarding/family_setup_screen.dart';
 import 'package:mhuri_money/features/reports/reports_screen.dart';
 import 'package:mhuri_money/features/savings/savings_screen.dart';
+import 'package:mhuri_money/core/l10n/localization_delegates.dart';
 import 'package:mhuri_money/features/settings/settings_screen.dart';
+import 'package:mhuri_money/features/teen/teen_zone.dart';
+import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
-/// M7 — every main screen pumps against REAL app-created data (no fixtures:
+/// M7 - every main screen pumps against REAL app-created data (no fixtures:
 /// the app ships with an empty database) without throwing, and the key
 /// content is actually on screen.
 void main() {
@@ -43,7 +46,11 @@ void main() {
 
   Widget harness(AppState s, Widget child) => AppScope(
         notifier: s,
-        child: MaterialApp(home: Scaffold(body: child)),
+        child: MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: child),
+        ),
       );
 
   void sizeWindow(WidgetTester tester) {
@@ -56,10 +63,10 @@ void main() {
       (tester) async {
     sizeWindow(tester);
     final s = await seeded();
-    tester.pumpWidget(harness(s, HomeScreen()));
+    await tester.pumpWidget(harness(s, const HomeScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Family Pool'), findsOneWidget);
+    expect(find.text('Available to spend'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.notifications_none));
     await tester.pumpAndSettle();
@@ -67,21 +74,54 @@ void main() {
     expect(find.textContaining('Scheduled on this device'), findsOneWidget);
   });
 
+  testWidgets('approving a proposal closes its dialog without dead context',
+      (tester) async {
+    sizeWindow(tester);
+    final s = await seeded();
+    final envelope = s.envelopes.first;
+    s.proposals.add(Proposal(
+      id: 'proposal-approve-test',
+      teenId: s.user.id,
+      amount: Money.fromMajor(2, Currency.usd),
+      envelopeId: envelope.id,
+      reason: 'Ice cream',
+    ));
+    await tester.pumpWidget(harness(s, const HomeScreen()));
+    await tester.pumpAndSettle();
+
+    final reviewButton = find.text('Review');
+    expect(reviewButton, findsOneWidget);
+    await tester.ensureVisible(reviewButton);
+    await tester.tap(reviewButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Approve'), findsOneWidget);
+
+    await tester.tap(find.text('Approve'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Approve'), findsNothing);
+    expect(
+      s.txs.any((tx) => tx.note == 'Approved: Ice cream'),
+      isTrue,
+    );
+  });
+
   testWidgets('Budgets renders envelopes and the recurring section',
       (tester) async {
     sizeWindow(tester);
     final s = await seeded();
-    tester.pumpWidget(harness(s, BudgetsScreen()));
+    await tester.pumpWidget(harness(s, const BudgetsScreen()));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Groceries'), findsAtLeastNWidgets(1));
-    expect(find.text('Recurring expenses'), findsOneWidget);
+    expect(find.text('Regular payments'), findsOneWidget);
   });
 
   testWidgets('Activity renders the seeded transactions', (tester) async {
     sizeWindow(tester);
     final s = await seeded();
-    tester.pumpWidget(harness(s, ActivityScreen()));
+    await tester.pumpWidget(harness(s, const ActivityScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('No activity yet'), findsNothing);
@@ -91,17 +131,76 @@ void main() {
   testWidgets('Savings renders the family goals', (tester) async {
     sizeWindow(tester);
     final s = await seeded();
-    tester.pumpWidget(harness(s, SavingsScreen()));
+    await tester.pumpWidget(harness(s, const SavingsScreen()));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('School Fees'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('Teen Zone renders one earning as a readable summary row',
+      (tester) async {
+    sizeWindow(tester);
+    final s = await seeded();
+    const teen = Member(
+      id: 'teen-earning-test',
+      name: 'Myla',
+      emoji: 'student',
+      role: Role.teen,
+    );
+    s.members.add(teen);
+    s.switchUser(teen);
+    s.setRealUser(teen);
+    s.addEarning(
+      Money.fromMajor(5, Currency.usd),
+      'Did a job for Uncle',
+    );
+
+    await tester.pumpWidget(harness(s, const TeenZone()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Did a job for Uncle'), findsOneWidget);
+    expect(find.text('+US\$ 5.00'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Teen preview identifies the member and can exit immediately',
+      (tester) async {
+    sizeWindow(tester);
+    final s = await seeded();
+    final owner = s.user;
+    const myla = Member(
+      id: 'member-myla-preview',
+      name: 'Myla',
+      emoji: 'student',
+      role: Role.teen,
+    );
+    if (!s.members.any((member) => member.id == owner.id)) {
+      s.members.insert(0, owner);
+    }
+    s.members.add(myla);
+    s.setRealUser(owner);
+    s.switchUser(myla);
+
+    await tester.pumpWidget(harness(s, const TeenZone()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Previewing as Myla'), findsOneWidget);
+    expect(find.text('Hi, Myla'), findsOneWidget);
+    expect(find.text('Teen Zone · 13–17'), findsOneWidget);
+
+    await tester.tap(find.text('Exit'));
+    await tester.pumpAndSettle();
+
+    expect(s.isPreviewing, isFalse);
+    expect(s.user.id, owner.id);
+    expect(find.text('Previewing as Myla'), findsNothing);
   });
 
   testWidgets('Reports offers the family meeting and CSV export',
       (tester) async {
     sizeWindow(tester);
     final s = await seeded();
-    tester.pumpWidget(harness(s, ReportsScreen()));
+    await tester.pumpWidget(harness(s, const ReportsScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('Start the family meeting'), findsOneWidget);
@@ -112,18 +211,18 @@ void main() {
       (tester) async {
     sizeWindow(tester);
     final s = await seeded();
-    tester.pumpWidget(harness(s, SettingsScreen()));
+    await tester.pumpWidget(harness(s, const SettingsScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('Reminders on this device'), findsOneWidget);
-    expect(find.text('Month starts on'), findsOneWidget);
+    expect(find.text('Starts on'), findsOneWidget);
     expect(find.textContaining('Quiet hours'), findsOneWidget);
   });
 
   testWidgets('Lists renders the seeded shopping list', (tester) async {
     sizeWindow(tester);
     final s = await seeded();
-    tester.pumpWidget(harness(s, ListsScreen()));
+    await tester.pumpWidget(harness(s, const ListsScreen()));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Rice'), findsAtLeastNWidgets(1));
@@ -133,11 +232,9 @@ void main() {
       (tester) async {
     sizeWindow(tester);
     final s = await seeded();
-    tester.pumpWidget(harness(s, FamilySetupScreen(state: s)));
+    await tester.pumpWidget(harness(s, FamilySetupScreen(state: s)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Money, managed together'), findsOneWidget);
-    expect(find.text('Next'), findsOneWidget);
-    expect(find.byType(Image), findsOneWidget);
+    expect(find.text('Mhuri'), findsOneWidget);
   });
 }

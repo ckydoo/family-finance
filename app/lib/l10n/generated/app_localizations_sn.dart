@@ -18,7 +18,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get tabSavings => 'Kuchengeta';
 
   @override
-  String get tabLists => 'Rondedzero';
+  String get tabLists => 'Kutenga';
 
   @override
   String get tabFamily => 'Mhuri';
@@ -39,8 +39,48 @@ class AppLocalizationsSn extends AppLocalizations {
   String get familyPool => 'Mari yemhuri yese';
 
   @override
-  String safeToSpend(String amount) {
-    return 'Zvakanaka kushandisa nhasi: $amount';
+  String get availableToSpendLabel => 'Mari iripo yekushandisa';
+
+  @override
+  String get savingsExceedsCashTitle => 'Mari iripo haikwani';
+
+  @override
+  String savingsExceedsCashBody(Object amount) {
+    return 'Mari iyi inodarika iripo yekushandisa ne$amount.';
+  }
+
+  @override
+  String get goalOverfundTitle => 'Izvi zvinodarika chinangwa';
+
+  @override
+  String goalOverfundBody(Object amount) {
+    return 'Mari iyi inodarika chinangwa ne$amount. Wedzera zvakadaro here?';
+  }
+
+  @override
+  String get addAnyway => 'Wedzera zvakadaro';
+
+  @override
+  String safeToSpend(Object amount) {
+    return 'Mari yakasununguka nhasi: $amount';
+  }
+
+  @override
+  String get flexibleSpendTitle => 'Mari yakasununguka nhasi';
+
+  @override
+  String get flexibleSpendExplanation =>
+      'Mari yaungashandisa nhasi mushure mekuchengetedza savings nemari yakachengeterwa maenvelope.';
+
+  @override
+  String get reservedForEnvelopes => 'Yakachengeterwa maenvelope';
+
+  @override
+  String get freeAfterCommitments => 'Yakasununguka mushure mezvisungo';
+
+  @override
+  String daysRemaining(int count) {
+    return 'Mazuva asara: $count';
   }
 
   @override
@@ -96,14 +136,14 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get noActivityHint =>
-      'Mari yese inobuda, inopinda uye inovumirwa inowanikwa pano — tangira ne + bhatani.';
+      'Mari yese inobuda, inopinda uye inovumirwa inowanikwa pano - tangira ne + bhatani.';
 
   @override
   String get noGoals => 'Hapana zvinangwa';
 
   @override
   String get noGoalsHint =>
-      'Tangira nefundi yenguva dzakaoma — kak zvishoma choga chinoshandura zvaunonzwa.';
+      'Tangira nefundi yenguva dzakaoma - kak zvishoma choga chinoshandura zvaunonzwa.';
 
   @override
   String get reportTitle => 'Bhuku rimwe';
@@ -206,7 +246,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get remindersTitle => 'Yeuchidzo';
 
   @override
-  String scheduledOn(String from, String to) {
+  String scheduledOn(Object from, Object to) {
     return 'Zvakarongwa pane iri foni · nguva yerudo $from–$to';
   }
 
@@ -221,14 +261,14 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get ob1Body =>
-      'Nzvimbo imwe inodziya kune zvinhu zvose zvemhuri inowana, inoshandisa, inochengeta uye inoronga — nemari dzose dzinoshandiswa, online kana pasina.';
+      'Nzvimbo imwe inodziya kune zvinhu zvose zvemhuri inowana, inoshandisa, inochengeta uye inoronga - nemari dzose dzinoshandiswa, online kana pasina.';
 
   @override
   String get ob2Title => 'Mabhajeti, kwete kukudzvanyirira';
 
   @override
   String get ob2Body =>
-      'Pa)dolla rimwe basa rayo. Kotaidzi, mafephya, kutakura — ona pakarepo chiri kunaka, chiri kuda kuzadzwa, uye chakanaka kushandisa nhasi.';
+      'Pa)dolla rimwe basa rayo. Kotaidzi, mafephya, kutakura - ona pakarepo chiri kunaka, chiri kuda kuzadzwa, uye chakanaka kushandisa nhasi.';
 
   @override
   String get ob3Title => 'Yakavakirwa kune mhuri yose';
@@ -241,12 +281,12 @@ class AppLocalizationsSn extends AppLocalizations {
   String get ob4Title => 'Yeuchidzo ine tsitsi';
 
   @override
-  String syncPill(int count) {
+  String syncPill(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other:
-          '$count zvichinjika zvakachengetedzwa pane yambuyariro — zvinoenderana paunenge une internet',
+          '$count zvichinjika zvakachengetedzwa pane yambuyariro - zvinoenderana paunenge une internet',
     );
     return '$_temp0';
   }
@@ -274,23 +314,23 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get donutEmpty =>
-      'Hapana zvave kutorwa mwedzi iyi — donuti rinazvo paunowedzera zvinotora.';
+      'Hapana zvave kutorwa mwedzi iyi - donuti rinazvo paunowedzera zvinotora.';
 
   @override
   String get ob4Body =>
-      'Zvikumbiro zvemari, tarisiro yebhajeti nemusangano wesvondo — zvinoremekedza nguva dzekuzvipira, zviri pamufoni wako. Iwe unotonga.';
+      'Zvikumbiro zvemari, tarisiro yebhajeti nemusangano wesvondo - zvinoremekedza nguva dzekuzvipira, zviri pamufoni wako. Iwe unotonga.';
 
   @override
   String get next => 'Zvinotevera';
 
   @override
-  String get loginWelcome => 'Svika kuMhuri Hub';
+  String get loginWelcome => 'Svika kuMhuri';
 
   @override
   String get loginEnterCode => 'Pinda iyo kodhi';
 
   @override
-  String loginSentCode(String phone) {
+  String loginSentCode(Object phone) {
     return 'Takatumira kodhi neSMS ku$phone';
   }
 
@@ -334,10 +374,10 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get savedOffline =>
-      'Yachengetedzwa ✓ — inoshanda pasina internet, inoenderana pazviripo';
+      'Yachengetedzwa ✓ - inoshanda pasina internet, inoenderana pazviripo';
 
   @override
-  String kidsHi(String name) {
+  String kidsHi(Object name) {
     return 'Mhoro $name!';
   }
 
@@ -345,8 +385,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get kidsMyJar => 'Bhasira rangu';
 
   @override
-  String kidsGoalSaved(String goal, int pct) {
-    return 'Chinangwa: $goal — $pct% zvakachengetedzwa';
+  String kidsGoalSaved(Object goal, Object pct) {
+    return 'Chinangwa: $goal - $pct% zvakachengetedzwa';
   }
 
   @override
@@ -356,8 +396,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get kidsWishList => 'Zvinodiwa';
 
   @override
-  String kidsWishItem(String amount) {
-    return 'Bhora — US\$25 · zvakachengetedzwa $amount';
+  String kidsWishItem(Object amount) {
+    return 'Bhora - US\$25 · zvakachengetedzwa $amount';
   }
 
   @override
@@ -371,6 +411,62 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get kidsParents => 'Vabereki';
+
+  @override
+  String get kidsNoChores =>
+      'Hapana mabasa akamirira. Kumbira mubereki awedzere rimwe kana wagadzirira.';
+
+  @override
+  String get kidsParentArea => 'Nzvimbo yevabereki';
+
+  @override
+  String get kidsAndChores => 'Vana nemabasa';
+
+  @override
+  String get addChore => 'Wedzera basa';
+
+  @override
+  String get addChoreHint => 'Gadzira basa remhuri uye sarudza nyeredzi dzaro.';
+
+  @override
+  String get choreName => 'Zita rebasa';
+
+  @override
+  String get starReward => 'Nyeredzi dzemubairo';
+
+  @override
+  String get choreFieldsRequired =>
+      'Nyora zita rebasa nenyeredzi imwe chete kana kupfuura.';
+
+  @override
+  String choreAdded(Object name) {
+    return '$name yawedzerwa kuvana.';
+  }
+
+  @override
+  String get noFamilyChores => 'Hapana mabasa. Wedzera rekutanga revana.';
+
+  @override
+  String choreStars(Object stars) {
+    return 'Nyeredzi $stars';
+  }
+
+  @override
+  String get kidsNoWish => 'Hapana chishuwo chasarudzwa';
+
+  @override
+  String kidsWishProgress(Object name, Object target, Object saved) {
+    return '$name · chinangwa $target · $saved yachengetwa';
+  }
+
+  @override
+  String get kidsJars => 'Mabhokisi evana';
+
+  @override
+  String get addKidWish => 'Wedzera chishuwo chemwana';
+
+  @override
+  String get childLabel => 'Mwana';
 
   @override
   String get kidsAskTitle => 'Bvunza mhamha na babha';
@@ -389,7 +485,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get teenEarnHint =>
-      'Ora mota, batsira muchitoro — nyora uye uone bhasira rakura.';
+      'Ora mota, batsira muchitoro - nyora uye uone bhasira rakura.';
 
   @override
   String get teenSpend => 'Shandisa 50%';
@@ -401,12 +497,16 @@ class AppLocalizationsSn extends AppLocalizations {
   String get teenGive => 'Kupa 10%';
 
   @override
-  String teenSplitHint(String amount) {
+  String teenSplitHint(Object amount) {
     return 'Kukamurwa kwe$amount zvakawanikwa mwedzi iyi';
   }
 
   @override
-  String get teenSavedJar => 'Yachengetedzwa mubhasira — vabereki vanoisa 50%';
+  String get teenSavedJar => 'Yachengetedzwa mubhasira - vabereki vanoisa 50%';
+
+  @override
+  String get teenJarCreateFailed =>
+      'Hatina kukwanisa kugadzira bhokisi rako remari. Tarisa network woedza zvakare.';
 
   @override
   String get teenWhatDid => 'Waita sei?';
@@ -418,14 +518,19 @@ class AppLocalizationsSn extends AppLocalizations {
   String get membersDesc => 'Vabereki nevana · mwedzi unotanga musi wekutanga';
 
   @override
+  String membersCycleDesc(int day) {
+    return 'Nguva yebhajeti inotanga pazuva $day';
+  }
+
+  @override
   String get membersInviteHint =>
-      'Govaneka kodhi kana scan kuvaka muridzi wemhuri';
+      'Gadzira kokero yakachengeteka ine basa renhengo imwe neimwe';
 
   @override
   String get setCurrency => 'Mari & mitauro';
 
   @override
-  String setCurrencySub(String rate) {
+  String setCurrencySub(Object rate) {
     return 'USD utungamiri · ZiG chipiri · $rate';
   }
 
@@ -434,13 +539,13 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get setPrivacySub =>
-      'Mabhuku emunhu: kwete — muridzi anongovana zvakagovaniswa';
+      'Mabhuku emunhu: kwete - muridzi anongovana zvakagovaniswa';
 
   @override
   String get setMonthStart => 'Kutanga kwevwedzi';
 
   @override
-  String get setMonthStartSub => 'Zuva 1 — rwendo rwevhiki remubhadharo';
+  String get setMonthStartSub => 'Zuva 1 - rwendo rwevhiki remubhadharo';
 
   @override
   String get setNotif => 'Zvikumbiro';
@@ -475,7 +580,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get mReachedTalk =>
-      'Taurawo nemabhuku akanzi \"Asvika\". Zadzazvo pamwe chete, zvine runyararo.';
+      'Taurai nezvemahunvu akatarwa \"Zvasvika\". Awedzerei pamwe chete - zvakagadzikana.';
 
   @override
   String get mGoals => 'Zvinangwa zvekuchengetedza';
@@ -487,8 +592,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get mImprove => 'Chinhu chimwe chokuvandudza';
 
   @override
-  String recSkipped(String date) {
-    return 'Damburwa — inotevera: $date';
+  String recSkipped(Object date) {
+    return 'Damburwa - inotevera: $date';
   }
 
   @override
@@ -496,7 +601,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get recReview =>
-      'Hapana chinotorwa otomatiki — iwe unotarisa uye unonyora zvose.';
+      'Hapana chinotorwa otomatiki - iwe unotarisa uye unonyora zvose.';
 
   @override
   String get recNoEnvelope => 'Hapana bhuku';
@@ -517,7 +622,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get roleOwner => 'Muridzi';
 
   @override
-  String get roleAdult => 'Mukuru';
+  String get roleAdult => 'Mumwechete';
 
   @override
   String get roleTeen => 'Mukomana/Musikana';
@@ -526,7 +631,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get roleKid => 'Mwana';
 
   @override
-  String get roleViewer => 'Sekuru · Anotarisa';
+  String get roleViewer => 'Muoneri';
 
   @override
   String get methodCash => 'Mari inotora';
@@ -584,21 +689,21 @@ class AppLocalizationsSn extends AppLocalizations {
       'Mabhuku ibhajeti dzaunoona: chikafu, chikoro, fhudzi. Gada yekutanga pazasi.';
 
   @override
-  String get newEnvStub => 'Bhuku idzva — richauya (chikamu 1)';
+  String get newEnvStub => 'Bhuku idzva - richauya (chikamu 1)';
 
   @override
   String get addRecurringTip => 'Wedzera mari inopinda zvakare';
 
   @override
   String get recReviewed =>
-      'Unotariswa usati unyore — hapana chinotorwa nyema.';
+      'Unotariswa usati unyore - hapana chinotorwa nyema.';
 
   @override
   String get noRecurring => 'Hapana mari inopinda zvakare zvino';
 
   @override
   String get recurringHint =>
-      'Wedzera mutemo wechikoro, rhovera kana airtime — tinokuyambira panguva yayo.';
+      'Wedzera mutemo wechikoro, rhovera kana airtime - tinokuyambira panguva yayo.';
 
   @override
   String get chipOnTrack => 'Zvakanaka';
@@ -634,7 +739,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get meetingNoteHint =>
-      'somuenzaniso \"Bikawo mazuva ese — mari ye musika iri kuwanda.\"';
+      's.m. \"Kubika zvakanyanya nemiSvondo - mari yekumusika iri kukwira.\"';
 
   @override
   String get meetingSaveNote => 'Chengetedza chinyorwa chedu';
@@ -643,7 +748,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get savedTick => 'Zvachengetedzwa ✓';
 
   @override
-  String get meetingDone => 'Zvaita — tichaonana mwedzi unouya';
+  String get meetingDone => 'Zvaita - tichaonana mwedzi unouya';
 
   @override
   String get reportCard => 'Ripozo';
@@ -717,13 +822,13 @@ class AppLocalizationsSn extends AppLocalizations {
   String get joinWithCode => 'Pinda nekodi';
 
   @override
-  String get offlineRetry => 'Pasina internet — inoedza zoga';
+  String get offlineRetry => 'Pasina internet - inoedza zoga';
 
   @override
   String get syncProblem => 'Dambudziko rekuendanisa';
 
   @override
-  String get signinExpired => 'Kupinda kwapera — bubuka zvakare';
+  String get signinExpired => 'Kupinda kwapera - bubuka zvakare';
 
   @override
   String get syncing => 'Kuendanisa…';
@@ -747,7 +852,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get localizedNote =>
-      'App yese inotaura mitauro mihanhi — hapana chinhu chasara chiEnglish choga.';
+      'App yese inotaura mitauro mihanhi - hapana chinhu chasara chiEnglish choga.';
 
   @override
   String get nextCreateSpace =>
@@ -755,7 +860,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String reachedMove(Object on, Object total) {
-    return '$on pa$total mabhuku zvakanaka. Vhura ayo anonzi \"Zvasvika\" uye fambisa mari — zvakanaka, kwete zvakakwana.';
+    return '$on pa$total mahunvu achiri mugwara. Vhura akatarwa \"Zvasvika\" ugoisa mari mukati - zvakagadzikana, pasina kumanikidza.';
   }
 
   @override
@@ -788,7 +893,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get markRound => 'Ratidza zvaatorwa';
 
   @override
-  String get recordsOnly => 'Mhuri Hub haimbori mari — inonyora chete.';
+  String get recordsOnly => 'Mhuri haimbori mari - inonyora chete.';
 
   @override
   String get saveContribution => 'Chengetedza mupi';
@@ -804,7 +909,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get paydayAlign =>
-      'Mabhajeti anoenderana nemubhadharo — zvinotangidzwa zuva iri, uye yeuchidzo wesangano rinouya masikati machangotanga';
+      'Mabhajeti anoenderana nemubhadharo - zvinotangidzwa zuva iri, uye yeuchidzo wesangano rinouya masikati machangotanga';
 
   @override
   String get backupComing => 'Backup & kudzosa (richauya)';
@@ -870,12 +975,12 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String choreDoneTitle(Object name) {
-    return '\"$name\" zvapiwa — simbirurira?';
+    return '\"$name\" yapera - simbisa?';
   }
 
   @override
   String choreDoneSub(Object stars) {
-    return '$stars zvinotora — simbirurira bhasira rikure';
+    return '$stars zvinotora - simbirurira bhasira rikure';
   }
 
   @override
@@ -916,12 +1021,12 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String circleTitle(Object round, Object total) {
-    return 'Denderedzwa rekuchengetedza — Kutenderera $round pa$total';
+    return 'Denderedzwa rekuchengetedza - Kutenderera $round pa$total';
   }
 
   @override
   String postedSnack(Object name) {
-    return '$name yanyorwa ✓ — bhuku ravandudzwa';
+    return '$name yanyorwa ✓ - bhuku ravandudzwa';
   }
 
   @override
@@ -931,7 +1036,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String approvedReq(Object amount, Object name) {
-    return 'Zvabvumirwa ✓ — zvedzerwa ku$name';
+    return 'Zvabvumirwa ✓ - $amount zvedzerwa ku$name';
   }
 
   @override
@@ -941,16 +1046,16 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String approvedProp(Object amount, Object env) {
-    return 'Zvabvumirwa ✓ — $amount zvanyorwa mu$env';
+    return 'Zvabvumirwa ✓ - $amount zvanyorwa mu$env';
   }
 
   @override
   String sentKid(Object name) {
-    return '\"$name\" zvatumirwa kumhamha na babha';
+    return '\"$name\" yatumirwa kuna Amai naBaba';
   }
 
   @override
-  String get listEmptyAdd => 'Hapana pano — wedzera chinhu ne ＋';
+  String get listEmptyAdd => 'Hapana pano - wedzera chinhu ne ＋';
 
   @override
   String usesPct(Object pct, Object name) {
@@ -959,7 +1064,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String loggedTo(Object amount, Object name) {
-    return 'Yanyorwa $amount ku$name ✓ — bhuku ravandudzwa';
+    return 'Yanyorwa $amount ku$name ✓ - bhuku ravandudzwa';
   }
 
   @override
@@ -979,7 +1084,7 @@ class AppLocalizationsSn extends AppLocalizations {
   }
 
   @override
-  String get createFail => 'Zvikundikana kugadzira nzvimbo — edza zvakare';
+  String get createFail => 'Zvikundikana kugadzira nzvimbo - edza zvakare';
 
   @override
   String get joinSpaceTitle => 'Pinda munzvimbo yemhuri';
@@ -988,16 +1093,16 @@ class AppLocalizationsSn extends AppLocalizations {
   String get inviteCode => 'Kodi yekukoka';
 
   @override
-  String get joinedOk => 'Vapinda ✓ — zvinhu zvenyu zviri kuendaniswa';
+  String get joinedOk => 'Vapinda ✓ - zvinhu zvenyu zviri kuendaniswa';
 
   @override
-  String get joinFail => 'Zvikundikana kupinda — edza zvakare';
+  String get joinFail => 'Zvikundikana kupinda - edza zvakare';
 
   @override
   String get kidsPin => 'PIN yekubuda muNzvimbo yeVana';
 
   @override
-  String get kidsPinSub => 'Inodiwa kubuda muNzvimbo yeVana — bhatani richinja';
+  String get kidsPinSub => 'Inodiwa kubuda muNzvimbo yeVana - bhatani richinja';
 
   @override
   String signedInAs(Object masked) {
@@ -1022,7 +1127,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String starsHome(Object stars) {
-    return '$stars zvinotora — simbirurira zvinotora paKumba kuti mabhasira akure';
+    return '$stars zvinotora - simbirurira zvinotora paKumba kuti mabhasira akure';
   }
 
   @override
@@ -1037,7 +1142,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get roundOk =>
-      'Kutenderera kwanyorwa ✓ — kunyora chete, hatigari mari';
+      'Kutenderera kwanyorwa ✓ - kunyora chete, hatigari mari';
 
   @override
   String addToGoal(Object name) {
@@ -1123,24 +1228,23 @@ class AppLocalizationsSn extends AppLocalizations {
   String get pickCurrency => 'Mari inoratidzwa';
 
   @override
-  String get rateField => 'ZiG pa1 USD';
+  String get rateField => 'Mwero wekuchinjana';
 
   @override
   String get rateSave => 'Chengetedza mutengo';
 
   @override
-  String get rateReset => 'Dzokera kuRBZ yekutanga';
+  String get rateReset => 'Dzokera pamwero wemazuva ose';
 
   @override
-  String get rateCustomNote =>
-      'Inoshandiswa kuona maZiG muapp yese. RBZ inotanga ndeye 15,27.';
+  String get rateCustomNote => 'Inoshandiswa kuchinja mari muapp yese.';
 
   @override
   String get autoHide => 'Vanza mari ndisabuda muapp';
 
   @override
   String get autoHideSub =>
-      'Mari inovanzika app yasara kumashure — dzima usati ude.';
+      'Mari inovanzika app yasara kumashure - dzima usati ude.';
 
   @override
   String get hideNow => 'Vanza mari izvozvi';
@@ -1155,7 +1259,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get copied => 'Yakopiwa ✓';
 
   @override
-  String get inviteTitle => 'Koka muridzi wemhuri';
+  String get inviteTitle => 'Kukoka mhuri';
 
   @override
   String get editProfile => 'Chinja profile';
@@ -1244,14 +1348,14 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get passwordResetSent =>
-      'Email yekudzorera password yatumirwa — vhura link pane foni ino, app inopedzesa.';
+      'Email yekudzorera password yatumirwa - vhura link pane foni ino, app inopedzesa.';
 
   @override
   String get passwordResetFailed =>
       'Hatina kukwanisa kutumira email. Tarisa internet woedza zvakare.';
 
   @override
-  String get newToMhuri => 'Mutsva kuMhuri Hub?';
+  String get newToMhuri => 'Mutsva kuMhuri?';
 
   @override
   String get alreadyHaveAccount => 'Watova neaccount?';
@@ -1265,7 +1369,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get checkYourEmail =>
-      'Pedyo nezvo — tarisa email yako woitambudza? aiwa, woisimba, wobvawapinda mukati.';
+      'Pedyo nezvo - tarisa email yako woitambudza? aiwa, woisimba, wobvawapinda mukati.';
 
   @override
   String get togglePassword => 'Ratidza kana kuvanza password';
@@ -1282,7 +1386,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get setupChoiceBody =>
-      'Mhuri Hub inoshanda nemhuri imwe, pamwechete. Vhaka yako, kana ujoina iyo unoidiwewo.';
+      'Mhuri inoshanda nemhuri imwe, pamwechete. Vhaka yako, kana ujoina iyo unoidiwewo.';
 
   @override
   String get setupCreateCard => 'Vhaka mhuri';
@@ -1296,7 +1400,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get setupJoinCardBody =>
-      'Mumwe vakakokorodza iwe — nyora code yemhuri yavo joina.';
+      'Mumwe vakakokorodza iwe - nyora code yemhuri yavo joina.';
 
   @override
   String get createFamilyCta => 'Vhaka mhuri';
@@ -1341,14 +1445,14 @@ class AppLocalizationsSn extends AppLocalizations {
   String get skipForNow => 'Iraska parizvino';
 
   @override
-  String get setupInviteTitle => 'Kokorodza vanhu vako';
+  String get setupInviteTitle => 'Koka vanhu';
 
   @override
   String get setupWorking => 'Kugadzirwa zviri kuita…';
 
   @override
   String get noEnvelopesYet =>
-      'Hapana bhajeti dziri pozvino — vhaka yekutanga kubva kuBudgets tab.';
+      'Hapana bhajeti dziri pozvino - vhaka yekutanga kubva kuBudgets tab.';
 
   @override
   String get noActivityYet =>
@@ -1369,45 +1473,45 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get errInviteCode =>
-      'Isa mukava yekukoka wakapihwa nemuridzi wemhuri — inoita se MHRI-4F2A.';
+      'Isa mukava yekukoka wakapihwa nemuridzi wemhuri - inoita se MHRI-4F2A.';
 
   @override
   String get errFamilyNameTaken =>
-      'Zita iri remhuri ramboshandiswa — dzimba zita rimwe.';
+      'Zita iri remhuri ramboshandiswa - dzimba zita rimwe.';
 
   @override
   String get authErrEmailNotConfirmed =>
-      'Tarisa inbox yako — tanga wapurufira chinongedzo chekusimbisa, wopinda.';
+      'Tarisa inbox yako - tanga wapurufira chinongedzo chekusimbisa, wopinda.';
 
   @override
   String get authErrBadCredentials => 'Email kana password haina kunaka.';
 
   @override
   String get authErrAlreadyRegistered =>
-      'Akaundi ine email iyi yambokuiripo — pinda napo.';
+      'Akaundi ine email iyi yambokuiripo - pinda napo.';
 
   @override
   String get authErrRateLimited =>
-      'Kuedza kwawandisa — mira miniti woedza zvakare.';
+      'Kuedza kwawandisa - mira miniti woedza zvakare.';
 
   @override
-  String get authErrNetwork => 'Hana internet — tarisa network woedza zvakare.';
+  String get authErrNetwork => 'Hana internet - tarisa network woedza zvakare.';
 
   @override
   String get authResend => 'Tumira zvakare email yekusimbisa';
 
   @override
-  String get authResent => 'Email yekusimbisa yatumirwa — tarisa inbox yako.';
+  String get authResent => 'Email yekusimbisa yatumirwa - tarisa inbox yako.';
 
   @override
   String get mukandoOn => 'Denderedzwa rechikafu (mukando)';
 
   @override
-  String get mukandoEnableTitle => 'Mukando — chikafu chinodenderedzwa';
+  String get mukandoEnableTitle => 'Mukando - chikafu chinodenderedzwa';
 
   @override
   String get mukandoEnableSub =>
-      'Chengetedza nemhuri yako nemaficha. Yakavharwa nekumashure — vhavhurai kana denderedzwa rinowedzera.';
+      'Chengetedza nemhuri yako nemaficha. Yakavharwa nekumashure - vhavhurai kana denderedzwa rinowedzera.';
 
   @override
   String get mukandoEnableCta => 'Vhura mukando';
@@ -1423,11 +1527,11 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get photoFailed =>
-      'Mufananidzo haukwanise kuiswa — tarisa network woedza zvakare.';
+      'Mufananidzo haukwanise kuiswa - tarisa network woedza zvakare.';
 
   @override
   String get photoSaved =>
-      'Mufananidzo wachengetwa — mhuri yacho ichaiona zvakare.';
+      'Mufananidzo wachengetwa - mhuri yacho ichaiona zvakare.';
 
   @override
   String get newSavingsGoal => 'Chinangwa chitsva chekuchengetedza';
@@ -1467,7 +1571,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get syncStateError => 'Kumirira kuyedza zvakare';
 
   @override
-  String get syncStateOffline => 'Hatina network — shanduko dzinochengetwa pafone ino';
+  String get syncStateOffline =>
+      'Hatina network - shanduko dzinochengetwa pafone ino';
 
   @override
   String get syncStateNeedsSignIn => 'Pinda mukati kuti ubatanidze';
@@ -1500,13 +1605,12 @@ class AppLocalizationsSn extends AppLocalizations {
   String get syncConnectedTo => 'Cloud yemhuri:';
 
   @override
-  String get syncNotConnected => 'Foni ino chete — cloud yemhuri haisati yakabatanidzwa.';
+  String get syncNotConnected =>
+      'Foni ino chete - cloud yemhuri haisati yakabatanidzwa.';
 
   @override
-  String get syncBackupNote => 'Hapana backup inofanira kubatidzwa. Shanduko dzese dzinochengetwa pafone yako panogumira uye dzinobatanidzwa kucloud yemhuri pavaine network. Dhawunirodha CSV pazasi nguva dzose kuti uve nekopi yaunotonga.';
-
-  @override
-  String get previewExit => 'Buda';
+  String get syncBackupNote =>
+      'Hapana backup inofanira kubatidzwa. Shanduko dzese dzinochengetwa pafone yako panogumira uye dzinobatanidzwa kucloud yemhuri pavaine network. Dhawunirodha CSV pazasi nguva dzose kuti uve nekopi yaunotonga.';
 
   @override
   String previewBanner(Object name) {
@@ -1514,10 +1618,14 @@ class AppLocalizationsSn extends AppLocalizations {
   }
 
   @override
+  String get previewExit => 'Buda';
+
+  @override
   String get resetTitle => 'Sarudza password itsva';
 
   @override
-  String get resetSubtitle => 'Wapinda mukati neiyo reset link — iye zvino sarudza password itsva.';
+  String get resetSubtitle =>
+      'Wapinda mukati neiyo reset link - iye zvino sarudza password itsva.';
 
   @override
   String get resetNewLabel => 'Password itsva';
@@ -1535,13 +1643,14 @@ class AppLocalizationsSn extends AppLocalizations {
   String get resetRuleMix => 'Iine mavara nenhamba';
 
   @override
-  String get resetRuleHint => 'Shandisa mavara 8 kana kupfuura, iine tsamba nenhamba.';
+  String get resetRuleHint =>
+      'Shandisa mavara 8 kana kupfuura, iine tsamba nenhamba.';
 
   @override
   String get resetCta => 'Chinja password';
 
   @override
-  String get resetSuccess => 'Password yachinjwa — pinda mukati neiyowo itsva';
+  String get resetSuccess => 'Password yachinjwa - pinda mukati neiyowo itsva';
 
   @override
   String get resetShow => 'Ratidza kana kuvanza password';
@@ -1550,7 +1659,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get resetExpiredTitle => 'Link iyi yapera';
 
   @override
-  String get resetExpiredBody => 'Matanakuru ekudzorera anoshanda kamwe chete uye kwenguva pfupi. Tumira imwe itsva uyedze zvakare.';
+  String get resetExpiredBody =>
+      'Matanakuru ekudzorera anoshanda kamwe chete uye kwenguva pfupi. Tumira imwe itsva uyedze zvakare.';
 
   @override
   String get resetSendNew => 'Tumira link itsva';
@@ -1560,32 +1670,71 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String listDeleted(Object name) {
-    return '"$name" zvinobviswa panhandare';
+    return '\"$name\" yabviswa pane zvinyorwa';
   }
 
   @override
-  String get roleAdult => 'Mumwechete';
+  String get memberAccountTitle => 'Gadzira account yenhengo';
 
   @override
-  String get roleTeen => 'Mukomana/Musikana';
+  String get memberAccountSubtitle =>
+      'Gadzirira account munhu anofanira kupinda mumhuri iyi ipapo.';
 
   @override
-  String get roleViewer => 'Muoneri';
+  String get memberAccountAction => 'Gadzira account yenhengo';
 
   @override
-  String get inviteCode => 'Kodi yekukoka';
+  String get memberAccountSheetSubtitle =>
+      'Anogona kupinda ipapo asingashandisi invite code.';
 
   @override
-  String get inviteTitle => 'Kukoka mhuri';
+  String get memberAccountName => 'Zita raanoda';
 
   @override
-  String get inviteHowTo => 'Anovhaka account neemail yake, obva anyora code iyi kuti apinde mumhuri yako.';
+  String get memberAccountEmail => 'Email address';
+
+  @override
+  String get memberAccountTemporaryPassword => 'Password yenguva pfupi';
+
+  @override
+  String get memberAccountPasswordRule =>
+      'Mavara 10 kana kupfuura, riine vara nenhamba';
+
+  @override
+  String get memberAccountRole => 'Basa mumhuri';
+
+  @override
+  String get memberAccountSecurityNote =>
+      'Muudze password yenguva pfupi muchivande. Ngaashandise Forgot password kuti asarudze yake.';
+
+  @override
+  String get memberAccountCreate => 'Gadzira account yenhengo';
+
+  @override
+  String get memberAccountCreated =>
+      'Account yagadzirwa uye yawedzerwa kumhuri.';
+
+  @override
+  String get memberAccountBadName => 'Nyora zita raanoda.';
+
+  @override
+  String get memberAccountEmailExists =>
+      'Email iyi yatova neaccount. Shandisa invite yenguva dzose.';
+
+  @override
+  String get memberAccountOwnerRole =>
+      'Muridzi wemhuri chete ndiye anogona kugadzira account yemubereki kana munhu mukuru.';
+
+  @override
+  String get memberAccountFailed =>
+      'Account haina kugadzirwa. Tarisa connection woedzazve.';
 
   @override
   String get inviteNew => 'Kukoka kwitsva';
 
   @override
-  String get inviteEmailOptional => 'Email yavo (kusaripo — ivo chete vanokwanisa kuishandisa)';
+  String get inviteEmailOptional =>
+      'Email yavo (kusaripo - ivo chete vanokwanisa kuishandisa)';
 
   @override
   String get inviteCreate => 'Gadzira kukoka';
@@ -1594,13 +1743,14 @@ class AppLocalizationsSn extends AppLocalizations {
   String get inviteCreated => 'Ratidza code iyi kana QR kwavari';
 
   @override
-  String get inviteScanHint => 'Inotarisa QR nECamera yavo, kana kubaya link — inovhura app iyi yakagadzirira kujoina.';
+  String get inviteScanHint =>
+      'Inotarisa QR nECamera yavo, kana kubaya link - inovhura app iyi yakagadzirira kujoina.';
 
   @override
   String get inviteShare => 'Tumira';
 
   @override
-  String get inviteShareText => 'Joinawo mhuri yedu paMhuri Hub — kukoko kwako:';
+  String get inviteShareText => 'Joinawo mhuri yedu paMhuri - kukoko kwako:';
 
   @override
   String get invitePending => 'Mikoko iripo';
@@ -1612,36 +1762,40 @@ class AppLocalizationsSn extends AppLocalizations {
   String get inviteHistory => 'Mikoko yapera';
 
   @override
+  String inviteAcceptedLabel(Object code, Object role) {
+    return '$code - apinda ($role)';
+  }
+
+  @override
   String get inviteRevoke => 'Kanzura';
 
   @override
-  String get inviteFailed => 'Kukoka hakugadzirike — tarisa network uyedze zvakare.';
+  String inviteRevokeBody(Object code) {
+    return 'Kanzura kukoka $code? Havazokwanisa kujoina nayo.';
+  }
 
   @override
-  String get inviteTooMany => 'Kune mikoko 5 isati yashandiswa — kanzura imwe kutanga.';
+  String get inviteFailed =>
+      'Kukoka hakugadzirike - tarisa network uyedze zvakare.';
+
+  @override
+  String get inviteTooMany =>
+      'Kune mikoko 5 isati yashandiswa - kanzura imwe kutanga.';
 
   @override
   String get inviteOwnerOnly => 'Muridzi chete ndiye anotonga kukoka.';
 
   @override
-  String get inviteAlreadyInFamily => 'Uri mumhuri yato — kukoka kunoshandiswa kujoina imwe itsva.';
+  String inviteLinkReady(Object code) {
+    return 'Kukoka $code kunomirira - joina mhuri pazasi.';
+  }
+
+  @override
+  String get inviteAlreadyInFamily =>
+      'Uri mumhuri yato - kukoka kunoshandiswa kujoina imwe itsva.';
 
   @override
   String get makeOwner => 'Ita muridzi';
-
-  @override
-  String get makeOwnerFailed => 'Kutamisa utongi hwakundikana — tarisa network uyedze zvakare.';
-
-  @override
-  String get roleParent => 'Mubereki';
-
-  @override
-  String get roleChild => 'Mwana';
-
-  @override
-  String inviteAcceptedLabel(Object code, Object role) {
-    return '$code — apinda';
-  }
 
   @override
   String makeOwnerBody(Object name) {
@@ -1654,20 +1808,21 @@ class AppLocalizationsSn extends AppLocalizations {
   }
 
   @override
-  String inviteRevokeBody(Object code) {
-    return 'Kanzura kukoka $code? Havazokwanisa kujoina nayo.';
-  }
+  String get makeOwnerFailed =>
+      'Kutamisa utongi hwakundikana - tarisa network uyedze zvakare.';
 
   @override
-  String inviteLinkReady(Object code) {
-    return 'Kukoka $code kunomirira — joina mhuri pazasi.';
-  }
+  String get roleParent => 'Mubereki';
+
+  @override
+  String get roleChild => 'Mwana';
 
   @override
   String get syncProblemsTitle => 'Shanduko dzinoda iwe';
 
   @override
-  String get syncProblemsBody => 'Aya mashanduko akundikana kuwana cloud yemhuri pamwe mbiri. Zviedze zvakare, kana zvisiye — hapana chinobviswa pasina yakurarama.';
+  String get syncProblemsBody =>
+      'Aya mashanduko akundikana kuwana cloud yemhuri pamwe mbiri. Zviedze zvakare, kana zvisiye - hapana chinobviswa pasina yakurarama.';
 
   @override
   String get syncRetryThis => 'Edza zvakare';
@@ -1677,6 +1832,16 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get syncDiscardTitle => 'Kusiya shanduko iyi?';
+
+  @override
+  String syncDiscardBody(Object what) {
+    return '“$what” inogara pafone ino chete uye haimbovawiri kucloud yemhuri. Kuisiya?';
+  }
+
+  @override
+  String syncTries(Object tries) {
+    return '$tries miedzo yadarara';
+  }
 
   @override
   String get syncKindTx => 'Mutero';
@@ -1697,20 +1862,20 @@ class AppLocalizationsSn extends AppLocalizations {
   String get syncKindOther => 'Shanduko';
 
   @override
-  String syncDiscardBody(Object what) {
-    return '“$what” inogara pafone ino chete uye haimbovawiri kucloud yemhuri. Kuisiya?';
-  }
-
-  @override
-  String syncTries(Object tries) {
-    return '$tries miedzo yadarara';
-  }
-
-  @override
   String get setupInviteCopied => 'Kukoka kopukutwa.';
 
   @override
   String get setupBadEmail => 'Pinda email inoshanda.';
+
+  @override
+  String setupInviteText(Object family, Object code, Object role) {
+    return 'Joinawo $family paMhuri nemukoko $code. Basa rakakurudzirwa: $role.';
+  }
+
+  @override
+  String setupInviteSubject(Object family) {
+    return 'Joinawo $family paMhuri';
+  }
 
   @override
   String get setupTagline => 'Mhuri imwe. Hurongwa hwega.';
@@ -1752,13 +1917,11 @@ class AppLocalizationsSn extends AppLocalizations {
   String get setupJoinSub => 'Shandisa mukoko wakapihwa nemhuri.';
 
   @override
-  String get setupInviteTitle => 'Koka vanhu';
-
-  @override
   String get setupInviteSub => 'Unesa vese mumusha wemhuri imwechete.';
 
   @override
-  String get setupRoleSuggestion => 'Basa ririmo sechokwadi. Ritsangiridze mune Family settings vapedze kupinda.';
+  String get setupRoleSuggestion =>
+      'Basa ririmo sechokwadi. Ritsangiridze mune Family settings vapedze kupinda.';
 
   @override
   String get setupSendInvite => 'Tumira kukoko';
@@ -1773,7 +1936,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get setupPermsTitle => 'Mvumo';
 
   @override
-  String get setupPermsSub => 'Kupinda kunokurudzirwa kwagadzirira. Unokwanisa kuichinja mune Family settings.';
+  String get setupPermsSub =>
+      'Kupinda kunokurudzirwa kwagadzirira. Unokwanisa kuichinja mune Family settings.';
 
   @override
   String get setupPermWallet => 'Ona wallet yavo';
@@ -1788,13 +1952,20 @@ class AppLocalizationsSn extends AppLocalizations {
   String get setupFinish => 'Pedza kugadzirira';
 
   @override
+  String setupStepOf(Object n) {
+    return 'Danho $n pa3';
+  }
+
+  @override
   String get deleteWhatTitle => 'Zvinaitika paunodzima';
 
   @override
-  String get deleteWhatOwner => 'Uri muridzi wemhuri: mhuri yose inodzimwa — akonti nebajeti nezvitengeso nemaList, kune vese. Izvi hazingadzokisi.';
+  String get deleteWhatOwner =>
+      'Uri muridzi wemhuri: mhuri yose inodzimwa - akonti nebajeti nezvitengeso nemaList, kune vese. Izvi hazingadzokisi.';
 
   @override
-  String get deleteWhatMember => 'Unobuda mumhuri. Uhava hwako hunopera, mufananidzo nemail yako zvino bviswa, zvityo zvako zvichagara zvichionekwa se “Former member”. Vamwe vose vanoona data yavo.';
+  String get deleteWhatMember =>
+      'Unobuda mumhuri. Uhava hwako hunopera, mufananidzo nemail yako zvino bviswa, zvityo zvako zvichagara zvichionekwa se “Former member”. Vamwe vose vanoona data yavo.';
 
   @override
   String get deleteWhatSessions => 'Kupinda kwese pamafoni ese kunobuda.';
@@ -1810,71 +1981,6 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get deleteStepIdentity => 'Kudzima akonti yako…';
-
-  @override
-  String setupInviteText(Object family, Object code, Object role) {
-    return 'Joinawo $family paMhuri Hub nemukoko $code. Basa rakakurudzirwa: $role.';
-  }
-
-  @override
-  String setupInviteSubject(Object family) {
-    return 'Joinawo $family paMhuri Hub';
-  }
-
-  @override
-  String setupStepOf(Object n) {
-    return 'Danho $n pa3';
-  }
-
-  @override
-  String kidsGoalSaved(Object goal, Object pct) {
-    return 'Chinangwa: $goal — $pct% zvakachengetedzwa';
-  }
-
-  @override
-  String kidsHi(Object name) {
-    return 'Mhoro $name!';
-  }
-
-  @override
-  String kidsWishItem(Object amount) {
-    return 'Bhora — US$25 · zvakachengetedzwa $amount';
-  }
-
-  @override
-  String loginSentCode(Object phone) {
-    return 'Takatumira kodhi neSMS ku$phone';
-  }
-
-  @override
-  String recSkipped(Object date) {
-    return 'Damburwa — inotevera: $date';
-  }
-
-  @override
-  String safeToSpend(Object amount) {
-    return 'Zvakanaka kushandisa nhasi: $amount';
-  }
-
-  @override
-  String scheduledOn(Object from, Object to) {
-    return 'Zvakarongwa pane iri foni · nguva yerudo $from–$to';
-  }
-
-  @override
-  String setCurrencySub(Object rate) {
-    return 'USD utungamiri · ZiG chipiri · $rate';
-  }
-
-  @override
-  String syncPill(Object count) {
-    return '{count, plural, other{$count zvichinjika zvakachengetedzwa pane yambuyariro — zvinoenderana paunenge une internet}}';
-  }
-
-  @override
-  String teenSplitHint(Object amount) {
-    return 'Kukamurwa kwe$amount zvakawanikwa mwedzi iyi';
-  }
 
   @override
   String get discardChangesTitle => 'Kusiya shanduko?';
@@ -1946,4 +2052,61 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get syncStateNeedsSetup => 'Gadzira mhuri yako yekubatanidza';
+
+  @override
+  String get tourTitle => 'Kutenderera kupfupi';
+
+  @override
+  String get tourPoolTitle => 'Ziva mari iripo';
+
+  @override
+  String get tourPoolBody =>
+      'Peji rekutanga rinoratidza mari yemhuri, zvakaitwa nguva pfupi yapfuura nemabhajeti anoda kutariswa.';
+
+  @override
+  String get tourPlanTitle => 'Ipa mari yese basa';
+
+  @override
+  String get tourPlanBody =>
+      'Shandisa Bhajeti kumabhuku emari, Kuchengeta kuzvinangwa, neRondedzero pakutenga kwemhuri.';
+
+  @override
+  String get tourAddTitle => 'Wedzera mari nekukurumidza';
+
+  @override
+  String get tourAddBody =>
+      'Baya + kunyora mari yapinda kana yabuda. Vhura Mhuri kukoka vanhu nekugadzirisa mabasa avo.';
+
+  @override
+  String get reminderBills =>
+      'Mabhiri anofanira kubhadharwa (mazuva 3 asati asvika)';
+
+  @override
+  String get reminderBudget => 'Yambiro yehamvuropu pa80% uye kana yapera';
+
+  @override
+  String get reminderKids => 'Vana: zvikumbiro nemabasa anoda kubvumidzwa';
+
+  @override
+  String get reminderCircle => 'Denderedzwa rekuchengeta (Svondo)';
+
+  @override
+  String get reminderGoals => 'Matanho ezvinangwa';
+
+  @override
+  String get reminderMeeting => 'Zuva remusangano wemhuri';
+
+  @override
+  String get reminderDigest => 'Pfupiso yevhiki (Svondo 6pm)';
+
+  @override
+  String get notificationsDenied =>
+      'Zviziviso zveMhuri zvakadzimwa. Zvibvumidze mumasetingi efoni yako.';
+
+  @override
+  String get testNotificationSent => 'Chiziviso chekuyedza chatumirwa.';
+
+  @override
+  String get testNotificationFailed =>
+      'Hatina kukwanisa kutumira chiziviso chekuyedza.';
 }

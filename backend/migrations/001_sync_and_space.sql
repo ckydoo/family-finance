@@ -1,5 +1,5 @@
 -- ============================================================================
--- Mhuri Money — M3 sync & family-space migration (run AFTER schema.sql)
+-- Mhuri Money - M3 sync & family-space migration (run AFTER schema.sql)
 -- Adds: updated_at sync columns + triggers, family bootstrap functions.
 -- Safe to re-run (idempotent).
 -- ============================================================================
@@ -42,7 +42,7 @@ create unique index if not exists membership_invite_code_idx
   on membership (invite_code)
   where invite_code is not null;
 
--- ── 3. Family bootstrap (SECURITY DEFINER — RLS can't see a space you're
+-- ── 3. Family bootstrap (SECURITY DEFINER - RLS can't see a space you're
 --      not in yet, so joining/creating must run with elevated rights) ───────
 
 -- Creates a space + owner membership atomically. Returns {id, invite_code}.
@@ -132,7 +132,7 @@ grant execute on function join_space(text) to authenticated;
 -- ── Notes ───────────────────────────────────────────────────────────────────
 -- * Conflict policy (M3): last-writer-wins via merge-duplicates upserts.
 --   Decisions (approvals) made by two parents at the same moment resolve to
---   the latest write — acceptable at family scale, revisited in hardening.
+--   the latest write - acceptable at family scale, revisited in hardening.
 -- * Synced entity set: transaction, envelope, goal, goal_tx, list_item,
 --   kid_request (money + teen proposals), earning. Chore/stars/mukando stay
 --   device-local for M3 by design.

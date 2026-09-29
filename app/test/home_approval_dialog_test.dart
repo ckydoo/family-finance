@@ -46,4 +46,38 @@ void main() {
     expect(state.requests.single.state, RequestState.approved);
     expect(find.text('Approve'), findsNothing);
   });
+
+  testWidgets(
+      'declining a request closes the dialog without using dead context',
+      (tester) async {
+    final state = AppState();
+    state.requests.add(
+      KidRequest(
+        id: 'request-to-decline',
+        kidId: 'm_leo',
+        amount: Money.fromMajor(10, Currency.usd),
+        reason: 'Sweets',
+      ),
+    );
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: const MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: SmartCard()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Review'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Not this week'));
+    await tester.pumpAndSettle();
+
+    expect(state.requests.single.state, RequestState.declined);
+    expect(find.text('Not this week'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
