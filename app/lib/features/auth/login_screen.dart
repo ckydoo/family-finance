@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/theme/app_theme.dart';
@@ -74,6 +75,18 @@ class _LoginScreenState extends State<LoginScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    final opened = await launchUrl(
+      widget.auth.googleSignInUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!mounted || opened) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Could not open Google sign-in. Please try again.'),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   /// Server/auth failures mapped to honest, specific copy - never a riddle.
@@ -531,9 +544,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                               elevation: 0,
                                               backgroundColor: context.primary,
                                               foregroundColor: context.onSolid,
-                                              disabledBackgroundColor: context
-                                                  .primary
-                                                  .withValues(alpha: 0.55),
+                                              disabledBackgroundColor:
+                                                  context.track,
                                               minimumSize:
                                                   const Size.fromHeight(56),
                                               shape: RoundedRectangleBorder(
@@ -589,22 +601,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           size: 20,
                                           color: Color(0xFF4285F4),
                                         ),
-                                        onPressed: () =>
-                                            _socialUnavailable('Google'),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      _SocialAuthButton(
-                                        provider: 'Apple',
-                                        action: _createMode
-                                            ? 'Sign up with'
-                                            : 'Continue with',
-                                        mark: FaIcon(
-                                          FontAwesomeIcons.apple,
-                                          size: 22,
-                                          color: context.ink,
-                                        ),
-                                        onPressed: () =>
-                                            _socialUnavailable('Apple'),
+                                        onPressed: _signInWithGoogle,
                                       ),
                                       const SizedBox(height: 10),
                                       _SocialAuthButton(

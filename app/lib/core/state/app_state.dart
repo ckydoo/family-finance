@@ -1895,6 +1895,9 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
+  /// Removes an envelope from the active budget list. Previous transaction history is preserved.
+  bool removeEnvelope(Envelope envelope) => archiveEnvelope(envelope);
+
   /// Safely resolves and cleans up duplicate non-personal envelopes by name.
   /// Retains the envelope with transactions or configured limit, redirects
   /// any dangling transaction references, archives redundant duplicates

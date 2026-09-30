@@ -1259,7 +1259,7 @@ class AppLocalizationsSn extends AppLocalizations {
   String get copied => 'Yakopiwa ✓';
 
   @override
-  String get inviteTitle => 'Kukoka mhuri';
+  String get inviteTitle => 'Koka nhengo yemhuri';
 
   @override
   String get editProfile => 'Chinja profile';

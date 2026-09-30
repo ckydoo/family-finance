@@ -109,7 +109,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Quick Add keeps Save reachable above a keyboard inset',
+  testWidgets('Quick Add keeps submit action reachable above a keyboard inset',
       (tester) async {
     viewport(tester, const Size(360, 640), textScale: 1.5);
     final state = populatedState();
@@ -129,8 +129,9 @@ void main() {
     tester.view.viewInsets = const FakeViewPadding(bottom: 280);
     await tester.pumpAndSettle();
 
-    expect(find.text('Save'), findsOneWidget);
-    expect(tester.getBottomRight(find.text('Save')).dy, lessThanOrEqualTo(640));
+    expect(find.text('Add expense'), findsOneWidget);
+    expect(tester.getBottomRight(find.text('Add expense')).dy,
+        lessThanOrEqualTo(640));
     expect(tester.takeException(), isNull);
   });
 

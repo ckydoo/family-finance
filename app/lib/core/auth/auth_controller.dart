@@ -44,6 +44,14 @@ class AuthController extends ChangeNotifier {
   bool get needsConfirmation => _needsConfirmation;
   bool get busy => _busy;
 
+  /// Supabase's hosted OAuth entry point. The provider redirects back to the
+  /// custom scheme registered by the Android and iOS runners.
+  Uri get googleSignInUri => Uri.parse('${env.supabaseUrl}/auth/v1/authorize')
+          .replace(queryParameters: const {
+        'provider': 'google',
+        'redirect_to': 'mhuri://auth-callback',
+      });
+
   /// Called once at startup: restores the stored session or null (login).
   Future<void> restore() async {
     _session = await _service.restoreSession();
@@ -129,6 +137,24 @@ class AuthController extends ChangeNotifier {
       _session = _service.session;
       notifyListeners();
     }
+    return ok;
+  }
+
+  Future<bool> adoptOAuthSession(
+      String accessToken, String refreshToken) async {
+    _lastError = null;
+    _lastErrorCode = null;
+    _busy = true;
+    notifyListeners();
+    final ok = await _service.adoptOAuthSession(accessToken, refreshToken);
+    _busy = false;
+    if (ok) {
+      _session = _service.session;
+    } else {
+      _lastError = 'Google sign-in could not be completed. Please try again.';
+      _lastErrorCode = 'oauth_failed';
+    }
+    notifyListeners();
     return ok;
   }
 

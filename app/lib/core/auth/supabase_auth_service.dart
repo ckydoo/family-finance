@@ -65,6 +65,10 @@ class SupabaseAuthService implements AuthService {
     return _client.put(url, headers: headers, body: body).timeout(_timeout);
   }
 
+  Future<http.Response> _get(Uri url, {Map<String, String>? headers}) async {
+    return _client.get(url, headers: headers).timeout(_timeout);
+  }
+
   AuthResult _connectionFailure(Object error) {
     if (error is TimeoutException) {
       return const AuthResult.failure(
@@ -217,6 +221,45 @@ class SupabaseAuthService implements AuthService {
   @override
   Future<bool> adoptRecoverySession(
       String accessToken, String refreshToken) async {
+    final adopted = await _persistTokenSession(accessToken, refreshToken);
+    if (!adopted) return false;
+    // Mark an in-flight password reset so a restart resumes the reset
+    // screen instead of dropping the user into the app.
+    await _kvSet?.call('pw_reset_pending', '1');
+    return true;
+  }
+
+  @override
+  Future<bool> adoptOAuthSession(
+      String accessToken, String refreshToken) async {
+    // A deep link is public input. Validate the token with this Supabase
+    // project before trusting its unsigned, locally decoded claims.
+    try {
+      final response = await _get(
+        Uri.parse('$_base/auth/v1/user'),
+        headers: {..._headers, 'Authorization': 'Bearer $accessToken'},
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) return false;
+      final user = jsonDecode(response.body) as Map<String, dynamic>;
+      final uid = user['id']?.toString();
+      if (uid == null || uid.isEmpty) return false;
+      final email = user['email']?.toString() ?? '';
+      _session = AuthSession(userId: uid, email: email);
+      await _persistTokens(
+        access: accessToken,
+        refresh: refreshToken,
+        userId: uid,
+        email: email,
+      );
+      await _kvSet?.call('pw_reset_pending', '');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _persistTokenSession(
+      String accessToken, String refreshToken) async {
     final claims = claimsFromJwt(accessToken);
     final uid = claims['sub'];
     if (uid == null || uid.isEmpty) return false;
@@ -227,9 +270,6 @@ class SupabaseAuthService implements AuthService {
       userId: uid,
       email: claims['email'] ?? '',
     );
-    // Mark an in-flight password reset so a restart resumes the reset
-    // screen instead of dropping the user into the app.
-    await _kvSet?.call('pw_reset_pending', '1');
     return true;
   }
 

@@ -1270,7 +1270,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get copied => 'Copié ✓';
 
   @override
-  String get inviteTitle => 'Inviter la famille';
+  String get inviteTitle => 'Inviter un membre de la famille';
 
   @override
   String get editProfile => 'Modifier le profil';

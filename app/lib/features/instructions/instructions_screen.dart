@@ -138,16 +138,14 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
       label: Text(label),
       selected: selected,
       onSelected: (_) => setState(() => _selectedCategory = category),
-      selectedColor: context.primary.withValues(alpha: 0.15),
+      selectedColor: context.primarySoft,
       labelStyle: TextStyle(
         fontSize: 12.5,
         fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
         color: selected ? context.primary : context.inkSoft,
       ),
       side: BorderSide(
-        color: selected
-            ? context.primary
-            : context.inkSoft.withValues(alpha: 0.25),
+        color: selected ? context.primary : context.hairline,
       ),
     );
   }
@@ -167,7 +165,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: context.primary.withValues(alpha: 0.12),
+                color: context.primarySoft,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(guide.icon, color: context.primary, size: 22),
@@ -200,7 +198,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
                         height: 20,
                         margin: const EdgeInsets.only(right: 10, top: 2),
                         decoration: BoxDecoration(
-                          color: context.primary.withValues(alpha: 0.15),
+                          color: context.primarySoft,
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,

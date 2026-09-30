@@ -16,15 +16,16 @@ where it lives, and how it is removed - in plain language.
 | **Family financial content** | Envelopes, transactions, savings goals, shopping lists, bills, recurring rules, invite codes, activity-log entries. This is the app's core data. | Postgres, scoped to your family space |
 | **Kid profiles** | A display name, an emoji avatar and permission switches. Kids sign in **on a parent's device with a profile PIN** - we do not collect kids' emails, phone numbers or any other identifying data. | Postgres, inside your family space |
 | **Invite recipient email (optional)** | Only if you send an invite by email; the address is used once to deliver the invite. | Invite record + your mail app |
+| **Diagnostics, usage and notifications** | Deliver important family updates and understand app reliability and feature usage. We do not send balances, transaction amounts, family names, email addresses or children's profile data to Analytics. | Google Firebase |
 
 ## What we do NOT collect
 
-- No advertising identifiers, no analytics/tracking SDKs, no ad sales.
+- No cross-app advertising, no sale of personal data, and no use of Firebase data for advertising.
 - No phone numbers (sign-in is email + password; invites are codes/links).
 - No contacts, location or background location.
-- No keystrokes or screen recording. Crash reports are **local debug output
-  only** today; if a crash-reporting backend is ever added, this policy and
-  the store listing will be updated first.
+- No keystrokes or screen recording. Firebase processes an app-installation
+  identifier, device push token, screen views and notification delivery/open
+  events; financial content and children's profile data are excluded.
 
 ## Who can see family data
 
@@ -56,8 +57,7 @@ database-level access, under the family's own control.
 
 ## Contact
 
-Questions or deletion requests: **[family-admin contact email - fill in
-before store submission]**.
+Questions or deletion requests: **privacy@mhuri.app**.
 
 ## Changes
 

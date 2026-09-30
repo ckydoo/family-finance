@@ -101,15 +101,14 @@ class _LegalScreenState extends State<LegalScreen> {
       label: Text(title),
       selected: selected,
       onSelected: (_) => setState(() => _currentSection = section),
-      selectedColor: context.primary.withValues(alpha: 0.15),
+      selectedColor: context.primarySoft,
       labelStyle: TextStyle(
         fontSize: 13,
         fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
         color: selected ? context.primary : context.inkSoft,
       ),
       side: BorderSide(
-        color:
-            selected ? context.primary : context.inkSoft.withValues(alpha: 0.3),
+        color: selected ? context.primary : context.hairline,
       ),
     );
   }
@@ -145,10 +144,15 @@ class _LegalScreenState extends State<LegalScreen> {
           description:
               'Kids and teens have display names and avatar icons. Kids authenticate locally on a parent’s device using a local profile PIN. We do NOT collect phone numbers, email addresses, or marketing identifiers from children.',
         ),
+        _cardItem(
+          title: 'Diagnostics, Usage & Notifications',
+          description:
+              'Firebase processes an app-installation identifier, device push token, notification delivery/open events, and privacy-limited usage events so we can deliver important family updates and improve reliability. We do not send transaction amounts, balances, family names, email addresses, or children’s profile data to Analytics.',
+        ),
         const SizedBox(height: 16),
         _sectionTitle('2. What We NEVER Collect or Sell'),
         _bulletPoint(
-            'Zero Advertising Identifiers: We do not track you across apps or the web.'),
+            'No Cross-App Advertising: We do not use Firebase data for advertising or track you across other companies’ apps or websites.'),
         _bulletPoint(
             'No Data Sales: Your family financial records are never monetized, sold, or shared with data brokers.'),
         _bulletPoint(
@@ -362,7 +366,7 @@ class _LegalScreenState extends State<LegalScreen> {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: context.primary.withValues(alpha: 0.12),
+            color: context.primarySoft,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: context.primary, size: 24),

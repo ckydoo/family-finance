@@ -50,7 +50,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Invite family'));
+    await tester.tap(find.text('Invite family member'));
     await tester.pumpAndSettle();
 
     expect(find.text('New invite'), findsOneWidget);

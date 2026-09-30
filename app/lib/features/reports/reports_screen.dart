@@ -10,6 +10,7 @@ import '../../core/widgets/charts.dart';
 import '../../core/widgets/ring_progress.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../meeting/family_meeting_screen.dart';
+import '../lists/lists_screen.dart';
 
 /// Monthly report card (spec Module I1/I2) - one screen the family can
 /// review together at the monthly Family Meeting.
@@ -115,7 +116,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         actions: [
           PopupMenuButton<int>(
             tooltip: MaterialLocalizations.of(context).showMenuTooltip,
-            icon: const Icon(Icons.tune_rounded),
+            icon: const Icon(Icons.calendar_month_outlined),
             initialValue: _cycleOffset,
             onSelected: (value) => setState(() => _cycleOffset = value),
             itemBuilder: (context) => [
@@ -351,7 +352,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: context.card,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,6 +375,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+
+                // ── Shopping & List Tracking ─────────────────────────────────
+                _ShoppingTrackingCard(
+                  state: s,
+                  transactions: transactions,
+                  displayCurrency: displayCur,
+                  envelopeById: envelopeById,
+                ),
                 const SizedBox(height: 16),
 
                 ElevatedButton.icon(
@@ -385,7 +395,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     backgroundColor: context.primary,
                     foregroundColor: context.onSolid,
                     minimumSize: const Size.fromHeight(52),
-                    shape: const StadiumBorder(),
+                    shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                   ),
                   icon: const Icon(Icons.groups),
                   label: Text(
@@ -413,7 +423,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     foregroundColor: context.primary,
                     side: BorderSide(color: context.primary),
                     minimumSize: const Size.fromHeight(48),
-                    shape: const StadiumBorder(),
+                    shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                   ),
                   icon: const Icon(Icons.table_view, size: 20),
                   label: Text(AppLocalizations.of(context)!.exportCsv),
@@ -679,6 +689,310 @@ class _TrendCard extends StatelessWidget {
           labelColor: context.inkSoft,
         ),
       ],
+    );
+  }
+}
+
+/// ── Shopping & List Tracking in Reports ─────────────────────────────────────
+class _ShoppingTrackingCard extends StatelessWidget {
+  final AppState state;
+  final List<Tx> transactions;
+  final Currency displayCurrency;
+  final Map<String, Envelope> envelopeById;
+
+  const _ShoppingTrackingCard({
+    required this.state,
+    required this.transactions,
+    required this.displayCurrency,
+    required this.envelopeById,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // 1. Identify shopping/grocery transactions in the selected period
+    final shoppingTxs = transactions.where((tx) {
+      if (tx.type != TxType.expense) return false;
+      final env = envelopeById[tx.envelopeId];
+      final isGroceries =
+          env != null && env.name.toLowerCase().contains('grocer');
+      final note = tx.note.toLowerCase();
+      final isShoppingNote = note.contains('grocer') ||
+          note.contains('shop') ||
+          note.contains('freshmart') ||
+          note.contains('market') ||
+          note.contains('supermarket');
+      return isGroceries || isShoppingNote;
+    }).toList();
+
+    final shoppingSpentMinor = shoppingTxs.fold<int>(
+      0,
+      (sum, tx) => sum + tx.amount.inCurrency(displayCurrency, state.rate).minor,
+    );
+    final shoppingSpent = Money(shoppingSpentMinor, displayCurrency);
+
+    // 2. Shopping list items tracking
+    final totalItems = state.items.length;
+    final doneItems =
+        state.items.where((i) => i.state == ItemState.done).toList();
+    final toBuyItems =
+        state.items.where((i) => i.state == ItemState.tobuy).toList();
+    final inCartItems =
+        state.items.where((i) => i.state == ItemState.incart).toList();
+    final estNeeded = state.estFor(displayCurrency);
+
+    final completionRatio =
+        totalItems == 0 ? 0.0 : doneItems.length / totalItems;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shopping_cart_outlined,
+                  size: 20, color: context.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Shopping & Lists Tracking',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: context.ink,
+                  ),
+                ),
+              ),
+              if (totalItems > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: context.primarySoft,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${doneItems.length}/$totalItems bought',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Two-column stat grid
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.track,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Period grocery spend',
+                        style:
+                            TextStyle(fontSize: 11.5, color: context.inkSoft),
+                      ),
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          shoppingSpent.text,
+                          style: TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w800,
+                            color: context.ink,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${shoppingTxs.length} shopping trip${shoppingTxs.length == 1 ? '' : 's'}',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: context.inkSoft,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.track,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Est. items to buy',
+                        style:
+                            TextStyle(fontSize: 11.5, color: context.inkSoft),
+                      ),
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          estNeeded.text,
+                          style: TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w800,
+                            color: context.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${toBuyItems.length + inCartItems.length} item${(toBuyItems.length + inCartItems.length) == 1 ? '' : 's'} remaining',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: context.inkSoft,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Completion progress bar
+          if (totalItems > 0) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: completionRatio,
+                minHeight: 6,
+                backgroundColor: context.track,
+                color: context.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Preview of items
+          if (state.items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                'No shopping items on the list yet. Items added by family members will be tracked here.',
+                style: TextStyle(
+                    fontSize: 12, color: context.inkSoft, height: 1.4),
+              ),
+            )
+          else ...[
+            Text(
+              'Tracked items',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: context.inkSoft,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final item in state.items.take(8))
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: item.state == ItemState.done
+                          ? context.successSoft
+                          : context.track,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          item.state == ItemState.done
+                              ? Icons.check_circle_outline
+                              : Icons.radio_button_unchecked,
+                          size: 13,
+                          color: item.state == ItemState.done
+                              ? context.primaryDark
+                              : context.inkSoft,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${item.name} (${item.qty})',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: item.state == ItemState.done
+                                ? context.primaryDark
+                                : context.ink,
+                            decoration: item.state == ItemState.done
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (state.items.length > 8)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.track,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '+${state.items.length - 8} more',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: context.inkSoft,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const ListsScreen(standalone: true)),
+              ),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              label: const Text('View full shopping list'),
+              style: TextButton.styleFrom(
+                foregroundColor: context.primary,
+                visualDensity: VisualDensity.compact,
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

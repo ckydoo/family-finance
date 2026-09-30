@@ -50,6 +50,10 @@ abstract class AuthService {
 
   Future<AuthResult> signUp(String email, String password);
 
+  /// Adopts the access and refresh tokens returned by a social OAuth
+  /// provider redirect (for example Google via Supabase Auth).
+  Future<bool> adoptOAuthSession(String accessToken, String refreshToken);
+
   /// Returns a saved session at startup, or null (show login).
   Future<AuthSession?> restoreSession();
 

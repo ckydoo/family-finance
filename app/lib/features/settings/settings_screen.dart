@@ -31,6 +31,80 @@ class SettingsScreen extends StatelessWidget {
             child: ListView(
               padding: kPageInsets,
               children: [
+                if (s.auth?.isLoggedIn ?? false) ...[
+                  _header(context, Icons.account_circle_outlined,
+                      AppLocalizations.of(context)!.accountTitle),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: context.primarySoft,
+                      child: Icon(Icons.person_outline, color: context.primary),
+                    ),
+                    title: Text(
+                      s.user.name,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: context.ink,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Profile',
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    onTap: () => _editProfile(context, s),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.alternate_email, size: 20),
+                    title: Text(
+                      'Signed in as',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: context.ink,
+                      ),
+                    ),
+                    subtitle: Text(
+                      s.auth?.session?.email ?? '',
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.logout, size: 20),
+                    title: Text(
+                      AppLocalizations.of(context)!.signOut,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: context.ink,
+                      ),
+                    ),
+                    onTap: s.auth!.busy ? null : () => _signOut(context, s),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.delete_outline,
+                        size: 20, color: context.danger),
+                    title: Text(
+                      AppLocalizations.of(context)!.deleteAccount,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: context.danger,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Permanently remove your account and access',
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                    onTap:
+                        s.auth!.busy ? null : () => _deleteAccount(context, s),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 _header(context, Icons.notifications_outlined,
                     AppLocalizations.of(context)!.remindersTitle),
                 SwitchListTile.adaptive(
@@ -404,6 +478,128 @@ class SettingsScreen extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
+  }
+
+  Future<void> _editProfile(BuildContext context, AppState s) async {
+    var displayName = s.user.name;
+    await showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => MhuriSheetShell(
+        title: AppLocalizations.of(context)!.editProfile,
+        subtitle: 'Update the name shown to your family.',
+        footer: PrimaryButton(
+          label: AppLocalizations.of(context)!.save,
+          onPressed: () {
+            final name = displayName.trim();
+            if (name.isEmpty) return;
+            s.setMyName(name);
+            Navigator.pop(sheetContext);
+          },
+        ),
+        child: TextFormField(
+          initialValue: displayName,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(labelText: 'Display name'),
+          onChanged: (value) => displayName = value,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _signOut(BuildContext context, AppState s) async {
+    final auth = s.auth;
+    if (auth == null) return;
+    final confirmed = await confirmDialog(
+      context,
+      title: 'Sign out?',
+      body: 'You can sign in again to return to your family space.',
+      confirmLabel: AppLocalizations.of(context)!.signOut,
+    );
+    if (!confirmed || !context.mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    await auth.signOut();
+  }
+
+  Future<void> _deleteAccount(BuildContext context, AppState s) async {
+    final auth = s.auth;
+    if (auth == null) return;
+    final l = AppLocalizations.of(context)!;
+
+    if (s.canDeleteSpace && s.members.length > 1) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l.makeOwner),
+          content: const Text(
+            'Transfer ownership to another adult in Family before deleting '
+            'your account, or remove the other family members first.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child:
+                  Text(MaterialLocalizations.of(dialogContext).okButtonLabel),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final typeController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => StatefulBuilder(
+            builder: (dialogContext, setDialogState) => AlertDialog(
+              title: Text(l.deleteAccountTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.deleteAccountBody),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: typeController,
+                    autofocus: true,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: InputDecoration(hintText: l.deleteTypeHint),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: Text(MaterialLocalizations.of(dialogContext)
+                      .cancelButtonLabel),
+                ),
+                FilledButton(
+                  onPressed: typeController.text.trim() == 'DELETE'
+                      ? () => Navigator.pop(dialogContext, true)
+                      : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.danger,
+                    foregroundColor: context.onSolid,
+                  ),
+                  child: Text(l.deletePermanently),
+                ),
+              ],
+            ),
+          ),
+        ) ??
+        false;
+    if (!confirmed || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final deleted = await auth.deleteAccount();
+    if (deleted) {
+      await s.clearLocalAccountData();
+      return;
+    }
+    messenger.showSnackBar(SnackBar(
+      content: Text(auth.lastError ?? l.deleteAccountFailed),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   static String _categoryLabel(

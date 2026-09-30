@@ -2,13 +2,15 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 /// Circular progress ring used on goal cards (spec §7.5).
 class RingProgress extends StatelessWidget {
   final double value; // 0..1
   final double size;
   final double stroke;
   final Color color;
-  final Color track;
+  final Color? track;
   final Widget? child;
 
   const RingProgress({
@@ -17,13 +19,14 @@ class RingProgress extends StatelessWidget {
     this.size = 56,
     this.stroke = 7,
     required this.color,
-    this.track = const Color(0xFFECEAE4),
+    this.track,
     this.child,
   });
 
   @override
   Widget build(BuildContext context) {
     final target = value.clamp(0.0, 1.0).toDouble();
+    final resolvedTrack = track ?? context.track;
     // G2: the ring draws in on first build and eases to new values.
     final painterValue =
         MediaQuery.disableAnimationsOf(context) ? target : null;
@@ -40,7 +43,7 @@ class RingProgress extends StatelessWidget {
                 value: painterValue,
                 stroke: stroke,
                 color: color,
-                track: track,
+                track: resolvedTrack,
               ),
             )
           else
@@ -54,7 +57,7 @@ class RingProgress extends StatelessWidget {
                   value: v,
                   stroke: stroke,
                   color: color,
-                  track: track,
+                  track: resolvedTrack,
                 ),
               ),
             ),

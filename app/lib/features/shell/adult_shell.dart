@@ -325,7 +325,7 @@ class _ProductTourState extends State<_ProductTour> {
               backgroundColor: context.primary,
               foregroundColor: context.onSolid,
               minimumSize: const Size.fromHeight(50),
-              shape: const StadiumBorder(),
+              shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
             ),
             child: Text(
               _page == pages.length - 1 ? l.done : l.next,

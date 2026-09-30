@@ -70,10 +70,10 @@ class MhuriType {
 }
 
 /// The one radius ruler: everything circles back to these.
-const double kRadiusS = 12;
-const double kRadiusM = 18;
-const double kRadiusL = 24;
-const double kRadiusSheet = 28;
+const double kRadiusS = 10;
+const double kRadiusM = 14;
+const double kRadiusL = 16;
+const double kRadiusSheet = 24;
 
 /// Responsive page gutters used by every full-screen, scrollable surface.
 /// SafeArea supplies the device inset; these values supply the visual breathing
@@ -101,6 +101,7 @@ class MhuriColors {
   final Color bg, card, ink, inkSoft, inkFaint, hairline;
   final Color primary, primaryDark, primarySoft;
   final Color accent, accentSoft, danger, dangerSoft;
+  final Color successSoft, warningSoft, infoSoft, violetSoft;
   final Color incomeGreen, expenseRed, track, shadowColor, onSolid;
   final List<BoxShadow> cardShadow;
 
@@ -118,6 +119,10 @@ class MhuriColors {
     required this.accentSoft,
     required this.danger,
     required this.dangerSoft,
+    required this.successSoft,
+    required this.warningSoft,
+    required this.infoSoft,
+    required this.violetSoft,
     required this.incomeGreen,
     required this.expenseRed,
     required this.track,
@@ -140,6 +145,10 @@ class MhuriColors {
     accentSoft: kAccentSoft,
     danger: kDanger,
     dangerSoft: kDangerSoft,
+    successSoft: Color(0xFFD9EDE8),
+    warningSoft: Color(0xFFFBE7C6),
+    infoSoft: Color(0xFFDCEBFA),
+    violetSoft: Color(0xFFEFE3F7),
     incomeGreen: kIncomeGreen,
     expenseRed: kExpenseRed,
     track: kTrack,
@@ -162,6 +171,10 @@ class MhuriColors {
     accentSoft: Color(0xFF332A12),
     danger: Color(0xFFE8796F),
     dangerSoft: Color(0xFF3A211E),
+    successSoft: Color(0xFF17372F),
+    warningSoft: Color(0xFF3A2D14),
+    infoSoft: Color(0xFF172F40),
+    violetSoft: Color(0xFF30263B),
     incomeGreen: Color(0xFF46C983),
     expenseRed: Color(0xFFE4796F),
     track: Color(0xFF223029),
@@ -192,6 +205,10 @@ extension MhuriCtx on BuildContext {
   Color get accentSoft => mc.accentSoft;
   Color get danger => mc.danger;
   Color get dangerSoft => mc.dangerSoft;
+  Color get successSoft => mc.successSoft;
+  Color get warningSoft => mc.warningSoft;
+  Color get infoSoft => mc.infoSoft;
+  Color get violetSoft => mc.violetSoft;
   Color get incomeGreen => mc.incomeGreen;
   Color get expenseRed => mc.expenseRed;
   Color get track => mc.track;
@@ -330,7 +347,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
         disabledForegroundColor: p.inkFaint,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         textStyle: const TextStyle(
           fontFamily: kFontFamily,
           fontSize: 14.5,
@@ -345,7 +362,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
         foregroundColor: p.onSolid,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         textStyle: const TextStyle(
           fontFamily: kFontFamily,
           fontSize: 14.5,
@@ -357,7 +374,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
       style: TextButton.styleFrom(
         foregroundColor: p.primary,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusS),
         textStyle: const TextStyle(
           fontFamily: kFontFamily,
           fontSize: 14,
@@ -370,7 +387,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
         foregroundColor: p.ink,
         side: BorderSide(color: p.hairline, width: 1.2),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         textStyle: const TextStyle(
           fontFamily: kFontFamily,
           fontSize: 14,

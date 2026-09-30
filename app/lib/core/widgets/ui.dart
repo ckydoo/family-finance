@@ -83,7 +83,7 @@ class SectionHeader extends StatelessWidget {
       );
 }
 
-/// The single full-width call-to-action (stadium, 54 high, busy spinner).
+/// The single full-width call-to-action (rounded rectangle, 54 high).
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -106,10 +106,10 @@ class PrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: danger ? context.danger : context.primary,
           foregroundColor: context.onSolid,
-          disabledBackgroundColor: (danger ? context.danger : context.primary)
-              .withValues(alpha: 0.5),
+          disabledBackgroundColor: danger ? context.dangerSoft : context.track,
+          disabledForegroundColor: context.inkFaint,
           minimumSize: const Size.fromHeight(54),
-          shape: const StadiumBorder(),
+          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         ),
         child: busy
             ? const SizedBox.square(
@@ -354,7 +354,7 @@ class ErrorNotice extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.dangerSoft,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.danger.withValues(alpha: 0.35)),
+            border: Border.all(color: context.danger),
           ),
           child: Row(
             children: [
@@ -425,7 +425,7 @@ class SecondaryButton extends StatelessWidget {
       foregroundColor: tint,
       side: BorderSide(color: tint),
       minimumSize: const Size.fromHeight(44),
-      shape: const StadiumBorder(),
+      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
     );
     return icon == null
         ? OutlinedButton(onPressed: onPressed, style: style, child: Text(label))
@@ -535,8 +535,8 @@ class StatusBanner extends StatelessWidget {
           Icons.info_outline_rounded
         ),
       BannerType.warning => (
-          const Color(0xFFFFF3CD),
-          const Color(0xFF664D03),
+          context.warningSoft,
+          context.ink,
           Icons.warning_amber_rounded
         ),
       BannerType.error => (
@@ -556,7 +556,7 @@ class StatusBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: fg.withValues(alpha: 0.2)),
+        border: Border.all(color: context.hairline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

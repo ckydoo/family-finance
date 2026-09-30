@@ -98,7 +98,7 @@ class BudgetsScreen extends StatelessWidget {
           backgroundColor: context.primary,
           foregroundColor: context.onSolid,
           minimumSize: const Size.fromHeight(52),
-          shape: const StadiumBorder(),
+          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         ),
         icon: const Icon(Icons.add),
         label: Text(l.newEnvelope),
@@ -323,7 +323,7 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
               },
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
-                shape: const StadiumBorder(),
+                shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
               ),
               child: Text(l.save),
             ),
@@ -358,12 +358,13 @@ class _EnvelopeCard extends StatelessWidget {
 
     return InkWell(
       onTap: () => _openDetail(context, s),
-      borderRadius: BorderRadius.circular(20),
+      onLongPress: s.canAdmin ? () => _confirmRemove(context, s) : null,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: context.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
@@ -383,7 +384,7 @@ class _EnvelopeCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Flexible(
+                      Expanded(
                         child: Text(
                           e.name,
                           maxLines: 1,
@@ -395,21 +396,17 @@ class _EnvelopeCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      if (e.isPersonal)
+                      if (e.isPersonal) ...[
+                        const SizedBox(width: 6),
                         Icon(Icons.lock, size: 12, color: context.inkSoft),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          rolloverLabel(
-                              AppLocalizations.of(context)!, e.rollover),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(fontSize: 10.5, color: context.inkSoft),
-                        ),
-                      ),
+                      ],
                     ],
+                  ),
+                  Text(
+                    rolloverLabel(AppLocalizations.of(context)!, e.rollover),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10.5, color: context.inkSoft),
                   ),
                   if (effectiveLimit.minor <= 0 && spent.minor <= 0) ...[
                     const SizedBox(height: 4),
@@ -468,29 +465,98 @@ class _EnvelopeCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            if (effectiveLimit.minor <= 0 && spent.minor <= 0)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: context.track,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'No limit',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: context.inkSoft,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (s.canAdmin)
+                  SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: PopupMenuButton<String>(
+                      tooltip: 'Budget actions',
+                      padding: EdgeInsets.zero,
+                      icon: Icon(Icons.more_horiz,
+                          size: 20, color: context.inkSoft),
+                      onSelected: (action) async {
+                        if (action == 'edit') {
+                          await showEditEnvelopeSheet(context, s, e);
+                        } else if (action == 'remove') {
+                          await _confirmRemove(context, s);
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Edit budget'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'remove',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline,
+                                  size: 18, color: context.expenseRed),
+                              const SizedBox(width: 8),
+                              Text('Remove budget',
+                                  style: TextStyle(color: context.expenseRed)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              )
-            else
-              _PaceChip(pace: pace),
+                const SizedBox(height: 6),
+                if (effectiveLimit.minor <= 0 && spent.minor <= 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: context.track,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'No limit',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: context.inkSoft,
+                      ),
+                    ),
+                  )
+                else
+                  _PaceChip(pace: pace),
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmRemove(BuildContext context, AppState s) async {
+    final ok = await confirmDialog(
+      context,
+      title: 'Remove ${e.name} budget?',
+      body:
+          'This budget will be removed from your budget list. Previous transactions will remain in your history.',
+      confirmLabel: 'Remove budget',
+      danger: true,
+    );
+    if (!context.mounted) return;
+    if (ok && s.archiveEnvelope(e)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${e.name} budget removed'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _openDetail(BuildContext context, AppState s) {
@@ -509,30 +575,36 @@ class _PaceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (pace) {
+    final (label, background, foreground) = switch (pace) {
       Pace.onTrack => (
           AppLocalizations.of(context)!.chipOnTrack,
-          const Color(0xFFD9EDE8)
+          context.successSoft,
+          context.primaryDark,
         ),
       Pace.watch => (
           AppLocalizations.of(context)!.watch,
-          const Color(0xFFFBE7C6)
+          context.warningSoft,
+          context.ink,
         ),
       Pace.over => (
           AppLocalizations.of(context)!.overBudgetLabel,
-          const Color(0xFFF9E0DF)
+          context.dangerSoft,
+          context.expenseRed,
         ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color,
+        color: background,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
         style: TextStyle(
-            fontSize: 11, fontWeight: FontWeight.w700, color: context.ink),
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: foreground,
+        ),
       ),
     );
   }
@@ -551,8 +623,8 @@ class _EnvelopeDetail extends StatefulWidget {
 }
 
 class _EnvelopeDetailState extends State<_EnvelopeDetail> {
-  Envelope? _from;
-  Envelope? _to;
+  String? _fromId;
+  String? _toId;
   bool _moving = false;
   String? _moveError;
   final _amount = TextEditingController();
@@ -561,10 +633,10 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
   @override
   void initState() {
     super.initState();
-    _from = widget.e;
+    _fromId = widget.e.id;
     for (final x in widget.s.envelopes) {
       if (x.id != widget.e.id) {
-        _to = x;
+        _toId = x.id;
         break;
       }
     }
@@ -587,6 +659,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
     final effectiveLimit = s.effectiveLimit(e);
     final inEnvelope =
         s.txs.where((t) => t.envelopeId == e.id).take(4).toList();
+    final from = s.envelope(_fromId);
+    final to = s.envelope(_toId);
 
     return SingleChildScrollView(
       padding: EdgeInsets.only(
@@ -645,28 +719,45 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                       } else if (action == 'archive') {
                         final ok = await confirmDialog(
                           context,
-                          title: 'Archive ${e.name} budget?',
+                          title: 'Remove ${e.name} budget?',
                           body:
-                              'It will no longer accept new spending, but previous transactions will remain in your history.',
-                          confirmLabel: 'Archive budget',
+                              'This budget will be removed from your budget list. Previous transactions will remain in your history.',
+                          confirmLabel: 'Remove budget',
                           danger: true,
                         );
                         if (!context.mounted) return;
                         if (ok && mounted && s.archiveEnvelope(e)) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Budget archived'),
+                              SnackBar(
+                                  content: Text('${e.name} budget removed'),
                                   behavior: SnackBarBehavior.floating));
                         }
                       }
                     },
                     itemBuilder: (_) => [
                       const PopupMenuItem(
-                          value: 'edit', child: Text('Edit budget')),
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Edit budget'),
+                            ],
+                          )),
                       if (s.canAdmin)
-                        const PopupMenuItem(
-                            value: 'archive', child: Text('Archive budget')),
+                        PopupMenuItem(
+                          value: 'archive',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline,
+                                  size: 18, color: context.expenseRed),
+                              const SizedBox(width: 8),
+                              Text('Remove budget',
+                                  style: TextStyle(color: context.expenseRed)),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
               ],
@@ -708,8 +799,10 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<Envelope>(
-                    initialValue: _from,
+                  child: DropdownButtonFormField<String>(
+                    initialValue: s.envelopes.any((x) => x.id == _fromId)
+                        ? _fromId
+                        : null,
                     isExpanded: true,
                     decoration: InputDecoration(
                       labelText: l.transferFrom,
@@ -720,8 +813,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                     ),
                     items: [
                       for (final x in s.envelopes)
-                        DropdownMenuItem(
-                          value: x,
+                        DropdownMenuItem<String>(
+                          value: x.id,
                           child: Row(
                             children: [
                               Icon(
@@ -742,8 +835,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                         ),
                     ],
                     onChanged: (v) => setState(() {
-                      _from = v;
-                      if (_to == _from) _to = null;
+                      _fromId = v;
+                      if (_toId == _fromId) _toId = null;
                     }),
                   ),
                 ),
@@ -753,8 +846,11 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                       size: 18, color: context.inkSoft),
                 ),
                 Expanded(
-                  child: DropdownButtonFormField<Envelope>(
-                    initialValue: _to,
+                  child: DropdownButtonFormField<String>(
+                    initialValue: s.envelopes.any((x) => x.id == _toId) &&
+                            _toId != _fromId
+                        ? _toId
+                        : null,
                     isExpanded: true,
                     decoration: InputDecoration(
                       labelText: l.transferTo,
@@ -764,10 +860,9 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                           const OutlineInputBorder(borderSide: BorderSide.none),
                     ),
                     items: [
-                      for (final x
-                          in s.envelopes.where((x) => x.id != _from?.id))
-                        DropdownMenuItem(
-                          value: x,
+                      for (final x in s.envelopes.where((x) => x.id != _fromId))
+                        DropdownMenuItem<String>(
+                          value: x.id,
                           child: Row(
                             children: [
                               Icon(
@@ -787,7 +882,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                           ),
                         ),
                     ],
-                    onChanged: (v) => setState(() => _to = v),
+                    onChanged: (v) => setState(() => _toId = v),
                   ),
                 ),
               ],
@@ -807,7 +902,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                     },
                     decoration: InputDecoration(
                       labelText:
-                          'Amount (${_from?.limit.currency.symbol ?? ''})',
+                          'Amount (${from?.limit.currency.symbol ?? ''})',
                       filled: true,
                       fillColor: context.card,
                       border:
@@ -835,7 +930,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                   : () {
                       final v =
                           double.tryParse(_amount.text.replaceAll(',', ''));
-                      if (_from == null || _to == null) {
+                      if (from == null || to == null) {
                         setState(() => _moveError =
                             AppLocalizations.of(context)!.pickFirst);
                         return;
@@ -849,9 +944,9 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                       try {
                         final messenger = ScaffoldMessenger.of(context);
                         s.moveMoney(
-                          _from!,
-                          _to!,
-                          Money.fromMajor(v, _from!.limit.currency),
+                          from,
+                          to,
+                          Money.fromMajor(v, from.limit.currency),
                           _reason.text.isEmpty ? 're-plan' : _reason.text,
                           id: newUuid(),
                         );
@@ -859,8 +954,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                         messenger.showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Moved ${Money.fromMajor(v, _from!.limit.currency).text}'
-                              ' → ${_to!.name} ✓',
+                              'Moved ${Money.fromMajor(v, from.limit.currency).text}'
+                              ' → ${to.name} ✓',
                             ),
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -873,7 +968,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                 backgroundColor: context.primary,
                 foregroundColor: context.onSolid,
                 minimumSize: const Size.fromHeight(50),
-                shape: const StadiumBorder(),
+                shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
               ),
               child: _moving
                   ? const SizedBox(
@@ -911,7 +1006,9 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
     );
   }
 
-  Widget _stat(String label, String value, {bool danger = false, VoidCallback? onTap}) => Expanded(
+  Widget _stat(String label, String value,
+          {bool danger = false, VoidCallback? onTap}) =>
+      Expanded(
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
@@ -931,7 +1028,8 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(label,
-                          style: TextStyle(fontSize: 11, color: context.inkSoft)),
+                          style:
+                              TextStyle(fontSize: 11, color: context.inkSoft)),
                       if (onTap != null) ...[
                         const SizedBox(width: 4),
                         Icon(Icons.edit, size: 10, color: context.primary),
@@ -973,28 +1071,61 @@ Future<void> showEditEnvelopeSheet(
     builder: (sheetContext) => StatefulBuilder(
       builder: (sheetContext, setSheet) => MhuriSheetShell(
         title: isNew ? 'Set ${envelope.name} budget' : 'Edit budget',
-        footer: PrimaryButton(
-          label: isNew ? 'Set budget' : 'Save changes',
-          onPressed: () {
-            final parsed = double.tryParse(amount.text.replaceAll(',', ''));
-            if (name.text.trim().isEmpty || parsed == null || parsed <= 0) {
-              setSheet(() => error = 'Enter a valid budget amount.');
-              return;
-            }
-            state.updateEnvelope(
-              envelope,
-              name: name.text,
-              limit: Money.fromMajor(parsed, envelope.limit.currency),
-              rollover: rollover,
-            );
-            final messenger = ScaffoldMessenger.of(context);
-            Navigator.pop(sheetContext);
-            messenger.showSnackBar(SnackBar(
-                content: Text(isNew
-                    ? '${envelope.name} budget set to ${envelope.limit.currency.symbol}${parsed.toStringAsFixed(2)}'
-                    : 'Budget updated'),
-                behavior: SnackBarBehavior.floating));
-          },
+        footer: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PrimaryButton(
+              label: isNew ? 'Set budget' : 'Save changes',
+              onPressed: () {
+                final parsed = double.tryParse(amount.text.replaceAll(',', ''));
+                if (name.text.trim().isEmpty || parsed == null || parsed <= 0) {
+                  setSheet(() => error = 'Enter a valid budget amount.');
+                  return;
+                }
+                state.updateEnvelope(
+                  envelope,
+                  name: name.text,
+                  limit: Money.fromMajor(parsed, envelope.limit.currency),
+                  rollover: rollover,
+                );
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.pop(sheetContext);
+                messenger.showSnackBar(SnackBar(
+                    content: Text(isNew
+                        ? '${envelope.name} budget set to ${envelope.limit.currency.symbol}${parsed.toStringAsFixed(2)}'
+                        : 'Budget updated'),
+                    behavior: SnackBarBehavior.floating));
+              },
+            ),
+            if (state.canAdmin) ...[
+              const SizedBox(height: 8),
+              SecondaryButton(
+                label: 'Remove budget',
+                icon: Icons.delete_outline,
+                danger: true,
+                onPressed: () async {
+                  final ok = await confirmDialog(
+                    context,
+                    title: 'Remove ${envelope.name} budget?',
+                    body:
+                        'This budget will be removed from your budget list. Previous transactions will remain in your history.',
+                    confirmLabel: 'Remove budget',
+                    danger: true,
+                  );
+                  if (!sheetContext.mounted) return;
+                  if (ok && state.archiveEnvelope(envelope)) {
+                    Navigator.pop(sheetContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${envelope.name} budget removed'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

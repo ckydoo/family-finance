@@ -32,19 +32,19 @@ class EmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1F2937),
+              color: context.ink,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Color(0xFF6B7280),
+              color: context.inkSoft,
               height: 1.4,
             ),
           ),

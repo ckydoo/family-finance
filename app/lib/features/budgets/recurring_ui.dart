@@ -27,7 +27,7 @@ class RecurringRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: dueSoon && rule.active
-            ? context.accentSoft.withValues(alpha: 0.45)
+            ? context.accentSoft
             : Colors.transparent,
         border: Border(bottom: BorderSide(color: context.hairline)),
       ),
@@ -87,7 +87,7 @@ class RecurringRow extends StatelessWidget {
                 backgroundColor: context.accent,
                 foregroundColor: context.onSolid,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
-                shape: const StadiumBorder(),
+                shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
               ),
               child: Text(
                 AppLocalizations.of(context)!.post,
@@ -245,8 +245,8 @@ Future<void> showAddRecurringSheet(BuildContext context) {
   final amount = TextEditingController();
   Currency cur = s.displayCurrency;
   Frequency freq = Frequency.monthly;
-  Envelope? envelope = s.envelopes.isEmpty ? null : s.envelopes.first;
-  Member member = s.user;
+  String? envelopeId = s.envelopes.isEmpty ? null : s.envelopes.first.id;
+  String memberId = s.user.id;
   Method method = Method.bankTransfer;
   DateTime nextDue = DateTime.now().add(const Duration(days: 7));
   String? recError;
@@ -283,11 +283,11 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                   name: n,
                   emoji: 'autorenew',
                   amount: Money.fromMajor(v, cur),
-                  memberId: member.id,
+                  memberId: memberId,
                   method: method,
                   frequency: freq,
                   nextDue: nextDue,
-                  envelopeId: envelope?.id,
+                  envelopeId: envelopeId,
                 );
                 Navigator.pop(sheetCtx);
               },
@@ -355,8 +355,10 @@ Future<void> showAddRecurringSheet(BuildContext context) {
               ],
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<Envelope>(
-              initialValue: envelope,
+            DropdownButtonFormField<String?>(
+              initialValue: s.envelopes.any((e) => e.id == envelopeId)
+                  ? envelopeId
+                  : null,
               isExpanded: true,
               decoration: InputDecoration(
                 labelText: AppLocalizations.of(context)!.envelopeLabel,
@@ -365,13 +367,13 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                 border: const OutlineInputBorder(borderSide: BorderSide.none),
               ),
               items: [
-                DropdownMenuItem(
+                DropdownMenuItem<String?>(
                   value: null,
                   child: Text(AppLocalizations.of(context)!.recNoEnvelope),
                 ),
                 for (final e in s.envelopes)
-                  DropdownMenuItem(
-                      value: e,
+                  DropdownMenuItem<String?>(
+                      value: e.id,
                       child: Row(children: [
                         Icon(iconForKey(e.emoji) ?? Icons.savings,
                             size: 16, color: context.primaryDark),
@@ -382,13 +384,19 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                         ),
                       ])),
               ],
-              onChanged: (v) => setSheet(() => envelope = v),
+              onChanged: (v) => setSheet(() => envelopeId = v),
             ),
             const SizedBox(height: 12),
             LayoutBuilder(
               builder: (context, constraints) {
-                Widget memberField() => DropdownButtonFormField<Member>(
-                      initialValue: member,
+                final members = <Member>[
+                  s.user,
+                  ...s.members.where((m) => m.id != s.user.id),
+                ];
+                Widget memberField() => DropdownButtonFormField<String>(
+                      initialValue: members.any((m) => m.id == memberId)
+                          ? memberId
+                          : s.user.id,
                       isExpanded: true,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.whoLabel,
@@ -398,9 +406,9 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                             borderSide: BorderSide.none),
                       ),
                       items: [
-                        for (final m in s.members)
-                          DropdownMenuItem(
-                              value: m,
+                        for (final m in members)
+                          DropdownMenuItem<String>(
+                              value: m.id,
                               child: Row(children: [
                                 Icon(iconForKey(m.emoji) ?? Icons.person,
                                     size: 16, color: context.primaryDark),
@@ -412,7 +420,8 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                                 ),
                               ])),
                       ],
-                      onChanged: (v) => setSheet(() => member = v ?? s.user),
+                      onChanged: (v) =>
+                          setSheet(() => memberId = v ?? s.user.id),
                     );
 
                 Widget methodField() => DropdownButtonFormField<Method>(

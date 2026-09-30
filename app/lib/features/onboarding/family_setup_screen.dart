@@ -623,7 +623,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         backgroundColor: context.primary,
         foregroundColor: context.onSolid,
         minimumSize: const Size.fromHeight(54),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
       ),
       child: _busy
           ? const SizedBox.square(
@@ -875,7 +875,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: context.primarySoft.withValues(alpha: 0.35),
+            color: context.primarySoft,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -1059,7 +1059,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: context.primary,
               minimumSize: const Size.fromHeight(50),
-              shape: const StadiumBorder(),
+              shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
             ),
             child: const Text('Go to Home',
                 style: TextStyle(fontWeight: FontWeight.w800)),

@@ -1266,7 +1266,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get copied => 'Copiado ✓';
 
   @override
-  String get inviteTitle => 'Convidar a família';
+  String get inviteTitle => 'Convidar um familiar';
 
   @override
   String get editProfile => 'Editar perfil';

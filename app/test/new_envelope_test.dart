@@ -205,5 +205,102 @@ void main() {
     expect(find.text('Move money'), findsAtLeastNWidgets(1));
     expect(find.text('Set Groceries budget'), findsNothing);
   });
+
+  testWidgets(
+      'budget can be removed from budget list via card options menu',
+      (tester) async {
+    tester.view.physicalSize = const Size(402, 874);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = AppState();
+    state.addEnvelope(
+      name: 'Old Subscription',
+      limit: const Money(1500, Currency.usd),
+      emoji: 'basket',
+    );
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: const MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: BudgetsScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Old Subscription'), findsOneWidget);
+
+    // Open the popup menu on the card
+    final optionsFinder = find.byTooltip('Budget actions').first;
+    await tester.tap(optionsFinder);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Remove budget'), findsOneWidget);
+    await tester.tap(find.text('Remove budget'));
+    await tester.pumpAndSettle();
+
+    // Confirm dialog appears
+    expect(find.text('Remove Old Subscription budget?'), findsOneWidget);
+    // Tap the confirmation action button
+    final confirmBtn = find.text('Remove budget').last;
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    // Envelope is removed from budget list
+    expect(find.text('Old Subscription'), findsNothing);
+    expect(state.envelopes.any((e) => e.name == 'Old Subscription'), isFalse);
+  });
+
+  testWidgets(
+      'unconfigured budget can be removed directly from Set Budget sheet',
+      (tester) async {
+    tester.view.physicalSize = const Size(402, 874);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = AppState();
+    state.addEnvelope(
+      name: 'Unwanted Category',
+      limit: const Money(0, Currency.usd),
+      emoji: 'basket',
+    );
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: const MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: BudgetsScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unwanted Category'), findsOneWidget);
+
+    // Tapping unconfigured envelope opens Set Budget sheet
+    await tester.tap(find.text('Unwanted Category').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Set Unwanted Category budget'), findsOneWidget);
+    expect(find.text('Remove budget'), findsOneWidget);
+
+    // Tap Remove budget in sheet footer
+    await tester.tap(find.text('Remove budget'));
+    await tester.pumpAndSettle();
+
+    // Confirm dialog
+    expect(find.text('Remove Unwanted Category budget?'), findsOneWidget);
+    await tester.tap(find.text('Remove budget').last);
+    await tester.pumpAndSettle();
+
+    // Sheet is closed and envelope is gone from budget list
+    expect(find.text('Set Unwanted Category budget'), findsNothing);
+    expect(find.text('Unwanted Category'), findsNothing);
+    expect(state.envelopes.any((e) => e.name == 'Unwanted Category'), isFalse);
+  });
 }
 

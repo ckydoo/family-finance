@@ -29,7 +29,7 @@ void main() {
     expect(find.text('Forgot password?'), findsOneWidget);
     expect(find.text('New to Mhuri?'), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.text('Continue with Apple'), findsOneWidget);
+    expect(find.text('Continue with Apple'), findsNothing);
     expect(find.text('Continue with Facebook'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
@@ -40,7 +40,7 @@ void main() {
     expect(find.text('Already have an account?'), findsOneWidget);
     expect(find.text('Forgot password?'), findsNothing);
     expect(find.text('Sign up with Google'), findsOneWidget);
-    expect(find.text('Sign up with Apple'), findsOneWidget);
+    expect(find.text('Sign up with Apple'), findsNothing);
     expect(find.text('Sign up with Facebook'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -88,11 +88,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Continue with Google'));
-    await tester.tap(find.text('Continue with Google'));
+    await tester.ensureVisible(find.text('Continue with Facebook'));
+    await tester.tap(find.text('Continue with Facebook'));
     await tester.pump();
 
-    expect(find.textContaining('Google sign-in is not configured'),
+    expect(find.textContaining('Facebook sign-in is not configured'),
         findsOneWidget);
     expect(auth.isLoggedIn, isFalse);
   });

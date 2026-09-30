@@ -54,14 +54,25 @@ class FakeAuthService implements AuthService {
   @override
   Future<AuthResult> updatePassword(String newPassword) async {
     if (_session == null) {
-      return const AuthResult.failure('No recovery session.', code: 'reset_expired');
+      return const AuthResult.failure('No recovery session.',
+          code: 'reset_expired');
     }
     return const AuthResult.success();
   }
 
   @override
-  Future<bool> adoptRecoverySession(String accessToken, String refreshToken) async {
-    _session = const AuthSession(userId: 'test-user-1', email: 'reset@example.com');
+  Future<bool> adoptRecoverySession(
+      String accessToken, String refreshToken) async {
+    _session =
+        const AuthSession(userId: 'test-user-1', email: 'reset@example.com');
+    return true;
+  }
+
+  @override
+  Future<bool> adoptOAuthSession(
+      String accessToken, String refreshToken) async {
+    _session =
+        const AuthSession(userId: 'google-user-1', email: 'google@example.com');
     return true;
   }
 

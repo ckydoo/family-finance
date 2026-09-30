@@ -69,6 +69,11 @@ class FakeAuthService implements AuthService {
   }
 
   @override
+  Future<bool> adoptOAuthSession(
+          String accessToken, String refreshToken) async =>
+      adoptRecoverySession(accessToken, refreshToken);
+
+  @override
   Future<void> signOut() async {
     _session = null;
   }

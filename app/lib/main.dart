@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'app.dart';
 import 'core/auth/auth_controller.dart';
 import 'core/config/app_env.dart';
 import 'core/db/app_database.dart';
+import 'core/firebase/firebase_services.dart';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) =>
+    FirebaseServices.handleBackgroundMessage(message);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await FirebaseServices.initialize(
+    backgroundHandler: firebaseMessagingBackgroundHandler,
+  );
 
   // Server connection (see AppEnv): dart-defines > .env asset > constants.
   // A build with no connection shows the setup screen below - it never

@@ -700,7 +700,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recurringHint =>
-      'Add school fees, rent or airtime rules - we remind you when each one comes due.';
+      'Add school fees, rent, netflix or airtime rules - we remind you when each one comes due.';
 
   @override
   String get chipOnTrack => 'On track';
@@ -1255,7 +1255,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copied => 'Copied ✓';
 
   @override
-  String get inviteTitle => 'Invite family';
+  String get inviteTitle => 'Invite family member';
 
   @override
   String get editProfile => 'Edit profile';

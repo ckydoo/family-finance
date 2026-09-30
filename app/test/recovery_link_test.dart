@@ -14,6 +14,23 @@ String _jwt({String sub = 'uid-1', String email = 'ama@example.com'}) =>
         }))}.sig';
 
 void main() {
+  group('parseOAuthLink', () {
+    test('accepts only the app OAuth callback with both tokens', () {
+      final result = parseOAuthLink(
+          'mhuri://auth-callback#access_token=access&refresh_token=refresh');
+      expect(result?.accessToken, 'access');
+      expect(result?.refreshToken, 'refresh');
+      expect(
+          parseOAuthLink(
+              'mhuri://reset-callback#access_token=a&refresh_token=r'),
+          isNull);
+      expect(
+          parseOAuthLink(
+              'https://evil.example/#access_token=a&refresh_token=r'),
+          isNull);
+    });
+  });
+
   group('parseRecoveryLink', () {
     test('implicit-flow link with fragment tokens', () {
       final r = parseRecoveryLink(

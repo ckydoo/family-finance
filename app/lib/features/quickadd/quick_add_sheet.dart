@@ -41,8 +41,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   late TxType _type;
   Currency _cur = Currency.usd;
   Method _method = Method.cash;
-  Envelope? _envelope;
-  Member? _member;
+  String? _envelopeId;
+  String? _memberId;
   bool _more = false;
   bool _saved = false;
   bool _saving = false;
@@ -60,8 +60,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       final s = AppScope.of(context);
       setState(() {
         _cur = s.displayCurrency;
-        _envelope = s.envelopes.isEmpty ? null : s.envelopes.first;
-        _member = s.members.isEmpty ? null : s.user;
+        _envelopeId = s.envelopes.isEmpty ? null : s.envelopes.first.id;
+        _memberId = s.user.id;
       });
     });
   }
@@ -120,7 +120,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
 
   Money? _enteredExpense(AppState s) {
     final amount = _parsedAmount;
-    final envelope = _envelope;
+    final envelope = s.envelope(_envelopeId);
     if (_type != TxType.expense || amount == null || envelope == null) {
       return null;
     }
@@ -135,12 +135,15 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       setState(() => _amountError = l.enterAmountFirst);
       return;
     }
-    if (_member == null) {
+    final member = _memberId == null
+        ? null
+        : s.member(_memberId!) ?? (_memberId == s.user.id ? s.user : null);
+    if (member == null) {
       setState(() => _amountError = l.whoLabel);
       return;
     }
 
-    final envelope = _type == TxType.expense ? _envelope : null;
+    final envelope = _type == TxType.expense ? s.envelope(_envelopeId) : null;
     final entered = _enteredExpense(s);
     if (envelope != null && entered != null) {
       final remaining = s.remainingOn(envelope);
@@ -193,7 +196,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       id: newUuid(),
       type: _type,
       amount: Money.fromMajor(amt, _cur),
-      memberId: _member!.id,
+      memberId: member.id,
       method: _method,
       note: note,
       envelopeId: envelope?.id,
@@ -207,10 +210,177 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     );
   }
 
+  Future<void> _pickBudget(AppState state) async {
+    const noBudget = '__no_budget__';
+    String query = '';
+    final recentIds = <String>[];
+    for (final tx in state.txs) {
+      final id = tx.envelopeId;
+      if (tx.type == TxType.expense &&
+          id != null &&
+          !recentIds.contains(id) &&
+          state.envelope(id) != null) {
+        recentIds.add(id);
+        if (recentIds.length == 3) break;
+      }
+    }
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: context.bg,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) {
+          final matches = state.envelopes.where((envelope) {
+            final value = query.trim().toLowerCase();
+            return value.isEmpty || envelope.name.toLowerCase().contains(value);
+          }).toList();
+          final recent = matches
+              .where((envelope) => recentIds.contains(envelope.id))
+              .toList()
+            ..sort((a, b) =>
+                recentIds.indexOf(a.id).compareTo(recentIds.indexOf(b.id)));
+          final shared = matches
+              .where((envelope) =>
+                  !envelope.isPersonal && !recentIds.contains(envelope.id))
+              .toList();
+          final personal = matches
+              .where((envelope) =>
+                  envelope.isPersonal && !recentIds.contains(envelope.id))
+              .toList();
+
+          Widget heading(String text) => Padding(
+                padding: const EdgeInsets.fromLTRB(4, 16, 4, 6),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 0.7,
+                    fontWeight: FontWeight.w800,
+                    color: sheetContext.inkSoft,
+                  ),
+                ),
+              );
+
+          Widget budgetTile(Envelope envelope) {
+            final remaining = state.remainingOn(envelope);
+            final hasLimit = state.effectiveLimit(envelope).minor > 0;
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              leading: Icon(iconForKey(envelope.emoji) ?? Icons.savings,
+                  color: sheetContext.primaryDark),
+              title: Text(envelope.name,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                hasLimit ? '${remaining.text} left' : 'No limit',
+                style: TextStyle(color: sheetContext.inkSoft),
+              ),
+              trailing: _envelopeId == envelope.id
+                  ? Icon(Icons.check_circle, color: sheetContext.primary)
+                  : const Icon(Icons.chevron_right),
+              onTap: () => Navigator.pop(sheetContext, envelope.id),
+            );
+          }
+
+          return FractionallySizedBox(
+            heightFactor: 0.82,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                18,
+                20,
+                12 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('Choose a budget',
+                            style: Theme.of(sheetContext).textTheme.titleLarge),
+                      ),
+                      IconButton(
+                        tooltip: MaterialLocalizations.of(sheetContext)
+                            .closeButtonTooltip,
+                        onPressed: () => Navigator.pop(sheetContext),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    autofocus: state.envelopes.length > 8,
+                    onChanged: (value) => setSheet(() => query = value),
+                    decoration: InputDecoration(
+                      hintText: 'Search budgets',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: sheetContext.card,
+                      border:
+                          const OutlineInputBorder(borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        ListTile(
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 4),
+                          leading: const Icon(Icons.remove_circle_outline),
+                          title: const Text('No budget'),
+                          subtitle: const Text('Keep this expense unallocated'),
+                          trailing: _envelopeId == null
+                              ? Icon(Icons.check_circle,
+                                  color: sheetContext.primary)
+                              : null,
+                          onTap: () => Navigator.pop(sheetContext, noBudget),
+                        ),
+                        if (recent.isNotEmpty) ...[
+                          heading('RECENT'),
+                          for (final envelope in recent) budgetTile(envelope),
+                        ],
+                        if (shared.isNotEmpty) ...[
+                          heading('SHARED BUDGETS'),
+                          for (final envelope in shared) budgetTile(envelope),
+                        ],
+                        if (personal.isNotEmpty) ...[
+                          heading('PERSONAL BUDGETS'),
+                          for (final envelope in personal) budgetTile(envelope),
+                        ],
+                        if (matches.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 28),
+                            child: Text(
+                              'No budgets match your search.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: sheetContext.inkSoft),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _envelopeId = selected == noBudget ? null : selected);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final l = AppLocalizations.of(context)!;
+    final members = <Member>[
+      s.user,
+      ...s.members.where((member) => member.id != s.user.id),
+    ];
 
     return PopScope(
       canPop: !_dirty,
@@ -264,20 +434,37 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Expense / Income
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              Text(
+                'What are you adding?',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: context.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  ChoiceChip(
-                    label: Text(l.expense),
-                    selected: _type == TxType.expense,
-                    onSelected: (_) => setState(() => _type = TxType.expense),
+                  Expanded(
+                    child: _TransactionTypeButton(
+                      label: l.expense,
+                      icon: Icons.arrow_upward_rounded,
+                      selected: _type == TxType.expense,
+                      selectedBackground: context.dangerSoft,
+                      selectedForeground: context.expenseRed,
+                      onTap: () => setState(() => _type = TxType.expense),
+                    ),
                   ),
-                  ChoiceChip(
-                    label: Text(l.income),
-                    selected: _type == TxType.income,
-                    onSelected: (_) => setState(() => _type = TxType.income),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _TransactionTypeButton(
+                      label: l.income,
+                      icon: Icons.arrow_downward_rounded,
+                      selected: _type == TxType.income,
+                      selectedBackground: context.successSoft,
+                      selectedForeground: context.incomeGreen,
+                      onTap: () => setState(() => _type = TxType.income),
+                    ),
                   ),
                 ],
               ),
@@ -302,6 +489,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       color: context.inkSoft),
                   filled: true,
                   fillColor: context.card,
+                  labelText: _type == TxType.expense
+                      ? 'Amount spent'
+                      : 'Amount received',
                   errorText: _amountError,
                   errorStyle: TextStyle(
                     color: context.danger,
@@ -360,39 +550,23 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 const SizedBox(height: 12),
               ],
               if (_type == TxType.expense && s.envelopes.isNotEmpty) ...[
-                Text(l.fromEnvelope,
+                Text('Which budget is this from?',
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                         color: context.inkSoft)),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final e in s.envelopes.where((e) => !e.isPersonal))
-                      ChoiceChip(
-                        label: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(iconForKey(e.emoji) ?? Icons.savings,
-                              size: 16, color: context.primaryDark),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: (MediaQuery.sizeOf(context).width - 140)
-                                .clamp(100, 260),
-                            child: Text(
-                              e.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ]),
-                        selected: _envelope?.id == e.id,
-                        onSelected: (_) => setState(() => _envelope = e),
-                      ),
-                  ],
+                _BudgetSelector(
+                  envelope: s.envelope(_envelopeId),
+                  hasLimit: s.envelope(_envelopeId) != null &&
+                      s.effectiveLimit(s.envelope(_envelopeId)!).minor > 0,
+                  remaining: s.envelope(_envelopeId) == null
+                      ? null
+                      : s.remainingOn(s.envelope(_envelopeId)!),
+                  onTap: () => _pickBudget(s),
                 ),
                 const SizedBox(height: 12),
-                if (_envelope case final envelope?)
+                if (s.envelope(_envelopeId) case final envelope?)
                   _EnvelopeLimitNotice(
                     envelope: envelope,
                     remaining: s.remainingOn(envelope),
@@ -411,7 +585,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               Wrap(
                 spacing: 8,
                 children: [
-                  for (final m in s.members)
+                  for (final m in members)
                     ChoiceChip(
                       label: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(iconForKey(m.emoji) ?? Icons.person,
@@ -427,8 +601,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                           ),
                         ),
                       ]),
-                      selected: _member?.id == m.id,
-                      onSelected: (_) => setState(() => _member = m),
+                      selected: _memberId == m.id,
+                      onSelected: (_) => setState(() => _memberId = m.id),
                     ),
                 ],
               ),
@@ -493,7 +667,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   backgroundColor: context.primary,
                   foregroundColor: context.onSolid,
                   minimumSize: const Size.fromHeight(54),
-                  shape: const StadiumBorder(),
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                 ),
                 child: _saving
                     ? const SizedBox(
@@ -504,12 +678,151 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                         ),
                       )
                     : Text(
-                        l.save,
+                        _type == TxType.expense ? 'Add expense' : 'Add income',
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w800),
                       ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionTypeButton extends StatelessWidget {
+  const _TransactionTypeButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.selectedBackground,
+    required this.selectedForeground,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final Color selectedBackground;
+  final Color selectedForeground;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Material(
+        color: selected ? selectedBackground : context.card,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected ? selectedForeground : context.hairline,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon,
+                    size: 19,
+                    color: selected ? selectedForeground : context.inkSoft),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: selected ? selectedForeground : context.ink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetSelector extends StatelessWidget {
+  const _BudgetSelector({
+    required this.envelope,
+    required this.hasLimit,
+    required this.remaining,
+    required this.onTap,
+  });
+
+  final Envelope? envelope;
+  final bool hasLimit;
+  final Money? remaining;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = envelope;
+    return Material(
+      color: context.card,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.hairline),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                selected == null
+                    ? Icons.account_balance_wallet_outlined
+                    : iconForKey(selected.emoji) ?? Icons.savings,
+                color: context.primaryDark,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selected?.name ?? 'No budget',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: context.ink,
+                      ),
+                    ),
+                    Text(
+                      selected == null
+                          ? 'Tap to choose or search budgets'
+                          : hasLimit
+                              ? '${remaining?.text ?? ''} left'
+                              : 'No limit',
+                      style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.search, color: context.primary),
+            ],
           ),
         ),
       ),

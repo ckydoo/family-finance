@@ -1369,7 +1369,7 @@ abstract class AppLocalizations {
   /// No description provided for @recurringHint.
   ///
   /// In en, this message translates to:
-  /// **'Add school fees, rent or airtime rules - we remind you when each one comes due.'**
+  /// **'Add school fees, rent, netflix or airtime rules - we remind you when each one comes due.'**
   String get recurringHint;
 
   /// No description provided for @chipOnTrack.
@@ -2299,7 +2299,7 @@ abstract class AppLocalizations {
   /// No description provided for @inviteTitle.
   ///
   /// In en, this message translates to:
-  /// **'Invite family'**
+  /// **'Invite family member'**
   String get inviteTitle;
 
   /// No description provided for @editProfile.

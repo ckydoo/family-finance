@@ -37,14 +37,15 @@ class TeenZone extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.fromLTRB(12, 5, 6, 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFDF3DC),
+                  color: context.warningSoft,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE8D39A)),
+                  border:
+                      Border.all(color: context.accentSoft),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.visibility_outlined,
-                        size: 17, color: Color(0xFF8A6D1F)),
+                    Icon(Icons.visibility_outlined,
+                        size: 17, color: context.accent),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -52,10 +53,10 @@ class TeenZone extends StatelessWidget {
                             .previewBanner(s.user.name),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF6B5518),
+                          color: context.ink,
                         ),
                       ),
                     ),
@@ -64,7 +65,7 @@ class TeenZone extends StatelessWidget {
                       icon: const Icon(Icons.logout, size: 16),
                       label: Text(AppLocalizations.of(context)!.previewExit),
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF8A6D1F),
+                        foregroundColor: context.ink,
                         textStyle: const TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
@@ -119,7 +120,7 @@ class TeenZone extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const MembersScreen()),
                     ),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.14),
+                      backgroundColor: Colors.white24,
                     ),
                     icon:
                         const Icon(Icons.family_restroom, color: Colors.white),
@@ -134,7 +135,7 @@ class TeenZone extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: context.card,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
@@ -193,7 +194,7 @@ class TeenZone extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.primary,
                       foregroundColor: context.onSolid,
-                      shape: const StadiumBorder(),
+                      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
                     child: Text(tStr(context, 'addToJar')),
@@ -207,8 +208,8 @@ class TeenZone extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFD9EDE8),
-                borderRadius: BorderRadius.circular(20),
+                color: context.successSoft,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
@@ -850,7 +851,7 @@ class _SingleEarningRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: context.primary.withValues(alpha: 0.08),
+        color: context.primarySoft,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -954,15 +955,15 @@ class _ProposalRow extends StatelessWidget {
     final (chip, color) = switch (p.state) {
       RequestState.pending => (
           AppLocalizations.of(context)!.stWaiting,
-          const Color(0xFFFBE7C6)
+          context.warningSoft,
         ),
       RequestState.approved => (
           AppLocalizations.of(context)!.stApproved,
-          const Color(0xFFD9EDE8)
+          context.successSoft,
         ),
       RequestState.declined => (
           AppLocalizations.of(context)!.stDeclined,
-          const Color(0xFFF9E0DF)
+          context.dangerSoft,
         ),
     };
 
@@ -1030,7 +1031,7 @@ class _PeekCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFEDF4F1),
+        color: context.primarySoft,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(

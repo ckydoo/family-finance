@@ -190,7 +190,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: context.primary,
                             foregroundColor: context.onSolid,
-                            shape: const StadiumBorder(),
+                            shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                           ),
                           icon: const Icon(Icons.check, size: 18),
                           label: Text(l.meetingSaveNote),
@@ -218,7 +218,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                   backgroundColor: context.ink,
                   foregroundColor: context.onSolid,
                   minimumSize: const Size.fromHeight(52),
-                  shape: const StadiumBorder(),
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                 ),
                 child: Text(
                   l.meetingDone,
@@ -251,7 +251,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,8 +261,8 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                 Container(
                   width: 26,
                   height: 26,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD9EDE8),
+                  decoration: BoxDecoration(
+                    color: context.successSoft,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,

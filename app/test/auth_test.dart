@@ -145,6 +145,32 @@ void main() {
       expect(body['email'], 'david@mhuri.app');
     });
 
+    test('OAuth adoption verifies the token before storing the session',
+        () async {
+      client.responses.add(
+          const MapEntry(200, '{"id":"google-7","email":"person@gmail.com"}'));
+
+      final ok =
+          await service.adoptOAuthSession('oauth-access', 'oauth-refresh');
+
+      expect(ok, isTrue);
+      expect(client.sent.single.url.path, '/auth/v1/user');
+      expect(
+          client.sent.single.headers['Authorization'], 'Bearer oauth-access');
+      expect(kv['auth_user_id'], 'google-7');
+      expect(kv['auth_email'], 'person@gmail.com');
+      expect(kv['auth_refresh_token'], 'oauth-refresh');
+    });
+
+    test('OAuth adoption rejects a token this project does not accept',
+        () async {
+      client.responses.add(const MapEntry(401, '{}'));
+
+      expect(
+          await service.adoptOAuthSession('bad-token', 'bad-refresh'), isFalse);
+      expect(kv.containsKey('auth_access_token'), isFalse);
+    });
+
     test('signIn surfaces the server message on bad credentials', () async {
       client.responses
         ..clear()

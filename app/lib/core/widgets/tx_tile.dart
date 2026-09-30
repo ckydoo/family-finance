@@ -109,113 +109,191 @@ class TxTile extends StatelessWidget {
     var method = tx.method;
     var envelopeId = tx.envelopeId;
     String? error;
+    var editing = false;
     showMhuriSheet<void>(
       context: context,
       builder: (sheetContext) => StatefulBuilder(
         builder: (sheetContext, setSheet) => MhuriSheetShell(
           title: 'Transaction details',
           subtitle: 'Added by ${state.member(tx.memberId)?.name ?? 'family'}',
-          footer: Row(children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () async {
-                  final remove = await confirmDialog(
-                    sheetContext,
-                    title: 'Remove this transaction?',
-                    body:
-                        'The correction will update budgets and monthly totals. Its server history remains attributable.',
-                    confirmLabel: 'Remove transaction',
-                    danger: true,
-                  );
-                  if (!remove || !sheetContext.mounted) return;
-                  state.deleteTx(tx);
-                  final messenger = ScaffoldMessenger.of(context);
-                  Navigator.pop(sheetContext);
-                  messenger.showSnackBar(const SnackBar(
-                      content: Text('Transaction removed'),
-                      behavior: SnackBarBehavior.floating));
-                },
-                child: const Text('Remove'),
+          footer: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: editing
+                      ? () => setSheet(() {
+                            editing = false;
+                            error = null;
+                            note.text = tx.note;
+                            amount.text =
+                                (tx.amount.minor / 100).toStringAsFixed(2);
+                            method = tx.method;
+                            envelopeId = tx.envelopeId;
+                          })
+                      : () => Navigator.pop(sheetContext),
+                  child: Text(editing ? 'Cancel' : 'Close'),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton(
-                onPressed: () {
-                  final parsed =
-                      double.tryParse(amount.text.replaceAll(',', ''));
-                  if (note.text.trim().isEmpty ||
-                      parsed == null ||
-                      parsed <= 0) {
-                    setSheet(
-                        () => error = 'Enter a description and valid amount.');
-                    return;
-                  }
-                  state.updateTx(
-                    tx,
-                    amount: Money.fromMajor(parsed, tx.amount.currency),
-                    method: method,
-                    note: note.text,
-                    when: tx.when,
-                    envelopeId: tx.type == TxType.expense ? envelopeId : null,
-                  );
-                  final messenger = ScaffoldMessenger.of(context);
-                  Navigator.pop(sheetContext);
-                  messenger.showSnackBar(const SnackBar(
-                      content: Text('Transaction updated'),
-                      behavior: SnackBarBehavior.floating));
-                },
-                child: const Text('Save changes'),
-              ),
-            ),
-          ]),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-                controller: note,
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Description')),
-            const SizedBox(height: 12),
-            TextField(
-                controller: amount,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: amountInputFormatters,
-                decoration: InputDecoration(
-                    labelText: 'Amount (${tx.amount.currency.symbol})')),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<Method>(
-              initialValue: method,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Paid with'),
-              items: [
-                for (final value in Method.values)
-                  DropdownMenuItem(value: value, child: Text(value.label))
-              ],
-              onChanged: (value) {
-                if (value != null) setSheet(() => method = value);
-              },
-            ),
-            if (tx.type == TxType.expense) ...[
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String?>(
-                initialValue: envelopeId,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Budget'),
-                items: [
-                  const DropdownMenuItem<String?>(
-                      value: null, child: Text('No budget')),
-                  for (final budget in state.envelopes)
-                    DropdownMenuItem<String?>(
-                        value: budget.id,
-                        child:
-                            Text(budget.name, overflow: TextOverflow.ellipsis)),
-                ],
-                onChanged: (value) => setSheet(() => envelopeId = value),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: editing
+                      ? () {
+                          final parsed =
+                              double.tryParse(amount.text.replaceAll(',', ''));
+                          if (note.text.trim().isEmpty ||
+                              parsed == null ||
+                              parsed <= 0) {
+                            setSheet(() => error =
+                                'Enter a description and valid amount.');
+                            return;
+                          }
+                          state.updateTx(
+                            tx,
+                            amount: Money.fromMajor(parsed, tx.amount.currency),
+                            method: method,
+                            note: note.text,
+                            when: tx.when,
+                            envelopeId:
+                                tx.type == TxType.expense ? envelopeId : null,
+                          );
+                          final messenger = ScaffoldMessenger.of(context);
+                          Navigator.pop(sheetContext);
+                          messenger.showSnackBar(const SnackBar(
+                              content: Text('Transaction updated'),
+                              behavior: SnackBarBehavior.floating));
+                        }
+                      : () => setSheet(() => editing = true),
+                  child: Text(editing ? 'Save changes' : 'Edit transaction'),
+                ),
               ),
             ],
-            if (error != null) ErrorNotice(error!),
-          ]),
+          ),
+          child: editing
+              ? Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextField(
+                      controller: note,
+                      autofocus: true,
+                      decoration:
+                          const InputDecoration(labelText: 'Description')),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: amount,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: amountInputFormatters,
+                      decoration: InputDecoration(
+                          labelText: 'Amount (${tx.amount.currency.symbol})')),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<Method>(
+                    initialValue: method,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Paid with'),
+                    items: [
+                      for (final value in Method.values)
+                        DropdownMenuItem(value: value, child: Text(value.label))
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setSheet(() => method = value);
+                    },
+                  ),
+                  if (tx.type == TxType.expense) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String?>(
+                      initialValue: envelopeId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Budget'),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                            value: null, child: Text('No budget')),
+                        for (final budget in state.envelopes)
+                          DropdownMenuItem<String?>(
+                              value: budget.id,
+                              child: Text(budget.name,
+                                  overflow: TextOverflow.ellipsis)),
+                      ],
+                      onChanged: (value) => setSheet(() => envelopeId = value),
+                    ),
+                  ],
+                  if (error != null) ErrorNotice(error!),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final remove = await confirmDialog(
+                        sheetContext,
+                        title: 'Remove this transaction?',
+                        body:
+                            'The correction will update budgets and monthly totals. Its server history remains attributable.',
+                        confirmLabel: 'Remove transaction',
+                        danger: true,
+                      );
+                      if (!remove || !sheetContext.mounted) return;
+                      state.deleteTx(tx);
+                      final messenger = ScaffoldMessenger.of(context);
+                      Navigator.pop(sheetContext);
+                      messenger.showSnackBar(const SnackBar(
+                          content: Text('Transaction removed'),
+                          behavior: SnackBarBehavior.floating));
+                    },
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Remove transaction'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: sheetContext.expenseRed,
+                    ),
+                  ),
+                ])
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _detailRow(sheetContext, 'Description', tx.note),
+                    _detailRow(sheetContext, 'Amount', tx.amount.text),
+                    _detailRow(sheetContext, 'Type',
+                        tx.type == TxType.income ? 'Income' : 'Expense'),
+                    _detailRow(sheetContext, 'Payment method', tx.method.label),
+                    if (tx.type == TxType.expense)
+                      _detailRow(
+                        sheetContext,
+                        'Budget',
+                        state.envelope(tx.envelopeId)?.name ?? 'No budget',
+                      ),
+                    _detailRow(sheetContext, 'Date', fmtWhen(tx.when),
+                        showDivider: false),
+                  ],
+                ),
         ),
+      ),
+    );
+  }
+
+  Widget _detailRow(BuildContext context, String label, String value,
+      {bool showDivider = true}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 11),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(bottom: BorderSide(color: context.hairline))
+            : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 116,
+            child: Text(label,
+                style: TextStyle(fontSize: 12, color: context.inkSoft)),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: context.ink,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

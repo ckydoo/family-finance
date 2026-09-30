@@ -234,12 +234,12 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
   );
 }
 
-Color _roleBg(Role role) => switch (role) {
-      Role.owner => const Color(0xFFD9EDE8),
-      Role.adult => const Color(0xFFFBE7C6),
-      Role.teen => const Color(0xFFDCEBFA),
-      Role.kid => const Color(0xFFFFF1C9),
-      Role.viewer => const Color(0xFFEFE3F7),
+Color _roleBg(BuildContext context, Role role) => switch (role) {
+      Role.owner => context.successSoft,
+      Role.adult => context.warningSoft,
+      Role.teen => context.infoSoft,
+      Role.kid => context.accentSoft,
+      Role.viewer => context.violetSoft,
     };
 
 /// Members, roles and the "View as" profile switcher (spec §3, §7.10).
@@ -257,16 +257,6 @@ class MembersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.familyTitle),
-        actions: [
-          IconButton(
-            tooltip: AppLocalizations.of(context)!.settingsTitle,
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
-            icon: Icon(Icons.settings_outlined, color: context.ink),
-          ),
-        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -279,7 +269,7 @@ class MembersScreen extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [context.primary, context.primaryDark],
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
@@ -356,7 +346,7 @@ class MembersScreen extends StatelessWidget {
                 foregroundColor: context.primary,
                 side: BorderSide(color: context.primary),
                 minimumSize: const Size.fromHeight(50),
-                shape: const StadiumBorder(),
+                shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
               ),
               icon: const Icon(Icons.person_add_alt_1, size: 19),
               label: Text(AppLocalizations.of(context)!.inviteTitle),
@@ -479,7 +469,6 @@ class MembersScreen extends StatelessWidget {
             ),
             if (s.isLive && !s.hasSpace) _spaceCard(context, s),
             _pinRow(context, s),
-            if (s.auth?.isLoggedIn ?? false) _accountRow(context, s),
             _settingAction(
               context,
               AppLocalizations.of(context)!.setBackup,
@@ -531,7 +520,7 @@ class MembersScreen extends StatelessWidget {
     final selected = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         title: Text(tStr(context, 'language')),
         children: [
           for (final entry in kLanguageNames.entries)
@@ -585,7 +574,7 @@ class MembersScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.card,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -613,7 +602,7 @@ class MembersScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.primary,
                       foregroundColor: context.onSolid,
-                      shape: const StadiumBorder(),
+                      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                     ),
                     child: Text(AppLocalizations.of(context)!.createSpace),
                   ),
@@ -625,7 +614,7 @@ class MembersScreen extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.primary,
                       side: BorderSide(color: context.primary),
-                      shape: const StadiumBorder(),
+                      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                     ),
                     child: Text(AppLocalizations.of(context)!.joinWithCode),
                   ),
@@ -667,7 +656,7 @@ class MembersScreen extends StatelessWidget {
       decoration: BoxDecoration(
         gradient:
             LinearGradient(colors: [context.primary, context.primaryDark]),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -688,7 +677,7 @@ class MembersScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
+                  color: Colors.white24,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -705,8 +694,8 @@ class MembersScreen extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             AppLocalizations.of(context)!.membersInviteHint,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+            style: const TextStyle(
+              color: Colors.white70,
               fontSize: 11.5,
             ),
           ),
@@ -745,7 +734,7 @@ class MembersScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         title: Text(l.createFamilySpace),
         content: MhuriField(
           controller: name,
@@ -795,7 +784,7 @@ class MembersScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         title: Text(AppLocalizations.of(context)!.joinSpaceTitle),
         content: TextField(
           controller: code,
@@ -883,8 +872,7 @@ class MembersScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
           title: Text(AppLocalizations.of(context)!.kidsPin),
           content: TextField(
             controller: pin,
@@ -940,6 +928,9 @@ class MembersScreen extends StatelessWidget {
     );
   }
 
+  // Kept temporarily for compatibility with the existing deletion flow while
+  // account controls are hosted by Settings.
+  // ignore: unused_element
   Widget _accountRow(BuildContext context, AppState s) {
     final auth = s.auth!;
     final l = AppLocalizations.of(context)!;
@@ -952,7 +943,7 @@ class MembersScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.card,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1010,8 +1001,7 @@ class MembersScreen extends StatelessWidget {
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
           title: Text(l.makeOwner),
           content: const Text(
             'You are the owner of this family space. Please transfer ownership to another adult member before deleting your account, or remove all other members first.',
@@ -1037,8 +1027,7 @@ class MembersScreen extends StatelessWidget {
       context: context,
       builder: (reauthCtx) => StatefulBuilder(
         builder: (reauthCtx, setReauth) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
           title: const Text('Confirm your password'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1240,8 +1229,7 @@ class MembersScreen extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: context.danger,
                     foregroundColor: context.onSolid,
-                    disabledBackgroundColor:
-                        context.danger.withValues(alpha: 0.5),
+                    disabledBackgroundColor: context.dangerSoft,
                   ),
                   child: Text(l.deletePermanently),
                 ),
@@ -1354,7 +1342,7 @@ class MembersScreen extends StatelessWidget {
     final isCurrent = s.user.id == m.id;
     return ListTile(
       leading: MemberAvatar(
-        backgroundColor: _roleBg(m.role),
+        backgroundColor: _roleBg(ctx, m.role),
         icon: iconForKey(m.emoji) ?? Icons.person,
         imageUrl: m.avatarUrl,
       ),
@@ -1838,7 +1826,7 @@ class _MemberRow extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.card,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
@@ -1846,7 +1834,7 @@ class _MemberRow extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: _roleBg(m.role),
+                backgroundColor: _roleBg(context, m.role),
                 backgroundImage:
                     m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
                 child: m.avatarUrl != null
@@ -1902,7 +1890,7 @@ class _MemberRow extends StatelessWidget {
               if (isMe)
                 InkWell(
                   onTap: () => _editProfileSheet(context, s, m),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   child: Padding(
                     padding: const EdgeInsets.all(6),
                     child: Icon(Icons.edit, size: 18, color: context.primary),
@@ -1918,7 +1906,7 @@ class _MemberRow extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: context.primary,
                     side: BorderSide(color: context.primary),
-                    shape: const StadiumBorder(),
+                    shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                   ),
                   child: Text(AppLocalizations.of(context)!.viewAs),
                 ),

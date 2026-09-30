@@ -39,8 +39,22 @@ class Notifier {
       ),
     );
     await _plugin.initialize(settings: settings);
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(const AndroidNotificationChannel(
+            'mhuri_family_updates',
+            'Family updates',
+            description: 'Important updates from your family space',
+            importance: Importance.high,
+          ));
+    }
     _inited = true;
   }
+
+  /// Creates notification channels before the first remote message arrives.
+  static Future<void> initialize() => _ensureInit();
 
   /// Requests OS permission and reports whether notifications may be shown.
   static Future<bool> requestPermission() async {

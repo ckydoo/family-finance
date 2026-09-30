@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 /// ── Data-viz primitives (G4) ────────────────────────────────────────────────
 /// Hand-rolled, zero chart packages. Both honor the OS reduce-motion setting
 /// by drawing the final state immediately.
@@ -60,6 +62,7 @@ class DonutChart extends StatelessWidget {
                 segments: segments,
                 selected: selected,
                 stroke: stroke,
+                track: context.track,
               ),
             ),
             if (center != null) center!,
@@ -74,23 +77,25 @@ class _DonutPainter extends CustomPainter {
   final List<(String, double, Color)> segments;
   final int selected;
   final double stroke;
+  final Color track;
 
   _DonutPainter({
     required this.segments,
     required this.selected,
     required this.stroke,
+    required this.track,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final total = segments.fold<double>(0, (a, s) => a + s.$2);
     if (total <= 0) {
-      final track = Paint()
+      final trackPaint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
-        ..color = const Color(0xFFECEAE4);
+        ..color = track;
       canvas.drawCircle(
-          size.center(Offset.zero), (size.width - stroke) / 2, track);
+          size.center(Offset.zero), (size.width - stroke) / 2, trackPaint);
       return;
     }
     final radius = (size.width - stroke) / 2;
@@ -114,7 +119,9 @@ class _DonutPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DonutPainter old) =>
-      old.selected != selected || old.segments != segments;
+      old.selected != selected ||
+      old.segments != segments ||
+      old.track != track;
 }
 
 /// Six-month net trend: income minus expenses, one rounded bar per month,

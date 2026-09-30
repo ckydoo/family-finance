@@ -12,7 +12,8 @@ import '../../core/widgets/ui.dart';
 
 /// Shared shopping list connected to the budget (spec Module F, §7.6).
 class ListsScreen extends StatefulWidget {
-  const ListsScreen({super.key});
+  final bool standalone;
+  const ListsScreen({super.key, this.standalone = false});
 
   @override
   State<ListsScreen> createState() => _ListsScreenState();
@@ -45,7 +46,7 @@ class _ListsScreenState extends State<ListsScreen> {
 
     int count(ItemState st) => s.items.where((i) => i.state == st).length;
 
-    return SafeArea(
+    final Widget content = SafeArea(
       child: Column(
         children: [
           Expanded(
@@ -269,7 +270,7 @@ class _ListsScreenState extends State<ListsScreen> {
                 backgroundColor: context.primary,
                 foregroundColor: context.onSolid,
                 minimumSize: const Size.fromHeight(54),
-                shape: const StadiumBorder(),
+                shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                 elevation: 4,
               ),
               icon: _finishingShopping
@@ -292,6 +293,16 @@ class _ListsScreenState extends State<ListsScreen> {
         ],
       ),
     );
+
+    if (widget.standalone) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(AppLocalizations.of(context)!.shopping),
+        ),
+        body: content,
+      );
+    }
+    return content;
   }
 
   void _addSheet(BuildContext context) {

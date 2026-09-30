@@ -5,6 +5,7 @@ import 'package:app_links/app_links.dart';
 import 'core/auth/auth_controller.dart';
 import 'core/auth/recovery_link.dart';
 import 'core/config/app_env.dart';
+import 'core/firebase/firebase_services.dart';
 import 'core/db/app_database.dart';
 import 'core/l10n/localization_delegates.dart';
 import 'core/notifications/notifier.dart';
@@ -54,6 +55,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
   bool _familyResolutionFailed = false;
   String? _resolvedFamilyForUser;
   bool _switchingAccount = false;
+  late bool _lastNotifyEnabled;
 
   @override
   void initState() {
@@ -63,7 +65,10 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     _configured = env.isConfigured;
     _auth = widget.auth ?? AuthController(env: env);
     _state = widget.state ?? AppState(db: widget.db, env: env, auth: _auth);
+    _lastNotifyEnabled = _state.notifyEnabled;
     _auth.addListener(_onAuthChanged);
+    _state.addListener(_onStateChanged);
+    if (_auth.isLoggedIn) unawaited(_bindFirebaseUser());
 
     // #1 recovery + invite deep links, and the resume-your-reset banner.
     // Fire-and-forget: they only subscribe listeners / read local kv.
@@ -116,18 +121,51 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
           (where, err, st) => activeReporter?.error(where, err, st);
       _state.attachSync(engine);
       _engine = engine;
-      engine.start();
+      if (_auth.isLoggedIn) {
+        // A restored session exists before the auth listener is attached, so
+        // cold starts must enforce the same account boundary as an in-app
+        // sign-in. Do this before sync reads space_id or any family can render.
+        _switchingAccount = true;
+        final session = _auth.session!;
+        unawaited(_startEngineForRestoredSession(
+          engine,
+          session.userId,
+          session.email,
+        ));
+      } else {
+        unawaited(engine.start());
+      }
     }
     _scheduleFamilyResolution(notify: false);
   }
 
+  Future<void> _startEngineForRestoredSession(
+    SyncEngine engine,
+    String userId,
+    String email,
+  ) async {
+    await _state.ready();
+    if (!mounted || _auth.session?.userId != userId) return;
+    await engine.ensureUserIsolation(userId, email: email);
+    if (!mounted || _auth.session?.userId != userId) return;
+    await engine.start();
+    if (!mounted || _auth.session?.userId != userId) return;
+    setState(() {
+      _switchingAccount = false;
+      _resolvedFamilyForUser = null;
+    });
+    _scheduleFamilyResolution();
+  }
+
   void _onAuthChanged() {
     if (!_auth.isLoggedIn) {
+      unawaited(FirebaseServices.unbindUser());
       _resolvedFamilyForUser = null;
       _resolvingFamily = false;
       _familyResolutionFailed = false;
       return;
     }
+    unawaited(_bindFirebaseUser());
     final userId = _auth.session!.userId;
     final engine = _engine;
     if (engine == null) {
@@ -146,6 +184,30 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       _resolvedFamilyForUser = null;
       _scheduleFamilyResolution();
     }());
+  }
+
+  void _onStateChanged() {
+    if (_state.notifyEnabled == _lastNotifyEnabled) return;
+    _lastNotifyEnabled = _state.notifyEnabled;
+    if (!_state.notifyEnabled) {
+      unawaited(FirebaseServices.disablePush());
+    } else if (_auth.isLoggedIn) {
+      unawaited(_bindFirebaseUser());
+    }
+  }
+
+  Future<void> _bindFirebaseUser() async {
+    final userId = _auth.session?.userId;
+    final url = _state.env.supabaseUrl;
+    final key = _state.env.supabaseAnonKey;
+    if (userId == null || url == null || key == null) return;
+    await FirebaseServices.bindUser(
+      userId: userId,
+      baseUrl: url,
+      anonKey: key,
+      accessToken: _auth.refreshAccessToken,
+      notificationsEnabled: _state.notifyEnabled,
+    );
   }
 
   void _scheduleFamilyResolution({bool notify = true}) {
@@ -221,6 +283,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     _linkSub?.cancel();
     _engine?.dispose();
     _auth.removeListener(_onAuthChanged);
+    _state.removeListener(_onStateChanged);
     if (widget.state == null) _state.dispose();
     if (widget.auth == null) _auth.dispose();
     super.dispose();
@@ -241,6 +304,12 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
   }
 
   Future<void> _onRecoveryLink(Uri uri) async {
+    final oauth = parseOAuthLink(uri.toString());
+    if (oauth != null) {
+      await _auth.adoptOAuthSession(oauth.accessToken, oauth.refreshToken);
+      return;
+    }
+
     // Join links (QR / WhatsApp share): mhuri://join?c=MHRI-XXXXXX
     final inviteCode = parseInviteCode(uri.toString());
     if (inviteCode != null) {
@@ -322,6 +391,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
           Money.localeTag = _state.localeCode;
           return MaterialApp(
             navigatorKey: _navKey,
+            navigatorObservers: FirebaseServices.navigatorObservers,
             title: 'Mhuri',
             debugShowCheckedModeBanner: false,
             theme: buildAppTheme(),
@@ -525,7 +595,7 @@ class _ErrorPane extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.primary,
                   foregroundColor: context.onSolid,
-                  shape: const StadiumBorder(),
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                 ),
                 child: const Text('Try again'),
               ),

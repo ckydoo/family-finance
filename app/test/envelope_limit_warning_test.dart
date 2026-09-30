@@ -46,7 +46,7 @@ void main() {
 
     expect(find.textContaining('US\$ 50.00 over budget'), findsOneWidget);
 
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.text('Add expense'));
     await tester.pumpAndSettle();
     expect(find.text('This budget will be over its limit'), findsOneWidget);
     expect(state.txs, hasLength(before));
@@ -56,7 +56,7 @@ void main() {
     expect(find.text('Quick add'), findsOneWidget);
     expect(state.txs, hasLength(before));
 
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.text('Add expense'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Log anyway'));
     await tester.pumpAndSettle();

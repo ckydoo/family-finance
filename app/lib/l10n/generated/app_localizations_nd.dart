@@ -1260,7 +1260,7 @@ class AppLocalizationsNd extends AppLocalizations {
   String get copied => 'Kukopishiwe ✓';
 
   @override
-  String get inviteTitle => 'Menyukela umndeni';
+  String get inviteTitle => 'Mema ilunga lomndeni';
 
   @override
   String get editProfile => 'Hlela iphrofayili';

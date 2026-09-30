@@ -19,6 +19,7 @@ import '../budgets/budgets_screen.dart'
 import '../members/members_screen.dart';
 import '../quickadd/quick_add_sheet.dart';
 import '../reports/reports_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,6 +45,10 @@ class _HomeScreenState extends State<HomeScreen> {
         : hour < 19
             ? l.greetingAfternoon
             : l.greetingEvening;
+    final syncedFamilyName = s.spaceName?.trim();
+    final familyName = syncedFamilyName != null && syncedFamilyName.isNotEmpty
+        ? syncedFamilyName
+        : s.space.name;
 
     return SafeArea(
       // G10: the pool card compresses subtly as content scrolls under it.
@@ -65,23 +70,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFDF3DC),
+                        color: context.warningSoft,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE8D39A)),
+                        border: Border.all(color: context.accentSoft),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.visibility,
-                              size: 16, color: Color(0xFF8A6D1F)),
+                          Icon(Icons.visibility,
+                              size: 16, color: context.accent),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               AppLocalizations.of(context)!
                                   .previewBanner(u.name),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF6B5518),
+                                color: context.ink,
                               ),
                             ),
                           ),
@@ -89,10 +94,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             onPressed: () => s.exitPreview(),
                             child: Text(
                               AppLocalizations.of(context)!.previewExit,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF8A6D1F)),
+                                  color: context.ink),
                             ),
                           ),
                         ],
@@ -108,73 +113,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '$greet, ${u.name}',
+                            '$greet,',
                             style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: context.ink,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: context.inkSoft,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          // Family switcher: a visible, tappable pill - the
-                          // affordance was invisible as a bare avatar row.
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const MembersScreen(),
-                              ),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
-                              decoration: BoxDecoration(
-                                color: context.card,
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: context.hairline),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  for (var i = 0;
-                                      i < s.members.take(5).length;
-                                      i++)
-                                    Transform.translate(
-                                      offset: Offset(-6.0 * i, 0),
-                                      child: CircleAvatar(
-                                        radius: 14,
-                                        backgroundColor:
-                                            _avatarBg(s.members[i].role),
-                                        backgroundImage:
-                                            s.members[i].avatarUrl != null
-                                                ? NetworkImage(
-                                                    s.members[i].avatarUrl!)
-                                                : null,
-                                        child: s.members[i].avatarUrl != null
-                                            ? null
-                                            : Icon(
-                                                iconForKey(
-                                                        s.members[i].emoji) ??
-                                                    Icons.person,
-                                                size: 14,
-                                                color: context.ink,
-                                              ),
-                                      ),
-                                    ),
-                                  const SizedBox(width: 2),
-                                  Icon(Icons.person_add_alt_1,
-                                      size: 15, color: context.primary),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    AppLocalizations.of(context)!.familyCta,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: context.ink,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  Icon(Icons.chevron_right,
-                                      size: 16, color: context.inkSoft),
-                                ],
-                              ),
+                          Text(
+                            u.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 27,
+                              height: 1.15,
+                              fontWeight: FontWeight.w800,
+                              color: context.ink,
                             ),
                           ),
                         ],
@@ -214,7 +168,71 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () => showRemindersSheet(context),
                       icon: Icon(Icons.notifications_none, color: context.ink),
                     ),
+                    IconButton(
+                      tooltip: AppLocalizations.of(context)!.settingsTitle,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const SettingsScreen()),
+                      ),
+                      icon: Icon(Icons.settings_outlined, color: context.ink),
+                    ),
                   ],
+                ),
+                const SizedBox(height: 10),
+                // Family is a first-class destination, separate from app
+                // settings. Show the actual family name instead of a generic
+                // label so its purpose is immediately clear.
+                Material(
+                  color: context.card,
+                  borderRadius: BorderRadius.circular(18),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const MembersScreen()),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(12, 9, 10, 9),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: context.hairline),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.groups_2_outlined,
+                              size: 20, color: context.primary),
+                          const SizedBox(width: 9),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.familyTitle,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.inkSoft,
+                                  ),
+                                ),
+                                Text(
+                                  familyName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: context.ink,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.chevron_right,
+                              size: 20, color: context.inkSoft),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
 
                 // ── Offline sync banner (outbox queue status) ─────────────────
@@ -237,14 +255,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFDF1DA),
+                        color: context.warningSoft,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         AppLocalizations.of(context)!.syncPill(s.pendingOps),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF8A6116),
+                          color: context.ink,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -386,14 +404,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  Color _avatarBg(Role role) => switch (role) {
-        Role.owner => const Color(0xFFD9EDE8),
-        Role.adult => const Color(0xFFFBE7C6),
-        Role.teen => const Color(0xFFDCEBFA),
-        Role.kid => const Color(0xFFFFF1C9),
-        Role.viewer => const Color(0xFFEFE3F7),
-      };
 }
 
 // ── Plain-language monthly overview ─────────────────────────────────────────
@@ -619,8 +629,7 @@ class _FirstStepsCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Follow these simple steps to start managing money together:',
-            style:
-                TextStyle(color: context.inkSoft, fontSize: 13, height: 1.4),
+            style: TextStyle(color: context.inkSoft, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 16),
           _stepRow(
@@ -630,8 +639,7 @@ class _FirstStepsCard extends StatelessWidget {
             subtitle: 'Log salary, business earnings or family funds.',
             buttonLabel: 'Add income',
             buttonIcon: Icons.add,
-            onPressed: () =>
-                showQuickAdd(context, initialType: TxType.income),
+            onPressed: () => showQuickAdd(context, initialType: TxType.income),
           ),
           const SizedBox(height: 12),
           _stepRow(
@@ -653,8 +661,7 @@ class _FirstStepsCard extends StatelessWidget {
             subtitle: 'Keep everyone on the same page as you buy things.',
             buttonLabel: 'Add expense',
             buttonIcon: Icons.receipt_long,
-            onPressed: () =>
-                showQuickAdd(context, initialType: TxType.expense),
+            onPressed: () => showQuickAdd(context, initialType: TxType.expense),
           ),
           if (householdBudgets.isNotEmpty) ...[
             const SizedBox(height: 22),
@@ -722,8 +729,7 @@ class _FirstStepsCard extends StatelessWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: () =>
-                          showEditEnvelopeSheet(context, s, b),
+                      onPressed: () => showEditEnvelopeSheet(context, s, b),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
@@ -824,8 +830,7 @@ class _FirstStepsCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style:
-                        TextStyle(color: context.inkSoft, fontSize: 11.5),
+                    style: TextStyle(color: context.inkSoft, fontSize: 11.5),
                   ),
                 ],
               ),
@@ -834,12 +839,12 @@ class _FirstStepsCard extends StatelessWidget {
             FilledButton.tonalIcon(
               onPressed: onPressed,
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                textStyle: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w700),
+                textStyle:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
               ),
               icon: Icon(buttonIcon, size: 14),
               label: Text(buttonLabel),
@@ -991,7 +996,9 @@ class _HomeBudgetRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  hidden ? '••••• spent' : '${spent.text} spent of ${limit.text}',
+                  hidden
+                      ? '••••• spent'
+                      : '${spent.text} spent of ${limit.text}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: context.inkSoft, fontSize: 11.5),
@@ -1124,11 +1131,11 @@ class _PoolCard extends StatelessWidget {
               colors: [context.primary, context.primaryDark],
             ),
             borderRadius: kBRadiusL,
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                color: context.primary.withValues(alpha: 0.28),
+                color: Color(0x470E7C66), // kPrimary @ 28 %
                 blurRadius: 26,
-                offset: const Offset(0, 10),
+                offset: Offset(0, 10),
               ),
             ],
           ),
@@ -1193,7 +1200,7 @@ class _PoolCard extends StatelessWidget {
               ],
               const SizedBox(height: 12),
               Material(
-                color: Colors.white.withValues(alpha: 0.18),
+                color: Colors.white24,
                 borderRadius: BorderRadius.circular(30),
                 child: InkWell(
                   onTap: () => _showFlexibleSpendBreakdown(context, s),
@@ -1466,7 +1473,7 @@ class SmartCard extends StatelessWidget {
       final kid = s.member(pending.kidId);
       return _card(
         context,
-        color: const Color(0xFFFBE7C6),
+        color: context.warningSoft,
         icon: Icons.volunteer_activism,
         title: AppLocalizations.of(context)!.requestTitle(
             kid?.name ?? AppLocalizations.of(context)!.yourChild,
@@ -1490,7 +1497,7 @@ class SmartCard extends StatelessWidget {
       final env = s.envelope(proposal.envelopeId);
       return _card(
         context,
-        color: const Color(0xFFDCEBFA),
+        color: context.infoSoft,
         icon: Icons.confirmation_number,
         title: AppLocalizations.of(context)!
             .proposalTitle(teen?.name ?? 'Zoe', proposal.amount.text),
@@ -1506,7 +1513,7 @@ class SmartCard extends StatelessWidget {
     if (dueRule != null) {
       return _card(
         context,
-        color: const Color(0xFFE8E4F7),
+        color: context.violetSoft,
         icon: Icons.push_pin,
         title: '${dueRule.name} - ${dueRule.amount.text}',
         subtitle: AppLocalizations.of(context)!.recDueSub(
@@ -1539,7 +1546,7 @@ class SmartCard extends StatelessWidget {
     if (waiting != null) {
       return _card(
         context,
-        color: const Color(0xFFD9EDE8),
+        color: context.successSoft,
         icon: Icons.auto_awesome,
         title: AppLocalizations.of(context)!.choreDoneTitle(waiting.name),
         subtitle: AppLocalizations.of(context)!.choreDoneSub(waiting.stars),
@@ -1568,7 +1575,7 @@ class SmartCard extends StatelessWidget {
     if (!s.mukandoEnabled) return const SizedBox.shrink();
     return _card(
       context,
-      color: const Color(0xFFEFE3F7),
+      color: context.violetSoft,
       icon: Icons.autorenew,
       title: AppLocalizations.of(context)!
           .circleTitle(s.circle.currentRound, s.circle.totalRounds),

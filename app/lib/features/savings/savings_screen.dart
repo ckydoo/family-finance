@@ -108,7 +108,7 @@ class SavingsScreen extends StatelessWidget {
                     backgroundColor: context.primary,
                     foregroundColor: context.onSolid,
                     minimumSize: const Size.fromHeight(52),
-                    shape: const StadiumBorder(),
+                    shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                   ),
                   icon: const Icon(Icons.add),
                   label: Text(AppLocalizations.of(context)!.createSavingsGoal),
@@ -166,7 +166,7 @@ class SavingsScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: context.card,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +241,7 @@ class SavingsScreen extends StatelessWidget {
                           backgroundColor: context.primary,
                           foregroundColor: context.onSolid,
                           minimumSize: const Size.fromHeight(46),
-                          shape: const StadiumBorder(),
+                          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                         ),
                         child: Text(AppLocalizations.of(context)!.markRound),
                       ),
@@ -268,7 +268,7 @@ class SavingsScreen extends StatelessWidget {
   }) {
     final s = AppScope.of(context);
     final isKidJar = kidJarMembers.isNotEmpty;
-    Member? selectedKid = isKidJar ? kidJarMembers.first : null;
+    String? selectedKidId = isKidJar ? kidJarMembers.first.id : null;
     final nameController = TextEditingController(text: initialName);
     var goalName = initialName;
     var targetText = '';
@@ -288,17 +288,20 @@ class SavingsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (isKidJar) ...[
-                DropdownButtonFormField<Member>(
-                  initialValue: selectedKid,
+                DropdownButtonFormField<String>(
+                  initialValue: kidJarMembers.any((m) => m.id == selectedKidId)
+                      ? selectedKidId
+                      : null,
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context)!.childLabel,
                   ),
                   items: [
                     for (final member in kidJarMembers)
-                      DropdownMenuItem(value: member, child: Text(member.name)),
+                      DropdownMenuItem(
+                          value: member.id, child: Text(member.name)),
                   ],
                   onChanged: (value) =>
-                      setSheetState(() => selectedKid = value),
+                      setSheetState(() => selectedKidId = value),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -371,7 +374,7 @@ class SavingsScreen extends StatelessWidget {
                     target: Money.fromMajor(parsed, currency),
                     emoji: isKidJar ? 'gift' : 'goal',
                     isKidJar: isKidJar,
-                    ownerMemberId: selectedKid?.id,
+                    ownerMemberId: selectedKidId,
                   );
                   Navigator.pop(sheetContext);
                 },
@@ -405,8 +408,8 @@ class GoalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kidFlavored ? const Color(0xFFFDF6E3) : context.card,
-        borderRadius: BorderRadius.circular(20),
+        color: kidFlavored ? context.warningSoft : context.card,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
@@ -462,7 +465,7 @@ class GoalCard extends StatelessWidget {
                   backgroundColor: context.primary,
                   foregroundColor: context.onSolid,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  shape: const StadiumBorder(),
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                 ),
                 child: const Text('Add'),
               ),

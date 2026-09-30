@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "383203942042",
+    "project_id": "mhuri-money",
+    "storage_bucket": "mhuri-money.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:383203942042:android:ff3f70acf06ecefa490923",
+        "android_client_info": {
+          "package_name": "com.codzlabzim.mhuri"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnxDOdRTV89VYGeDlhpx3LaFagcXokBvA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

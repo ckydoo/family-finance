@@ -5,6 +5,31 @@ import 'dart:convert';
 /// Configuration → Redirect URLs, or Supabase silently falls back to the
 /// Site URL and the app never sees the tokens.
 const String kRecoveryRedirect = 'mhuri://reset-callback';
+const String kOAuthRedirect = 'mhuri://auth-callback';
+
+/// Tokens returned by Supabase after a successful social sign-in.
+({String accessToken, String refreshToken})? parseOAuthLink(String url) {
+  if (url.isEmpty) return null;
+  final Uri uri;
+  try {
+    uri = Uri.parse(url);
+  } on FormatException {
+    return null;
+  }
+  if (uri.scheme.toLowerCase() != 'mhuri' ||
+      uri.host.toLowerCase() != 'auth-callback') {
+    return null;
+  }
+  final params = uri.fragment.isEmpty
+      ? uri.queryParameters
+      : Uri.splitQueryString(uri.fragment);
+  final access = params['access_token'];
+  final refresh = params['refresh_token'];
+  if (access == null || access.isEmpty || refresh == null || refresh.isEmpty) {
+    return null;
+  }
+  return (accessToken: access, refreshToken: refresh);
+}
 
 /// What a clicked password-reset link turned out to be.
 enum RecoveryKind {

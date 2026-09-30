@@ -365,7 +365,7 @@
   "exportCsvRow": "Exporter toutes les transactions (CSV)",
   "copyInvite": "Copier le code d'invitation",
   "copied": "Copié ✓",
-  "inviteTitle": "Inviter la famille",
+  "inviteTitle": "Inviter un membre de la famille",
   "editProfile": "Modifier le profil",
   "editProfileSub": "Nom et avatar de ce membre",
   "photoNote": "Les photos sont envoyées au serveur familial et s'affichent sur tous les appareils.",
