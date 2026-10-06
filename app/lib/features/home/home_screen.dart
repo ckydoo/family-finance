@@ -199,8 +199,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.groups_2_outlined,
-                              size: 20, color: context.primary),
+                          MemberAvatar(
+                            key: const ValueKey('home_signed_in_avatar'),
+                            radius: 16,
+                            backgroundColor: context.primarySoft,
+                            icon: iconForKey(u.emoji) ?? Icons.person,
+                            imageUrl: u.avatarUrl,
+                          ),
                           const SizedBox(width: 9),
                           Expanded(
                             child: Column(

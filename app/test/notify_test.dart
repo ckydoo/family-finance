@@ -159,7 +159,7 @@ void main() {
     });
   });
 
-  group('planner - weekly beats & meeting', () {
+  group('planner - real family events only', () {
     test('savings-circle reminder is weekly on Sunday 17:00', () {
       final muk = SavingsCircle(
         name: 'Circle',
@@ -176,22 +176,14 @@ void main() {
       expect(m.body, contains('4 of 8'));
     });
 
-    test('digest is weekly on Sunday 18:00', () {
+    test('does not invent a weekly digest', () {
       final out = plan();
-      final d = out.firstWhere((r) => r.key == 'digest_weekly');
-      expect(d.weekly, isTrue);
-      expect(d.when.weekday, DateTime.sunday);
-      expect(d.when.hour, 18);
+      expect(out.where((r) => r.key == 'digest_weekly'), isEmpty);
     });
 
-    test('meeting reminder lands the evening before day 25', () {
+    test('does not invent a family meeting', () {
       final out = plan();
-      final m = out.firstWhere((r) => r.key.startsWith('meeting_'));
-      // Now Sep 21 → day 25 is still ahead this month → meeting Sep 25,
-      // reminder Sep 24 18:00.
-      expect(m.when.day, 24);
-      expect(m.when.month, 9);
-      expect(m.when.hour, 18);
+      expect(out.where((r) => r.key.startsWith('meeting_')), isEmpty);
     });
   });
 

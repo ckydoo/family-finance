@@ -762,6 +762,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get recentActivity => 'Activité récente';
 
   @override
+  String get upcomingReminders => 'Rappels à venir';
+
+  @override
   String get swapCurrency => 'Changer la devise d\'affichage';
 
   @override

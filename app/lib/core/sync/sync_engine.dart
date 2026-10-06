@@ -20,8 +20,8 @@ import 'sync_mappers.dart';
 ///  * outbox rows store FINAL server-shaped JSON, so push sends them
 ///    verbatim (no lossy re-encoding; goal_tx ids are fixed at enqueue);
 ///  * conflicts: last-writer-wins (family scale - see ROADMAP);
-///  * connectivity: pull-on-start, debounced sync after mutations, 45s poll
-///    while open. (Supabase realtime websocket = M5.)
+///  * connectivity: pull-on-start, event-driven refresh from family pushes,
+///    debounced sync after mutations, and a short fallback poll.
 enum SyncStatus { idle, syncing, offline, needsSignIn, needsSetup, error }
 
 /// Result of resolving the signed-in account's family before routing.
@@ -99,7 +99,9 @@ class SyncEngine {
       }
     });
 
-    _timer = Timer.periodic(const Duration(seconds: 45), (_) {
+    // Family pushes normally trigger an immediate pull. This fallback keeps
+    // devices current when notifications are disabled or delivery is delayed.
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (_spaceId != null) syncNow();
     });
   }
@@ -962,7 +964,15 @@ class SyncEngine {
       final adapter = kSyncAdapters[entity]!;
       final key = 'sync_cursor_$entity';
       final stored = full ? null : await _kvGet(key);
-      final since = stored == null || stored.isEmpty ? null : stored;
+      // `gt` can skip sibling rows committed with the same updated_at value.
+      // Re-read a tiny overlap; merges are idempotent by row id.
+      final since = stored == null || stored.isEmpty
+          ? null
+          : (DateTime.tryParse(stored)
+                  ?.subtract(const Duration(milliseconds: 1))
+                  .toUtc()
+                  .toIso8601String() ??
+              stored);
       try {
         final rows = await client.pullRows(
           adapter.table,

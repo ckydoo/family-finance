@@ -120,10 +120,9 @@ class EnvelopeHealth {
   });
 }
 
-/// Computes the reminder list to schedule right now (J2's seven alerts:
-/// bill due 3 days, budget 80%/empty, kid request, chore confirm, savings circle
-/// turn, meeting day, weekly Sunday digest - plus event extras like goal
-/// milestones pushed in by [extra]).
+/// Computes reminders from real family records: bills, budget thresholds,
+/// requests, chores, an enabled savings circle, and explicit event extras.
+/// It deliberately does not invent generic weekly or month-end entries.
 class ReminderPlanner {
   ReminderPlanner._();
 
@@ -237,36 +236,7 @@ class ReminderPlanner {
       ));
     }
 
-    // 5. Family meeting (I4) - the evening before the new cycle starts.
-    if (config.allows(ReminderCategory.meeting)) {
-      final day =
-          monthStartDay < 1 ? 1 : (monthStartDay > 28 ? 28 : monthStartDay);
-      var meeting = DateTime(now.year, now.month, day);
-      if (!meeting.isAfter(now)) {
-        meeting = DateTime(now.year, now.month + 1, day);
-      }
-      out.add(Reminder(
-        key: 'meeting_${_dayKey(meeting)}',
-        category: ReminderCategory.meeting,
-        title: '👨🏾‍👩🏾‍👧🏾 Family meeting tomorrow',
-        body: 'The guided agenda is ready - 15 minutes to align next month.',
-        when: _atHour(meeting.subtract(const Duration(days: 1)), 18),
-      ));
-    }
-
-    // 6. Weekly family digest - Sunday 6pm (J2).
-    if (config.allows(ReminderCategory.digest)) {
-      out.add(Reminder(
-        key: 'digest_weekly',
-        category: ReminderCategory.digest,
-        title: '📊 Weekly family digest',
-        body: 'Five minutes together over this week\'s money.',
-        when: _nextSundayAt(now, 18),
-        weekly: true,
-      ));
-    }
-
-    // 7. Event extras (goal milestones, kid answers) - already instant.
+    // Event extras (goal milestones, kid answers) are explicit real events.
     for (final r in extra) {
       if (!config.allows(r.category)) continue;
       out.add(r);

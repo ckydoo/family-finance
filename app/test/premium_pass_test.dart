@@ -248,6 +248,13 @@ void main() {
     state.setCustomRate(0);
     expect(state.rate, greaterThan(0));
   });
+
+  test('privacy amount masking is opt-in by default', () async {
+    final state = await fresh();
+
+    expect(state.autoHideAmounts, isFalse);
+    expect(state.hideAmounts, isFalse);
+  });
 }
 
 String _nid() => 'n1';

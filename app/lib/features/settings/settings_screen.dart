@@ -258,6 +258,21 @@ class SettingsScreen extends StatelessWidget {
                     },
                   ),
                 ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: const Icon(Icons.info_outline, size: 20),
+                  title: const Text(
+                    'What happens at month-end?',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    'Transactions stay in your history. Spending totals start '
+                    'a new cycle; reset budgets start fresh, rollover budgets '
+                    'carry unused money, and savings keep accumulating.',
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 _header(context, Icons.folder_outlined, 'Data'),
                 ListTile(
@@ -574,9 +589,10 @@ class SettingsScreen extends StatelessWidget {
                       .cancelButtonLabel),
                 ),
                 FilledButton(
-                  onPressed: typeController.text.trim() == 'DELETE'
-                      ? () => Navigator.pop(dialogContext, true)
-                      : null,
+                  onPressed:
+                      typeController.text.trim().toUpperCase() == 'DELETE'
+                          ? () => Navigator.pop(dialogContext, true)
+                          : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: context.danger,
                     foregroundColor: context.onSolid,
@@ -591,9 +607,12 @@ class SettingsScreen extends StatelessWidget {
     if (!confirmed || !context.mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
+    // The auth service clears its session after the RPC succeeds; retain the
+    // identity so its parked/local cache can be removed as well.
+    final deletingUserId = auth.session?.userId;
     final deleted = await auth.deleteAccount();
     if (deleted) {
-      await s.clearLocalAccountData();
+      await s.clearLocalAccountData(deletedUserId: deletingUserId);
       return;
     }
     messenger.showSnackBar(SnackBar(

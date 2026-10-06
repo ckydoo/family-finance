@@ -27,6 +27,7 @@ class FirebaseServices {
   static String? _baseUrl;
   static String? _anonKey;
   static Future<String?> Function()? _accessToken;
+  static Future<void> Function()? onFamilyUpdate;
 
   static bool get ready => _ready;
 
@@ -167,6 +168,7 @@ class FirebaseServices {
       .replaceAll('\n', r'\n');
 
   static Future<void> _onForegroundMessage(RemoteMessage message) async {
+    await onFamilyUpdate?.call();
     await logEvent(
         'push_received', {'event': message.data['event'] ?? 'unknown'});
     final notification = message.notification;
@@ -180,8 +182,10 @@ class FirebaseServices {
     ));
   }
 
-  static Future<void> _onMessageOpen(RemoteMessage message) =>
-      logEvent('push_open', {'event': message.data['event'] ?? 'unknown'});
+  static Future<void> _onMessageOpen(RemoteMessage message) async {
+    await onFamilyUpdate?.call();
+    await logEvent('push_open', {'event': message.data['event'] ?? 'unknown'});
+  }
 
   static Future<void> dispose() async {
     await _tokenSub?.cancel();

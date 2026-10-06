@@ -169,8 +169,8 @@ class AppState extends ChangeNotifier {
   Set<String> _seenRequestResults = {};
 
   /// True while the startup hydration runs (only with a database attached).
-  bool autoHideAmounts =
-      true; // privacy: hide balances on background (kv 'auto_hide')
+  // Opt-in privacy: balances remain visible unless the user enables it.
+  bool autoHideAmounts = false;
   bool hydrating = false;
   bool refreshing = false; // soft refresh in flight (tree stays mounted)
   bool _loadedOnce = false;
@@ -1234,10 +1234,10 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> clearLocalAccountData() async {
+  Future<void> clearLocalAccountData({String? deletedUserId}) async {
     final database = db;
     if (database != null) {
-      final userId = auth?.session?.userId;
+      final userId = deletedUserId ?? auth?.session?.userId;
       if (userId != null && userId.isNotEmpty) {
         await database.deleteAccountCache(userId);
       }

@@ -30,7 +30,7 @@ void main() {
     expect(find.text('New to Mhuri?'), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.text('Continue with Apple'), findsNothing);
-    expect(find.text('Continue with Facebook'), findsOneWidget);
+    expect(find.text('Continue with Facebook'), findsNothing);
     expect(tester.takeException(), isNull);
 
     await tester.ensureVisible(find.text('Create account'));
@@ -41,7 +41,7 @@ void main() {
     expect(find.text('Forgot password?'), findsNothing);
     expect(find.text('Sign up with Google'), findsOneWidget);
     expect(find.text('Sign up with Apple'), findsNothing);
-    expect(find.text('Sign up with Facebook'), findsOneWidget);
+    expect(find.text('Sign up with Facebook'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -66,14 +66,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Continue with Facebook'));
+    await tester.ensureVisible(find.text('Continue with Google'));
     await tester.ensureVisible(find.text('Privacy Policy'));
     expect(find.text('Sign in'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('unconfigured social providers never fake authentication',
-      (tester) async {
+  testWidgets('removed social providers are not offered', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -88,12 +87,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Continue with Facebook'));
-    await tester.tap(find.text('Continue with Facebook'));
-    await tester.pump();
-
-    expect(find.textContaining('Facebook sign-in is not configured'),
-        findsOneWidget);
+    expect(find.text('Continue with Facebook'), findsNothing);
     expect(auth.isLoggedIn, isFalse);
   });
 }

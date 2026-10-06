@@ -121,6 +121,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
           (where, err, st) => activeReporter?.error(where, err, st);
       _state.attachSync(engine);
       _engine = engine;
+      FirebaseServices.onFamilyUpdate = () async => engine.syncNow();
       if (_auth.isLoggedIn) {
         // A restored session exists before the auth listener is attached, so
         // cold starts must enforce the same account boundary as an in-app
@@ -280,6 +281,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
 
   @override
   void dispose() {
+    FirebaseServices.onFamilyUpdate = null;
     _linkSub?.cancel();
     _engine?.dispose();
     _auth.removeListener(_onAuthChanged);

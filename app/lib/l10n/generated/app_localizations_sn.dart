@@ -757,6 +757,9 @@ class AppLocalizationsSn extends AppLocalizations {
   String get recentActivity => 'Zviitiko zvichangobva';
 
   @override
+  String get upcomingReminders => 'Zviyeuchidzo zviri kuuya';
+
+  @override
   String get swapCurrency => 'Chinja mari inoratidzwa';
 
   @override

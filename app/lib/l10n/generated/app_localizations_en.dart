@@ -754,6 +754,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentActivity => 'Recent activity';
 
   @override
+  String get upcomingReminders => 'Upcoming reminders';
+
+  @override
   String get swapCurrency => 'Swap display currency';
 
   @override
@@ -1556,7 +1559,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loggedItem => 'Logged';
 
   @override
-  String get syncDataTitle => 'Sync & data';
+  String get syncDataTitle => 'Sync & Data';
 
   @override
   String get syncStateSyncing => 'Syncing…';

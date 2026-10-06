@@ -1468,6 +1468,12 @@ abstract class AppLocalizations {
   /// **'Recent activity'**
   String get recentActivity;
 
+  /// No description provided for @upcomingReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming reminders'**
+  String get upcomingReminders;
+
   /// No description provided for @swapCurrency.
   ///
   /// In en, this message translates to:
@@ -2857,7 +2863,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncDataTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync & data'**
+  /// **'Sync & Data'**
   String get syncDataTitle;
 
   /// No description provided for @syncStateSyncing.

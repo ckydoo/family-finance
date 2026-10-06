@@ -758,6 +758,9 @@ class AppLocalizationsNd extends AppLocalizations {
   String get recentActivity => 'Okwenzile usanda';
 
   @override
+  String get upcomingReminders => 'Izikhumbuzo ezizayo';
+
+  @override
   String get swapCurrency => 'Shintsha imali eboniswayo';
 
   @override

@@ -66,17 +66,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _socialUnavailable(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$provider sign-in is not configured yet. Please use your email and password.',
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   Future<void> _signInWithGoogle() async {
     final opened = await launchUrl(
       widget.auth.googleSignInUri,
@@ -602,20 +591,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                           color: Color(0xFF4285F4),
                                         ),
                                         onPressed: _signInWithGoogle,
-                                      ),
-                                      const SizedBox(height: 10),
-                                      _SocialAuthButton(
-                                        provider: 'Facebook',
-                                        action: _createMode
-                                            ? 'Sign up with'
-                                            : 'Continue with',
-                                        mark: const FaIcon(
-                                          FontAwesomeIcons.facebookF,
-                                          size: 21,
-                                          color: Color(0xFF1877F2),
-                                        ),
-                                        onPressed: () =>
-                                            _socialUnavailable('Facebook'),
                                       ),
                                     ],
                                   ],

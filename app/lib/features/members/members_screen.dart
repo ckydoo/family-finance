@@ -1243,6 +1243,7 @@ class MembersScreen extends StatelessWidget {
     if (!context.mounted) return;
     mhuriEvent('account.delete.requested',
         {'role': s.user.role.name}); // no identifiers - see reporter.dart
+    final deletingUserId = auth.session?.userId;
     // Step 3 of 3 - progress while the server does the four phases; the
     // dialog is not dismissible and pops with the outcome.
     final deleted = await showDialog<bool>(
@@ -1252,7 +1253,7 @@ class MembersScreen extends StatelessWidget {
         ) ??
         false;
     if (deleted) {
-      await s.clearLocalAccountData();
+      await s.clearLocalAccountData(deletedUserId: deletingUserId);
       return;
     }
     messenger.showSnackBar(

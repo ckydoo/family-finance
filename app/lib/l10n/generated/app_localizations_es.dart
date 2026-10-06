@@ -763,6 +763,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get recentActivity => 'Actividad reciente';
 
   @override
+  String get upcomingReminders => 'Próximos recordatorios';
+
+  @override
   String get swapCurrency => 'Cambiar moneda de vista';
 
   @override

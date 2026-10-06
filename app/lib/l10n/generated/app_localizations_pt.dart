@@ -762,6 +762,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get recentActivity => 'Atividade recente';
 
   @override
+  String get upcomingReminders => 'Próximos lembretes';
+
+  @override
   String get swapCurrency => 'Trocar moeda de exibição';
 
   @override
