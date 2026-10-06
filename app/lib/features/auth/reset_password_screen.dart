@@ -151,7 +151,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             const SizedBox(height: 12),
                             Text(l.resetExpiredTitle,
                                 style: const TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.w800),
+                                    fontSize: 20, fontWeight: FontWeight.w700),
                                 textAlign: TextAlign.center),
                             const SizedBox(height: 8),
                             Text(l.resetExpiredBody,
@@ -187,6 +187,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               autofillHints: const [AutofillHints.newPassword],
                               enableSuggestions: false,
                               autocorrect: false,
+                              textInputAction: TextInputAction.next,
                               onChanged: (_) => setState(() {}),
                               decoration: InputDecoration(
                                 labelText: l.resetNewLabel,
@@ -211,6 +212,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               autofillHints: const [AutofillHints.newPassword],
                               enableSuggestions: false,
                               autocorrect: false,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) {
+                                if (!_busy) _submit();
+                              },
                               decoration: InputDecoration(
                                 labelText: l.resetConfirmLabel,
                                 suffixIcon: IconButton(

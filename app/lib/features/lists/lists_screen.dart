@@ -66,8 +66,8 @@ class _ListsScreenState extends State<ListsScreen> {
                                 child: Text(
                                   AppLocalizations.of(context)!.shopping,
                                   style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w800,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
                                     color: context.ink,
                                   ),
                                 ),

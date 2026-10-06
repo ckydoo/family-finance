@@ -40,7 +40,7 @@ class MhuriType {
   static const display = TextStyle(
     fontFamily: kFontFamily,
     fontSize: 26,
-    fontWeight: FontWeight.w800,
+    fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
     height: 1.1,
   );
@@ -70,10 +70,10 @@ class MhuriType {
 }
 
 /// The one radius ruler: everything circles back to these.
-const double kRadiusS = 10;
-const double kRadiusM = 14;
-const double kRadiusL = 16;
-const double kRadiusSheet = 24;
+const double kRadiusS = 8;
+const double kRadiusM = 10;
+const double kRadiusL = 12;
+const double kRadiusSheet = 20;
 
 /// Responsive page gutters used by every full-screen, scrollable surface.
 /// SafeArea supplies the device inset; these values supply the visual breathing
@@ -89,10 +89,8 @@ final BorderRadius kBRadiusS = BorderRadius.circular(kRadiusS);
 final BorderRadius kBRadiusM = BorderRadius.circular(kRadiusM);
 final BorderRadius kBRadiusL = BorderRadius.circular(kRadiusL);
 
-/// Soft card shadow used across screens (subtle, never heavy).
-const List<BoxShadow> kCardShadow = [
-  BoxShadow(color: kShadow, blurRadius: 18, offset: Offset(0, 6)),
-];
+/// Ordinary content surfaces are separated by tone and borders, not shadow.
+const List<BoxShadow> kCardShadow = [];
 
 /// ── Dark-mode palette ──────────────────────────────────────────────────────
 /// One object, two instances: every screen reads colors through [MhuriCtx]
@@ -180,9 +178,7 @@ class MhuriColors {
     track: Color(0xFF223029),
     shadowColor: Color(0x66000000),
     onSolid: Color(0xFF0C1411),
-    cardShadow: [
-      BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, 6))
-    ],
+    cardShadow: [],
   );
 
   static MhuriColors of(BuildContext c) =>
@@ -537,7 +533,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
       elevation: 3,
       focusElevation: 5,
       highlightElevation: 5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
     ),
     bottomAppBarTheme: BottomAppBarThemeData(
       color: p.card,

@@ -19,22 +19,18 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: context.card,
-        borderRadius: BorderRadius.circular(24),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       child: Column(
         children: [
-          Icon(icon, size: 46, color: context.primaryDark),
+          Icon(icon, size: 32, color: context.inkSoft),
           const SizedBox(height: 12),
           Text(
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: context.ink,
             ),
           ),

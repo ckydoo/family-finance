@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final l = AppLocalizations.of(context)!;
     OutlineInputBorder fieldBorder(Color color, [double width = 1]) =>
         OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: kBRadiusM,
           borderSide: BorderSide(color: color, width: width),
         );
 
@@ -178,11 +178,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     height: 58,
                                     padding: const EdgeInsets.all(2),
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: context.cardShadow,
+                                      borderRadius: kBRadiusL,
+                                      border:
+                                          Border.all(color: context.hairline),
                                     ),
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: kBRadiusM,
                                       child: Image.asset(
                                         'assets/branding/app_icon.png',
                                         fit: BoxFit.cover,
@@ -195,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: TextStyle(
                                       color: context.ink,
                                       fontSize: 18,
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: FontWeight.w700,
                                       letterSpacing: -0.3,
                                     ),
                                   ),
@@ -220,9 +221,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         : l.welcomeBack),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.8,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.5,
                                   color: context.ink,
                                   height: 1.1,
                                 ),
@@ -287,8 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                               minimumSize:
                                                   const Size.fromHeight(52),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
+                                                borderRadius: kBRadiusM,
                                               ),
                                             ),
                                             child: busy
@@ -306,7 +306,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     style: TextStyle(
                                                       fontSize: 15,
                                                       fontWeight:
-                                                          FontWeight.w800,
+                                                          FontWeight.w700,
                                                     ),
                                                   ),
                                           );
@@ -352,8 +352,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           minimumSize:
                                               const Size.fromHeight(48),
                                           shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(16)),
+                                              borderRadius: kBRadiusM),
                                           side: BorderSide(
                                               color: context.hairline),
                                         ),
@@ -536,10 +535,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                               disabledBackgroundColor:
                                                   context.track,
                                               minimumSize:
-                                                  const Size.fromHeight(56),
+                                                  const Size.fromHeight(50),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(17),
+                                                borderRadius: kBRadiusM,
                                               ),
                                             ),
                                             child: busy
@@ -564,7 +562,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         style: const TextStyle(
                                                           fontSize: 15,
                                                           fontWeight:
-                                                              FontWeight.w800,
+                                                              FontWeight.w700,
                                                         ),
                                                       ),
                                                       const SizedBox(width: 8),
@@ -611,7 +609,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       style: TextStyle(
                                         color: context.primary,
                                         fontSize: 13,
-                                        fontWeight: FontWeight.w800,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ),
@@ -644,7 +642,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         style: TextStyle(
                                           color: context.primary,
                                           fontSize: 13,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
@@ -747,7 +745,7 @@ class _AuthNotice extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: danger ? context.dangerSoft : context.primarySoft,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: kBRadiusM,
         ),
         child: Row(
           children: [
@@ -815,11 +813,11 @@ class _SocialAuthButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: context.ink,
             backgroundColor: context.card,
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size.fromHeight(50),
             padding: const EdgeInsets.symmetric(horizontal: 18),
             side: BorderSide(color: context.hairline),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: kBRadiusM,
             ),
           ),
           child: Stack(

@@ -26,9 +26,7 @@ class RecurringRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: dueSoon && rule.active
-            ? context.accentSoft
-            : Colors.transparent,
+        color: dueSoon && rule.active ? context.accentSoft : Colors.transparent,
         border: Border(bottom: BorderSide(color: context.hairline)),
       ),
       child: Row(
@@ -91,7 +89,7 @@ class RecurringRow extends StatelessWidget {
               ),
               child: Text(
                 AppLocalizations.of(context)!.post,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
             IconButton(

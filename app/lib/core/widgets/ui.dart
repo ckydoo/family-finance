@@ -36,8 +36,8 @@ class MhuriCard extends StatelessWidget {
     return Material(
       color: context.card,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: border,
+        borderRadius: kBRadiusL,
+        side: highlight ? border : BorderSide(color: context.hairline),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -51,7 +51,8 @@ class MhuriCard extends StatelessWidget {
   }
 }
 
-/// Section header inside a settings-style page (icon + label).
+/// Section header inside a settings-style page. Typography carries the
+/// hierarchy; optional icons are accepted for compatibility but omitted.
 class SectionHeader extends StatelessWidget {
   const SectionHeader(this.text, {super.key, this.icon});
 
@@ -61,29 +62,19 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 16, bottom: 4),
-        child: Row(
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 15, color: context.primaryDark),
-              const SizedBox(width: 6),
-            ],
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                  color: context.inkSoft,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ),
-          ],
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: context.inkSoft,
+            letterSpacing: 0.2,
+          ),
         ),
       );
 }
 
-/// The single full-width call-to-action (rounded rectangle, 54 high).
+/// The single full-width call-to-action.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -108,7 +99,7 @@ class PrimaryButton extends StatelessWidget {
           foregroundColor: context.onSolid,
           disabledBackgroundColor: danger ? context.dangerSoft : context.track,
           disabledForegroundColor: context.inkFaint,
-          minimumSize: const Size.fromHeight(54),
+          minimumSize: const Size.fromHeight(50),
           shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
         ),
         child: busy
@@ -124,12 +115,12 @@ class PrimaryButton extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(label,
                           style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w800)),
+                              fontSize: 15, fontWeight: FontWeight.w700)),
                     ],
                   )
                 : Text(label,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w800)),
+                        fontSize: 15, fontWeight: FontWeight.w700)),
       );
 }
 
@@ -141,12 +132,8 @@ class EmptyHint extends StatelessWidget {
   final IconData? icon;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: context.card,
-          borderRadius: BorderRadius.circular(20),
-        ),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -439,7 +426,7 @@ class SecondaryButton extends StatelessWidget {
 }
 
 /// ── Page header ─────────────────────────────────────────────────────────────
-/// The 26/w800 page title every top-level screen shares.
+/// Restrained top-level page title.
 class PageHeader extends StatelessWidget {
   const PageHeader(this.text, {super.key});
 
@@ -449,7 +436,7 @@ class PageHeader extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text,
         style: TextStyle(
-            fontSize: 26, fontWeight: FontWeight.w800, color: context.ink),
+            fontSize: 24, fontWeight: FontWeight.w700, color: context.ink),
       );
 }
 
@@ -494,7 +481,7 @@ class SheetHeader extends StatelessWidget {
             child: Text(title,
                 style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: context.ink)),
           ),
           IconButton(

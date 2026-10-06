@@ -125,9 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 27,
+                              fontSize: 24,
                               height: 1.15,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: context.ink,
                             ),
                           ),
@@ -184,9 +184,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 // label so its purpose is immediately clear.
                 Material(
                   color: context.card,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: kBRadiusL,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: kBRadiusL,
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const MembersScreen()),
                     ),
@@ -194,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(12, 9, 10, 9),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: kBRadiusL,
                         border: Border.all(color: context.hairline),
                       ),
                       child: Row(
@@ -225,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w700,
                                     color: context.ink,
                                   ),
                                 ),
@@ -372,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         AppLocalizations.of(context)!.recentActivity,
                         style: TextStyle(
                             fontSize: 18,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: context.ink),
                       ),
                     ),
@@ -391,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: context.card,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: kBRadiusL,
                       border: Border.all(color: context.hairline),
                     ),
                     child: Text(
@@ -435,13 +435,8 @@ class _MonthlySummary extends StatelessWidget {
       children: [
         _sectionTitle(context, 'Your family this month'),
         const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: context.card,
-            borderRadius: kBRadiusL,
-            border: Border.all(color: context.hairline),
-          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
             children: [
               Row(
@@ -486,21 +481,25 @@ class _MonthlySummary extends StatelessWidget {
               ),
               if (!masked) ...[
                 const SizedBox(height: 16),
-                Container(
+                SizedBox(
                   width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: context.primarySoft,
-                    borderRadius: kBRadiusS,
-                  ),
-                  child: Text(
-                    _monthlyInsight(s),
-                    style: TextStyle(
-                      color: context.primaryDark,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      height: 1.35,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: context.primarySoft,
+                      borderRadius: kBRadiusS,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      child: Text(
+                        _monthlyInsight(s),
+                        style: TextStyle(
+                          color: context.primaryDark,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1096,12 +1095,11 @@ int _daysUntil(DateTime date) {
 }
 
 Widget _sectionTitle(BuildContext context, String text) => Text(
-      text.toUpperCase(),
+      text,
       style: TextStyle(
-        color: context.inkSoft,
-        fontSize: 11,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.0,
+        color: context.ink,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
       ),
     );
 
@@ -1130,19 +1128,8 @@ class _PoolCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [context.primary, context.primaryDark],
-            ),
+            color: context.primaryDark,
             borderRadius: kBRadiusL,
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x470E7C66), // kPrimary @ 28 %
-                blurRadius: 26,
-                offset: Offset(0, 10),
-              ),
-            ],
           ),
           child: Column(
             children: [
@@ -1206,10 +1193,10 @@ class _PoolCard extends StatelessWidget {
               const SizedBox(height: 12),
               Material(
                 color: Colors.white24,
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: kBRadiusM,
                 child: InkWell(
                   onTap: () => _showFlexibleSpendBreakdown(context, s),
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: kBRadiusM,
                   child: Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 7),

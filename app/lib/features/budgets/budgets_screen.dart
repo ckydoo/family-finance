@@ -45,7 +45,7 @@ class BudgetsScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: context.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: kBRadiusS,
       ),
       child: Text(
         cycleLabel,
@@ -112,7 +112,7 @@ class BudgetsScreen extends StatelessWidget {
               l.recurringExpenses,
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: context.ink,
               ),
             ),
@@ -728,10 +728,9 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                         if (!context.mounted) return;
                         if (ok && mounted && s.archiveEnvelope(e)) {
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('${e.name} budget removed'),
-                                  behavior: SnackBarBehavior.floating));
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('${e.name} budget removed'),
+                              behavior: SnackBarBehavior.floating));
                         }
                       }
                     },

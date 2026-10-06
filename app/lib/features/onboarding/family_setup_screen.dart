@@ -596,9 +596,9 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           text,
           style: TextStyle(
             color: context.ink,
-            fontSize: 27,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
           ),
         ),
         if (subtitle != null) ...[
@@ -622,7 +622,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: context.primary,
         foregroundColor: context.onSolid,
-        minimumSize: const Size.fromHeight(54),
+        minimumSize: const Size.fromHeight(50),
         shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
       ),
       child: _busy
@@ -632,7 +632,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             )
           : Text(
               text,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
     );
   }
@@ -652,7 +652,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         filled: true,
         fillColor: context.card,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: kBRadiusM,
           borderSide: BorderSide.none,
         ),
         contentPadding:
@@ -706,8 +706,8 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             'Mhuri',
             style: TextStyle(
               color: context.ink,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -772,7 +772,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             filled: true,
             fillColor: context.card,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: kBRadiusM,
               borderSide: BorderSide.none,
             ),
           ),
@@ -814,7 +814,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             filled: true,
             fillColor: context.card,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: kBRadiusM,
               borderSide: BorderSide.none,
             ),
           ),
@@ -876,7 +876,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: context.primarySoft,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: kBRadiusM,
           ),
           child: Row(
             children: [
@@ -944,7 +944,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.card,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: kBRadiusL,
               border: Border.all(color: context.hairline),
             ),
             child: Row(
@@ -964,7 +964,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 TextButton(
                   onPressed: _addCustomCategory,
                   child: const Text('Add',
-                      style: TextStyle(fontWeight: FontWeight.w800)),
+                      style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
@@ -1006,7 +1006,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: context.card,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: kBRadiusL,
             border: Border.all(color: context.hairline),
           ),
           child: Column(
@@ -1016,7 +1016,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 'YOUR STARTER BUDGETS',
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
                   color: context.inkSoft,
                 ),
@@ -1062,7 +1062,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
               shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
             ),
             child: const Text('Go to Home',
-                style: TextStyle(fontWeight: FontWeight.w800)),
+                style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1094,7 +1094,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: context.card,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: kBRadiusM,
               border: Border.all(color: context.hairline),
             ),
             child: Row(

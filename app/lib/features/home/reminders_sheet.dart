@@ -37,7 +37,7 @@ class _RemindersSheet extends StatelessWidget {
           Text(l10n.recentActivity,
               style: TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.ink)),
           const SizedBox(height: 6),
           if (activity.isEmpty)
@@ -53,7 +53,7 @@ class _RemindersSheet extends StatelessWidget {
           Text(l10n.upcomingReminders,
               style: TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.ink)),
           const SizedBox(height: 6),
           if (!s.notifyEnabled || plan.isEmpty)

@@ -41,8 +41,8 @@ class SavingsScreen extends StatelessWidget {
                     child: Text(
                       AppLocalizations.of(context)!.savingsTitle,
                       style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
                           color: context.ink),
                     ),
                   ),
@@ -241,7 +241,8 @@ class SavingsScreen extends StatelessWidget {
                           backgroundColor: context.primary,
                           foregroundColor: context.onSolid,
                           minimumSize: const Size.fromHeight(46),
-                          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                          shape:
+                              RoundedRectangleBorder(borderRadius: kBRadiusM),
                         ),
                         child: Text(AppLocalizations.of(context)!.markRound),
                       ),

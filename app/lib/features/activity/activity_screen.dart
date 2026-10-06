@@ -244,7 +244,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                           row,
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: context.inkSoft,
                           ),
                         ),

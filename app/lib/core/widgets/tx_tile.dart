@@ -34,10 +34,10 @@ class TxTile extends StatelessWidget {
     final canManage = tx.memberId == s.realUser.id || s.canAdmin;
     return Material(
       color: surface ? context.card : Colors.transparent,
-      borderRadius: surface ? BorderRadius.circular(18) : null,
+      borderRadius: surface ? kBRadiusL : null,
       child: InkWell(
         onTap: canManage ? () => _showTransaction(context, s) : null,
-        borderRadius: surface ? BorderRadius.circular(18) : null,
+        borderRadius: surface ? kBRadiusL : null,
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: surface ? 14 : 0,
@@ -88,7 +88,7 @@ class TxTile extends StatelessWidget {
                     '${isIn ? '+' : '-'}${tx.amount.text}',
                     maxLines: 1,
                     style: TextStyle(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       fontSize: 14,
                       color: isIn ? context.incomeGreen : context.expenseRed,
                     ),
