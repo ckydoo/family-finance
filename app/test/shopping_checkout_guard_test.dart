@@ -39,4 +39,38 @@ void main() {
     expect(item.state, ItemState.tobuy);
     expect(item.checkedOut, isFalse);
   });
+
+  test('checkout uses actual prices, selected budget, method and purchaser',
+      () {
+    final state = AppState();
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Household',
+      limit: Money.fromMajor(200, Currency.usd),
+    );
+    final envelope = state.envelopes.single;
+    state.addItem(
+      'Soap',
+      2,
+      Money.fromMajor(4, Currency.usd),
+      assignedToId: state.user.id,
+    );
+    final item = state.items.single
+      ..state = ItemState.done
+      ..actual = Money.fromMajor(5, Currency.usd);
+
+    expect(
+      state
+          .finishShopping(
+            envelopeId: envelope.id,
+            method: Method.mobileMoney,
+          )
+          .minor,
+      1000,
+    );
+    expect(state.txs.single.envelopeId, envelope.id);
+    expect(state.txs.single.method, Method.mobileMoney);
+    expect(item.assignedToId, state.user.id);
+    expect(item.purchasedById, state.user.id);
+  });
 }

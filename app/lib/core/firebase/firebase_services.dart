@@ -175,7 +175,7 @@ class FirebaseServices {
     if (notification == null) return;
     await Notifier.showNow(Reminder(
       key: message.messageId ?? 'push_${DateTime.now().millisecondsSinceEpoch}',
-      category: ReminderCategory.digest,
+      category: ReminderCategory.family,
       title: notification.title ?? 'Mhuri',
       body: notification.body ?? 'Your family has an update.',
       when: DateTime.now(),

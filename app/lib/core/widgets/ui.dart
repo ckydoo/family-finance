@@ -66,12 +66,180 @@ class SectionHeader extends StatelessWidget {
           text,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             color: context.inkSoft,
             letterSpacing: 0.2,
           ),
         ),
       );
+}
+
+/// A clean section header with optional trailing action (e.g. "See all").
+class SectionLabel extends StatelessWidget {
+  const SectionLabel({
+    super.key,
+    required this.title,
+    this.actionLabel,
+    this.onAction,
+    this.padding = const EdgeInsets.only(top: 20, bottom: 8),
+  });
+
+  final String title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: context.ink,
+              letterSpacing: -0.2,
+            ),
+          ),
+          if (actionLabel != null && onAction != null)
+            GestureDetector(
+              onTap: onAction,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                child: Text(
+                  actionLabel!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: context.primary,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A clean, flat list row (title, subtitle, leading, trailing, optional divider).
+/// Replaces oversized cards with high information density and low visual noise.
+class MhuriListRow extends StatelessWidget {
+  const MhuriListRow({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.leading,
+    this.trailing,
+    this.onTap,
+    this.showDivider = true,
+    this.padding = const EdgeInsets.symmetric(vertical: 12),
+  });
+
+  final Widget title;
+  final Widget? subtitle;
+  final Widget? leading;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final bool showDivider;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content = Padding(
+      padding: padding,
+      child: Row(
+        children: [
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                title,
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  subtitle!,
+                ],
+              ],
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 12),
+            trailing!,
+          ],
+        ],
+      ),
+    );
+
+    if (onTap != null) {
+      content = InkWell(
+        onTap: onTap,
+        borderRadius: kBRadiusS,
+        child: content,
+      );
+    }
+
+    if (!showDivider) return content;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        content,
+        Divider(
+          height: 1,
+          thickness: 1,
+          color: context.hairline.withValues(alpha: 0.6),
+        ),
+      ],
+    );
+  }
+}
+
+/// A restrained progress bar with consistent height and radius.
+class MhuriProgress extends StatelessWidget {
+  const MhuriProgress({
+    super.key,
+    required this.progress,
+    this.color,
+    this.trackColor,
+    this.height = 5.0,
+    this.radius = 4.0,
+  });
+
+  final double progress;
+  final Color? color;
+  final Color? trackColor;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final clamped = progress.clamp(0.0, 1.0);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Container(
+        height: height,
+        color: trackColor ?? context.track,
+        alignment: Alignment.centerLeft,
+        child: FractionallySizedBox(
+          widthFactor: clamped,
+          child: Container(
+            color: color ?? context.primary,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// The single full-width call-to-action.

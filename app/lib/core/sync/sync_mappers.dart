@@ -86,6 +86,248 @@ DateTime? _iso(Object? v) =>
 // ── adapters ───────────────────────────────────────────────────────────────
 
 final kSyncAdapters = <String, SyncAdapter>{
+  'tx_allocation': SyncAdapter(
+    entity: 'tx_allocation',
+    table: 'transaction_split',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final a = d as TxAllocation;
+      return {
+        'id': a.id,
+        'space_id': ctx.spaceId,
+        'transaction_id': a.txId,
+        'envelope_id': a.envelopeId,
+        'amount_minor': a.amount.minor,
+        'currency': a.amount.currency.code
+      };
+    },
+    decode: (j) => TxAllocation(
+        id: j['id'] as String,
+        txId: j['transaction_id'] as String,
+        envelopeId: j['envelope_id'] as String,
+        amount: _moneyOf(j, 'amount_minor', 'currency')),
+  ),
+  'family_debt': SyncAdapter(
+    entity: 'family_debt',
+    table: 'family_debt',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final v = d as FamilyDebt;
+      return {
+        'id': v.id,
+        'space_id': ctx.spaceId,
+        'name': v.name,
+        'direction': v.direction.name,
+        'principal_minor': v.principal.minor,
+        'currency': v.principal.currency.code,
+        'counterparty_member_id': v.counterpartyMemberId,
+        'due_date': v.dueDate?.toUtc().toIso8601String(),
+        'status': v.status,
+        'created_by': v.createdById
+      };
+    },
+    decode: (j) => FamilyDebt(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        direction: DebtDirection.values.byName(j['direction'] as String),
+        principal: _moneyOf(j, 'principal_minor', 'currency'),
+        counterpartyMemberId: j['counterparty_member_id'] as String?,
+        dueDate: _iso(j['due_date']),
+        status: j['status'] as String? ?? 'active',
+        createdById: j['created_by'] as String),
+  ),
+  'debt_repayment': SyncAdapter(
+    entity: 'debt_repayment',
+    table: 'debt_repayment',
+    spaceScoped: false,
+    encode: (d, ctx) {
+      final v = d as DebtRepayment;
+      return {
+        'id': v.id,
+        'debt_id': v.debtId,
+        'member_id': v.memberId,
+        'amount_minor': v.amount.minor,
+        'currency': v.amount.currency.code,
+        'paid_at': v.paidAt.toUtc().toIso8601String()
+      };
+    },
+    decode: (j) => DebtRepayment(
+        id: j['id'] as String,
+        debtId: j['debt_id'] as String,
+        memberId: j['member_id'] as String,
+        amount: _moneyOf(j, 'amount_minor', 'currency'),
+        paidAt: _iso(j['paid_at']) ?? DateTime.now()),
+  ),
+  'contribution_campaign': SyncAdapter(
+    entity: 'contribution_campaign',
+    table: 'contribution_campaign',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final c = d as ContributionCampaign;
+      return {
+        'id': c.id,
+        'space_id': ctx.spaceId,
+        'name': c.name,
+        'target_minor': c.target.minor,
+        'currency': c.target.currency.code,
+        'deadline': c.deadline.toUtc().toIso8601String(),
+        'created_by': c.createdById,
+        'status': c.status
+      };
+    },
+    decode: (j) => ContributionCampaign(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        target: _moneyOf(j, 'target_minor', 'currency'),
+        deadline: _iso(j['deadline']) ?? DateTime.now(),
+        createdById: j['created_by'] as String,
+        status: j['status'] as String? ?? 'active'),
+  ),
+  'contribution_pledge': SyncAdapter(
+    entity: 'contribution_pledge',
+    table: 'contribution_pledge',
+    spaceScoped: false,
+    encode: (d, ctx) {
+      final p = d as ContributionPledge;
+      return {
+        'id': p.id,
+        'campaign_id': p.campaignId,
+        'member_id': p.memberId,
+        'amount_minor': p.amount.minor,
+        'currency': p.amount.currency.code,
+        'created_at': p.createdAt.toUtc().toIso8601String()
+      };
+    },
+    decode: (j) => ContributionPledge(
+        id: j['id'] as String,
+        campaignId: j['campaign_id'] as String,
+        memberId: j['member_id'] as String,
+        amount: _moneyOf(j, 'amount_minor', 'currency'),
+        createdAt: _iso(j['created_at']) ?? DateTime.now()),
+  ),
+  'contribution_payment': SyncAdapter(
+    entity: 'contribution_payment',
+    table: 'contribution_payment',
+    spaceScoped: false,
+    encode: (d, ctx) {
+      final p = d as ContributionPayment;
+      return {
+        'id': p.id,
+        'campaign_id': p.campaignId,
+        'member_id': p.memberId,
+        'amount_minor': p.amount.minor,
+        'currency': p.amount.currency.code,
+        'paid_at': p.paidAt.toUtc().toIso8601String()
+      };
+    },
+    decode: (j) => ContributionPayment(
+        id: j['id'] as String,
+        campaignId: j['campaign_id'] as String,
+        memberId: j['member_id'] as String,
+        amount: _moneyOf(j, 'amount_minor', 'currency'),
+        paidAt: _iso(j['paid_at']) ?? DateTime.now()),
+  ),
+  'family_chat_message': SyncAdapter(
+    entity: 'family_chat_message',
+    table: 'family_chat_message',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final m = d as FamilyChatMessage;
+      return {
+        'id': m.id,
+        'space_id': ctx.spaceId,
+        'sender_id': m.senderId,
+        'text': m.text,
+        'created_at': m.createdAt.toUtc().toIso8601String(),
+        'is_system': m.isSystem,
+        'sender_name': m.senderName,
+        'sender_avatar': m.senderAvatar,
+        'status': m.status.name,
+        'reference_type': m.referenceType?.name,
+        'reference_id': m.referenceId,
+        'reference_title': m.referenceTitle,
+        'reference_meta': m.referenceMeta,
+        'deleted': m.deleted,
+      };
+    },
+    decode: (j) => FamilyChatMessage(
+      id: j['id'] as String,
+      familyId: j['space_id'] as String,
+      senderId: j['sender_id'] as String,
+      text: j['text'] as String? ?? '',
+      createdAt: _iso(j['created_at']) ?? DateTime.now(),
+      isSystem: (j['is_system'] as bool?) ?? false,
+      senderName: j['sender_name'] as String?,
+      senderAvatar: j['sender_avatar'] as String?,
+      status: ChatMessageStatus.values.byName(j['status'] as String? ?? 'sent'),
+      referenceType: j['reference_type'] == null
+          ? null
+          : ChatReferenceType.values
+              .byName(j['reference_type'] as String? ?? 'expense'),
+      referenceId: j['reference_id'] as String?,
+      referenceTitle: j['reference_title'] as String?,
+      referenceMeta: j['reference_meta'] as String?,
+      deleted: (j['deleted'] as bool?) ?? false,
+    ),
+  ),
+  'family_activity': SyncAdapter(
+    entity: 'family_activity',
+    table: 'activity_log',
+    spaceScoped: true,
+    // Activity rows are server-authored by audit triggers and never queued.
+    encode: (d, ctx) => throw UnsupportedError('activity is read-only'),
+    decode: (j) => FamilyActivity(
+      id: j['id'] as String,
+      actorId: j['actor_id'] as String,
+      action: j['action'] as String,
+      entity: j['entity'] as String,
+      entityId: j['entity_id'] as String?,
+      detail: ((j['detail'] as Map?) ?? const {})
+          .map((k, v) => MapEntry(k.toString(), v)),
+      at: _iso(j['at']) ?? DateTime.now(),
+    ),
+  ),
+  'budget_cycle_plan': SyncAdapter(
+    entity: 'budget_cycle_plan',
+    table: 'budget_cycle_plan',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final p = d as BudgetCyclePlan;
+      String date(DateTime value) =>
+          '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+      return {
+        'id': p.id,
+        'space_id': ctx.spaceId,
+        'cycle_start': date(p.cycleStart),
+        'income_mode': p.incomeMode == IncomePlanMode.knownMonthly
+            ? 'known_monthly'
+            : 'as_earned',
+        'expected_income_minor': p.expectedIncome?.minor,
+        'currency': (p.expectedIncome?.currency ?? Currency.usd).code,
+        'allocations': p.allocations,
+        'status': p.isClosed ? 'closed' : 'active',
+        'closed_at': p.closedAt?.toUtc().toIso8601String(),
+        'copied_from': p.copiedFrom == null ? null : date(p.copiedFrom!),
+      };
+    },
+    decode: (j) => BudgetCyclePlan(
+      id: j['id'] as String,
+      cycleStart: DateTime.parse(j['cycle_start'] as String),
+      incomeMode: j['income_mode'] == 'as_earned'
+          ? IncomePlanMode.asEarned
+          : IncomePlanMode.knownMonthly,
+      expectedIncome: j['expected_income_minor'] == null
+          ? null
+          : _moneyOf(j, 'expected_income_minor', 'currency'),
+      allocations: ((j['allocations'] as Map?) ?? const {})
+          .map((k, v) => MapEntry(k.toString(), (v as num).toInt())),
+      isClosed: j['status'] == 'closed',
+      closedAt: _iso(j['closed_at']),
+      copiedFrom: j['copied_from'] == null
+          ? null
+          : DateTime.parse(j['copied_from'] as String),
+    ),
+  ),
   'tx': SyncAdapter(
     entity: 'tx',
     table: 'transaction',
@@ -104,6 +346,8 @@ final kSyncAdapters = <String, SyncAdapter>{
         'occurred_at': t.when.toUtc().toIso8601String(),
         'created_by': t.memberId,
         'deleted_at': t.deletedAt?.toUtc().toIso8601String(),
+        'receipt_uri': t.receiptUri,
+        'recurring_rule_id': t.recurringRuleId,
       };
     },
     decode: (j) => Tx(
@@ -116,6 +360,8 @@ final kSyncAdapters = <String, SyncAdapter>{
       note: j['note'] as String? ?? '',
       when: (_iso(j['occurred_at']) ?? DateTime.now()),
       deletedAt: _iso(j['deleted_at']),
+      receiptUri: j['receipt_uri'] as String?,
+      recurringRuleId: j['recurring_rule_id'] as String?,
     ),
   ),
   'envelope': SyncAdapter(
@@ -222,6 +468,10 @@ final kSyncAdapters = <String, SyncAdapter>{
         'added_by': i.addedById,
         'state': i.state.name,
         'checked_out': i.checkedOut,
+        'assigned_to': i.assignedToId,
+        'actual_price_minor': i.actual?.minor,
+        'actual_currency': i.actual?.currency.code,
+        'purchased_by': i.purchasedById,
         'deleted_at': i.deletedAt?.toUtc().toIso8601String(),
       };
     },
@@ -233,6 +483,11 @@ final kSyncAdapters = <String, SyncAdapter>{
       addedById: j['added_by'] as String? ?? 'unknown',
       state: ItemState.values.byName(j['state'] as String? ?? 'tobuy'),
       checkedOut: j['checked_out'] as bool? ?? false,
+      assignedToId: j['assigned_to'] as String?,
+      actual: j['actual_price_minor'] == null
+          ? null
+          : _moneyOf(j, 'actual_price_minor', 'actual_currency'),
+      purchasedById: j['purchased_by'] as String?,
       deletedAt: _iso(j['deleted_at']),
     ),
   ),
@@ -441,9 +696,15 @@ final kSyncAdapters = <String, SyncAdapter>{
 /// Pull order: envelopes/goals before their children; the shopping-list
 /// header before its items (joiners learn the list id first).
 const kPullOrder = [
-  'envelope', 'goal', 'shopping_list', 'tx', 'goal_tx', 'list_item',
+  'envelope', 'budget_cycle_plan', 'goal', 'shopping_list', 'tx', 'goal_tx',
+  'list_item',
   'kid_request', 'earning',
-  'recurring', 'chore', 'mukando', // circle last - cheapest, header-only
+  'recurring', 'chore', 'mukando',
+  'family_activity', // immutable server-authored audit trail
+  'family_chat_message', // family-scoped conversation thread
+  'contribution_campaign', 'contribution_pledge', 'contribution_payment',
+  'family_debt', 'debt_repayment',
+  'tx_allocation',
 ];
 
 /// ── Family identity (live) ─────────────────────────────────────────────────

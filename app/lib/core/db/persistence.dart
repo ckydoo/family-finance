@@ -20,6 +20,16 @@ class DbSnapshot {
   final List<KidRequest> requests;
   final List<Proposal> proposals;
   final List<RecurringRule> recurring;
+  final List<BudgetCyclePlan> budgetPlans;
+  final List<FamilyActivity> familyActivities;
+  final List<FamilyTask> familyTasks;
+  final List<ContributionCampaign> contributionCampaigns;
+  final List<ContributionPledge> contributionPledges;
+  final List<ContributionPayment> contributionPayments;
+  final List<FamilyDebt> familyDebts;
+  final List<DebtRepayment> debtRepayments;
+  final List<TxAllocation> txAllocations;
+  final List<FamilyChatMessage> familyChatMessages;
   final List<Earning> earnings;
   final SavingsCircle circle;
   final int stars;
@@ -51,6 +61,16 @@ class DbSnapshot {
     required this.requests,
     required this.proposals,
     required this.recurring,
+    required this.budgetPlans,
+    required this.familyActivities,
+    required this.familyTasks,
+    required this.contributionCampaigns,
+    required this.contributionPledges,
+    required this.contributionPayments,
+    required this.familyDebts,
+    required this.debtRepayments,
+    required this.txAllocations,
+    required this.familyChatMessages,
     required this.earnings,
     required this.circle,
     required this.stars,
@@ -119,6 +139,10 @@ class Persistence {
       batch.insert('tx', _txRow(t),
           conflictAlgorithm: ConflictAlgorithm.replace);
     }
+    for (final a in s.txAllocations) {
+      batch.insert('tx_allocation', _allocationRow(a),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
     for (final g in s.goals) {
       batch.insert(
         'goal',
@@ -171,6 +195,42 @@ class Persistence {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
+    for (final plan in s.budgetPlans) {
+      batch.insert('budget_cycle_plan', _budgetPlanRow(plan),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final activity in s.familyActivities) {
+      batch.insert('family_activity', _activityRow(activity),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final campaign in s.contributionCampaigns) {
+      batch.insert('contribution_campaign', _campaignRow(campaign),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final pledge in s.contributionPledges) {
+      batch.insert('contribution_pledge', _pledgeRow(pledge),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final payment in s.contributionPayments) {
+      batch.insert('contribution_payment', _paymentRow(payment),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final debt in s.familyDebts) {
+      batch.insert('family_debt', _debtRow(debt),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final repayment in s.debtRepayments) {
+      batch.insert('debt_repayment', _repaymentRow(repayment),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final message in s.familyChatMessages) {
+      batch.insert('family_chat_message', _chatMessageRow(message),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final task in s.familyTasks) {
+      batch.insert('family_task', _familyTaskRow(task),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
     batch.insert(
       'circle',
       _circleRow(s.circle),
@@ -215,6 +275,8 @@ class Persistence {
             where: 'deleted_at IS NULL', orderBy: 'when_ms DESC'))
         .map(_txFrom)
         .toList();
+    final txAllocations =
+        (await _d.query('tx_allocation')).map(_allocationFrom).toList();
     final goals = (await _d.query('goal', where: "status <> 'archived'"))
         .map(_goalFrom)
         .toList();
@@ -237,6 +299,35 @@ class Persistence {
             where: 'is_archived = 0', orderBy: 'next_due_ms ASC'))
         .map(_recurringFrom)
         .toList();
+    final budgetPlans =
+        (await _d.query('budget_cycle_plan', orderBy: 'cycle_start DESC'))
+            .map(_budgetPlanFrom)
+            .toList();
+    final familyActivities =
+        (await _d.query('family_activity', orderBy: 'at_ms DESC', limit: 500))
+            .map(_activityFrom)
+            .toList();
+    final contributionCampaigns =
+        (await _d.query('contribution_campaign')).map(_campaignFrom).toList();
+    final contributionPledges =
+        (await _d.query('contribution_pledge')).map(_pledgeFrom).toList();
+    final contributionPayments =
+        (await _d.query('contribution_payment', orderBy: 'paid_at_ms DESC'))
+            .map(_paymentFrom)
+            .toList();
+    final familyDebts = (await _d.query('family_debt')).map(_debtFrom).toList();
+    final debtRepayments =
+        (await _d.query('debt_repayment', orderBy: 'paid_at_ms DESC'))
+            .map(_repaymentFrom)
+            .toList();
+    final familyChatMessages = (await _d.query('family_chat_message',
+            orderBy: 'created_at_ms DESC', limit: 500))
+        .map(_chatMessageFrom)
+        .toList();
+    final familyTasks = (await _d.query('family_task',
+            orderBy: 'due_at_ms ASC, created_at_ms DESC'))
+        .map(_familyTaskFrom)
+        .toList();
 
     final mRows = await _d.query('circle', limit: 1);
     final circle =
@@ -250,6 +341,7 @@ class Persistence {
       accounts: accounts,
       envelopes: envelopes,
       txs: txs,
+      txAllocations: txAllocations,
       goals: goals,
       goalTxs: goalTxs,
       items: items,
@@ -257,6 +349,15 @@ class Persistence {
       requests: requests,
       proposals: proposals,
       recurring: recurring,
+      budgetPlans: budgetPlans,
+      familyActivities: familyActivities,
+      familyTasks: familyTasks,
+      contributionCampaigns: contributionCampaigns,
+      contributionPledges: contributionPledges,
+      contributionPayments: contributionPayments,
+      familyDebts: familyDebts,
+      debtRepayments: debtRepayments,
+      familyChatMessages: familyChatMessages,
       earnings: earnings,
       circle: circle,
       stars: int.tryParse(kv['stars'] ?? '') ?? 0,
@@ -283,6 +384,10 @@ class Persistence {
 
   Future<void> saveTx(Tx t) async =>
       _d.insert('tx', _txRow(t), conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveTxAllocation(TxAllocation a) async =>
+      _d.insert('tx_allocation', _allocationRow(a),
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
   Future<void> saveEnvelope(Envelope e) async =>
       _d.insert('envelope', _envelopeRow(e),
@@ -321,12 +426,44 @@ class Persistence {
       _d.insert('recurring', _recurringRow(r),
           conflictAlgorithm: ConflictAlgorithm.replace);
 
+  Future<void> saveBudgetPlan(BudgetCyclePlan plan) async =>
+      _d.insert('budget_cycle_plan', _budgetPlanRow(plan),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveContributionCampaign(ContributionCampaign value) async =>
+      _d.insert('contribution_campaign', _campaignRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveContributionPledge(ContributionPledge value) async =>
+      _d.insert('contribution_pledge', _pledgeRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveContributionPayment(ContributionPayment value) async =>
+      _d.insert('contribution_payment', _paymentRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveFamilyDebt(FamilyDebt value) async =>
+      _d.insert('family_debt', _debtRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveDebtRepayment(DebtRepayment value) async =>
+      _d.insert('debt_repayment', _repaymentRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
   Future<void> saveSavingsCircle(SavingsCircle m) async =>
       _d.insert('circle', _circleRow(m),
           conflictAlgorithm: ConflictAlgorithm.replace);
 
   Future<void> saveGoal(Goal g) async => _d.insert('goal', _goalRow(g),
       conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveChatMessage(FamilyChatMessage message) async =>
+      _d.insert('family_chat_message', _chatMessageRow(message),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveFamilyTask(FamilyTask task) async =>
+      _d.insert('family_task', _familyTaskRow(task),
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
   Future<void> saveKv(String k, String v) async =>
       _d.insert('kv', {'k': k, 'v': v},
@@ -348,6 +485,10 @@ class Persistence {
             batch.insert('tx', _txRow(adapter.decode(row) as Tx),
                 conflictAlgorithm: ConflictAlgorithm.replace);
           }
+        case 'tx_allocation':
+          batch.insert('tx_allocation',
+              _allocationRow(adapter.decode(row) as TxAllocation),
+              conflictAlgorithm: ConflictAlgorithm.replace);
         case 'envelope':
           batch.insert(
               'envelope', _envelopeRow(adapter.decode(row) as Envelope),
@@ -398,6 +539,38 @@ class Persistence {
           batch.insert(
               'circle', _circleRow(adapter.decode(row) as SavingsCircle),
               conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'budget_cycle_plan':
+          batch.insert('budget_cycle_plan',
+              _budgetPlanRow(adapter.decode(row) as BudgetCyclePlan),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'family_activity':
+          batch.insert('family_activity',
+              _activityRow(adapter.decode(row) as FamilyActivity),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'contribution_campaign':
+          batch.insert('contribution_campaign',
+              _campaignRow(adapter.decode(row) as ContributionCampaign),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'contribution_pledge':
+          batch.insert('contribution_pledge',
+              _pledgeRow(adapter.decode(row) as ContributionPledge),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'contribution_payment':
+          batch.insert('contribution_payment',
+              _paymentRow(adapter.decode(row) as ContributionPayment),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'family_debt':
+          batch.insert(
+              'family_debt', _debtRow(adapter.decode(row) as FamilyDebt),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'debt_repayment':
+          batch.insert('debt_repayment',
+              _repaymentRow(adapter.decode(row) as DebtRepayment),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'family_chat_message':
+          batch.insert('family_chat_message',
+              _chatMessageRow(adapter.decode(row) as FamilyChatMessage),
+              conflictAlgorithm: ConflictAlgorithm.replace);
       }
     }
     await batch.commit(noResult: true);
@@ -421,6 +594,15 @@ class Persistence {
       'chore',
       'recurring',
       'circle',
+      'budget_cycle_plan',
+      'family_activity',
+      'contribution_campaign',
+      'contribution_pledge',
+      'contribution_payment',
+      'family_debt',
+      'debt_repayment',
+      'tx_allocation',
+      'family_chat_message',
     ]) {
       batch.delete(t);
     }
@@ -448,6 +630,110 @@ class Persistence {
         'is_archived': e.isArchived ? 1 : 0,
       };
 
+  Map<String, Object?> _budgetPlanRow(BudgetCyclePlan p) => {
+        'id': p.id,
+        'cycle_start': _dateOnly(p.cycleStart),
+        'income_mode': p.incomeMode.name,
+        'expected_income_minor': p.expectedIncome?.minor,
+        'currency': (p.expectedIncome?.currency ?? Currency.usd).name,
+        'allocations_json': jsonEncode(p.allocations),
+        'is_closed': p.isClosed ? 1 : 0,
+        'closed_at': p.closedAt?.toUtc().toIso8601String(),
+        'copied_from': p.copiedFrom == null ? null : _dateOnly(p.copiedFrom!),
+      };
+
+  Map<String, Object?> _activityRow(FamilyActivity a) => {
+        'id': a.id,
+        'actor_id': a.actorId,
+        'action': a.action,
+        'entity': a.entity,
+        'entity_id': a.entityId,
+        'detail_json': jsonEncode(a.detail),
+        'at_ms': a.at.millisecondsSinceEpoch,
+      };
+
+  Map<String, Object?> _campaignRow(ContributionCampaign c) => {
+        'id': c.id,
+        'name': c.name,
+        'target_minor': c.target.minor,
+        'currency': c.target.currency.name,
+        'deadline_ms': c.deadline.millisecondsSinceEpoch,
+        'created_by_id': c.createdById,
+        'status': c.status,
+      };
+
+  Map<String, Object?> _pledgeRow(ContributionPledge p) => {
+        'id': p.id,
+        'campaign_id': p.campaignId,
+        'member_id': p.memberId,
+        'amount_minor': p.amount.minor,
+        'currency': p.amount.currency.name,
+        'created_at_ms': p.createdAt.millisecondsSinceEpoch,
+      };
+
+  Map<String, Object?> _paymentRow(ContributionPayment p) => {
+        'id': p.id,
+        'campaign_id': p.campaignId,
+        'member_id': p.memberId,
+        'amount_minor': p.amount.minor,
+        'currency': p.amount.currency.name,
+        'paid_at_ms': p.paidAt.millisecondsSinceEpoch,
+      };
+
+  Map<String, Object?> _debtRow(FamilyDebt d) => {
+        'id': d.id,
+        'name': d.name,
+        'direction': d.direction.name,
+        'principal_minor': d.principal.minor,
+        'currency': d.principal.currency.name,
+        'counterparty_member_id': d.counterpartyMemberId,
+        'due_date_ms': d.dueDate?.millisecondsSinceEpoch,
+        'status': d.status,
+        'created_by_id': d.createdById,
+      };
+
+  Map<String, Object?> _repaymentRow(DebtRepayment p) => {
+        'id': p.id,
+        'debt_id': p.debtId,
+        'member_id': p.memberId,
+        'amount_minor': p.amount.minor,
+        'currency': p.amount.currency.name,
+        'paid_at_ms': p.paidAt.millisecondsSinceEpoch,
+      };
+
+  Map<String, Object?> _chatMessageRow(FamilyChatMessage m) => {
+        'id': m.id,
+        'family_id': m.familyId,
+        'sender_id': m.senderId,
+        'text': m.text,
+        'created_at_ms': m.createdAt.millisecondsSinceEpoch,
+        'is_system': m.isSystem ? 1 : 0,
+        'sender_name': m.senderName,
+        'sender_avatar': m.senderAvatar,
+        'status': m.status.name,
+        'reference_type': m.referenceType?.name,
+        'reference_id': m.referenceId,
+        'reference_title': m.referenceTitle,
+        'reference_meta': m.referenceMeta,
+        'deleted': m.deleted ? 1 : 0,
+      };
+
+  Map<String, Object?> _familyTaskRow(FamilyTask t) => {
+        'id': t.id,
+        'title': t.title,
+        'note': t.note,
+        'assignee_member_id': t.assigneeMemberId,
+        'created_by_member_id': t.createdByMemberId,
+        'created_at_ms': t.createdAt.millisecondsSinceEpoch,
+        'due_at_ms': t.dueDate?.millisecondsSinceEpoch,
+        'status': t.status.name,
+        'points': t.points,
+        'is_archived': t.isArchived ? 1 : 0,
+      };
+
+  String _dateOnly(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   Map<String, Object?> _txRow(Tx t) => {
         'id': t.id,
         'envelope_id': t.envelopeId,
@@ -459,6 +745,16 @@ class Persistence {
         'note': t.note,
         'when_ms': t.when.millisecondsSinceEpoch,
         'deleted_at': t.deletedAt?.toIso8601String(),
+        'receipt_uri': t.receiptUri,
+        'recurring_rule_id': t.recurringRuleId,
+      };
+
+  Map<String, Object?> _allocationRow(TxAllocation a) => {
+        'id': a.id,
+        'tx_id': a.txId,
+        'envelope_id': a.envelopeId,
+        'amount_minor': a.amount.minor,
+        'currency': a.amount.currency.name,
       };
 
   Map<String, Object?> _goalRow(Goal g) => {
@@ -492,6 +788,10 @@ class Persistence {
         'state': i.state.name,
         'added_by': i.addedById,
         'checked_out': i.checkedOut ? 1 : 0,
+        'assigned_to_id': i.assignedToId,
+        'actual_minor': i.actual?.minor,
+        'actual_currency': i.actual?.currency.name,
+        'purchased_by_id': i.purchasedById,
         'deleted_at': i.deletedAt?.toIso8601String(),
       };
 
@@ -606,6 +906,130 @@ class Persistence {
         isArchived: (m['is_archived'] as int? ?? 0) == 1,
       );
 
+  BudgetCyclePlan _budgetPlanFrom(Map<String, Object?> m) {
+    final raw = jsonDecode(m['allocations_json'] as String) as Map;
+    return BudgetCyclePlan(
+      id: m['id'] as String,
+      cycleStart: DateTime.parse(m['cycle_start'] as String),
+      incomeMode: IncomePlanMode.values.byName(m['income_mode'] as String),
+      expectedIncome: m['expected_income_minor'] == null
+          ? null
+          : Money(m['expected_income_minor'] as int,
+              Currency.values.byName(m['currency'] as String)),
+      allocations: raw.map((k, v) => MapEntry(k.toString(), v as int)),
+      isClosed: (m['is_closed'] as int? ?? 0) == 1,
+      closedAt: m['closed_at'] == null
+          ? null
+          : DateTime.parse(m['closed_at'] as String).toLocal(),
+      copiedFrom: m['copied_from'] == null
+          ? null
+          : DateTime.parse(m['copied_from'] as String),
+    );
+  }
+
+  FamilyActivity _activityFrom(Map<String, Object?> m) => FamilyActivity(
+        id: m['id'] as String,
+        actorId: m['actor_id'] as String,
+        action: m['action'] as String,
+        entity: m['entity'] as String,
+        entityId: m['entity_id'] as String?,
+        detail: (jsonDecode(m['detail_json'] as String) as Map)
+            .map((k, v) => MapEntry(k.toString(), v)),
+        at: DateTime.fromMillisecondsSinceEpoch(m['at_ms'] as int),
+      );
+
+  ContributionCampaign _campaignFrom(Map<String, Object?> m) =>
+      ContributionCampaign(
+        id: m['id'] as String,
+        name: m['name'] as String,
+        target: Money(m['target_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        deadline: DateTime.fromMillisecondsSinceEpoch(m['deadline_ms'] as int),
+        createdById: m['created_by_id'] as String,
+        status: m['status'] as String,
+      );
+
+  ContributionPledge _pledgeFrom(Map<String, Object?> m) => ContributionPledge(
+        id: m['id'] as String,
+        campaignId: m['campaign_id'] as String,
+        memberId: m['member_id'] as String,
+        amount: Money(m['amount_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        createdAt:
+            DateTime.fromMillisecondsSinceEpoch(m['created_at_ms'] as int),
+      );
+
+  ContributionPayment _paymentFrom(Map<String, Object?> m) =>
+      ContributionPayment(
+        id: m['id'] as String,
+        campaignId: m['campaign_id'] as String,
+        memberId: m['member_id'] as String,
+        amount: Money(m['amount_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        paidAt: DateTime.fromMillisecondsSinceEpoch(m['paid_at_ms'] as int),
+      );
+
+  FamilyDebt _debtFrom(Map<String, Object?> m) => FamilyDebt(
+        id: m['id'] as String,
+        name: m['name'] as String,
+        direction: DebtDirection.values.byName(m['direction'] as String),
+        principal: Money(m['principal_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        counterpartyMemberId: m['counterparty_member_id'] as String?,
+        dueDate: m['due_date_ms'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(m['due_date_ms'] as int),
+        status: m['status'] as String,
+        createdById: m['created_by_id'] as String,
+      );
+
+  DebtRepayment _repaymentFrom(Map<String, Object?> m) => DebtRepayment(
+        id: m['id'] as String,
+        debtId: m['debt_id'] as String,
+        memberId: m['member_id'] as String,
+        amount: Money(m['amount_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        paidAt: DateTime.fromMillisecondsSinceEpoch(m['paid_at_ms'] as int),
+      );
+
+  FamilyChatMessage _chatMessageFrom(Map<String, Object?> m) =>
+      FamilyChatMessage(
+        id: m['id'] as String,
+        familyId: m['family_id'] as String,
+        senderId: m['sender_id'] as String,
+        text: m['text'] as String,
+        createdAt:
+            DateTime.fromMillisecondsSinceEpoch(m['created_at_ms'] as int),
+        isSystem: (m['is_system'] as int? ?? 0) == 1,
+        senderName: m['sender_name'] as String?,
+        senderAvatar: m['sender_avatar'] as String?,
+        status:
+            ChatMessageStatus.values.byName(m['status'] as String? ?? 'sent'),
+        referenceType: m['reference_type'] == null
+            ? null
+            : ChatReferenceType.values.byName(m['reference_type'] as String),
+        referenceId: m['reference_id'] as String?,
+        referenceTitle: m['reference_title'] as String?,
+        referenceMeta: m['reference_meta'] as String?,
+        deleted: (m['deleted'] as int? ?? 0) == 1,
+      );
+
+  FamilyTask _familyTaskFrom(Map<String, Object?> m) => FamilyTask(
+        id: m['id'] as String,
+        title: m['title'] as String,
+        note: m['note'] as String?,
+        assigneeMemberId: m['assignee_member_id'] as String?,
+        createdByMemberId: m['created_by_member_id'] as String?,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at_ms'] as int),
+        dueDate: m['due_at_ms'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(m['due_at_ms'] as int),
+        status: FamilyTaskStatus.values
+            .byName(m['status'] as String? ?? 'open'),
+        points: m['points'] as int? ?? 1,
+        isArchived: (m['is_archived'] as int? ?? 0) == 1,
+      );
+
   Tx _txFrom(Map<String, Object?> m) => Tx(
         id: m['id'] as String,
         envelopeId: m['envelope_id'] as String?,
@@ -621,6 +1045,16 @@ class Persistence {
         deletedAt: m['deleted_at'] == null
             ? null
             : DateTime.parse(m['deleted_at'] as String),
+        receiptUri: m['receipt_uri'] as String?,
+        recurringRuleId: m['recurring_rule_id'] as String?,
+      );
+
+  TxAllocation _allocationFrom(Map<String, Object?> m) => TxAllocation(
+        id: m['id'] as String,
+        txId: m['tx_id'] as String,
+        envelopeId: m['envelope_id'] as String,
+        amount: Money(m['amount_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
       );
 
   Goal _goalFrom(Map<String, Object?> m) => Goal(
@@ -659,6 +1093,12 @@ class Persistence {
         addedById: m['added_by'] as String,
         state: ItemState.values.byName(m['state'] as String),
         checkedOut: (m['checked_out'] as int? ?? 0) == 1,
+        assignedToId: m['assigned_to_id'] as String?,
+        actual: m['actual_minor'] == null
+            ? null
+            : Money(m['actual_minor'] as int,
+                Currency.values.byName(m['actual_currency'] as String)),
+        purchasedById: m['purchased_by_id'] as String?,
         deletedAt: m['deleted_at'] == null
             ? null
             : DateTime.parse(m['deleted_at'] as String),

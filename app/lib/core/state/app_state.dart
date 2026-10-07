@@ -33,7 +33,9 @@ enum Pace { onTrack, watch, over }
 /// SQLite database (fire-and-forget, errors never crash the app); on startup
 /// the stored state replaces the in-memory defaults.
 class AppState extends ChangeNotifier {
-  AppState({this.db, AppEnv? env, this.auth}) : env = env ?? const AppEnv() {
+  AppState({this.db, AppEnv? env, this.auth, DateTime Function()? clock})
+      : env = env ?? const AppEnv(),
+        _clock = clock ?? DateTime.now {
     // Real-data boot (the only boot). Empty until the family is adopted
     // (FamilySetup → create/join → server pull fills everything).
     space = const FamilySpace(name: 'My family');
@@ -41,6 +43,7 @@ class AppState extends ChangeNotifier {
     accounts = [];
     envelopes = [];
     txs = [];
+    txAllocations = [];
     goals = [];
     goalTxs = [];
     items = [];
@@ -50,6 +53,15 @@ class AppState extends ChangeNotifier {
     earnings = [];
     circle = _neutralCircle;
     recurring = [];
+    budgetPlans = [];
+    familyActivities = [];
+    familyChatMessages = [];
+    familyTasks = [];
+    contributionCampaigns = [];
+    contributionPledges = [];
+    contributionPayments = [];
+    familyDebts = [];
+    debtRepayments = [];
     stars = 0;
     _user = _placeholderUser;
     hydrating = db != null;
@@ -78,6 +90,7 @@ class AppState extends ChangeNotifier {
   /// Server connection config + auth entry point (M2).
   final AppEnv env;
   final AuthController? auth;
+  final DateTime Function() _clock;
 
   /// Hashed PINs (Kids Mode exit, kid profiles).
   late final PinStore pinStore = PinStore(kvGet: db?.kvGet, kvSet: db?.kvSet);
@@ -95,6 +108,7 @@ class AppState extends ChangeNotifier {
   late final List<Account> accounts;
   late final List<Envelope> envelopes;
   late List<Tx> txs;
+  late final List<TxAllocation> txAllocations;
   late final List<Goal> goals;
   late final List<GoalTx> goalTxs;
   late final List<ListItem> items;
@@ -104,6 +118,15 @@ class AppState extends ChangeNotifier {
   late final List<Earning> earnings;
   late SavingsCircle circle;
   late final List<RecurringRule> recurring;
+  late final List<BudgetCyclePlan> budgetPlans;
+  late final List<FamilyActivity> familyActivities;
+  late final List<FamilyChatMessage> familyChatMessages;
+  late final List<FamilyTask> familyTasks;
+  late final List<ContributionCampaign> contributionCampaigns;
+  late final List<ContributionPledge> contributionPledges;
+  late final List<ContributionPayment> contributionPayments;
+  late final List<FamilyDebt> familyDebts;
+  late final List<DebtRepayment> debtRepayments;
 
   Member _user =
       const Member(id: 'x', name: 'x', emoji: 'person', role: Role.adult);
@@ -309,6 +332,10 @@ class AppState extends ChangeNotifier {
 
   void _persistEnvelope(Envelope e) {
     if (_store != null) _fire(_store!.saveEnvelope(e));
+  }
+
+  void _persistBudgetPlan(BudgetCyclePlan plan) {
+    if (_store != null) _fire(_store!.saveBudgetPlan(plan));
   }
 
   void _persistGoalTx(GoalTx t) {
@@ -519,6 +546,9 @@ class AppState extends ChangeNotifier {
         txs
           ..clear()
           ..addAll(data.txs);
+        txAllocations
+          ..clear()
+          ..addAll(data.txAllocations);
         goals
           ..clear()
           ..addAll(data.goals);
@@ -546,6 +576,33 @@ class AppState extends ChangeNotifier {
             ..clear()
             ..addAll(data.recurring);
         }
+        budgetPlans
+          ..clear()
+          ..addAll(data.budgetPlans);
+        familyActivities
+          ..clear()
+          ..addAll(data.familyActivities);
+        familyChatMessages
+          ..clear()
+          ..addAll(data.familyChatMessages);
+        familyTasks
+          ..clear()
+          ..addAll(data.familyTasks);
+        contributionCampaigns
+          ..clear()
+          ..addAll(data.contributionCampaigns);
+        contributionPledges
+          ..clear()
+          ..addAll(data.contributionPledges);
+        contributionPayments
+          ..clear()
+          ..addAll(data.contributionPayments);
+        familyDebts
+          ..clear()
+          ..addAll(data.familyDebts);
+        debtRepayments
+          ..clear()
+          ..addAll(data.debtRepayments);
         if (data.monthStartDay != null) monthStartDay = data.monthStartDay!;
         onboardingComplete = onboardingComplete || data.onboardingDone;
         notifyEnabled = data.notifyEnabled ?? true;
@@ -630,6 +687,36 @@ class AppState extends ChangeNotifier {
     return due;
   }
 
+  Tx? lastPaymentFor(RecurringRule rule) {
+    for (final tx in txs) {
+      if (tx.recurringRuleId == rule.id && tx.type == TxType.expense) return tx;
+    }
+    return null;
+  }
+
+  bool recurringPaidThisCycle(RecurringRule rule) {
+    final payment = lastPaymentFor(rule);
+    return payment != null && !payment.when.isBefore(cycleStart);
+  }
+
+  List<RecurringRule> get sortedBills {
+    final today = DateTime(now.year, now.month, now.day);
+    int rank(RecurringRule rule) {
+      if (!rule.active) return 4;
+      final due =
+          DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day);
+      if (due.isBefore(today)) return 0;
+      if (!due.isAfter(today.add(const Duration(days: 3)))) return 1;
+      if (recurringPaidThisCycle(rule)) return 3;
+      return 2;
+    }
+
+    return [...recurring]..sort((a, b) {
+        final byStatus = rank(a).compareTo(rank(b));
+        return byStatus != 0 ? byStatus : a.nextDue.compareTo(b.nextDue);
+      });
+  }
+
   void _persistRecurring(RecurringRule r) {
     if (_store != null) _fire(_store!.saveRecurring(r));
   }
@@ -673,6 +760,7 @@ class AppState extends ChangeNotifier {
       method: r.method,
       note: '${r.name} (recurring)',
       envelopeId: r.envelopeId,
+      recurringRuleId: r.id,
     );
     r.nextDue = r.frequency.advanceFrom(r.nextDue);
     final now = DateTime.now();
@@ -882,6 +970,7 @@ class AppState extends ChangeNotifier {
       circle: mukandoEnabled ? circle : null,
       memberNames: {for (final m in members) m.id: m.name},
       monthStartDay: monthStartDay,
+      campaigns: contributionCampaigns,
       extra: List.of(_reminderExtras),
     );
   }
@@ -1009,6 +1098,114 @@ class AppState extends ChangeNotifier {
     _fire(e.enqueue(entity, domain).then((_) => refreshPending()));
   }
 
+  void addChatMessage(FamilyChatMessage message) {
+    final clean = FamilyChatMessage(
+      id: message.id,
+      familyId: message.familyId,
+      senderId: message.senderId,
+      text: message.text.trim(),
+      createdAt: message.createdAt,
+      isSystem: message.isSystem,
+      senderName: message.senderName,
+      senderAvatar: message.senderAvatar,
+      status: message.status,
+      referenceType: message.referenceType,
+      referenceId: message.referenceId,
+      referenceTitle: message.referenceTitle,
+      referenceMeta: message.referenceMeta,
+      deleted: message.deleted,
+    );
+    final existingIndex =
+        familyChatMessages.indexWhere((m) => m.id == clean.id);
+    if (existingIndex >= 0) {
+      familyChatMessages[existingIndex] = clean;
+    } else {
+      familyChatMessages.add(clean);
+    }
+    familyChatMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    _store?.saveChatMessage(clean);
+    notifyListeners();
+  }
+
+  void addFamilyTask(FamilyTask task) {
+    final clean = FamilyTask(
+      id: task.id,
+      title: task.title.trim(),
+      note: task.note?.trim(),
+      assigneeMemberId: task.assigneeMemberId,
+      createdByMemberId: task.createdByMemberId,
+      createdAt: task.createdAt,
+      dueDate: task.dueDate,
+      status: task.status,
+      points: task.points,
+      isArchived: task.isArchived,
+    );
+    final existingIndex = familyTasks.indexWhere((t) => t.id == clean.id);
+    if (existingIndex >= 0) {
+      familyTasks[existingIndex] = clean;
+    } else {
+      familyTasks.add(clean);
+    }
+    familyTasks.sort((a, b) {
+      final dueA = a.dueDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final dueB = b.dueDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return dueA.compareTo(dueB);
+    });
+    _store?.saveFamilyTask(clean);
+    notifyListeners();
+  }
+
+  void updateFamilyTask(FamilyTask task) {
+    final index = familyTasks.indexWhere((t) => t.id == task.id);
+    final previous = index >= 0 ? familyTasks[index] : null;
+    if (previous != null && previous.status != task.status) {
+      if (previous.status != FamilyTaskStatus.done && task.status == FamilyTaskStatus.done) {
+        stars += task.points;
+        addChatMessage(FamilyChatMessage(
+          id: newUuid(),
+          familyId: sync?.spaceId ?? space.name,
+          senderId: user.id,
+          text: 'Completed: ${task.title} (+${task.points} pts)',
+          createdAt: DateTime.now(),
+          senderName: 'Family',
+          senderAvatar: null,
+          status: ChatMessageStatus.sent,
+          isSystem: true,
+          referenceType: ChatReferenceType.task,
+          referenceId: task.id,
+          referenceTitle: task.title,
+          referenceMeta: '${task.points} pts earned',
+        ));
+      } else if (previous.status == FamilyTaskStatus.done && task.status != FamilyTaskStatus.done) {
+        stars = (stars - previous.points).clamp(0, 1000000000);
+        addChatMessage(FamilyChatMessage(
+          id: newUuid(),
+          familyId: sync?.spaceId ?? space.name,
+          senderId: user.id,
+          text: 'Reopened: ${task.title}',
+          createdAt: DateTime.now(),
+          senderName: 'Family',
+          senderAvatar: null,
+          status: ChatMessageStatus.sent,
+          isSystem: true,
+          referenceType: ChatReferenceType.task,
+          referenceId: task.id,
+          referenceTitle: task.title,
+          referenceMeta: 'Task reopened',
+        ));
+      }
+      _persistKv('stars', '$stars');
+    }
+    addFamilyTask(task);
+  }
+
+  void toggleFamilyTaskCompletion(FamilyTask task) {
+    final nextStatus = task.status == FamilyTaskStatus.done
+        ? FamilyTaskStatus.open
+        : FamilyTaskStatus.done;
+    updateFamilyTask(task.copyWith(status: nextStatus));
+  }
+
   /// Engine wiped local synced tables after adopting a family space - the
   /// in-memory image follows so the UI is honest until the first pull lands.
   /// Called by the sync engine after create_space / join_space. Clears all
@@ -1016,6 +1213,7 @@ class AppState extends ChangeNotifier {
   /// family identity: one owner member derived from the signed-in email.
   void onSpaceAdopted({String? spaceName}) {
     txs.clear();
+    txAllocations.clear();
     envelopes.clear();
     goals.clear();
     goalTxs.clear();
@@ -1025,6 +1223,15 @@ class AppState extends ChangeNotifier {
     earnings.clear();
     chores.clear();
     recurring.clear();
+    budgetPlans.clear();
+    familyActivities.clear();
+    familyChatMessages.clear();
+    familyTasks.clear();
+    contributionCampaigns.clear();
+    contributionPledges.clear();
+    contributionPayments.clear();
+    familyDebts.clear();
+    debtRepayments.clear();
     // Neutral placeholder until the family's mukando row arrives in the
     // first pull (collecting before that would push this neutral header).
     circle = _neutralCircle;
@@ -1092,6 +1299,9 @@ class AppState extends ChangeNotifier {
         method: t.method,
         note: t.note,
         when: t.when,
+        deletedAt: t.deletedAt,
+        receiptUri: t.receiptUri,
+        recurringRuleId: t.recurringRuleId,
       );
       await _store?.saveTx(txs[i]);
       changed = true;
@@ -1308,6 +1518,13 @@ class AppState extends ChangeNotifier {
           changed = true;
         }
         txs.sort((a, b) => b.when.compareTo(a.when));
+      case 'tx_allocation':
+        for (final row in rows) {
+          final value = adapter.decode(row) as TxAllocation;
+          txAllocations.removeWhere((x) => x.id == value.id);
+          txAllocations.add(value);
+          changed = true;
+        }
       case 'envelope':
         for (final row in rows) {
           final e2 = adapter.decode(row) as Envelope;
@@ -1316,6 +1533,74 @@ class AppState extends ChangeNotifier {
           changed = true;
         }
         deduplicateEnvelopes();
+      case 'budget_cycle_plan':
+        for (final row in rows) {
+          final plan = adapter.decode(row) as BudgetCyclePlan;
+          budgetPlans.removeWhere((x) => x.id == plan.id);
+          budgetPlans.add(plan);
+          changed = true;
+        }
+      case 'family_activity':
+        for (final row in rows) {
+          final activity = adapter.decode(row) as FamilyActivity;
+          familyActivities.removeWhere((x) => x.id == activity.id);
+          familyActivities.add(activity);
+          changed = true;
+        }
+        familyActivities.sort((a, b) => b.at.compareTo(a.at));
+      case 'contribution_campaign':
+        for (final row in rows) {
+          final value = adapter.decode(row) as ContributionCampaign;
+          contributionCampaigns.removeWhere((x) => x.id == value.id);
+          if (value.status == 'active') contributionCampaigns.add(value);
+          changed = true;
+        }
+      case 'contribution_pledge':
+        for (final row in rows) {
+          final value = adapter.decode(row) as ContributionPledge;
+          contributionPledges.removeWhere((x) => x.id == value.id);
+          contributionPledges.add(value);
+          changed = true;
+        }
+      case 'contribution_payment':
+        for (final row in rows) {
+          final value = adapter.decode(row) as ContributionPayment;
+          final isNew = !contributionPayments.any((x) => x.id == value.id);
+          contributionPayments.removeWhere((x) => x.id == value.id);
+          contributionPayments.add(value);
+          if (isNew &&
+              value.memberId != realUser.id &&
+              now.difference(value.paidAt).abs() < const Duration(days: 1)) {
+            final campaign = contributionCampaigns
+                .where((c) => c.id == value.campaignId)
+                .firstOrNull;
+            final contributor = member(value.memberId)?.name ?? 'A member';
+            _reminderExtras.add(Reminder(
+              key: 'contribution_received_${value.id}',
+              category: ReminderCategory.contributions,
+              title: '$contributor contributed ${value.amount.text}',
+              body: campaign == null
+                  ? 'A family contribution was received.'
+                  : 'Received for ${campaign.name}.',
+              when: now.add(const Duration(minutes: 1)),
+            ));
+          }
+          changed = true;
+        }
+      case 'family_debt':
+        for (final row in rows) {
+          final value = adapter.decode(row) as FamilyDebt;
+          familyDebts.removeWhere((x) => x.id == value.id);
+          if (value.status != 'archived') familyDebts.add(value);
+          changed = true;
+        }
+      case 'debt_repayment':
+        for (final row in rows) {
+          final value = adapter.decode(row) as DebtRepayment;
+          debtRepayments.removeWhere((x) => x.id == value.id);
+          debtRepayments.add(value);
+          changed = true;
+        }
       case 'goal':
         for (final row in rows) {
           final g = adapter.decode(row) as Goal;
@@ -1334,17 +1619,38 @@ class AppState extends ChangeNotifier {
                 x.at.isAtSameMomentAs(g.at),
           );
           if (!exists) {
+            final goal = goals.where((item) => item.id == g.goalId).firstOrNull;
+            final before = goal == null ? 0 : savedOn(goal).minor;
             goalTxs.add(g);
+            if (goal != null) {
+              _maybeMilestone(goal,
+                  before: before,
+                  after: before +
+                      g.amount.inCurrency(goal.target.currency, rate).minor);
+            }
             changed = true;
           }
         }
       case 'list_item':
         for (final row in rows) {
           final i = adapter.decode(row) as ListItem;
+          final previous = items.where((x) => x.id == i.id).firstOrNull;
+          final newlyAssigned = i.assignedToId == realUser.id &&
+              i.state != ItemState.done &&
+              previous?.assignedToId != realUser.id;
           items.removeWhere((x) => x.id == i.id);
           if (i.deletedAt == null) {
             // Tombstones stay out of memory - they were removed above.
             items.insert(0, i);
+          }
+          if (newlyAssigned) {
+            _reminderExtras.add(Reminder(
+              key: 'shopping_assigned_${i.id}',
+              category: ReminderCategory.shopping,
+              title: '${i.name} was assigned to you',
+              body: 'Quantity ${i.qty} · estimated ${i.est.text}.',
+              when: now.add(const Duration(minutes: 1)),
+            ));
           }
           changed = true;
         }
@@ -1748,19 +2054,128 @@ class AppState extends ChangeNotifier {
     return DateTime(cs.year, cs.month + 1, monthStartDay);
   }
 
-  DateTime get cycleStart => cycleStartFor(DateTime.now());
-  DateTime get nextCycleStart => nextCycleStartFor(DateTime.now());
+  DateTime get now => _clock();
+  DateTime get cycleStart => cycleStartFor(now);
+  DateTime get nextCycleStart => nextCycleStartFor(now);
 
-  int get daysLeftInCycle =>
-      nextCycleStart.difference(DateTime.now()).inDays + 1;
+  BudgetCyclePlan? get currentBudgetPlan {
+    final key = _cycleKey(cycleStart);
+    for (final plan in budgetPlans) {
+      if (_cycleKey(plan.cycleStart) == key) return plan;
+    }
+    return null;
+  }
+
+  BudgetCyclePlan? get previousBudgetPlan {
+    final previous =
+        DateTime(cycleStart.year, cycleStart.month - 1, monthStartDay);
+    final key = _cycleKey(previous);
+    for (final plan in budgetPlans) {
+      if (_cycleKey(plan.cycleStart) == key) return plan;
+    }
+    return null;
+  }
+
+  String _cycleKey(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// Saves the family's explicit plan for the current cycle. The allocation
+  /// snapshot is versioned with the cycle while envelope limits power the
+  /// existing day-to-day budget calculations.
+  bool saveCurrentBudgetPlan({
+    required IncomePlanMode incomeMode,
+    Money? expectedIncome,
+  }) {
+    if (!canEditBudgets ||
+        (incomeMode == IncomePlanMode.knownMonthly &&
+            (expectedIncome == null || expectedIncome.minor <= 0))) {
+      return false;
+    }
+    var plan = currentBudgetPlan;
+    if (plan?.isClosed ?? false) return false;
+    final allocations = {for (final e in envelopes) e.id: e.limit.minor};
+    plan ??= BudgetCyclePlan(
+      id: uuidFromSeed(
+          '${sync?.spaceId ?? space.name}:${_cycleKey(cycleStart)}'),
+      cycleStart: cycleStart,
+      incomeMode: incomeMode,
+      allocations: allocations,
+    );
+    plan
+      ..incomeMode = incomeMode
+      ..expectedIncome =
+          incomeMode == IncomePlanMode.knownMonthly ? expectedIncome : null
+      ..allocations = allocations;
+    if (!budgetPlans.contains(plan)) budgetPlans.add(plan);
+    _persistBudgetPlan(plan);
+    _queue('budget_cycle_plan', plan);
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  /// Applies last cycle's agreed allocations to this cycle and records the
+  /// provenance. Historical plans are never edited.
+  bool useLastMonthPlan() {
+    if (!canEditBudgets || (currentBudgetPlan?.isClosed ?? false)) return false;
+    final source = previousBudgetPlan;
+    if (source == null) return false;
+    for (final envelope in envelopes) {
+      final amount = source.allocations[envelope.id];
+      if (amount == null) continue;
+      envelope.limit = Money(amount, envelope.limit.currency);
+      _persistEnvelope(envelope);
+      _queue('envelope', envelope);
+    }
+    final plan = BudgetCyclePlan(
+      id: uuidFromSeed(
+          '${sync?.spaceId ?? space.name}:${_cycleKey(cycleStart)}'),
+      cycleStart: cycleStart,
+      incomeMode: source.incomeMode,
+      expectedIncome: source.expectedIncome,
+      allocations: Map<String, int>.from(source.allocations),
+      copiedFrom: source.cycleStart,
+    );
+    budgetPlans
+        .removeWhere((p) => _cycleKey(p.cycleStart) == _cycleKey(cycleStart));
+    budgetPlans.add(plan);
+    _persistBudgetPlan(plan);
+    _queue('budget_cycle_plan', plan);
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  bool closeCurrentBudgetPlan() {
+    if (!canEditBudgets) return false;
+    final plan = currentBudgetPlan;
+    if (plan == null || plan.isClosed) return false;
+    plan
+      ..isClosed = true
+      ..closedAt = now;
+    _persistBudgetPlan(plan);
+    _queue('budget_cycle_plan', plan);
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  int get daysLeftInCycle => nextCycleStart.difference(now).inDays + 1;
 
   Money _spentInCycle(Envelope e, DateTime from, DateTime to) {
     var sum = 0;
     for (final t in txs) {
-      if (t.type == TxType.expense &&
-          t.envelopeId == e.id &&
-          !t.when.isBefore(from) &&
-          t.when.isBefore(to)) {
+      if (t.type != TxType.expense ||
+          t.when.isBefore(from) ||
+          !t.when.isBefore(to)) {
+        continue;
+      }
+      final splits = txAllocations.where((a) => a.txId == t.id).toList();
+      if (splits.isNotEmpty) {
+        for (final a in splits.where((a) => a.envelopeId == e.id)) {
+          sum += a.amount.inCurrency(e.limit.currency, rate).minor;
+        }
+      } else if (t.envelopeId == e.id) {
         sum += t.amount.inCurrency(e.limit.currency, rate).minor;
       }
     }
@@ -1952,6 +2367,8 @@ class AppState extends ChangeNotifier {
               note: txs[i].note,
               when: txs[i].when,
               deletedAt: txs[i].deletedAt,
+              receiptUri: txs[i].receiptUri,
+              recurringRuleId: txs[i].recurringRuleId,
             );
             _persistTx(txs[i]);
           }
@@ -2013,7 +2430,7 @@ class AppState extends ChangeNotifier {
   }
 
   Pace paceOf(Envelope e) {
-    final now = DateTime.now();
+    final now = this.now;
     final totalDays = nextCycleStart.difference(cycleStart).inDays;
     final elapsed = now.difference(cycleStart).inDays;
     final timeRatio = totalDays <= 0 ? 1.0 : elapsed / totalDays;
@@ -2065,6 +2482,9 @@ class AppState extends ChangeNotifier {
     required String note,
     DateTime? when,
     String? envelopeId,
+    String? receiptUri,
+    String? recurringRuleId,
+    Map<String, Money>? allocations,
     String? id,
     bool force = false,
   }) {
@@ -2076,6 +2496,15 @@ class AppState extends ChangeNotifier {
     if (txs.any((t) => t.id == txId) || _processedMutationIds.contains(txId)) {
       debugPrint('Mhuri: duplicate addTx ignored: $txId');
       return false;
+    }
+    if (allocations != null && allocations.isNotEmpty) {
+      final total = allocations.values.fold<int>(0,
+          (sum, value) => sum + value.inCurrency(amount.currency, rate).minor);
+      if (total != amount.minor ||
+          allocations.values.any((v) => v.minor <= 0) ||
+          allocations.keys.any((id) => envelope(id) == null)) {
+        return false;
+      }
     }
 
     if (type == TxType.expense && envelopeId != null && !force) {
@@ -2101,10 +2530,24 @@ class AppState extends ChangeNotifier {
       method: method,
       note: note,
       when: when ?? DateTime.now(),
+      receiptUri: receiptUri,
+      recurringRuleId: recurringRuleId,
     );
     txs.insert(0, t);
     _persistTx(t);
     _queue('tx', t);
+    if (allocations != null) {
+      for (final entry in allocations.entries) {
+        final allocation = TxAllocation(
+            id: uuidFromSeed('$txId:${entry.key}'),
+            txId: txId,
+            envelopeId: entry.key,
+            amount: entry.value);
+        txAllocations.add(allocation);
+        if (_store != null) _fire(_store!.saveTxAllocation(allocation));
+        _queue('tx_allocation', allocation);
+      }
+    }
     pendingOps++;
     _resyncReminders();
     notifyListeners();
@@ -2131,6 +2574,8 @@ class AppState extends ChangeNotifier {
       when: when,
       envelopeId: envelopeId,
       deletedAt: tx.deletedAt,
+      receiptUri: tx.receiptUri,
+      recurringRuleId: tx.recurringRuleId,
     );
     final index = txs.indexWhere((t) => t.id == tx.id);
     if (index >= 0) txs[index] = updated;
@@ -2155,6 +2600,8 @@ class AppState extends ChangeNotifier {
       when: tx.when,
       envelopeId: tx.envelopeId,
       deletedAt: DateTime.now(),
+      receiptUri: tx.receiptUri,
+      recurringRuleId: tx.recurringRuleId,
     );
     _persistTx(deleted);
     _queue('tx', deleted);
@@ -2176,7 +2623,17 @@ class AppState extends ChangeNotifier {
     return Money(sum, c);
   }
 
-  void addItem(String name, int qty, Money est) {
+  Money actualShoppingFor(Currency c) {
+    var sum = 0;
+    for (final i in items) {
+      if (i.state == ItemState.done || i.state == ItemState.incart) {
+        sum += (i.actual ?? i.est).inCurrency(c, rate).minor * i.qty;
+      }
+    }
+    return Money(sum, c);
+  }
+
+  void addItem(String name, int qty, Money est, {String? assignedToId}) {
     if (!canEditLists) {
       debugPrint('Mhuri: unauthorized addItem for role: ${authRole.name}');
       return;
@@ -2187,6 +2644,7 @@ class AppState extends ChangeNotifier {
       qty: qty,
       est: est,
       addedById: _user.id,
+      assignedToId: assignedToId,
     );
     items.insert(0, i);
     _persistItem(i);
@@ -2195,15 +2653,23 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool updateItem(ListItem item,
-      {required String name, required int qty, required Money estimate}) {
+  bool updateItem(
+    ListItem item, {
+    required String name,
+    required int qty,
+    required Money estimate,
+    Money? actual,
+    String? assignedToId,
+  }) {
     if (!canEditLists || name.trim().isEmpty || qty < 1 || estimate.minor < 0) {
       return false;
     }
     item
       ..name = name.trim()
       ..qty = qty
-      ..est = estimate;
+      ..est = estimate
+      ..actual = actual
+      ..assignedToId = assignedToId;
     _persistItem(item);
     _queue('list_item', item);
     pendingOps++;
@@ -2237,6 +2703,8 @@ class AppState extends ChangeNotifier {
       // shopping cycle and makes it eligible for checkout again.
       item.checkedOut = false;
       item.state = ItemState.tobuy;
+      item.actual = null;
+      item.purchasedById = null;
     } else {
       item.state = item.state.next;
     }
@@ -2248,13 +2716,20 @@ class AppState extends ChangeNotifier {
 
   /// F5 - "Finish shopping" closes the loop: checked items become one expense
   /// pre-filled with the estimate, posted to the linked envelope.
-  Money finishShopping({String? txId}) {
+  Money finishShopping({
+    String? txId,
+    String? envelopeId,
+    Method method = Method.bankCard,
+  }) {
     // Prefer a Groceries envelope; fall back to the first shared one.
     Envelope? target;
-    for (final e in envelopes) {
-      if (!e.isPersonal && e.name.toLowerCase().contains('grocer')) {
-        target = e;
-        break;
+    if (envelopeId != null) target = envelope(envelopeId);
+    if (target == null) {
+      for (final e in envelopes) {
+        if (!e.isPersonal && e.name.toLowerCase().contains('grocer')) {
+          target = e;
+          break;
+        }
       }
     }
     if (target == null) {
@@ -2276,9 +2751,10 @@ class AppState extends ChangeNotifier {
     for (final i in items) {
       if (!i.checkedOut &&
           (i.state == ItemState.done || i.state == ItemState.incart)) {
-        sum += i.est.inCurrency(cur, rate).minor * i.qty;
+        sum += (i.actual ?? i.est).inCurrency(cur, rate).minor * i.qty;
         i.state = ItemState.done;
         i.checkedOut = true;
+        i.purchasedById = _user.id;
         _persistItem(i);
         _queue('list_item', i);
       }
@@ -2291,7 +2767,7 @@ class AppState extends ChangeNotifier {
       type: TxType.expense,
       amount: total,
       memberId: _user.id,
-      method: Method.bankCard,
+      method: method,
       note: 'Groceries run - FreshMart',
       envelopeId: target?.id,
     );
@@ -2299,6 +2775,155 @@ class AppState extends ChangeNotifier {
   }
 
   // ── Goals & savings circles (Module E) ────────────────────────────────────────────
+
+  void createContributionCampaign(
+      {required String name,
+      required Money target,
+      required DateTime deadline}) {
+    if (!canEditBudgets || name.trim().isEmpty || target.minor <= 0) return;
+    final value = ContributionCampaign(
+        id: newUuid(),
+        name: name.trim(),
+        target: target,
+        deadline: deadline,
+        createdById: realUser.id);
+    contributionCampaigns.add(value);
+    if (_store != null) _fire(_store!.saveContributionCampaign(value));
+    _queue('contribution_campaign', value);
+    pendingOps++;
+    notifyListeners();
+  }
+
+  Money pledgedFor(ContributionCampaign campaign, [String? memberId]) {
+    var sum = 0;
+    for (final p in contributionPledges) {
+      if (p.campaignId == campaign.id &&
+          (memberId == null || p.memberId == memberId)) {
+        sum += p.amount.inCurrency(campaign.target.currency, rate).minor;
+      }
+    }
+    return Money(sum, campaign.target.currency);
+  }
+
+  Money collectedFor(ContributionCampaign campaign, [String? memberId]) {
+    var sum = 0;
+    for (final p in contributionPayments) {
+      if (p.campaignId == campaign.id &&
+          (memberId == null || p.memberId == memberId)) {
+        sum += p.amount.inCurrency(campaign.target.currency, rate).minor;
+      }
+    }
+    return Money(sum, campaign.target.currency);
+  }
+
+  bool setContributionPledge(
+      ContributionCampaign campaign, String memberId, Money amount) {
+    if ((!canAdmin && memberId != realUser.id) || amount.minor <= 0) {
+      return false;
+    }
+    final id = uuidFromSeed('${campaign.id}:pledge:$memberId');
+    final existing = contributionPledges.where((p) => p.id == id).firstOrNull;
+    final value = existing ??
+        ContributionPledge(
+            id: id,
+            campaignId: campaign.id,
+            memberId: memberId,
+            amount: amount,
+            createdAt: now);
+    value.amount = amount;
+    if (existing == null) contributionPledges.add(value);
+    if (_store != null) _fire(_store!.saveContributionPledge(value));
+    _queue('contribution_pledge', value);
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  bool recordContributionPayment(
+      ContributionCampaign campaign, String memberId, Money amount,
+      {String? id}) {
+    if ((!canAdmin && memberId != realUser.id) || amount.minor <= 0) {
+      return false;
+    }
+    final paymentId = id ?? newUuid();
+    if (contributionPayments.any((p) => p.id == paymentId)) return false;
+    final value = ContributionPayment(
+        id: paymentId,
+        campaignId: campaign.id,
+        memberId: memberId,
+        amount: amount,
+        paidAt: now);
+    contributionPayments.add(value);
+    if (_store != null) _fire(_store!.saveContributionPayment(value));
+    _queue('contribution_payment', value);
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  void createDebt(
+      {required String name,
+      required DebtDirection direction,
+      required Money principal,
+      String? counterpartyMemberId,
+      DateTime? dueDate}) {
+    if (!canEditBudgets || name.trim().isEmpty || principal.minor <= 0) return;
+    final value = FamilyDebt(
+        id: newUuid(),
+        name: name.trim(),
+        direction: direction,
+        principal: principal,
+        createdById: realUser.id,
+        counterpartyMemberId: counterpartyMemberId,
+        dueDate: dueDate);
+    familyDebts.add(value);
+    if (_store != null) _fire(_store!.saveFamilyDebt(value));
+    _queue('family_debt', value);
+    pendingOps++;
+    notifyListeners();
+  }
+
+  Money repaidOn(FamilyDebt debt) {
+    var total = 0;
+    for (final p in debtRepayments) {
+      if (p.debtId == debt.id) {
+        total += p.amount.inCurrency(debt.principal.currency, rate).minor;
+      }
+    }
+    return Money(total, debt.principal.currency);
+  }
+
+  Money remainingOnDebt(FamilyDebt debt) => Money(
+      (debt.principal.minor - repaidOn(debt).minor)
+          .clamp(0, debt.principal.minor),
+      debt.principal.currency);
+
+  bool recordDebtRepayment(FamilyDebt debt, Money amount, {String? id}) {
+    if (!canEditBudgets || amount.minor <= 0 || debt.status != 'active') {
+      return false;
+    }
+    final paymentId = id ?? newUuid();
+    if (debtRepayments.any((p) => p.id == paymentId)) return false;
+    final inDebt = amount.inCurrency(debt.principal.currency, rate);
+    if (inDebt.minor > remainingOnDebt(debt).minor) return false;
+    final value = DebtRepayment(
+        id: paymentId,
+        debtId: debt.id,
+        memberId: realUser.id,
+        amount: amount,
+        paidAt: now);
+    debtRepayments.add(value);
+    if (remainingOnDebt(debt).minor == 0) {
+      debt.status = 'settled';
+      if (_store != null) _fire(_store!.saveFamilyDebt(debt));
+      _queue('family_debt', debt);
+    }
+    if (_store != null) _fire(_store!.saveDebtRepayment(value));
+    _queue('debt_repayment', value);
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
 
   Money savedOn(Goal g) {
     var sum = 0;
@@ -2700,6 +3325,63 @@ class AppState extends ChangeNotifier {
   }
 
   // ── Reports (Module I1/I2 basics) ─────────────────────────────────────────
+
+  /// One chronological family feed. Synced audit rows are authoritative;
+  /// unsynced money events are derived locally so they appear immediately.
+  List<FamilyActivity> get activityFeed {
+    final result = List<FamilyActivity>.of(familyActivities);
+    final audited = <String>{
+      for (final a in familyActivities)
+        if (a.entityId != null) '${a.entity}:${a.entityId}',
+    };
+    for (final t in txs) {
+      if (audited.contains('transaction:${t.id}')) continue;
+      result.add(FamilyActivity(
+        id: 'local-tx-${t.id}',
+        actorId: t.memberId,
+        action: 'tx.create',
+        entity: 'transaction',
+        entityId: t.id,
+        at: t.when,
+        detail: {
+          'amount_minor': t.amount.minor,
+          'currency': t.amount.currency.code,
+          'member_id': t.memberId,
+        },
+      ));
+    }
+    for (var i = 0; i < goalTxs.length; i++) {
+      final t = goalTxs[i];
+      if (t.id != null && audited.contains('goal_tx:${t.id}')) continue;
+      result.add(FamilyActivity(
+        id: 'local-goal-${t.id ?? '${t.goalId}-${t.at.millisecondsSinceEpoch}-$i'}',
+        actorId: t.byMemberId,
+        action: 'goal.contribute',
+        entity: 'goal_tx',
+        entityId: t.id,
+        at: t.at,
+        detail: {
+          'amount_minor': t.amount.minor,
+          'currency': t.amount.currency.code,
+          'goal_id': t.goalId,
+        },
+      ));
+    }
+    for (final plan in budgetPlans) {
+      if (audited.contains('budget_cycle_plan:${plan.id}')) continue;
+      result.add(FamilyActivity(
+        id: 'local-plan-${plan.id}',
+        actorId: realUser.id,
+        action: plan.isClosed ? 'plan.close' : 'plan.save',
+        entity: 'budget_cycle_plan',
+        entityId: plan.id,
+        at: plan.closedAt ?? plan.cycleStart,
+        detail: {'cycle_start': _cycleKey(plan.cycleStart)},
+      ));
+    }
+    result.sort((a, b) => b.at.compareTo(a.at));
+    return result;
+  }
 
   List<Tx> get _txsInCurrentCycle => txs
       .where((t) =>

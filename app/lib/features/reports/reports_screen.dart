@@ -52,11 +52,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
         .where(
             (tx) => !tx.at.isBefore(periodStart) && tx.at.isBefore(periodEnd))
         .toList();
+    final previousStart = _cycleStart(s, _cycleOffset + 1);
+    final previousTransactions = s.txs
+        .where((tx) =>
+            !tx.when.isBefore(previousStart) && tx.when.isBefore(periodStart))
+        .toList();
 
     final displayCur = s.displayCurrency;
     final envelopeById = {for (final e in s.envelopes) e.id: e};
     final spentByEnvelope = <String, int>{};
     final spentUsdByEnvelope = <String, int>{};
+    final allocationsByTx = <String, List<TxAllocation>>{};
+    for (final allocation in s.txAllocations) {
+      allocationsByTx.putIfAbsent(allocation.txId, () => []).add(allocation);
+    }
     var incomeMinor = 0;
     var spentMinor = 0;
     var cashSpent = 0;
@@ -68,20 +77,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
       }
       spentMinor += inDisplay;
       if (tx.method == Method.cash) cashSpent += inDisplay;
-      final envelope = envelopeById[tx.envelopeId];
-      if (envelope != null) {
+      final allocations = allocationsByTx[tx.id] ?? const <TxAllocation>[];
+      final categoryParts = allocations.isNotEmpty
+          ? allocations
+              .map((a) => (a.envelopeId, a.amount))
+              .toList(growable: false)
+          : [(tx.envelopeId, tx.amount)];
+      for (final part in categoryParts) {
+        final envelope = envelopeById[part.$1];
+        if (envelope == null) continue;
         spentByEnvelope.update(
           envelope.id,
           (value) =>
-              value +
-              tx.amount.inCurrency(envelope.limit.currency, s.rate).minor,
+              value + part.$2.inCurrency(envelope.limit.currency, s.rate).minor,
           ifAbsent: () =>
-              tx.amount.inCurrency(envelope.limit.currency, s.rate).minor,
+              part.$2.inCurrency(envelope.limit.currency, s.rate).minor,
         );
         spentUsdByEnvelope.update(
           envelope.id,
-          (value) => value + inDisplay,
-          ifAbsent: () => inDisplay,
+          (value) => value + part.$2.inCurrency(displayCur, s.rate).minor,
+          ifAbsent: () => part.$2.inCurrency(displayCur, s.rate).minor,
         );
       }
     }
@@ -93,6 +108,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
       displayCur,
     );
     final cashLeakShare = spent.minor == 0 ? 0.0 : cashSpent / spent.minor;
+    int totalFor(List<Tx> rows, TxType type) =>
+        rows.where((tx) => tx.type == type).fold(0,
+            (sum, tx) => sum + tx.amount.inCurrency(displayCur, s.rate).minor);
+    final previousIncome =
+        Money(totalFor(previousTransactions, TxType.income), displayCur);
+    final previousSpent =
+        Money(totalFor(previousTransactions, TxType.expense), displayCur);
+    BudgetCyclePlan? selectedPlan;
+    for (final plan in s.budgetPlans) {
+      if (plan.cycleStart.year == periodStart.year &&
+          plan.cycleStart.month == periodStart.month &&
+          plan.cycleStart.day == periodStart.day) {
+        selectedPlan = plan;
+        break;
+      }
+    }
+    final plannedMinor =
+        selectedPlan?.allocations.entries.fold<int>(0, (sum, entry) {
+              final envelope = envelopeById[entry.key];
+              if (envelope == null) return sum;
+              return sum +
+                  Money(entry.value, envelope.limit.currency)
+                      .inCurrency(displayCur, s.rate)
+                      .minor;
+            }) ??
+            0;
+    final planned = Money(plannedMinor, displayCur);
 
     final trackedEnvelopes = s.envelopes.where((e) => !e.isPersonal).toList();
     final onTrack = trackedEnvelopes
@@ -232,6 +274,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                _CycleComparisonCard(
+                  income: income,
+                  spent: spent,
+                  previousIncome: previousIncome,
+                  previousSpent: previousSpent,
+                ),
+                const SizedBox(height: 12),
+                _PlanVsActualCard(
+                  plan: selectedPlan,
+                  planned: planned,
+                  spent: spent,
+                ),
+                const SizedBox(height: 12),
+                _MonthEndSummaryCard(
+                  income: income,
+                  spent: spent,
+                  saved: saved,
+                  plan: selectedPlan,
+                ),
+                const SizedBox(height: 12),
 
                 // ── Envelope health ──────────────────────────────────────────
                 Container(
@@ -384,6 +447,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   displayCurrency: displayCur,
                   envelopeById: envelopeById,
                 ),
+                const SizedBox(height: 12),
+                _FamilyProgressCard(state: s, displayCurrency: displayCur),
+                const SizedBox(height: 12),
+                _CommitmentsCard(
+                  state: s,
+                  transactions: transactions,
+                  displayCurrency: displayCur,
+                ),
                 const SizedBox(height: 16),
 
                 ElevatedButton.icon(
@@ -471,6 +542,389 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ],
         ),
+      );
+}
+
+class _CycleComparisonCard extends StatelessWidget {
+  const _CycleComparisonCard({
+    required this.income,
+    required this.spent,
+    required this.previousIncome,
+    required this.previousSpent,
+  });
+
+  final Money income;
+  final Money spent;
+  final Money previousIncome;
+  final Money previousSpent;
+
+  String _change(int current, int previous) {
+    if (previous == 0) return current == 0 ? 'No change' : 'New this cycle';
+    final percent = ((current - previous) / previous * 100).round();
+    if (percent == 0) return 'No change';
+    return '${percent > 0 ? '+' : ''}$percent%';
+  }
+
+  @override
+  Widget build(BuildContext context) => _ReportCard(
+        title: 'Compared with last cycle',
+        icon: Icons.compare_arrows_rounded,
+        child: Row(children: [
+          Expanded(
+            child: _ComparisonMetric(
+              label: 'Income',
+              value: income.text,
+              change: _change(income.minor, previousIncome.minor),
+              positive: income.minor >= previousIncome.minor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _ComparisonMetric(
+              label: 'Spending',
+              value: spent.text,
+              change: _change(spent.minor, previousSpent.minor),
+              positive: spent.minor <= previousSpent.minor,
+            ),
+          ),
+        ]),
+      );
+}
+
+class _ComparisonMetric extends StatelessWidget {
+  const _ComparisonMetric({
+    required this.label,
+    required this.value,
+    required this.change,
+    required this.positive,
+  });
+  final String label;
+  final String value;
+  final String change;
+  final bool positive;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 11.5, color: context.inkSoft)),
+          const SizedBox(height: 3),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: context.ink)),
+          const SizedBox(height: 3),
+          Text(change,
+              style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: positive ? context.incomeGreen : context.expenseRed)),
+        ],
+      );
+}
+
+class _PlanVsActualCard extends StatelessWidget {
+  const _PlanVsActualCard({
+    required this.plan,
+    required this.planned,
+    required this.spent,
+  });
+  final BudgetCyclePlan? plan;
+  final Money planned;
+  final Money spent;
+
+  @override
+  Widget build(BuildContext context) {
+    if (plan == null) {
+      return const _ReportCard(
+        title: 'Plan vs actual',
+        icon: Icons.fact_check_outlined,
+        child: Text(
+          'No saved plan for this cycle. Create one in Budgets to compare the family agreement with actual spending.',
+        ),
+      );
+    }
+    final ratio = planned.minor <= 0 ? 0.0 : spent.minor / planned.minor;
+    final remaining = Money(planned.minor - spent.minor, planned.currency);
+    return _ReportCard(
+      title: 'Plan vs actual',
+      icon: Icons.fact_check_outlined,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text('Planned ${planned.text}')),
+          Text('Actual ${spent.text}',
+              style: const TextStyle(fontWeight: FontWeight.w800)),
+        ]),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: LinearProgressIndicator(
+            value: ratio.clamp(0, 1),
+            minHeight: 9,
+            backgroundColor: context.track,
+            color: ratio > 1 ? context.expenseRed : context.primary,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          remaining.minor >= 0
+              ? '${remaining.text} remains in the plan'
+              : '${Money(-remaining.minor, remaining.currency).text} over plan',
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: remaining.minor >= 0
+                  ? context.incomeGreen
+                  : context.expenseRed),
+        ),
+        if (plan!.isClosed) ...[
+          const SizedBox(height: 5),
+          Text('Month closed', style: TextStyle(color: context.inkSoft)),
+        ],
+      ]),
+    );
+  }
+}
+
+class _FamilyProgressCard extends StatelessWidget {
+  const _FamilyProgressCard(
+      {required this.state, required this.displayCurrency});
+  final AppState state;
+  final Currency displayCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    final goalTarget = state.goals.fold<int>(
+        0,
+        (sum, goal) =>
+            sum + goal.target.inCurrency(displayCurrency, state.rate).minor);
+    final goalSaved = state.goalTxs.fold<int>(
+        0,
+        (sum, tx) =>
+            sum + tx.amount.inCurrency(displayCurrency, state.rate).minor);
+    final campaignTarget = state.contributionCampaigns
+        .where((campaign) => campaign.status == 'active')
+        .fold<int>(
+            0,
+            (sum, campaign) =>
+                sum +
+                campaign.target.inCurrency(displayCurrency, state.rate).minor);
+    final campaignCollected = state.contributionCampaigns
+        .where((campaign) => campaign.status == 'active')
+        .fold<int>(
+            0,
+            (sum, campaign) =>
+                sum +
+                state
+                    .collectedFor(campaign)
+                    .inCurrency(displayCurrency, state.rate)
+                    .minor);
+    return _ReportCard(
+      title: 'Family progress',
+      icon: Icons.flag_outlined,
+      child: Column(children: [
+        _ProgressRow(
+          label: 'Savings goals',
+          value: Money(goalSaved, displayCurrency),
+          target: Money(goalTarget, displayCurrency),
+        ),
+        const SizedBox(height: 14),
+        _ProgressRow(
+          label: 'Contributions collected',
+          value: Money(campaignCollected, displayCurrency),
+          target: Money(campaignTarget, displayCurrency),
+        ),
+      ]),
+    );
+  }
+}
+
+class _MonthEndSummaryCard extends StatelessWidget {
+  const _MonthEndSummaryCard({
+    required this.income,
+    required this.spent,
+    required this.saved,
+    required this.plan,
+  });
+  final Money income;
+  final Money spent;
+  final Money saved;
+  final BudgetCyclePlan? plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final result =
+        Money(income.minor - spent.minor - saved.minor, income.currency);
+    final positive = result.minor >= 0;
+    final resultText = positive
+        ? '${result.text} left after spending and saving.'
+        : 'Spending and saving exceeded income by ${Money(-result.minor, result.currency).text}.';
+    return _ReportCard(
+      title: 'Month-end summary',
+      icon: Icons.event_available_outlined,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(resultText,
+            style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: positive ? context.incomeGreen : context.expenseRed)),
+        const SizedBox(height: 7),
+        Text('The family saved ${saved.text} during this cycle.'),
+        const SizedBox(height: 7),
+        Text(
+          plan == null
+              ? 'No agreed plan was saved for this cycle.'
+              : plan!.isClosed
+                  ? 'This month has been closed and preserved for comparison.'
+                  : 'This month is still open. Close it from Budgets when the family has reviewed the figures.',
+          style: TextStyle(color: context.inkSoft),
+        ),
+      ]),
+    );
+  }
+}
+
+class _ProgressRow extends StatelessWidget {
+  const _ProgressRow(
+      {required this.label, required this.value, required this.target});
+  final String label;
+  final Money value;
+  final Money target;
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = target.minor <= 0 ? 0.0 : value.minor / target.minor;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Expanded(
+            child: Text(label,
+                style: const TextStyle(fontWeight: FontWeight.w700))),
+        Text('${value.text} / ${target.text}',
+            style: TextStyle(fontSize: 11.5, color: context.inkSoft)),
+      ]),
+      const SizedBox(height: 7),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(99),
+        child: LinearProgressIndicator(
+          value: ratio.clamp(0, 1),
+          minHeight: 8,
+          backgroundColor: context.track,
+          color: context.primary,
+        ),
+      ),
+    ]);
+  }
+}
+
+class _CommitmentsCard extends StatelessWidget {
+  const _CommitmentsCard({
+    required this.state,
+    required this.transactions,
+    required this.displayCurrency,
+  });
+  final AppState state;
+  final List<Tx> transactions;
+  final Currency displayCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime(state.now.year, state.now.month, state.now.day);
+    final overdue = state.recurring
+        .where((rule) =>
+            rule.active &&
+            DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
+                .isBefore(today))
+        .length;
+    final upcoming = state.recurring
+        .where((rule) =>
+            rule.active &&
+            !DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
+                .isBefore(today))
+        .length;
+    final paid = transactions
+        .where((tx) => tx.recurringRuleId != null && tx.type == TxType.expense)
+        .length;
+    final debtRemaining = state.familyDebts.fold<int>(
+        0,
+        (sum, debt) =>
+            sum +
+            state
+                .remainingOnDebt(debt)
+                .inCurrency(displayCurrency, state.rate)
+                .minor);
+    return _ReportCard(
+      title: 'Bills and debts',
+      icon: Icons.receipt_long_outlined,
+      child: Column(children: [
+        _SummaryLine(label: 'Bills paid in this period', value: '$paid'),
+        _SummaryLine(label: 'Upcoming bills', value: '$upcoming'),
+        _SummaryLine(
+          label: 'Overdue bills',
+          value: '$overdue',
+          danger: overdue > 0,
+        ),
+        _SummaryLine(
+          label: 'Debt still outstanding',
+          value: Money(debtRemaining, displayCurrency).text,
+        ),
+      ]),
+    );
+  }
+}
+
+class _SummaryLine extends StatelessWidget {
+  const _SummaryLine(
+      {required this.label, required this.value, this.danger = false});
+  final String label;
+  final String value;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(children: [
+          Expanded(
+              child: Text(label, style: TextStyle(color: context.inkSoft))),
+          Text(value,
+              style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: danger ? context.expenseRed : context.ink)),
+        ]),
+      );
+}
+
+class _ReportCard extends StatelessWidget {
+  const _ReportCard(
+      {required this.title, required this.icon, required this.child});
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: context.card,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(icon, size: 20, color: context.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(title,
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: context.ink)),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          DefaultTextStyle(
+            style: TextStyle(fontSize: 12.5, color: context.ink, height: 1.35),
+            child: child,
+          ),
+        ]),
       );
 }
 
@@ -726,7 +1180,8 @@ class _ShoppingTrackingCard extends StatelessWidget {
 
     final shoppingSpentMinor = shoppingTxs.fold<int>(
       0,
-      (sum, tx) => sum + tx.amount.inCurrency(displayCurrency, state.rate).minor,
+      (sum, tx) =>
+          sum + tx.amount.inCurrency(displayCurrency, state.rate).minor,
     );
     final shoppingSpent = Money(shoppingSpentMinor, displayCurrency);
 
@@ -916,8 +1371,8 @@ class _ShoppingTrackingCard extends StatelessWidget {
               children: [
                 for (final item in state.items.take(8))
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: item.state == ItemState.done
                           ? context.successSoft
@@ -955,8 +1410,8 @@ class _ShoppingTrackingCard extends StatelessWidget {
                   ),
                 if (state.items.length > 8)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: context.track,
                       borderRadius: BorderRadius.circular(8),

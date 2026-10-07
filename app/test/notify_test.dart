@@ -23,8 +23,9 @@ void main() {
       ReminderCategory.kids,
       ReminderCategory.circle,
       ReminderCategory.goals,
-      ReminderCategory.meeting,
-      ReminderCategory.digest,
+      ReminderCategory.contributions,
+      ReminderCategory.shopping,
+      ReminderCategory.family,
     },
   );
 
@@ -48,6 +49,7 @@ void main() {
     List<Chore> chores = const [],
     List<KidRequest> requests = const [],
     SavingsCircle? circle,
+    List<ContributionCampaign> campaigns = const [],
     List<Reminder> extra = const [],
   }) {
     return ReminderPlanner.plan(
@@ -67,6 +69,7 @@ void main() {
           ),
       memberNames: const {'m_leo': 'Leo', 'm_zoe': 'Zoe'},
       monthStartDay: 25,
+      campaigns: campaigns,
       extra: extra,
     );
   }
@@ -87,13 +90,13 @@ void main() {
       expect(out.where((r) => r.key.startsWith('bill_')), isEmpty);
     });
 
-    test('overdue → reminder within minutes', () {
+    test('overdue → reminder at the next stable daily slot', () {
       final out = plan(
         recurring: [rule('rc_x', now.subtract(const Duration(days: 1)))],
       );
       final bill = out.where((r) => r.key.startsWith('bill_')).first;
       expect(bill.key, contains('overdue'));
-      expect(bill.when.difference(now).inMinutes, lessThanOrEqualTo(15));
+      expect(bill.when, DateTime(2026, 9, 22, 9));
     });
 
     test('paused rules never remind', () {
@@ -103,6 +106,39 @@ void main() {
         ],
       );
       expect(out.where((r) => r.key.startsWith('bill_')), isEmpty);
+    });
+  });
+
+  group('planner - contributions from real campaigns', () {
+    test('campaign deadline inside seven days schedules a reminder', () {
+      final out = plan(campaigns: [
+        ContributionCampaign(
+          id: 'campaign-school',
+          name: 'School fees',
+          target: Money.fromMajor(500, Currency.usd),
+          deadline: now.add(const Duration(days: 5)),
+          createdById: 'owner',
+        ),
+      ]);
+
+      final reminder =
+          out.firstWhere((r) => r.category == ReminderCategory.contributions);
+      expect(reminder.title, contains('School fees'));
+      expect(reminder.body, contains(r'$500.00'));
+    });
+
+    test('campaign farther than seven days stays quiet', () {
+      final out = plan(campaigns: [
+        ContributionCampaign(
+          id: 'campaign-later',
+          name: 'Holiday',
+          target: Money.fromMajor(1000, Currency.usd),
+          deadline: now.add(const Duration(days: 20)),
+          createdById: 'owner',
+        ),
+      ]);
+      expect(out.where((r) => r.category == ReminderCategory.contributions),
+          isEmpty);
     });
   });
 
@@ -197,8 +233,9 @@ void main() {
           ReminderCategory.kids,
           ReminderCategory.circle,
           ReminderCategory.goals,
-          ReminderCategory.meeting,
-          ReminderCategory.digest,
+          ReminderCategory.contributions,
+          ReminderCategory.shopping,
+          ReminderCategory.family,
         },
         quietStart: 18,
         quietEnd: 9,
@@ -234,8 +271,9 @@ void main() {
           ReminderCategory.kids,
           ReminderCategory.circle,
           ReminderCategory.goals,
-          ReminderCategory.meeting,
-          ReminderCategory.digest,
+          ReminderCategory.contributions,
+          ReminderCategory.shopping,
+          ReminderCategory.family,
         }),
         recurring: [rule('rc_x', now)],
       );
@@ -250,8 +288,9 @@ void main() {
           ReminderCategory.kids,
           ReminderCategory.circle,
           ReminderCategory.goals,
-          ReminderCategory.meeting,
-          ReminderCategory.digest,
+          ReminderCategory.contributions,
+          ReminderCategory.shopping,
+          ReminderCategory.family,
         },
       );
       final out = plan(cfg: noBills, recurring: [rule('rc_x', now)]);
@@ -314,14 +353,14 @@ void main() {
       await first.ready();
       expect(first.notifyEnabled, isTrue);
       first.setRemindersEnabled(false);
-      first.setReminderPref(ReminderCategory.digest, false);
+      first.setReminderPref(ReminderCategory.shopping, false);
       first.setQuietHours(23, 6);
       await first.flushWrites();
 
       final second = AppState(db: db);
       await second.ready();
       expect(second.notifyEnabled, isFalse);
-      expect(second.notifyAllowed.contains(ReminderCategory.digest), isFalse);
+      expect(second.notifyAllowed.contains(ReminderCategory.shopping), isFalse);
       expect(second.quietStart, 23);
       expect(second.quietEnd, 6);
       expect(second.planReminders(), isEmpty, reason: 'disabled → no plan');

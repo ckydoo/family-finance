@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/utils/ids.dart';
 
@@ -49,6 +50,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   String? _amountError;
   final _amount = TextEditingController();
   final _note = TextEditingController();
+  String? _receiptUri;
+  Map<String, Money> _allocations = {};
 
   @override
   void initState() {
@@ -81,7 +84,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   /// Guard only when the user actually typed something and did not save.
   bool get _dirty =>
       !_saved &&
-      (_amount.text.trim().isNotEmpty || _note.text.trim().isNotEmpty);
+      (_amount.text.trim().isNotEmpty ||
+          _note.text.trim().isNotEmpty ||
+          _receiptUri != null ||
+          _allocations.isNotEmpty);
 
   /// Returns true when the user chose to STAY.
   Future<bool> _confirmDiscard() async {
@@ -144,6 +150,15 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     }
 
     final envelope = _type == TxType.expense ? s.envelope(_envelopeId) : null;
+    if (_allocations.isNotEmpty) {
+      final splitTotal = _allocations.values.fold<int>(
+          0, (sum, value) => sum + value.inCurrency(_cur, s.rate).minor);
+      if (splitTotal != Money.fromMajor(amt, _cur).minor) {
+        setState(
+            () => _amountError = 'Split amounts must equal the expense total.');
+        return;
+      }
+    }
     final entered = _enteredExpense(s);
     if (envelope != null && entered != null) {
       final remaining = s.remainingOn(envelope);
@@ -200,6 +215,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       method: _method,
       note: note,
       envelopeId: envelope?.id,
+      receiptUri: _receiptUri,
+      allocations: _allocations.isEmpty ? null : _allocations,
     );
     HapticFeedback.mediumImpact();
     messenger.showSnackBar(
@@ -371,6 +388,84 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     );
     if (!mounted || selected == null) return;
     setState(() => _envelopeId = selected == noBudget ? null : selected);
+  }
+
+  Future<void> _configureSplit(AppState state) async {
+    final total = _parsedAmount;
+    if (total == null) {
+      setState(() => _amountError = 'Enter the total before splitting it.');
+      return;
+    }
+    var firstId = state.envelopes.first.id;
+    var secondId = state.envelopes[1].id;
+    final firstAmount = TextEditingController();
+    final secondAmount = TextEditingController();
+    String? error;
+    final result = await showMhuriSheet<Map<String, Money>>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) => MhuriSheetShell(
+          title: 'Split expense',
+          subtitle: 'Allocate ${Money.fromMajor(total, _cur).text} exactly.',
+          footer: PrimaryButton(
+              label: 'Apply split',
+              onPressed: () {
+                final a = double.tryParse(firstAmount.text.replaceAll(',', ''));
+                final b =
+                    double.tryParse(secondAmount.text.replaceAll(',', ''));
+                if (firstId == secondId ||
+                    a == null ||
+                    b == null ||
+                    a <= 0 ||
+                    b <= 0 ||
+                    Money.fromMajor(a + b, _cur).minor !=
+                        Money.fromMajor(total, _cur).minor) {
+                  setSheet(() => error =
+                      'Choose different budgets and make the amounts equal the total.');
+                  return;
+                }
+                Navigator.pop(sheetContext, {
+                  firstId: Money.fromMajor(a, _cur),
+                  secondId: Money.fromMajor(b, _cur),
+                });
+              }),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            for (final row in [0, 1]) ...[
+              DropdownButtonFormField<String>(
+                initialValue: row == 0 ? firstId : secondId,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: 'Budget ${row + 1}'),
+                items: [
+                  for (final e in state.envelopes)
+                    DropdownMenuItem(value: e.id, child: Text(e.name))
+                ],
+                onChanged: (v) {
+                  if (v != null) {
+                    setSheet(() => row == 0 ? firstId = v : secondId = v);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                  controller: row == 0 ? firstAmount : secondAmount,
+                  inputFormatters: amountInputFormatters,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                      labelText: 'Amount', prefixText: '${_cur.symbol} ')),
+              const SizedBox(height: 10),
+            ],
+            if (error != null) ErrorNotice(error!),
+          ]),
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _allocations = result;
+        _envelopeId = null;
+      });
+    }
   }
 
   @override
@@ -648,6 +743,45 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                         const OutlineInputBorder(borderSide: BorderSide.none),
                   ),
                 ),
+                if (_type == TxType.expense) ...[
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(
+                        child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final file = await ImagePicker().pickImage(
+                              source: ImageSource.camera, imageQuality: 82);
+                          if (file != null && mounted) {
+                            setState(() => _receiptUri = file.path);
+                          }
+                        } catch (_) {
+                          if (mounted) {
+                            setState(() => _amountError =
+                                'Camera unavailable. Check camera permission and try again.');
+                          }
+                        }
+                      },
+                      icon: Icon(_receiptUri == null
+                          ? Icons.camera_alt_outlined
+                          : Icons.check_circle_outline),
+                      label: Text(_receiptUri == null
+                          ? 'Add receipt'
+                          : 'Receipt added'),
+                    )),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: OutlinedButton.icon(
+                      onPressed: s.envelopes.length < 2
+                          ? null
+                          : () => _configureSplit(s),
+                      icon: const Icon(Icons.call_split_outlined),
+                      label: Text(_allocations.isEmpty
+                          ? 'Split expense'
+                          : '${_allocations.length} budgets'),
+                    )),
+                  ]),
+                ],
                 const SizedBox(height: 8),
               ],
             ],

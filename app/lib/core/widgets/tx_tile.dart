@@ -110,6 +110,7 @@ class TxTile extends StatelessWidget {
     var envelopeId = tx.envelopeId;
     String? error;
     var editing = false;
+    final splits = state.txAllocations.where((a) => a.txId == tx.id).toList();
     showMhuriSheet<void>(
       context: context,
       builder: (sheetContext) => StatefulBuilder(
@@ -254,8 +255,15 @@ class TxTile extends StatelessWidget {
                       _detailRow(
                         sheetContext,
                         'Budget',
-                        state.envelope(tx.envelopeId)?.name ?? 'No budget',
+                        splits.isEmpty
+                            ? state.envelope(tx.envelopeId)?.name ?? 'No budget'
+                            : splits
+                                .map((a) =>
+                                    '${state.envelope(a.envelopeId)?.name ?? 'Budget'} ${a.amount.text}')
+                                .join(' · '),
                       ),
+                    if (tx.receiptUri != null)
+                      _detailRow(sheetContext, 'Receipt', 'Attached'),
                     _detailRow(sheetContext, 'Date', fmtWhen(tx.when),
                         showDivider: false),
                   ],

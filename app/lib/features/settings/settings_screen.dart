@@ -202,7 +202,7 @@ class SettingsScreen extends StatelessWidget {
                       final shown = await Notifier.showNow(
                         Reminder(
                           key: 'test_now',
-                          category: ReminderCategory.digest,
+                          category: ReminderCategory.family,
                           title: l.sendTest,
                           body: l.testOk,
                           when: DateTime.now(),
@@ -631,8 +631,9 @@ class SettingsScreen extends StatelessWidget {
         ReminderCategory.kids => l.reminderKids,
         ReminderCategory.circle => l.reminderCircle,
         ReminderCategory.goals => l.reminderGoals,
-        ReminderCategory.meeting => l.reminderMeeting,
-        ReminderCategory.digest => l.reminderDigest,
+        ReminderCategory.contributions => 'Contributions and pledges',
+        ReminderCategory.shopping => 'Shopping assignments',
+        ReminderCategory.family => 'Family invitations and access',
       };
 
   Widget _header(BuildContext context, IconData icon, String text) =>

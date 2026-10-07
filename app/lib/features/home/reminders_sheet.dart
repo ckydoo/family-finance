@@ -109,8 +109,9 @@ IconData _icon(ReminderCategory c) => switch (c) {
       ReminderCategory.kids => Icons.child_care,
       ReminderCategory.circle => Icons.autorenew,
       ReminderCategory.goals => Icons.track_changes,
-      ReminderCategory.meeting => Icons.groups,
-      ReminderCategory.digest => Icons.bar_chart,
+      ReminderCategory.contributions => Icons.volunteer_activism_outlined,
+      ReminderCategory.shopping => Icons.shopping_cart_outlined,
+      ReminderCategory.family => Icons.group_add_outlined,
     };
 
 String _when(DateTime t, bool weekly) {

@@ -86,5 +86,9 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>Mhuri uses the camera only when you choose to photograph a receipt.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Mhuri accesses your photos only when you choose a receipt image.</string>
 	</dict>
 </plist>

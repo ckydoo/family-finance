@@ -8,7 +8,7 @@ import 'package:mhuri_money/core/sync/sync_mappers.dart';
 
 void main() {
   AppState adminState() {
-    final state = AppState();
+    final state = AppState(clock: () => DateTime(2026, 9, 15));
     const admin = Member(
       id: 'admin-a',
       name: 'Admin A',

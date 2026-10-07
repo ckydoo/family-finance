@@ -12,7 +12,16 @@ import '../money/money.dart';
 
 /// Categories a family member can switch on/off (J3 "choose which alerts
 /// you receive").
-enum ReminderCategory { bills, budget, kids, circle, goals, meeting, digest }
+enum ReminderCategory {
+  bills,
+  budget,
+  kids,
+  circle,
+  goals,
+  contributions,
+  shopping,
+  family,
+}
 
 /// kv storage token for a category (stored CSV in 'notify_prefs').
 String categoryKey(ReminderCategory c) => switch (c) {
@@ -21,8 +30,9 @@ String categoryKey(ReminderCategory c) => switch (c) {
       ReminderCategory.kids => 'kids',
       ReminderCategory.circle => 'circle',
       ReminderCategory.goals => 'goals',
-      ReminderCategory.meeting => 'meeting',
-      ReminderCategory.digest => 'digest',
+      ReminderCategory.contributions => 'contributions',
+      ReminderCategory.shopping => 'shopping',
+      ReminderCategory.family => 'family',
     };
 
 ReminderCategory? categoryFromKey(String key) => switch (key) {
@@ -31,12 +41,17 @@ ReminderCategory? categoryFromKey(String key) => switch (key) {
       'kids' => ReminderCategory.kids,
       'circle' => ReminderCategory.circle,
       'goals' => ReminderCategory.goals,
-      'meeting' => ReminderCategory.meeting,
-      'digest' => ReminderCategory.digest,
+      'contributions' => ReminderCategory.contributions,
+      'shopping' => ReminderCategory.shopping,
+      'family' => ReminderCategory.family,
+      // Upgrade old preferences into their closest useful categories.
+      'meeting' => ReminderCategory.family,
+      'digest' => ReminderCategory.shopping,
       _ => null,
     };
 
-const allCategoryKeys = 'bills,budget,kids,circle,goals,meeting,digest';
+const allCategoryKeys =
+    'bills,budget,kids,circle,goals,contributions,shopping,family';
 
 /// One scheduled reminder. [key] is stable (dedupe + notification id).
 class Reminder {
@@ -138,6 +153,7 @@ class ReminderPlanner {
     required SavingsCircle? circle,
     required Map<String, String> memberNames,
     required int monthStartDay,
+    List<ContributionCampaign> campaigns = const [],
     List<Reminder> extra = const [],
   }) {
     if (!config.enabled) return const [];
@@ -165,9 +181,7 @@ class ReminderPlanner {
               ? 'This one is due now - post it from Home when you pay it.'
               : 'Due this ${r.frequency == Frequency.weekly ? 'week' : 'month'}. '
                   'Review & post when it\'s paid.',
-          when: overdue
-              ? now.add(const Duration(minutes: 10))
-              : _atHour(r.nextDue, 9),
+          when: overdue ? _nextDailyAt(now, 9) : _atHour(r.nextDue, 9),
         ));
       }
     }
@@ -203,7 +217,7 @@ class ReminderPlanner {
           category: ReminderCategory.kids,
           title: '${memberNames[r.kidId] ?? 'A kid'} is waiting on an answer',
           body: '${r.amount.text} - ${r.reason}. Approve or decline it.',
-          when: now.add(const Duration(minutes: 2)),
+          when: _nextDailyAt(now, 9),
         ));
       }
       for (final c in chores) {
@@ -213,7 +227,7 @@ class ReminderPlanner {
           category: ReminderCategory.kids,
           title: '"${c.name}" is done - confirm it',
           body: 'A chore is waiting for your ⭐ confirmation.',
-          when: now.add(const Duration(minutes: 30)),
+          when: _nextDailyAt(now, 10),
         ));
       }
     }
@@ -234,6 +248,28 @@ class ReminderPlanner {
         when: _nextSundayAt(now, 17),
         weekly: true,
       ));
+    }
+
+    // 5. Contributions: only active campaigns with a real deadline in the
+    // next seven days (or already overdue).
+    if (config.allows(ReminderCategory.contributions)) {
+      final today = DateTime(now.year, now.month, now.day);
+      for (final campaign in campaigns.where((c) => c.status == 'active')) {
+        final deadline = DateTime(campaign.deadline.year,
+            campaign.deadline.month, campaign.deadline.day);
+        if (deadline.isAfter(today.add(const Duration(days: 7)))) continue;
+        final dueNow = !deadline.isAfter(today);
+        out.add(Reminder(
+          key: 'contribution_${campaign.id}_${_dayKey(deadline)}',
+          category: ReminderCategory.contributions,
+          title: dueNow
+              ? '${campaign.name} needs attention'
+              : '${campaign.name} deadline is approaching',
+          body:
+              'Target: ${campaign.target.text}. Open Contributions to review what is still outstanding.',
+          when: dueNow ? _nextDailyAt(now, 9) : _atHour(deadline, 9),
+        ));
+      }
     }
 
     // Event extras (goal milestones, kid answers) are explicit real events.
@@ -270,6 +306,12 @@ class ReminderPlanner {
     d = d.add(Duration(days: (DateTime.sunday - d.weekday) % 7));
     if (!d.isAfter(now)) d = d.add(const Duration(days: 7));
     return d;
+  }
+
+  static DateTime _nextDailyAt(DateTime now, int hour) {
+    var result = _atHour(now, hour);
+    if (!result.isAfter(now)) result = result.add(const Duration(days: 1));
+    return result;
   }
 
   /// J3 quiet hours: anything landing inside the DND window slides to the

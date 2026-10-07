@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/models/models.dart' show Tx, TxType;
+import '../../core/models/models.dart' show FamilyActivity, TxType;
+import '../../core/money/money.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/when.dart';
@@ -173,20 +174,25 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final now = DateTime.now();
-    final transactions = s.txs.where((transaction) {
-      if (_type != null && transaction.type != _type) return false;
-      if (_memberId != null && transaction.memberId != _memberId) return false;
-      return _inPeriod(transaction.when, now);
+    final activities = s.activityFeed.where((activity) {
+      if (_memberId != null && activity.actorId != _memberId) return false;
+      if (!_inPeriod(activity.at, now)) return false;
+      if (_type != null) {
+        if (activity.entity != 'transaction') return false;
+        final tx = s.txs.where((t) => t.id == activity.entityId).firstOrNull;
+        if (tx == null || tx.type != _type) return false;
+      }
+      return true;
     });
     final rows = <Object>[];
     String? lastDay;
-    for (final t in transactions) {
-      final day = fmtDay(t.when);
+    for (final activity in activities) {
+      final day = fmtDay(activity.at);
       if (day != lastDay) {
         rows.add(day);
         lastDay = day;
       }
-      rows.add(t);
+      rows.add(activity);
     }
 
     return Scaffold(
@@ -250,15 +256,179 @@ class _ActivityScreenState extends State<ActivityScreen> {
                         ),
                       );
                     }
-                    return TxTile(
-                      tx: row as Tx,
-                      dense: true,
-                      surface: false,
-                    );
+                    final activity = row as FamilyActivity;
+                    if (activity.entity == 'transaction') {
+                      final tx = s.txs
+                          .where((t) => t.id == activity.entityId)
+                          .firstOrNull;
+                      if (tx != null) {
+                        return TxTile(tx: tx, dense: true, surface: false);
+                      }
+                    }
+                    return _FamilyActivityTile(activity: activity);
                   },
                 ),
         ),
       ),
+    );
+  }
+}
+
+class _FamilyActivityTile extends StatelessWidget {
+  const _FamilyActivityTile({required this.activity});
+  final FamilyActivity activity;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final actor = state.member(activity.actorId)?.name ??
+        (activity.actorId == state.realUser.id
+            ? state.realUser.name
+            : 'Family');
+    final tx = activity.entity == 'transaction'
+        ? state.txs.where((t) => t.id == activity.entityId).firstOrNull
+        : null;
+    final goalId = activity.detail['goal_id']?.toString();
+    final goal = goalId == null ? null : state.goal(goalId);
+    final campaignId = activity.detail['campaign_id']?.toString();
+    final campaign = campaignId == null
+        ? null
+        : state.contributionCampaigns
+            .where((c) => c.id == campaignId)
+            .firstOrNull;
+    final debtId = activity.detail['debt_id']?.toString();
+    final debt = debtId == null
+        ? null
+        : state.familyDebts.where((d) => d.id == debtId).firstOrNull;
+    final amountMinor = (activity.detail['amount_minor'] as num?)?.toInt();
+    final currencyCode = activity.detail['currency']?.toString();
+    final currency = Currency.values
+        .where((c) => c.code.toLowerCase() == currencyCode?.toLowerCase())
+        .firstOrNull;
+    final amount = amountMinor == null || currency == null
+        ? null
+        : Money(amountMinor, currency);
+
+    final (icon, title, subtitle, color) = switch (activity.action) {
+      'tx.create' when tx?.type == TxType.income => (
+          Icons.savings_outlined,
+          '$actor recorded income',
+          tx?.note ?? 'Money added to the family pool',
+          context.incomeGreen,
+        ),
+      'tx.create' => (
+          Icons.receipt_long_outlined,
+          '$actor recorded an expense',
+          tx?.note ?? 'Family spending',
+          context.expenseRed,
+        ),
+      'goal.contribute' => (
+          Icons.flag_outlined,
+          '$actor contributed to ${goal?.name ?? 'a savings goal'}',
+          'Savings contribution',
+          context.primary,
+        ),
+      'contribution.pledge' => (
+          Icons.volunteer_activism_outlined,
+          '$actor pledged to ${campaign?.name ?? 'a family contribution'}',
+          'Pledge recorded',
+          context.primary,
+        ),
+      'contribution.payment' => (
+          Icons.payments_outlined,
+          '$actor contributed to ${campaign?.name ?? 'a family contribution'}',
+          'Payment received',
+          context.incomeGreen,
+        ),
+      'debt.repayment' => (
+          Icons.handshake_outlined,
+          '$actor recorded a repayment',
+          debt?.name ?? 'Debt repayment',
+          context.incomeGreen,
+        ),
+      'plan.close' || 'budget_plan.close' => (
+          Icons.event_available_outlined,
+          '$actor closed the monthly plan',
+          activity.detail['cycle_start']?.toString() ?? 'Monthly plan',
+          context.primary,
+        ),
+      'plan.save' || 'budget_plan.save' => (
+          Icons.event_note_outlined,
+          '$actor updated the monthly plan',
+          activity.detail['cycle_start']?.toString() ?? 'Monthly plan',
+          context.primary,
+        ),
+      'request.approve' => (
+          Icons.check_circle_outline,
+          '$actor approved a request',
+          'Family request',
+          context.incomeGreen,
+        ),
+      'request.decline' => (
+          Icons.cancel_outlined,
+          '$actor declined a request',
+          'Family request',
+          context.expenseRed,
+        ),
+      'shopping.item_add' => (
+          Icons.add_shopping_cart_outlined,
+          '$actor added ${activity.detail['name'] ?? 'an item'}',
+          'Shopping list',
+          context.primary,
+        ),
+      'shopping.item_done' => (
+          Icons.shopping_bag_outlined,
+          '$actor bought ${activity.detail['qty'] ?? 1} × ${activity.detail['name'] ?? 'shopping item'}',
+          'Marked as bought',
+          context.incomeGreen,
+        ),
+      'shopping.item_update' => (
+          Icons.edit_note_outlined,
+          '$actor updated ${activity.detail['name'] ?? 'a shopping item'}',
+          'Shopping list',
+          context.primary,
+        ),
+      'family.join' || 'member.join' => (
+          Icons.person_add_alt_1_outlined,
+          '$actor joined the family',
+          'Family membership',
+          context.primary,
+        ),
+      _ => (
+          Icons.history,
+          '$actor updated the family',
+          activity.action.replaceAll('.', ' '),
+          context.primary,
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 11),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: context.hairline))),
+      child: Row(children: [
+        SizedBox(width: 42, height: 42, child: Icon(icon, color: color)),
+        const SizedBox(width: 12),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
+          const SizedBox(height: 2),
+          Text('$subtitle · ${fmtWhen(activity.at)}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: context.inkSoft)),
+        ])),
+        if (amount != null) ...[
+          const SizedBox(width: 8),
+          Text(amount.text,
+              style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+        ],
+      ]),
     );
   }
 }

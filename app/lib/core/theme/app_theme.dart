@@ -70,10 +70,24 @@ class MhuriType {
 }
 
 /// The one radius ruler: everything circles back to these.
+const double kRadiusXS = 6;
 const double kRadiusS = 8;
 const double kRadiusM = 10;
 const double kRadiusL = 12;
 const double kRadiusSheet = 20;
+
+/// Standard spacing scale (4, 8, 12, 16, 24, 32, 48)
+const double kSpace4 = 4;
+const double kSpace8 = 8;
+const double kSpace12 = 12;
+const double kSpace16 = 16;
+const double kSpace24 = 24;
+const double kSpace32 = 32;
+const double kSpace48 = 48;
+
+/// Motion durations
+const Duration kMotionFast = Duration(milliseconds: 150);
+const Duration kMotion = Duration(milliseconds: 220);
 
 /// Responsive page gutters used by every full-screen, scrollable surface.
 /// SafeArea supplies the device inset; these values supply the visual breathing
@@ -85,6 +99,7 @@ const EdgeInsets kWidePageInsets = EdgeInsets.fromLTRB(24, 24, 24, 32);
 const EdgeInsets kTabPageInsets = EdgeInsets.fromLTRB(20, 24, 20, 88);
 
 /// Design-system radius helpers.
+final BorderRadius kBRadiusXS = BorderRadius.circular(kRadiusXS);
 final BorderRadius kBRadiusS = BorderRadius.circular(kRadiusS);
 final BorderRadius kBRadiusM = BorderRadius.circular(kRadiusM);
 final BorderRadius kBRadiusL = BorderRadius.circular(kRadiusL);

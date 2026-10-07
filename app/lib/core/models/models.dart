@@ -14,9 +14,19 @@ enum ItemState { tobuy, incart, done }
 
 enum ChoreState { todo, waiting, confirmed }
 
+enum ChatMessageStatus { sent, delivered, read }
+
+enum FamilyTaskStatus { open, inProgress, done }
+
+enum ChatReferenceType { task, shoppingList, expense, goal, contribution }
+
 enum RequestState { pending, approved, declined }
 
 enum OverspendPolicy { warn, block }
+
+enum IncomePlanMode { knownMonthly, asEarned }
+
+enum DebtDirection { iOwe, owedToMe, familyLoan }
 
 enum SyncHealthState { saved, syncing, synced, needsAttention }
 
@@ -186,6 +196,227 @@ class Envelope {
   });
 }
 
+/// A versioned snapshot of the family's plan for one budget cycle.
+/// Envelope limits remain the fast path used by the spending UI; this record
+/// preserves what was agreed for each month and makes close/copy explicit.
+class BudgetCyclePlan {
+  final String id;
+  final DateTime cycleStart;
+  IncomePlanMode incomeMode;
+  Money? expectedIncome;
+  Map<String, int> allocations;
+  bool isClosed;
+  DateTime? closedAt;
+  DateTime? copiedFrom;
+
+  BudgetCyclePlan({
+    required this.id,
+    required this.cycleStart,
+    required this.incomeMode,
+    required this.allocations,
+    this.expectedIncome,
+    this.isClosed = false,
+    this.closedAt,
+    this.copiedFrom,
+  });
+}
+
+/// Immutable family audit event. Server events are authoritative; local
+/// derived events keep the feed useful while a device is offline.
+class FamilyActivity {
+  final String id;
+  final String actorId;
+  final String action;
+  final String entity;
+  final String? entityId;
+  final Map<String, Object?> detail;
+  final DateTime at;
+
+  const FamilyActivity({
+    required this.id,
+    required this.actorId,
+    required this.action,
+    required this.entity,
+    required this.at,
+    this.entityId,
+    this.detail = const {},
+  });
+}
+
+class ContributionCampaign {
+  final String id;
+  String name;
+  Money target;
+  DateTime deadline;
+  final String createdById;
+  String status;
+
+  ContributionCampaign({
+    required this.id,
+    required this.name,
+    required this.target,
+    required this.deadline,
+    required this.createdById,
+    this.status = 'active',
+  });
+}
+
+class ContributionPledge {
+  final String id;
+  final String campaignId;
+  final String memberId;
+  Money amount;
+  final DateTime createdAt;
+
+  ContributionPledge({
+    required this.id,
+    required this.campaignId,
+    required this.memberId,
+    required this.amount,
+    required this.createdAt,
+  });
+}
+
+class ContributionPayment {
+  final String id;
+  final String campaignId;
+  final String memberId;
+  final Money amount;
+  final DateTime paidAt;
+
+  const ContributionPayment({
+    required this.id,
+    required this.campaignId,
+    required this.memberId,
+    required this.amount,
+    required this.paidAt,
+  });
+}
+
+class FamilyDebt {
+  final String id;
+  String name;
+  DebtDirection direction;
+  Money principal;
+  String? counterpartyMemberId;
+  DateTime? dueDate;
+  String status;
+  final String createdById;
+
+  FamilyDebt({
+    required this.id,
+    required this.name,
+    required this.direction,
+    required this.principal,
+    required this.createdById,
+    this.counterpartyMemberId,
+    this.dueDate,
+    this.status = 'active',
+  });
+}
+
+class DebtRepayment {
+  final String id;
+  final String debtId;
+  final String memberId;
+  final Money amount;
+  final DateTime paidAt;
+
+  const DebtRepayment({
+    required this.id,
+    required this.debtId,
+    required this.memberId,
+    required this.amount,
+    required this.paidAt,
+  });
+}
+
+class FamilyChatMessage {
+  final String id;
+  final String familyId;
+  final String senderId;
+  final String text;
+  final DateTime createdAt;
+  final bool isSystem;
+  final String? senderName;
+  final String? senderAvatar;
+  final ChatMessageStatus status;
+  final ChatReferenceType? referenceType;
+  final String? referenceId;
+  final String? referenceTitle;
+  final String? referenceMeta;
+  final bool deleted;
+
+  const FamilyChatMessage({
+    required this.id,
+    required this.familyId,
+    required this.senderId,
+    required this.text,
+    required this.createdAt,
+    this.isSystem = false,
+    this.senderName,
+    this.senderAvatar,
+    this.status = ChatMessageStatus.sent,
+    this.referenceType,
+    this.referenceId,
+    this.referenceTitle,
+    this.referenceMeta,
+    this.deleted = false,
+  });
+}
+
+class FamilyTask {
+  final String id;
+  final String title;
+  final String? note;
+  final String? assigneeMemberId;
+  final String? createdByMemberId;
+  final DateTime createdAt;
+  final DateTime? dueDate;
+  FamilyTaskStatus status;
+  int points;
+  bool isArchived;
+
+  FamilyTask({
+    required this.id,
+    required this.title,
+    this.note,
+    this.assigneeMemberId,
+    this.createdByMemberId,
+    required this.createdAt,
+    this.dueDate,
+    this.status = FamilyTaskStatus.open,
+    this.points = 1,
+    this.isArchived = false,
+  });
+
+  FamilyTask copyWith({
+    String? id,
+    String? title,
+    String? note,
+    String? assigneeMemberId,
+    String? createdByMemberId,
+    DateTime? createdAt,
+    DateTime? dueDate,
+    FamilyTaskStatus? status,
+    int? points,
+    bool? isArchived,
+  }) => FamilyTask(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        note: note ?? this.note,
+        assigneeMemberId: assigneeMemberId ?? this.assigneeMemberId,
+        createdByMemberId: createdByMemberId ?? this.createdByMemberId,
+        createdAt: createdAt ?? this.createdAt,
+        dueDate: dueDate ?? this.dueDate,
+        status: status ?? this.status,
+        points: points ?? this.points,
+        isArchived: isArchived ?? this.isArchived,
+      );
+
+  bool get isDone => status == FamilyTaskStatus.done;
+}
+
 class Tx {
   final String id;
   final String? envelopeId;
@@ -196,6 +427,8 @@ class Tx {
   final String note;
   final DateTime when;
   final DateTime? deletedAt;
+  final String? receiptUri;
+  final String? recurringRuleId;
 
   const Tx({
     required this.id,
@@ -207,7 +440,22 @@ class Tx {
     required this.when,
     this.envelopeId,
     this.deletedAt,
+    this.receiptUri,
+    this.recurringRuleId,
   });
+}
+
+class TxAllocation {
+  final String id;
+  final String txId;
+  final String envelopeId;
+  final Money amount;
+
+  const TxAllocation(
+      {required this.id,
+      required this.txId,
+      required this.envelopeId,
+      required this.amount});
 }
 
 class Goal {
@@ -256,6 +504,9 @@ class ListItem {
   ItemState state;
   bool checkedOut;
   final String addedById;
+  String? assignedToId;
+  Money? actual; // actual unit price once bought
+  String? purchasedById;
 
   /// Tombstone: when set, the item is deleted everywhere (sync carries the
   /// flag; devices remove their local copy on pull).
@@ -269,6 +520,9 @@ class ListItem {
     required this.addedById,
     this.state = ItemState.tobuy,
     this.checkedOut = false,
+    this.assignedToId,
+    this.actual,
+    this.purchasedById,
     this.deletedAt,
   });
 }

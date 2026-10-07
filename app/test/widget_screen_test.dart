@@ -312,6 +312,20 @@ void main() {
     await tester.pumpWidget(harness(s, const ReportsScreen()));
     await tester.pumpAndSettle();
 
+    expect(find.text('Compared with last cycle'), findsOneWidget);
+    expect(find.text('Plan vs actual'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Family progress'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Family progress'), findsOneWidget);
+    expect(find.text('Bills and debts'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Start the family meeting'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Start the family meeting'), findsOneWidget);
     expect(find.text('Export transactions (CSV)'), findsOneWidget);
   });

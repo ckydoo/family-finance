@@ -9,7 +9,8 @@ import 'package:mhuri_money/features/lists/lists_screen.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('Reports displays Shopping & Lists Tracking card and tracks items',
+  testWidgets(
+      'Reports displays Shopping & Lists Tracking card and tracks items',
       (tester) async {
     tester.view.physicalSize = const Size(402, 1000);
     tester.view.devicePixelRatio = 1;
@@ -44,6 +45,11 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Shopping & Lists Tracking card is rendered
+    await tester.scrollUntilVisible(
+      find.text('Shopping & Lists Tracking'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Shopping & Lists Tracking'), findsOneWidget);
     expect(find.text('1/2 bought'), findsOneWidget);
     expect(find.text('Period grocery spend'), findsOneWidget);

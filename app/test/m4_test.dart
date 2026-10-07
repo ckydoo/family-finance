@@ -105,6 +105,8 @@ void main() {
       expect(s.txs.first.note, 'Water bill (recurring)');
       expect(s.txs.first.amount.minor, 1000);
       expect(s.txs.first.envelopeId, 'e1');
+      expect(s.txs.first.recurringRuleId, rule.id);
+      expect(s.recurringPaidThisCycle(rule), isTrue);
 
       // schedule advanced into the future
       expect(rule.nextDue.isAfter(DateTime.now()), isTrue);
@@ -118,6 +120,10 @@ void main() {
         second.txs.any((t) => t.note == 'Water bill (recurring)'),
         isTrue,
       );
+      final restoredRule =
+          second.recurring.firstWhere((r) => r.name == 'Water bill');
+      expect(second.lastPaymentFor(restoredRule)?.recurringRuleId,
+          restoredRule.id);
     });
 
     test('skip advances without posting; toggle pauses', () async {

@@ -1123,5 +1123,33 @@ void main() {
         }
       }
     });
+
+    test('lists every family membership for the family switcher', () async {
+      server.handler = (request) async {
+        if (request.url.path == '/rest/v1/rpc/list_my_spaces') {
+          return _json([
+            {
+              'space_id': 'space-home',
+              'name': 'Home',
+              'role': 'owner',
+              'invite_code': 'MHRI-HOME',
+            },
+            {
+              'space_id': 'space-extended',
+              'name': 'Extended Family',
+              'role': 'adult',
+              'invite_code': null,
+            },
+          ]);
+        }
+        return _json([]);
+      };
+
+      final spaces = await engine.listFamilySpaces();
+
+      expect(spaces.map((space) => space.id), ['space-home', 'space-extended']);
+      expect(spaces.first.name, 'Home');
+      expect(spaces.last.role, 'adult');
+    });
   });
 }

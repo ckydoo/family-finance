@@ -33,7 +33,10 @@ class _ListsScreenState extends State<ListsScreen> {
     final estPrimary = s.estFor(s.primaryCurrency);
     final estSecondary =
         s.secondaryCurrency != null ? s.estFor(s.secondaryCurrency!) : null;
-    final groceries = s.envelope('e1');
+    final actualPrimary = s.actualShoppingFor(s.primaryCurrency);
+    final groceries = s.envelopes
+        .where((e) => e.name.toLowerCase().contains('grocer'))
+        .firstOrNull;
     final budgetUse = groceries != null && groceries.limit.minor > 0
         ? estPrimary.minor /
             groceries.limit.inCurrency(s.primaryCurrency, s.rate).minor
@@ -202,6 +205,17 @@ class _ListsScreenState extends State<ListsScreen> {
                                 style: TextStyle(
                                     fontSize: 12.5, color: context.inkSoft),
                               ),
+                            if (actualPrimary.minor > 0) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Actual so far: ${actualPrimary.text}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.primary,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 4),
                             Text(
                               s.rateLabel,
@@ -247,18 +261,26 @@ class _ListsScreenState extends State<ListsScreen> {
                   ? () async {
                       setState(() => _finishingShopping = true);
                       try {
-                        final total = s.finishShopping(txId: newUuid());
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(context)!
-                                    .loggedTo(total.text, 'Groceries'),
+                        final checkout = await _checkoutSheet(context, s);
+                        if (checkout == null) return;
+                        if (!context.mounted) return;
+                        final total = s.finishShopping(
+                          txId: newUuid(),
+                          envelopeId: checkout.envelopeId,
+                          method: checkout.method,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)!.loggedTo(
+                                total.text,
+                                s.envelope(checkout.envelopeId)?.name ??
+                                    'Shopping',
                               ),
-                              behavior: SnackBarBehavior.floating,
                             ),
-                          );
-                        }
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
                       } finally {
                         if (mounted) {
                           setState(() => _finishingShopping = false);
@@ -312,6 +334,7 @@ class _ListsScreenState extends State<ListsScreen> {
     final qty = TextEditingController(text: '1');
     final price = TextEditingController();
     Currency cur = s.displayCurrency;
+    String? assignedToId;
     String? itemError;
 
     showMhuriSheet<void>(
@@ -398,6 +421,19 @@ class _ListsScreenState extends State<ListsScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
+              DropdownButtonFormField<String?>(
+                initialValue: assignedToId,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Assign to'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('Anyone')),
+                  for (final member in s.members)
+                    DropdownMenuItem<String?>(
+                        value: member.id, child: Text(member.name)),
+                ],
+                onChanged: (value) => setSheet(() => assignedToId = value),
+              ),
               if (itemError != null) ...[
                 const SizedBox(height: 12),
                 ErrorNotice(itemError!),
@@ -422,7 +458,8 @@ class _ListsScreenState extends State<ListsScreen> {
                         AppLocalizations.of(context)!.enterAmountFirst);
                     return;
                   }
-                  s.addItem(n, q, Money.fromMajor(p, cur));
+                  s.addItem(n, q, Money.fromMajor(p, cur),
+                      assignedToId: assignedToId);
                   Navigator.pop(sheetCtx);
                 },
               ),
@@ -434,6 +471,68 @@ class _ListsScreenState extends State<ListsScreen> {
   }
 }
 
+Future<({String envelopeId, Method method})?> _checkoutSheet(
+    BuildContext context, AppState state) async {
+  final available = state.envelopes.where((e) => !e.isPersonal).toList();
+  if (available.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Create a budget before recording shopping.'),
+      behavior: SnackBarBehavior.floating,
+    ));
+    return null;
+  }
+  var envelopeId = available
+      .where((e) => e.name.toLowerCase().contains('grocer'))
+      .map((e) => e.id)
+      .firstOrNull;
+  envelopeId ??= available.first.id;
+  var method = Method.cash;
+  return showMhuriSheet<({String envelopeId, Method method})>(
+    context: context,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setSheet) => MhuriSheetShell(
+        title: 'Finish shopping',
+        subtitle: 'Confirm where this purchase should be recorded.',
+        footer: PrimaryButton(
+          label: 'Record expense',
+          onPressed: () => Navigator.pop(
+            sheetContext,
+            (envelopeId: envelopeId!, method: method),
+          ),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          DropdownButtonFormField<String>(
+            initialValue: envelopeId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Budget category'),
+            items: [
+              for (final envelope in available)
+                DropdownMenuItem(
+                    value: envelope.id, child: Text(envelope.name)),
+            ],
+            onChanged: (value) {
+              if (value != null) setSheet(() => envelopeId = value);
+            },
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<Method>(
+            initialValue: method,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Payment method'),
+            items: [
+              for (final value in Method.values)
+                DropdownMenuItem(value: value, child: Text(value.label)),
+            ],
+            onChanged: (value) {
+              if (value != null) setSheet(() => method = value);
+            },
+          ),
+        ]),
+      ),
+    ),
+  );
+}
+
 class _ItemRow extends StatelessWidget {
   final ListItem item;
 
@@ -443,6 +542,8 @@ class _ItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final addedBy = s.member(item.addedById);
+    final assignedTo = s.member(item.assignedToId ?? '');
+    final purchasedBy = s.member(item.purchasedById ?? '');
     final done = item.state == ItemState.done;
 
     return Container(
@@ -477,8 +578,10 @@ class _ItemRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Qty ${item.qty} · ${item.est.text} each\n'
-                  'Added by ${addedBy?.name ?? 'family'}${item.checkedOut ? ' · Recorded' : ''}',
+                  'Qty ${item.qty} · est. ${item.est.text} each'
+                  '${item.actual == null ? '' : ' · actual ${item.actual!.text}'}\n'
+                  '${assignedTo == null ? 'Added by ${addedBy?.name ?? 'family'}' : 'Assigned to ${assignedTo.name}'}'
+                  '${item.checkedOut ? ' · Bought by ${purchasedBy?.name ?? 'family'}' : ''}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -488,7 +591,7 @@ class _ItemRow extends StatelessWidget {
             ),
           ),
           Text(
-            (item.est.times(item.qty)).text,
+            ((item.actual ?? item.est).times(item.qty)).text,
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.w800,
@@ -534,6 +637,11 @@ class _ItemRow extends StatelessWidget {
     final qty = TextEditingController(text: '${item.qty}');
     final price =
         TextEditingController(text: (item.est.minor / 100).toStringAsFixed(2));
+    final actual = TextEditingController(
+        text: item.actual == null
+            ? ''
+            : (item.actual!.minor / 100).toStringAsFixed(2));
+    var assignedToId = item.assignedToId;
     String? error;
     showMhuriSheet<void>(
       context: context,
@@ -545,11 +653,16 @@ class _ItemRow extends StatelessWidget {
             onPressed: () {
               final q = int.tryParse(qty.text);
               final p = double.tryParse(price.text.replaceAll(',', ''));
+              final paid = actual.text.trim().isEmpty
+                  ? null
+                  : double.tryParse(actual.text.replaceAll(',', ''));
               if (name.text.trim().isEmpty ||
                   q == null ||
                   q < 1 ||
                   p == null ||
-                  p < 0) {
+                  p < 0 ||
+                  (actual.text.trim().isNotEmpty &&
+                      (paid == null || paid < 0))) {
                 setSheet(() => error =
                     'Enter a name, quantity and valid estimated price.');
                 return;
@@ -557,7 +670,11 @@ class _ItemRow extends StatelessWidget {
               state.updateItem(item,
                   name: name.text,
                   qty: q,
-                  estimate: Money.fromMajor(p, item.est.currency));
+                  estimate: Money.fromMajor(p, item.est.currency),
+                  actual: paid == null
+                      ? null
+                      : Money.fromMajor(paid, item.est.currency),
+                  assignedToId: assignedToId);
               final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(sheetContext);
               messenger.showSnackBar(const SnackBar(
@@ -592,6 +709,30 @@ class _ItemRow extends StatelessWidget {
                             labelText:
                                 'Estimated price (${item.est.currency.symbol})'))),
               ]),
+              const SizedBox(height: 12),
+              TextField(
+                controller: actual,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: amountInputFormatters,
+                decoration: InputDecoration(
+                    labelText:
+                        'Actual unit price (${item.est.currency.symbol})'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                initialValue: assignedToId,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Assign to'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('Anyone')),
+                  for (final member in state.members)
+                    DropdownMenuItem<String?>(
+                        value: member.id, child: Text(member.name)),
+                ],
+                onChanged: (value) => setSheet(() => assignedToId = value),
+              ),
               if (error != null) ErrorNotice(error!),
             ],
           ),

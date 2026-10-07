@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/utils/ids.dart';
 
@@ -119,6 +120,62 @@ class SavingsScreen extends StatelessWidget {
                 GoalCard(goal: g),
                 const SizedBox(height: 12),
               ],
+
+              Row(children: [
+                Expanded(
+                    child: Text('Pledges & contributions',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: context.ink))),
+                if (s.canEditBudgets)
+                  IconButton(
+                    onPressed: () => _newCampaignSheet(context),
+                    icon: Icon(Icons.add_circle, color: context.primary),
+                  ),
+              ]),
+              Text('Track what was promised and what has been collected.',
+                  style: TextStyle(fontSize: 12, color: context.inkSoft)),
+              const SizedBox(height: 10),
+              if (s.contributionCampaigns.isEmpty)
+                OutlinedButton.icon(
+                  onPressed: s.canEditBudgets
+                      ? () => _newCampaignSheet(context)
+                      : null,
+                  icon: const Icon(Icons.volunteer_activism_outlined),
+                  label: const Text('Create a family contribution'),
+                )
+              else
+                for (final campaign in s.contributionCampaigns) ...[
+                  _CampaignCard(campaign: campaign),
+                  const SizedBox(height: 10),
+                ],
+
+              Row(children: [
+                Expanded(
+                    child: Text('Debts & money owed',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: context.ink))),
+                if (s.canEditBudgets)
+                  IconButton(
+                    onPressed: () => _newDebtSheet(context),
+                    icon: Icon(Icons.add_circle, color: context.primary),
+                  ),
+              ]),
+              if (s.familyDebts.isEmpty)
+                OutlinedButton.icon(
+                  onPressed:
+                      s.canEditBudgets ? () => _newDebtSheet(context) : null,
+                  icon: const Icon(Icons.handshake_outlined),
+                  label: const Text('Add debt or money owed'),
+                )
+              else
+                for (final debt in s.familyDebts) ...[
+                  _DebtCard(debt: debt),
+                  const SizedBox(height: 10),
+                ],
 
               // ── Kid jars ────────────────────────────────────────────────────
               const SizedBox(height: 8),
@@ -385,6 +442,377 @@ class SavingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+Future<void> _newCampaignSheet(BuildContext context) async {
+  final s = AppScope.of(context);
+  final name = TextEditingController();
+  final target = TextEditingController();
+  var deadline = DateTime.now().add(const Duration(days: 30));
+  String? error;
+  await showMhuriSheet<void>(
+    context: context,
+    builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) => MhuriSheetShell(
+              title: 'New family contribution',
+              footer: PrimaryButton(
+                  label: 'Create',
+                  onPressed: () {
+                    final amount =
+                        double.tryParse(target.text.replaceAll(',', ''));
+                    if (name.text.trim().isEmpty ||
+                        amount == null ||
+                        amount <= 0) {
+                      setSheet(() => error = 'Enter a name and target amount.');
+                      return;
+                    }
+                    s.createContributionCampaign(
+                        name: name.text,
+                        target: Money.fromMajor(amount, s.displayCurrency),
+                        deadline: deadline);
+                    Navigator.pop(sheetContext);
+                  }),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(
+                    controller: name,
+                    autofocus: true,
+                    decoration:
+                        const InputDecoration(labelText: 'Event or cause')),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: target,
+                    inputFormatters: amountInputFormatters,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                        labelText: 'Target',
+                        prefixText: '${s.displayCurrency.symbol} ')),
+                ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Deadline'),
+                    subtitle: Text(DateFormat.yMMMd().format(deadline)),
+                    trailing: const Icon(Icons.calendar_today_outlined),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                          context: sheetContext,
+                          firstDate: DateTime.now(),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 3650)),
+                          initialDate: deadline);
+                      if (picked != null) setSheet(() => deadline = picked);
+                    }),
+                if (error != null) ErrorNotice(error!),
+              ]),
+            )),
+  );
+}
+
+class _CampaignCard extends StatelessWidget {
+  const _CampaignCard({required this.campaign});
+  final ContributionCampaign campaign;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final pledged = s.pledgedFor(campaign), paid = s.collectedFor(campaign);
+    final remaining = Money(
+        (campaign.target.minor - paid.minor).clamp(0, campaign.target.minor),
+        campaign.target.currency);
+    return InkWell(
+        onTap: () => _details(context, s),
+        borderRadius: kBRadiusL,
+        child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration:
+                BoxDecoration(color: context.card, borderRadius: kBRadiusL),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(Icons.volunteer_activism_outlined, color: context.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text(campaign.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 16))),
+                Text(DateFormat.MMMd().format(campaign.deadline))
+              ]),
+              const SizedBox(height: 10),
+              LinearProgressIndicator(
+                  value: (paid.minor / campaign.target.minor).clamp(0, 1),
+                  minHeight: 8),
+              const SizedBox(height: 8),
+              Text(
+                  'Pledged ${pledged.text} · Collected ${paid.text} · Remaining ${remaining.text}',
+                  style: TextStyle(fontSize: 12, color: context.inkSoft)),
+            ])));
+  }
+
+  Future<void> _details(BuildContext context, AppState s) => showMhuriSheet<
+          void>(
+      context: context,
+      builder: (_) => ListenableBuilder(
+          listenable: s,
+          builder: (context, _) => MhuriSheetShell(
+              title: campaign.name,
+              subtitle: 'Due ${DateFormat.yMMMd().format(campaign.deadline)}',
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                for (final member in s.members)
+                  _ContributionMember(campaign: campaign, member: member),
+              ]))));
+}
+
+class _ContributionMember extends StatelessWidget {
+  const _ContributionMember({required this.campaign, required this.member});
+  final ContributionCampaign campaign;
+  final Member member;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context),
+        pledged = s.pledgedFor(campaign, member.id),
+        paid = s.collectedFor(campaign, member.id);
+    final status = paid.minor == 0
+        ? 'Not paid'
+        : paid.minor < pledged.minor
+            ? 'Partly paid'
+            : 'Paid';
+    return ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(member.name),
+        subtitle: Text('Pledged ${pledged.text} · Paid ${paid.text} · $status'),
+        trailing: s.canAdmin || member.id == s.realUser.id
+            ? IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => _entry(context, s))
+            : null);
+  }
+
+  Future<void> _entry(BuildContext context, AppState s) async {
+    final amount = TextEditingController();
+    var payment = false;
+    await showMhuriSheet<void>(
+        context: context,
+        builder: (sheetContext) => StatefulBuilder(
+            builder: (sheetContext, setSheet) => MhuriSheetShell(
+                title: member.name,
+                footer: PrimaryButton(
+                    label: payment ? 'Record payment' : 'Save pledge',
+                    onPressed: () {
+                      final value =
+                          double.tryParse(amount.text.replaceAll(',', ''));
+                      if (value == null || value <= 0) return;
+                      final money =
+                          Money.fromMajor(value, campaign.target.currency);
+                      if (payment) {
+                        s.recordContributionPayment(campaign, member.id, money,
+                            id: newUuid());
+                      } else {
+                        s.setContributionPledge(campaign, member.id, money);
+                      }
+                      Navigator.pop(sheetContext);
+                    }),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(value: false, label: Text('Pledge')),
+                        ButtonSegment(value: true, label: Text('Payment'))
+                      ],
+                      selected: {
+                        payment
+                      },
+                      onSelectionChanged: (v) =>
+                          setSheet(() => payment = v.first)),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: amount,
+                      autofocus: true,
+                      inputFormatters: amountInputFormatters,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                          labelText: 'Amount',
+                          prefixText: '${campaign.target.currency.symbol} ')),
+                ]))));
+  }
+}
+
+Future<void> _newDebtSheet(BuildContext context) async {
+  final s = AppScope.of(context);
+  final name = TextEditingController(), amount = TextEditingController();
+  var direction = DebtDirection.iOwe;
+  String? counterpartyMemberId;
+  DateTime? dueDate;
+  await showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+          builder: (sheetContext, setSheet) => MhuriSheetShell(
+              title: 'Add debt or money owed',
+              footer: PrimaryButton(
+                  label: 'Save',
+                  onPressed: () {
+                    final value =
+                        double.tryParse(amount.text.replaceAll(',', ''));
+                    if (name.text.trim().isEmpty ||
+                        value == null ||
+                        value <= 0) {
+                      return;
+                    }
+                    s.createDebt(
+                        name: name.text,
+                        direction: direction,
+                        principal: Money.fromMajor(value, s.displayCurrency),
+                        counterpartyMemberId: counterpartyMemberId,
+                        dueDate: dueDate);
+                    Navigator.pop(sheetContext);
+                  }),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                SegmentedButton<DebtDirection>(
+                    segments: const [
+                      ButtonSegment(
+                          value: DebtDirection.iOwe, label: Text('I owe')),
+                      ButtonSegment(
+                          value: DebtDirection.owedToMe,
+                          label: Text('Owed to me')),
+                      ButtonSegment(
+                          value: DebtDirection.familyLoan,
+                          label: Text('Family loan')),
+                    ],
+                    selected: {
+                      direction
+                    },
+                    onSelectionChanged: (v) =>
+                        setSheet(() => direction = v.first)),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: name,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                        labelText: 'Who or what is this for?')),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: amount,
+                    inputFormatters: amountInputFormatters,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                        labelText: 'Original amount',
+                        prefixText: '${s.displayCurrency.symbol} ')),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  initialValue: counterpartyMemberId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                      labelText: 'Family member (optional)'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                        value: null, child: Text('Someone outside the family')),
+                    for (final member in s.members)
+                      DropdownMenuItem<String?>(
+                          value: member.id, child: Text(member.name)),
+                  ],
+                  onChanged: (value) =>
+                      setSheet(() => counterpartyMemberId = value),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Due date (optional)'),
+                  subtitle: Text(dueDate == null
+                      ? 'No due date'
+                      : DateFormat.yMMMd().format(dueDate!)),
+                  trailing: const Icon(Icons.calendar_today_outlined),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                        context: sheetContext,
+                        firstDate: DateTime.now(),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 3650)),
+                        initialDate: dueDate ??
+                            DateTime.now().add(const Duration(days: 30)));
+                    if (picked != null) setSheet(() => dueDate = picked);
+                  },
+                ),
+              ]))));
+}
+
+class _DebtCard extends StatelessWidget {
+  const _DebtCard({required this.debt});
+  final FamilyDebt debt;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context),
+        repaid = s.repaidOn(debt),
+        remaining = s.remainingOnDebt(debt);
+    final label = switch (debt.direction) {
+      DebtDirection.iOwe => 'I owe',
+      DebtDirection.owedToMe => 'Owed to me',
+      DebtDirection.familyLoan => 'Family loan'
+    };
+    final counterparty = s.member(debt.counterpartyMemberId ?? '');
+    return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusL),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(
+                child: Text(debt.name,
+                    style: const TextStyle(fontWeight: FontWeight.w800))),
+            Chip(label: Text(debt.status == 'settled' ? 'Settled' : label))
+          ]),
+          Text(
+              'Original ${debt.principal.text} · Repaid ${repaid.text} · Remaining ${remaining.text}',
+              style: TextStyle(fontSize: 12, color: context.inkSoft)),
+          if (counterparty != null || debt.dueDate != null)
+            Text(
+              '${counterparty == null ? '' : counterparty.name}${counterparty != null && debt.dueDate != null ? ' · ' : ''}${debt.dueDate == null ? '' : 'Due ${DateFormat.yMMMd().format(debt.dueDate!)}'}',
+              style: TextStyle(fontSize: 12, color: context.inkSoft),
+            ),
+          if (debt.status == 'active' && s.canEditBudgets)
+            Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                    onPressed: () => _repay(context, s),
+                    child: const Text('Record repayment'))),
+        ]));
+  }
+
+  Future<void> _repay(BuildContext context, AppState s) async {
+    final controller = TextEditingController();
+    String? error;
+    await showMhuriSheet<void>(
+        context: context,
+        builder: (sheetContext) => StatefulBuilder(
+            builder: (sheetContext, setSheet) => MhuriSheetShell(
+                title: 'Record repayment',
+                subtitle: '${s.remainingOnDebt(debt).text} remaining',
+                footer: PrimaryButton(
+                    label: 'Save repayment',
+                    onPressed: () {
+                      final value =
+                          double.tryParse(controller.text.replaceAll(',', ''));
+                      if (value == null ||
+                          !s.recordDebtRepayment(debt,
+                              Money.fromMajor(value, debt.principal.currency),
+                              id: newUuid())) {
+                        setSheet(() => error =
+                            'Enter an amount up to the remaining balance.');
+                        return;
+                      }
+                      Navigator.pop(sheetContext);
+                    }),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextField(
+                      controller: controller,
+                      autofocus: true,
+                      inputFormatters: amountInputFormatters,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                          labelText: 'Amount',
+                          prefixText: '${debt.principal.currency.symbol} ')),
+                  if (error != null) ...[
+                    const SizedBox(height: 10),
+                    ErrorNotice(error!)
+                  ],
+                ]))));
   }
 }
 

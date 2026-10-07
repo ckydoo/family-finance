@@ -22,6 +22,7 @@ class RecurringRow extends StatelessWidget {
     final env = s.envelope(rule.envelopeId);
     final dueSoon = rule.isDueWithin(const Duration(days: 3));
     final dueText = _dueText(context, rule);
+    final status = _status(s, rule);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -66,6 +67,8 @@ class RecurringRow extends StatelessWidget {
                     fontWeight: dueSoon ? FontWeight.w700 : FontWeight.w400,
                   ),
                 ),
+                const SizedBox(height: 5),
+                _BillStatusPill(status: status),
               ],
             ),
           ),
@@ -164,6 +167,62 @@ class RecurringRow extends StatelessWidget {
     if (days == 0) return AppLocalizations.of(context)!.dueToday;
     if (days == 1) return AppLocalizations.of(context)!.dueTomorrow;
     return AppLocalizations.of(context)!.dueIn(days);
+  }
+}
+
+enum _BillStatus { overdue, dueSoon, upcoming, paid, paused }
+
+_BillStatus _status(AppState state, RecurringRule rule) {
+  if (!rule.active) return _BillStatus.paused;
+  final now = state.now;
+  final today = DateTime(now.year, now.month, now.day);
+  final due = DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day);
+  if (due.isBefore(today)) return _BillStatus.overdue;
+  if (!due.isAfter(today.add(const Duration(days: 3)))) {
+    return _BillStatus.dueSoon;
+  }
+  if (state.recurringPaidThisCycle(rule)) return _BillStatus.paid;
+  return _BillStatus.upcoming;
+}
+
+class _BillStatusPill extends StatelessWidget {
+  const _BillStatusPill({required this.status});
+  final _BillStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, background) = switch (status) {
+      _BillStatus.overdue => (
+          'Overdue',
+          context.expenseRed,
+          context.dangerSoft
+        ),
+      _BillStatus.dueSoon => ('Due soon', context.accent, context.accentSoft),
+      _BillStatus.upcoming => (
+          'Upcoming',
+          context.primary,
+          context.primarySoft
+        ),
+      _BillStatus.paid => (
+          'Paid this cycle',
+          context.incomeGreen,
+          context.successSoft
+        ),
+      _BillStatus.paused => ('Paused', context.inkSoft, context.hairline),
+    };
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
+      ),
+    );
   }
 }
 

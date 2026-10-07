@@ -34,6 +34,16 @@ class AppDatabase {
     'proposal',
     'earning',
     'circle',
+    'budget_cycle_plan',
+    'family_activity',
+    'contribution_campaign',
+    'contribution_pledge',
+    'contribution_payment',
+    'family_debt',
+    'debt_repayment',
+    'tx_allocation',
+    'family_chat_message',
+    'family_task',
   ];
 
   static const Set<String> _familyKvKeys = {
@@ -101,6 +111,16 @@ class AppDatabase {
       'proposal',
       'earning',
       'circle',
+      'budget_cycle_plan',
+      'family_activity',
+      'contribution_campaign',
+      'contribution_pledge',
+      'contribution_payment',
+      'family_debt',
+      'debt_repayment',
+      'tx_allocation',
+      'family_chat_message',
+      'family_task',
       'kv',
       'account_cache',
     ]) {
@@ -113,7 +133,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 7,
+        version: 14,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -158,6 +178,8 @@ class AppDatabase {
       note TEXT NOT NULL,
       when_ms INTEGER NOT NULL
       ,deleted_at TEXT
+      ,receipt_uri TEXT
+      ,recurring_rule_id TEXT
     )
     ''',
     '''
@@ -225,6 +247,10 @@ class AppDatabase {
       state TEXT NOT NULL,
       added_by TEXT NOT NULL,
       checked_out INTEGER NOT NULL DEFAULT 0,
+      assigned_to_id TEXT,
+      actual_minor INTEGER,
+      actual_currency TEXT,
+      purchased_by_id TEXT,
       deleted_at TEXT
     )
     ''',
@@ -300,6 +326,113 @@ class AppDatabase {
       payload TEXT NOT NULL,
       updated_ms INTEGER NOT NULL
     )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS budget_cycle_plan (
+      id TEXT PRIMARY KEY,
+      cycle_start TEXT NOT NULL UNIQUE,
+      income_mode TEXT NOT NULL,
+      expected_income_minor INTEGER,
+      currency TEXT NOT NULL,
+      allocations_json TEXT NOT NULL,
+      is_closed INTEGER NOT NULL DEFAULT 0,
+      closed_at TEXT,
+      copied_from TEXT
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS family_activity (
+      id TEXT PRIMARY KEY,
+      actor_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity TEXT NOT NULL,
+      entity_id TEXT,
+      detail_json TEXT NOT NULL,
+      at_ms INTEGER NOT NULL
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS contribution_campaign (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL,
+      target_minor INTEGER NOT NULL, currency TEXT NOT NULL,
+      deadline_ms INTEGER NOT NULL, created_by_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active'
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS contribution_pledge (
+      id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL,
+      member_id TEXT NOT NULL, amount_minor INTEGER NOT NULL,
+      currency TEXT NOT NULL, created_at_ms INTEGER NOT NULL
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS contribution_payment (
+      id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL,
+      member_id TEXT NOT NULL, amount_minor INTEGER NOT NULL,
+      currency TEXT NOT NULL, paid_at_ms INTEGER NOT NULL
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS family_debt (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, direction TEXT NOT NULL,
+      principal_minor INTEGER NOT NULL, currency TEXT NOT NULL,
+      counterparty_member_id TEXT, due_date_ms INTEGER,
+      status TEXT NOT NULL, created_by_id TEXT NOT NULL
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS debt_repayment (
+      id TEXT PRIMARY KEY, debt_id TEXT NOT NULL, member_id TEXT NOT NULL,
+      amount_minor INTEGER NOT NULL, currency TEXT NOT NULL,
+      paid_at_ms INTEGER NOT NULL
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS tx_allocation (
+      id TEXT PRIMARY KEY, tx_id TEXT NOT NULL, envelope_id TEXT NOT NULL,
+      amount_minor INTEGER NOT NULL, currency TEXT NOT NULL
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS family_chat_message (
+      id TEXT PRIMARY KEY,
+      family_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      text TEXT NOT NULL,
+      created_at_ms INTEGER NOT NULL,
+      is_system INTEGER NOT NULL DEFAULT 0,
+      sender_name TEXT,
+      sender_avatar TEXT,
+      status TEXT NOT NULL DEFAULT 'sent',
+      reference_type TEXT,
+      reference_id TEXT,
+      reference_title TEXT,
+      reference_meta TEXT,
+      deleted INTEGER NOT NULL DEFAULT 0
+    )
+    ''',
+    '''
+    CREATE INDEX IF NOT EXISTS family_chat_message_family_created_idx
+      ON family_chat_message (family_id, created_at_ms DESC)
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS family_task (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      note TEXT,
+      assignee_member_id TEXT,
+      created_by_member_id TEXT,
+      created_at_ms INTEGER NOT NULL,
+      due_at_ms INTEGER,
+      status TEXT NOT NULL DEFAULT 'open',
+      points INTEGER NOT NULL DEFAULT 1,
+      is_archived INTEGER NOT NULL DEFAULT 0
+    )
+    ''',
+    '''
+    CREATE INDEX IF NOT EXISTS family_task_due_idx
+      ON family_task (due_at_ms, created_at_ms DESC)
     ''',
   ];
 
@@ -435,7 +568,10 @@ class AppDatabase {
 
   /// Migrations. ALTERs are guarded - re-running is safe.
   /// v2: sync columns + outbox · v3: recurring rules · v4: checkout guard ·
-  /// v5: shopping-list header table + item tombstones · v7: per-user cache.
+  /// v5: shopping-list header table + item tombstones · v7: per-user cache
+  /// · v8: cycle plans · v9: activity · v10: shopping
+  /// · v11: contributions · v12: debts · v13: receipts/splits
+  /// · v14: recurring bill payment links.
   static Future<void> upgrade(Database d, int oldVersion) async {
     if (oldVersion >= 2 && oldVersion < 2) return;
     if (oldVersion < 2) {
@@ -483,6 +619,30 @@ class AppDatabase {
           // Column already exists.
         }
       }
+    }
+    if (oldVersion < 10) {
+      for (final sql in const [
+        'ALTER TABLE list_item ADD COLUMN assigned_to_id TEXT',
+        'ALTER TABLE list_item ADD COLUMN actual_minor INTEGER',
+        'ALTER TABLE list_item ADD COLUMN actual_currency TEXT',
+        'ALTER TABLE list_item ADD COLUMN purchased_by_id TEXT',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {
+          // Column already exists.
+        }
+      }
+    }
+    if (oldVersion < 13) {
+      try {
+        await d.execute('ALTER TABLE tx ADD COLUMN receipt_uri TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 14) {
+      try {
+        await d.execute('ALTER TABLE tx ADD COLUMN recurring_rule_id TEXT');
+      } catch (_) {}
     }
     await createSchema(d); // shopping_list & others are CREATE IF NOT EXISTS
   }

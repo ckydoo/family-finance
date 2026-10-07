@@ -29,6 +29,29 @@ enum SyncStatus { idle, syncing, offline, needsSignIn, needsSetup, error }
 /// must never send an existing member to the create-family flow.
 enum FamilyRestoreResult { restored, notFound, unavailable }
 
+@immutable
+class FamilySpaceSummary {
+  const FamilySpaceSummary({
+    required this.id,
+    required this.name,
+    required this.role,
+    this.inviteCode,
+  });
+
+  final String id;
+  final String name;
+  final String role;
+  final String? inviteCode;
+
+  factory FamilySpaceSummary.fromJson(Map<Object?, Object?> json) =>
+      FamilySpaceSummary(
+        id: '${json['space_id'] ?? json['id']}',
+        name: '${json['name'] ?? 'Family'}',
+        role: '${json['role'] ?? 'adult'}',
+        inviteCode: json['invite_code']?.toString(),
+      );
+}
+
 class SyncEngine {
   SyncEngine({
     required this.client,
@@ -219,6 +242,48 @@ class SyncEngine {
     }
   }
 
+  /// Every active family membership for the signed-in account.
+  Future<List<FamilySpaceSummary>> listFamilySpaces() async {
+    final result = await client.rpc('list_my_spaces', {});
+    if (result is! List) return const [];
+    return result
+        .whereType<Map>()
+        .map((row) => FamilySpaceSummary.fromJson(row))
+        .where((space) => space.id.isNotEmpty && space.id != 'null')
+        .toList(growable: false);
+  }
+
+  /// Changes the active family without ever mixing local rows. Pending writes
+  /// must reach the old family first; only then is its local partition wiped
+  /// and the selected family pulled from the server.
+  Future<bool> switchFamilySpace(FamilySpaceSummary target) async {
+    if (target.id == _spaceId) return true;
+    try {
+      await syncNow(force: true);
+      if (await _outbox.count() != 0) {
+        _setStatus(SyncStatus.offline,
+            'Connect and sync pending changes before switching families.');
+        return false;
+      }
+      _setStatus(SyncStatus.syncing);
+      await _adoptSpace(
+        id: target.id,
+        code: target.inviteCode,
+        name: target.name,
+      );
+      await _fullSync();
+      return true;
+    } on SyncException catch (e) {
+      _setStatus(
+          e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error, e.message);
+      return false;
+    } catch (_) {
+      _setStatus(SyncStatus.offline,
+          'Could not switch families. Check your connection and try again.');
+      return false;
+    }
+  }
+
   /// Debounced auto-sync after mutations.
   void schedule() {
     if (!autoSchedule || _spaceId == null) return;
@@ -270,6 +335,15 @@ class SyncEngine {
 
   // ── family bootstrap (create / join) ────────────────────────────────────
 
+  Future<bool> _flushBeforeChangingSpace() async {
+    if (_spaceId == null) return true;
+    await syncNow(force: true);
+    if (await _outbox.count() == 0) return true;
+    _setStatus(SyncStatus.offline,
+        'Connect and sync pending changes before changing families.');
+    return false;
+  }
+
   /// Creates a family space. Wipes this device's synced tables first so the
   /// device-local rows never leak into the family's server data.
   Future<bool> createSpace(
@@ -279,6 +353,7 @@ class SyncEngine {
     String? preferredName,
   }) async {
     try {
+      if (!await _flushBeforeChangingSpace()) return false;
       _setStatus(SyncStatus.syncing);
       final taken = await client.rpc('family_name_taken', {'p_name': name});
       if (taken == true) {
@@ -333,6 +408,7 @@ class SyncEngine {
     try {
       await client.rpc('set_role_permissions', {
         'p_permissions': permissions,
+        'p_space_id': _spaceId,
       });
       return true;
     } catch (e) {
@@ -404,6 +480,7 @@ class SyncEngine {
     final r = await client.rpc('create_invite', {
       'p_role': role,
       'p_email': email,
+      'p_space_id': _spaceId,
     });
     if (r is! Map) {
       throw const SyncException(0, 'unexpected response from server');
@@ -487,10 +564,16 @@ class SyncEngine {
   /// Hands the family to another active member: roles swap, the family's
   /// static code moves with it, audit row written (migration 010).
   Future<void> transferOwnership(String newOwnerUserId) =>
-      client.rpc('transfer_ownership', {'p_new_owner': newOwnerUserId});
+      client.rpc('transfer_ownership', {
+        'p_new_owner': newOwnerUserId,
+        'p_space_id': _spaceId,
+      });
 
   Future<String> updateFamilyName(String name) async {
-    final result = await client.rpc('update_family_name', {'p_name': name});
+    final result = await client.rpc('update_family_name', {
+      'p_name': name,
+      'p_space_id': _spaceId,
+    });
     final updated = result?.toString() ?? name.trim();
     spaceName = updated;
     await _kvSet('space_name', updated);
@@ -502,12 +585,16 @@ class SyncEngine {
     await client.rpc('change_member_role', {
       'p_member': memberId,
       'p_role': role,
+      'p_space_id': _spaceId,
     });
     await _pullMembers();
   }
 
   Future<void> removeFamilyMember(String memberId) async {
-    await client.rpc('remove_family_member', {'p_member': memberId});
+    await client.rpc('remove_family_member', {
+      'p_member': memberId,
+      'p_space_id': _spaceId,
+    });
     await _pullMembers();
   }
 
@@ -537,6 +624,7 @@ class SyncEngine {
     // every new invitation through join_invite.
     final roleBound = RegExp(r'^MHRI-[A-Z0-9]{6}$').hasMatch(normalized);
     try {
+      if (!await _flushBeforeChangingSpace()) return false;
       _setStatus(SyncStatus.syncing);
       final id = await client.rpc(
         roleBound ? 'join_invite' : 'join_space',

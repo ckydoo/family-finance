@@ -78,6 +78,8 @@ class BudgetsScreen extends StatelessWidget {
       const SizedBox(height: 16),
 
       // ── Envelopes ───────────────────────────────────────────────────
+      _CyclePlanCard(state: s),
+      const SizedBox(height: 16),
       if (s.envelopes.isEmpty)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -136,7 +138,7 @@ class BudgetsScreen extends StatelessWidget {
           subtitle: l.recurringHint,
         )
       else
-        for (final r in s.recurring) RecurringRow(rule: r),
+        for (final r in s.sortedBills) RecurringRow(rule: r),
     ];
     const pad = kTabPageInsets;
 
@@ -177,6 +179,174 @@ class BudgetsScreen extends StatelessWidget {
       child: content,
     );
   }
+}
+
+class _CyclePlanCard extends StatelessWidget {
+  const _CyclePlanCard({required this.state});
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final plan = state.currentBudgetPlan;
+    final allocated = state.envelopes.fold<int>(
+        0,
+        (sum, e) =>
+            sum + e.limit.inCurrency(state.displayCurrency, state.rate).minor);
+    final allocation = Money(allocated, state.displayCurrency);
+    final expected =
+        plan?.expectedIncome?.inCurrency(state.displayCurrency, state.rate);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusL),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.event_note_outlined, color: context.primary),
+          const SizedBox(width: 10),
+          Expanded(
+              child: Text('This month\'s plan',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: context.ink))),
+          if (plan != null)
+            Chip(label: Text(plan.isClosed ? 'Closed' : 'Active')),
+        ]),
+        const SizedBox(height: 10),
+        Text(
+          plan == null
+              ? 'Choose how income arrives, then agree where the money should go.'
+              : plan.incomeMode == IncomePlanMode.knownMonthly
+                  ? 'Expected ${expected?.text ?? '—'} · Allocated ${allocation.text}'
+                  : 'Add money as it is earned · Allocated ${allocation.text}',
+          style: TextStyle(color: context.inkSoft, height: 1.35),
+        ),
+        const SizedBox(height: 14),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          if (!(plan?.isClosed ?? false))
+            FilledButton.icon(
+              onPressed: state.canEditBudgets
+                  ? () => _showPlanSheet(context, state)
+                  : null,
+              icon: Icon(plan == null ? Icons.add : Icons.edit_outlined,
+                  size: 18),
+              label: Text(plan == null ? 'Set up plan' : 'Edit plan'),
+            ),
+          if (plan == null && state.previousBudgetPlan != null)
+            OutlinedButton.icon(
+              onPressed: state.canEditBudgets
+                  ? () {
+                      state.useLastMonthPlan();
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content:
+                              Text('Last month\'s plan is ready to review.')));
+                    }
+                  : null,
+              icon: const Icon(Icons.content_copy_outlined, size: 18),
+              label: const Text('Use last month'),
+            ),
+          if (plan != null && !plan.isClosed)
+            TextButton(
+              onPressed: state.canEditBudgets
+                  ? () async {
+                      final ok = await confirmDialog(context,
+                          title: 'Close this month?',
+                          body:
+                              'This locks the agreed plan as a monthly record. Transactions remain unchanged.',
+                          confirmLabel: 'Close month');
+                      if (ok) state.closeCurrentBudgetPlan();
+                    }
+                  : null,
+              child: const Text('Close month'),
+            ),
+        ]),
+      ]),
+    );
+  }
+}
+
+Future<void> _showPlanSheet(BuildContext context, AppState state) async {
+  var mode = state.currentBudgetPlan?.incomeMode ?? IncomePlanMode.knownMonthly;
+  final expected = TextEditingController(
+      text: state.currentBudgetPlan?.expectedIncome?.major.toStringAsFixed(2) ??
+          '');
+  String? error;
+  await showMhuriSheet<void>(
+    context: context,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setSheetState) => Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 4, 20, 20 + MediaQuery.viewInsetsOf(sheetContext).bottom),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SheetHeader('Plan this month',
+                  onClose: () => Navigator.pop(sheetContext)),
+              const SizedBox(height: 8),
+              Text('How does your family receive income?',
+                  style: TextStyle(color: sheetContext.inkSoft)),
+              const SizedBox(height: 12),
+              SegmentedButton<IncomePlanMode>(
+                segments: const [
+                  ButtonSegment(
+                      value: IncomePlanMode.knownMonthly,
+                      label: Text('Known monthly')),
+                  ButtonSegment(
+                      value: IncomePlanMode.asEarned,
+                      label: Text('As I earn it')),
+                ],
+                selected: {mode},
+                onSelectionChanged: (value) => setSheetState(() {
+                  mode = value.first;
+                  error = null;
+                }),
+              ),
+              if (mode == IncomePlanMode.knownMonthly) ...[
+                const SizedBox(height: 16),
+                MhuriField(
+                  controller: expected,
+                  label: 'Expected income',
+                  currencySymbol: state.displayCurrency.symbol,
+                  prefixText: '${state.displayCurrency.symbol} ',
+                  inputFormatters: amountInputFormatters,
+                  fillColor: sheetContext.card,
+                ),
+              ],
+              if (error != null) ...[
+                const SizedBox(height: 12),
+                ErrorNotice(error!),
+              ],
+              const SizedBox(height: 18),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52)),
+                onPressed: () {
+                  final value =
+                      double.tryParse(expected.text.replaceAll(',', '').trim());
+                  final ok = state.saveCurrentBudgetPlan(
+                    incomeMode: mode,
+                    expectedIncome:
+                        mode == IncomePlanMode.knownMonthly && value != null
+                            ? Money.fromMajor(value, state.displayCurrency)
+                            : null,
+                  );
+                  if (!ok) {
+                    setSheetState(() =>
+                        error = 'Enter an expected income greater than zero.');
+                    return;
+                  }
+                  Navigator.pop(sheetContext);
+                },
+                child: const Text('Save plan'),
+              ),
+            ]),
+      ),
+    ),
+  );
+  // Do not dispose here: showModalBottomSheet can complete its Future before
+  // the reverse transition has rendered its final frame. The field may still
+  // read the controller during that frame, which causes a use-after-dispose.
+  // With no surviving references the controller is collected with the sheet.
 }
 
 Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {

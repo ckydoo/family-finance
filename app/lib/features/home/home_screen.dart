@@ -7,6 +7,7 @@ import '../../core/money/money.dart';
 import 'reminders_sheet.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
+import '../../core/sync/sync_engine.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
@@ -16,10 +17,260 @@ import '../../core/widgets/ui.dart';
 import '../activity/activity_screen.dart';
 import '../budgets/budgets_screen.dart'
     show BudgetsScreen, showEnvelopeDetailSheet, showEditEnvelopeSheet;
+import '../family_chat/family_chat_screen.dart';
+import '../family_tasks/family_tasks_screen.dart';
 import '../members/members_screen.dart';
 import '../quickadd/quick_add_sheet.dart';
 import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
+
+Future<void> _showFamilySpaceSwitcher(BuildContext context, AppState s) async {
+  final sync = s.sync;
+  if (sync == null) {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const MembersScreen()),
+    );
+    return;
+  }
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (sheetContext) => _FamilySpaceSwitcher(state: s),
+  );
+}
+
+class _FamilySpaceSwitcher extends StatefulWidget {
+  const _FamilySpaceSwitcher({required this.state});
+  final AppState state;
+
+  @override
+  State<_FamilySpaceSwitcher> createState() => _FamilySpaceSwitcherState();
+}
+
+class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
+  late Future<List<FamilySpaceSummary>> _spaces;
+  bool _switching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  void _reload() {
+    _spaces = widget.state.sync!.listFamilySpaces();
+  }
+
+  Future<void> _switch(FamilySpaceSummary space) async {
+    if (_switching) return;
+    setState(() => _switching = true);
+    final ok = await widget.state.sync!.switchFamilySpace(space);
+    if (!mounted) return;
+    setState(() => _switching = false);
+    if (ok) {
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.state.sync?.lastError ??
+            'Could not switch families. Please try again.'),
+      ));
+    }
+  }
+
+  Future<void> _createFamily() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Create another family'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(labelText: 'Family name'),
+          onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || name.isEmpty || !mounted) return;
+    setState(() => _switching = true);
+    final ok = await widget.state.sync!.createSpace(
+      name,
+      preferredName: widget.state.user.name,
+      baseCurrency: widget.state.primaryCurrency.code,
+    );
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pop(context);
+    } else {
+      setState(() => _switching = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text(widget.state.sync?.lastError ?? 'Could not create family.'),
+      ));
+    }
+  }
+
+  Future<void> _joinFamily() async {
+    final controller = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Join another family'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          decoration: const InputDecoration(labelText: 'Invite code'),
+          onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Join'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (code == null || code.isEmpty || !mounted) return;
+    setState(() => _switching = true);
+    final ok = await widget.state.sync!.joinSpace(code);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pop(context);
+    } else {
+      setState(() => _switching = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.state.sync?.lastError ?? 'Could not join family.'),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeId = widget.state.sync?.spaceId;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            Expanded(
+              child: Text('Your families',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      )),
+            ),
+            IconButton(
+              tooltip: 'Close',
+              onPressed: _switching ? null : () => Navigator.pop(context),
+              icon: const Icon(Icons.close),
+            ),
+          ]),
+          Text('Choose which family space you want to use.',
+              style: TextStyle(color: context.inkSoft)),
+          const SizedBox(height: 14),
+          FutureBuilder<List<FamilySpaceSummary>>(
+            future: _spaces,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(28),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Column(children: [
+                    const Text('Families could not be loaded.'),
+                    TextButton(
+                      onPressed: () => setState(_reload),
+                      child: const Text('Try again'),
+                    ),
+                  ]),
+                );
+              }
+              return Column(
+                children: [
+                  for (final space in snapshot.data ?? const [])
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: context.primarySoft,
+                        child:
+                            Icon(Icons.family_restroom, color: context.primary),
+                      ),
+                      title: Text(space.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: Text(space.role.replaceAll('_', ' ')),
+                      trailing: space.id == activeId
+                          ? Icon(Icons.check_circle, color: context.primary)
+                          : const Icon(Icons.chevron_right),
+                      onTap: _switching || space.id == activeId
+                          ? null
+                          : () => _switch(space),
+                    ),
+                ],
+              );
+            },
+          ),
+          const Divider(),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _switching ? null : _joinFamily,
+                icon: const Icon(Icons.group_add_outlined),
+                label: const Text('Join'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: _switching ? null : _createFamily,
+                icon: const Icon(Icons.add_home_outlined),
+                label: const Text('Create'),
+              ),
+            ),
+          ]),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.manage_accounts_outlined),
+            title: const Text('Manage current family'),
+            onTap: _switching
+                ? null
+                : () {
+                    Navigator.pop(context);
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const MembersScreen(),
+                    ));
+                  },
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -187,9 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: kBRadiusL,
                   child: InkWell(
                     borderRadius: kBRadiusL,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const MembersScreen()),
-                    ),
+                    onTap: () => _showFamilySpaceSwitcher(context, s),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(12, 9, 10, 9),
@@ -232,10 +481,105 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right,
+                          Icon(Icons.keyboard_arrow_down,
                               size: 20, color: context.inkSoft),
                         ],
                       ),
+                    ),
+                  ),
+                ),
+
+                // ── Family chat quick access ────────────────────────────────
+                Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.card,
+                    borderRadius: kBRadiusM,
+                    border: Border.all(color: context.hairline),
+                  ),
+                  child: InkWell(
+                    borderRadius: kBRadiusM,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const FamilyChatScreen()),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.chat_bubble_outline_rounded,
+                            color: context.primary, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Family chat',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: context.ink,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Open',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: context.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(Icons.chevron_right,
+                            size: 18, color: context.primary),
+                      ],
+                    ),
+                  ),
+                ),
+
+                Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.card,
+                    borderRadius: kBRadiusM,
+                    border: Border.all(color: context.hairline),
+                  ),
+                  child: InkWell(
+                    borderRadius: kBRadiusM,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const FamilyTasksScreen()),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.task_alt_rounded,
+                            color: context.accent, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Family tasks',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: context.ink,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${s.familyTasks.where((t) => !t.isArchived && !t.isDone).length} active',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: context.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(Icons.chevron_right,
+                            size: 18, color: context.accent),
+                      ],
                     ),
                   ),
                 ),
