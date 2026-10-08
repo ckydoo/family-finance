@@ -99,6 +99,7 @@ void main() {
 
   tearDown(() async {
     SyncEngine.reportError = null;
+    engine.dispose();
     await Future<void>.delayed(const Duration(milliseconds: 50));
     await db.raw.close();
   });

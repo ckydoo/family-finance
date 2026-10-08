@@ -8,13 +8,39 @@ import '../../core/utils/ids.dart';
 import '../family_chat/family_chat_screen.dart';
 
 class FamilyTasksScreen extends StatefulWidget {
-  const FamilyTasksScreen({super.key});
+  const FamilyTasksScreen({
+    super.key,
+    this.startAdding = false,
+    this.initialTask,
+  });
+
+  final bool startAdding;
+  final FamilyTask? initialTask;
 
   @override
   State<FamilyTasksScreen> createState() => _FamilyTasksScreenState();
 }
 
 class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
+  _TaskPeriod _period = _TaskPeriod.today;
+  _TaskScope _scope = _TaskScope.all;
+  bool _searching = false;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTask != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _taskSheet(AppScope.of(context), widget.initialTask!);
+      });
+    } else if (widget.startAdding) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _taskEditor(AppScope.of(context));
+      });
+    }
+  }
+
   String _statusLabel(FamilyTaskStatus status) => switch (status) {
         FamilyTaskStatus.open => 'Open',
         FamilyTaskStatus.inProgress => 'In progress',
@@ -70,6 +96,11 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                     ),
                   Chip(label: Text(_statusLabel(task.status))),
                   Chip(label: Text('${task.points} pts')),
+                  if (task.requiresApproval)
+                    Chip(
+                        label: Text(task.approvedByMemberId == null
+                            ? 'Approval pending'
+                            : 'Approved')),
                 ],
               ),
               if (task.note != null && task.note!.isNotEmpty) ...[
@@ -86,18 +117,81 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.of(sheetContext).pop();
-                        state.toggleFamilyTaskCompletion(task);
-                      },
-                      icon: Icon(task.isDone ? Icons.refresh_rounded : Icons.check_rounded),
-                      label: Text(task.isDone ? 'Reopen task' : 'Mark done'),
+                  if (task.status != FamilyTaskStatus.done)
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          final nextStatus =
+                              task.status == FamilyTaskStatus.inProgress
+                                  ? FamilyTaskStatus.done
+                                  : FamilyTaskStatus.inProgress;
+                          state.updateFamilyTask(
+                            task.copyWith(
+                              status: nextStatus,
+                              completedAt: nextStatus == FamilyTaskStatus.done
+                                  ? DateTime.now()
+                                  : null,
+                              approvedByMemberId:
+                                  nextStatus == FamilyTaskStatus.done
+                                      ? task.approvedByMemberId
+                                      : null,
+                              approvedAt: nextStatus == FamilyTaskStatus.done
+                                  ? task.approvedAt
+                                  : null,
+                            ),
+                          );
+                        },
+                        icon: Icon(
+                          task.status == FamilyTaskStatus.inProgress
+                              ? Icons.check_rounded
+                              : Icons.play_arrow_rounded,
+                        ),
+                        label: Text(
+                          task.status == FamilyTaskStatus.inProgress
+                              ? (task.requiresApproval
+                                  ? 'Submit for approval'
+                                  : 'Mark done')
+                              : 'Start task',
+                        ),
+                      ),
                     ),
-                  ),
+                  if (task.status == FamilyTaskStatus.done)
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          state.updateFamilyTask(
+                            task.copyWith(
+                              status: FamilyTaskStatus.open,
+                              approvedByMemberId: null,
+                              approvedAt: null,
+                              completedAt: null,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Reopen task'),
+                      ),
+                    ),
                 ],
               ),
+              if (task.requiresApproval &&
+                  task.status == FamilyTaskStatus.done &&
+                  task.approvedByMemberId == null) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      state.approveFamilyTask(task);
+                    },
+                    icon: const Icon(Icons.thumb_up_rounded),
+                    label: const Text('Approve reward'),
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -142,6 +236,7 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
     DateTime? dueDate = task?.dueDate;
     int points = task?.points ?? 1;
     var status = task?.status ?? FamilyTaskStatus.open;
+    bool requiresApproval = task?.requiresApproval ?? true;
 
     final ok = await showDialog<bool>(
       context: context,
@@ -177,7 +272,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                     if (state.members.isNotEmpty)
                       DropdownButtonFormField<String>(
                         initialValue: assigneeId,
-                        decoration: const InputDecoration(labelText: 'Assignee'),
+                        decoration:
+                            const InputDecoration(labelText: 'Assignee'),
                         items: [
                           const DropdownMenuItem<String>(
                             value: null,
@@ -188,7 +284,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                 child: Text(m.name),
                               )),
                         ],
-                        onChanged: (value) => setState(() => assigneeId = value),
+                        onChanged: (value) =>
+                            setState(() => assigneeId = value),
                       ),
                     const SizedBox(height: 12),
                     Row(
@@ -247,12 +344,24 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      value: requiresApproval,
+                      onChanged: (value) => setState(() {
+                        requiresApproval = value;
+                      }),
+                      title: const Text('Requires family approval'),
+                      subtitle: const Text(
+                          'Hold rewards until a parent approves completion.'),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         const Text('Points'),
                         const Spacer(),
                         IconButton(
-                          onPressed: () => setState(() => points = (points - 1).clamp(0, 20)),
+                          onPressed: () => setState(
+                              () => points = (points - 1).clamp(0, 20)),
                           icon: const Icon(Icons.remove_rounded),
                         ),
                         SizedBox(
@@ -264,7 +373,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => setState(() => points = (points + 1).clamp(0, 20)),
+                          onPressed: () => setState(
+                              () => points = (points + 1).clamp(0, 20)),
                           icon: const Icon(Icons.add_rounded),
                         ),
                       ],
@@ -298,13 +408,17 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
     if (title.isEmpty) return;
 
     if (task != null) {
-      state.updateFamilyTask(task.copyWith(
+      final currentTask = task;
+      state.updateFamilyTask(currentTask.copyWith(
         title: title,
-        note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+        note: noteController.text.trim().isEmpty
+            ? null
+            : noteController.text.trim(),
         assigneeMemberId: assigneeId,
         dueDate: dueDate,
         status: status,
         points: points,
+        requiresApproval: requiresApproval,
       ));
       return;
     }
@@ -322,6 +436,7 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
         dueDate: dueDate,
         status: status,
         points: points,
+        requiresApproval: requiresApproval,
       ),
     );
   }
@@ -329,157 +444,299 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
-    final tasks = state.familyTasks
-        .where((task) => !task.isArchived)
-        .toList()
-      ..sort((a, b) {
-        final aDue = a.dueDate ?? DateTime(2100);
-        final bDue = b.dueDate ?? DateTime(2100);
-        if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
-        return aDue.compareTo(bDue);
-      });
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final query = _query.trim().toLowerCase();
+    final scopedTasks = state.familyTasks.where((task) {
+      if (task.isArchived) return false;
+      final scopeMatches = switch (_scope) {
+        _TaskScope.all => true,
+        _TaskScope.mine => task.assigneeMemberId == state.user.id,
+        _TaskScope.available => task.assigneeMemberId == null,
+      };
+      final searchMatches = query.isEmpty ||
+          task.title.toLowerCase().contains(query) ||
+          (task.note?.toLowerCase().contains(query) ?? false);
+      return scopeMatches && searchMatches;
+    }).toList();
+
+    bool matchesPeriod(FamilyTask task, _TaskPeriod period) => switch (period) {
+          _TaskPeriod.today => !task.isDone &&
+              (task.dueDate == null || task.dueDate!.isBefore(tomorrow)),
+          _TaskPeriod.upcoming => !task.isDone &&
+              task.dueDate != null &&
+              !task.dueDate!.isBefore(tomorrow),
+          _TaskPeriod.completed => task.isDone,
+        };
+
+    final counts = {
+      for (final period in _TaskPeriod.values)
+        period: scopedTasks.where((task) => matchesPeriod(task, period)).length,
+    };
+    final tasks =
+        scopedTasks.where((task) => matchesPeriod(task, _period)).toList()
+          ..sort((a, b) {
+            final aDue = a.dueDate ?? DateTime(2100);
+            final bDue = b.dueDate ?? DateTime(2100);
+            if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
+            return aDue.compareTo(bDue);
+          });
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Family tasks'),
+        title: _searching
+            ? TextField(
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search tasks',
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) => setState(() => _query = value),
+              )
+            : const Text('Tasks & responsibilities'),
+        actions: [
+          IconButton(
+            tooltip: _searching ? 'Close search' : 'Search tasks',
+            onPressed: () => setState(() {
+              _searching = !_searching;
+              if (!_searching) _query = '';
+            }),
+            icon: Icon(_searching ? Icons.close : Icons.search),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Add task',
         onPressed: () => _taskEditor(state),
-        icon: const Icon(Icons.add_task_rounded),
-        label: const Text('Add task'),
+        child: const Icon(Icons.add_rounded),
       ),
       body: SafeArea(
-        child: tasks.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'No family tasks yet. Add the next check-in or task here.',
-                    textAlign: TextAlign.center,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+              child: Column(
+                children: [
+                  SegmentedButton<_TaskPeriod>(
+                    showSelectedIcon: false,
+                    segments: [
+                      ButtonSegment(
+                          value: _TaskPeriod.today,
+                          label: _TaskTabLabel(
+                              title: 'Today',
+                              count: counts[_TaskPeriod.today]!)),
+                      ButtonSegment(
+                          value: _TaskPeriod.upcoming,
+                          label: _TaskTabLabel(
+                              title: 'Upcoming',
+                              count: counts[_TaskPeriod.upcoming]!)),
+                      ButtonSegment(
+                          value: _TaskPeriod.completed,
+                          label: _TaskTabLabel(
+                              title: 'Completed',
+                              count: counts[_TaskPeriod.completed]!)),
+                    ],
+                    selected: {_period},
+                    onSelectionChanged: (value) =>
+                        setState(() => _period = value.first),
                   ),
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                itemCount: tasks.length,
-                itemBuilder: (context, index) {
-                  final task = tasks[index];
-                  final assignee = task.assigneeMemberId == null
-                      ? null
-                      : state.member(task.assigneeMemberId!);
-
-                  return InkWell(
-                    onTap: () => _taskSheet(state, task),
-                    borderRadius: BorderRadius.circular(18),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: context.card,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: task.isDone ? context.primarySoft : context.hairline,
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final scope in _TaskScope.values)
+                          ChoiceChip(
+                            label: Text(scope.label),
+                            selected: _scope == scope,
+                            onSelected: (_) => setState(() => _scope = scope),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: tasks.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _period == _TaskPeriod.completed
+                                  ? 'No completed tasks here.'
+                                  : 'No tasks in this view.',
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton.icon(
+                              onPressed: () => _taskEditor(state),
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text('Add task'),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Checkbox(
-                            value: task.isDone,
-                            onChanged: (_) => state.toggleFamilyTaskCompletion(task),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+                      itemCount: tasks.length,
+                      separatorBuilder: (_, __) =>
+                          Divider(height: 1, color: context.hairline),
+                      itemBuilder: (context, index) {
+                        final task = tasks[index];
+                        final assignee = task.assigneeMemberId == null
+                            ? null
+                            : state.member(task.assigneeMemberId!);
+
+                        return InkWell(
+                          onTap: () => _taskSheet(state, task),
+                          borderRadius: kBRadiusM,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  task.title,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: task.isDone ? context.inkSoft : context.ink,
-                                    decoration: task.isDone
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                  ),
+                                Checkbox(
+                                  value: task.isDone,
+                                  onChanged: (_) =>
+                                      state.toggleFamilyTaskCompletion(task),
                                 ),
-                                if (task.note != null && task.note!.isNotEmpty) ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    task.note!,
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: context.inkSoft,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 6,
-                                  children: [
-                                    if (assignee != null)
-                                      Chip(
-                                        visualDensity: VisualDensity.compact,
-                                        label: Text(assignee.name),
-                                      ),
-                                    if (task.dueDate != null)
-                                      Chip(
-                                        visualDensity: VisualDensity.compact,
-                                        label: Text(
-                                          'Due ${DateFormat('MMM d').format(task.dueDate!)}',
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        task.title,
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: task.isDone
+                                              ? context.inkSoft
+                                              : context.ink,
+                                          decoration: task.isDone
+                                              ? TextDecoration.lineThrough
+                                              : TextDecoration.none,
                                         ),
                                       ),
-                                    Chip(
-                                      visualDensity: VisualDensity.compact,
-                                      label: Text(_statusLabel(task.status)),
+                                      if (task.note != null &&
+                                          task.note!.isNotEmpty) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          task.note!,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            color: context.inkSoft,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        [
+                                          assignee?.name ?? 'Anyone',
+                                          if (task.dueDate != null)
+                                            'Due ${DateFormat('MMM d').format(task.dueDate!)}',
+                                          '${task.points} pts',
+                                          if (task.status ==
+                                              FamilyTaskStatus.inProgress)
+                                            'In progress',
+                                        ].join(' · '),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: context.inkSoft,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => FamilyChatScreen(
+                                            initialTask: task,
+                                          ),
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                          Icons.chat_bubble_outline_rounded),
+                                      tooltip: 'Discuss task',
                                     ),
-                                    Chip(
-                                      visualDensity: VisualDensity.compact,
-                                      label: Text('${task.points} pts · ${state.stars} stars total'),
+                                    IconButton(
+                                      onPressed: () =>
+                                          _taskEditor(state, task: task),
+                                      icon: const Icon(Icons.edit_outlined),
+                                      tooltip: 'Edit task',
                                     ),
                                   ],
                                 ),
                               ],
                             ),
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                onPressed: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => FamilyChatScreen(
-                                      initialTask: task,
-                                    ),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.chat_bubble_outline_rounded),
-                                tooltip: 'Discuss task',
-                              ),
-                              IconButton(
-                                onPressed: () => _taskEditor(state, task: task),
-                                icon: const Icon(Icons.edit_outlined),
-                                tooltip: 'Edit task',
-                              ),
-                              IconButton(
-                                onPressed: () => state.updateFamilyTask(
-                                  task.copyWith(isArchived: true),
-                                ),
-                                icon: const Icon(Icons.close_rounded),
-                                tooltip: 'Archive task',
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _TaskTabLabel extends StatelessWidget {
+  const _TaskTabLabel({required this.title, required this.count});
+
+  final String title;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: context.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                count > 99 ? '99+' : '$count',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: context.primaryDark,
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+}
+
+enum _TaskPeriod { today, upcoming, completed }
+
+enum _TaskScope { all, mine, available }
+
+extension on _TaskScope {
+  String get label => switch (this) {
+        _TaskScope.all => 'All',
+        _TaskScope.mine => 'Mine',
+        _TaskScope.available => 'Available',
+      };
 }

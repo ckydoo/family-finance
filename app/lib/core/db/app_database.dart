@@ -67,6 +67,7 @@ class AppDatabase {
     'profile_edits',
     'stars',
     'request_results_seen',
+    'chat_last_read_ms',
     'sync_cursor',
     'last_sync_ms',
   };
@@ -90,6 +91,10 @@ class AppDatabase {
       {'k': key, 'v': value},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  Future<void> kvDelete(String key) async {
+    await raw.delete('kv', where: 'k = ?', whereArgs: [key]);
   }
 
   /// One-time legacy purge (first live boot): a device upgraded from a
@@ -133,7 +138,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 14,
+        version: 17,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -233,7 +238,9 @@ class AppDatabase {
       op_id TEXT NOT NULL UNIQUE,
       payload TEXT NOT NULL,
       created_ms INTEGER NOT NULL,
-      attempts INTEGER NOT NULL DEFAULT 0
+      attempts INTEGER NOT NULL DEFAULT 0,
+      conflict_reason TEXT,
+      server_payload TEXT
     )
     ''',
     '''
@@ -409,6 +416,9 @@ class AppDatabase {
       reference_id TEXT,
       reference_title TEXT,
       reference_meta TEXT,
+      media_url TEXT,
+      media_type TEXT,
+      sticker TEXT,
       deleted INTEGER NOT NULL DEFAULT 0
     )
     ''',
@@ -427,6 +437,10 @@ class AppDatabase {
       due_at_ms INTEGER,
       status TEXT NOT NULL DEFAULT 'open',
       points INTEGER NOT NULL DEFAULT 1,
+      requires_approval INTEGER NOT NULL DEFAULT 1,
+      approved_by_member_id TEXT,
+      approved_at_ms INTEGER,
+      completed_at_ms INTEGER,
       is_archived INTEGER NOT NULL DEFAULT 0
     )
     ''',
@@ -571,7 +585,8 @@ class AppDatabase {
   /// v5: shopping-list header table + item tombstones · v7: per-user cache
   /// · v8: cycle plans · v9: activity · v10: shopping
   /// · v11: contributions · v12: debts · v13: receipts/splits
-  /// · v14: recurring bill payment links.
+  /// · v14: recurring bill links · v15: family-task approvals
+  /// · v16: reviewable sync conflicts · v17: chat media and stickers.
   static Future<void> upgrade(Database d, int oldVersion) async {
     if (oldVersion >= 2 && oldVersion < 2) return;
     if (oldVersion < 2) {
@@ -643,6 +658,39 @@ class AppDatabase {
       try {
         await d.execute('ALTER TABLE tx ADD COLUMN recurring_rule_id TEXT');
       } catch (_) {}
+    }
+    if (oldVersion < 15) {
+      for (final sql in const [
+        'ALTER TABLE family_task ADD COLUMN requires_approval INTEGER NOT NULL DEFAULT 1',
+        'ALTER TABLE family_task ADD COLUMN approved_by_member_id TEXT',
+        'ALTER TABLE family_task ADD COLUMN approved_at_ms INTEGER',
+        'ALTER TABLE family_task ADD COLUMN completed_at_ms INTEGER',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {}
+      }
+    }
+    if (oldVersion < 16) {
+      for (final sql in const [
+        'ALTER TABLE outbox ADD COLUMN conflict_reason TEXT',
+        'ALTER TABLE outbox ADD COLUMN server_payload TEXT',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {}
+      }
+    }
+    if (oldVersion < 17) {
+      for (final sql in const [
+        'ALTER TABLE family_chat_message ADD COLUMN media_url TEXT',
+        'ALTER TABLE family_chat_message ADD COLUMN media_type TEXT',
+        'ALTER TABLE family_chat_message ADD COLUMN sticker TEXT',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {}
+      }
     }
     await createSchema(d); // shopping_list & others are CREATE IF NOT EXISTS
   }

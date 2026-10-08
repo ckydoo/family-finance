@@ -57,12 +57,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('New budget'),
-      500,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('New budget'));
+    await tester.tap(find.byTooltip('New budget'));
     await tester.pumpAndSettle();
 
     final fields = find.byType(TextField);
@@ -206,8 +201,7 @@ void main() {
     expect(find.text('Set Groceries budget'), findsNothing);
   });
 
-  testWidgets(
-      'budget can be removed from budget list via card options menu',
+  testWidgets('budget can be removed from budget list via card options menu',
       (tester) async {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1;
@@ -303,4 +297,3 @@ void main() {
     expect(state.envelopes.any((e) => e.name == 'Unwanted Category'), isFalse);
   });
 }
-

@@ -146,7 +146,9 @@ String methodLabel(AppLocalizations l, Method m) => switch (m) {
 
 String roleLabel(AppLocalizations l, Role r) => switch (r) {
       Role.owner => l.roleOwner,
+      Role.admin => l.roleParent,
       Role.adult => l.roleAdult,
+      Role.contributor => 'Contributor',
       Role.teen => l.roleTeen,
       Role.kid => l.roleKid,
       Role.viewer => l.roleViewer,

@@ -16,8 +16,44 @@ import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 /// Savings goals, kid jars and the savings-circle tracker (spec Module E, §7.5).
-class SavingsScreen extends StatelessWidget {
-  const SavingsScreen({super.key});
+enum SavingsSection { goals, contributions, debts }
+
+class SavingsScreen extends StatefulWidget {
+  const SavingsScreen({
+    super.key,
+    this.standalone = false,
+    this.initialSection = SavingsSection.goals,
+    this.startAdding = false,
+  });
+
+  final bool standalone;
+  final SavingsSection initialSection;
+  final bool startAdding;
+
+  @override
+  State<SavingsScreen> createState() => _SavingsScreenState();
+}
+
+class _SavingsScreenState extends State<SavingsScreen> {
+  late SavingsSection _section;
+
+  @override
+  void initState() {
+    super.initState();
+    _section = widget.initialSection;
+    if (widget.startAdding) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_section == SavingsSection.contributions) {
+          _newCampaignSheet(context);
+        } else if (_section == SavingsSection.debts) {
+          _newDebtSheet(context);
+        } else {
+          _newGoalSheet(context);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +66,7 @@ class SavingsScreen extends StatelessWidget {
         .toList();
     final m = s.circle;
 
-    return SafeArea(
+    final content = SafeArea(
       child: RefreshIndicator(
           onRefresh: () => s.refresh(),
           child: ListView(
@@ -47,276 +83,327 @@ class SavingsScreen extends StatelessWidget {
                           color: context.ink),
                     ),
                   ),
-                  if (familyGoals.isNotEmpty)
+                  if (s.canEditBudgets)
                     IconButton(
-                      tooltip: AppLocalizations.of(context)!.newSavingsGoal,
-                      onPressed: () => _newGoalSheet(context),
-                      icon: Icon(Icons.add_circle,
+                      tooltip: switch (_section) {
+                        SavingsSection.goals =>
+                          AppLocalizations.of(context)!.newSavingsGoal,
+                        SavingsSection.contributions =>
+                          'Create a family contribution',
+                        SavingsSection.debts => 'Add debt or money owed',
+                      },
+                      onPressed: () {
+                        switch (_section) {
+                          case SavingsSection.goals:
+                            _newGoalSheet(context);
+                            return;
+                          case SavingsSection.contributions:
+                            _newCampaignSheet(context);
+                            return;
+                          case SavingsSection.debts:
+                            _newDebtSheet(context);
+                            return;
+                        }
+                      },
+                      icon: Icon(Icons.add_circle_rounded,
                           color: context.primary, size: 30),
                     ),
                 ],
               ),
               Text(
-                'Save towards the things that matter to your family.',
+                switch (_section) {
+                  SavingsSection.goals =>
+                    'Save towards the things that matter to your family.',
+                  SavingsSection.contributions =>
+                    'Track what was promised and what has been collected.',
+                  SavingsSection.debts =>
+                    'Keep repayments, due dates and balances clear.',
+                },
                 style: TextStyle(fontSize: 13, color: context.inkSoft),
               ),
+              const SizedBox(height: 14),
+              SegmentedButton<SavingsSection>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                      value: SavingsSection.goals, label: Text('Goals')),
+                  ButtonSegment(
+                      value: SavingsSection.contributions,
+                      label: Text('Contributions')),
+                  ButtonSegment(
+                      value: SavingsSection.debts, label: Text('Debts')),
+                ],
+                selected: {_section},
+                onSelectionChanged: (value) =>
+                    setState(() => _section = value.first),
+              ),
               const SizedBox(height: 16),
-              if (familyGoals.isEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: EmptyState(
-                    icon: Icons.track_changes,
-                    title: AppLocalizations.of(context)!.noGoals,
-                    subtitle: AppLocalizations.of(context)!.noGoalsHint,
+              if (_section == SavingsSection.goals) ...[
+                if (familyGoals.isEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: EmptyState(
+                      icon: Icons.track_changes,
+                      title: AppLocalizations.of(context)!.noGoals,
+                      subtitle: AppLocalizations.of(context)!.noGoalsHint,
+                    ),
                   ),
-                ),
+                  Text(
+                    'Ideas for family savings:',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.inkSoft,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final idea in [
+                        'Emergency fund',
+                        'School fees',
+                        'Home',
+                        'Car',
+                        'Business',
+                        'Travel',
+                        'Other',
+                      ])
+                        ActionChip(
+                          avatar: const Icon(Icons.add, size: 14),
+                          label: Text(idea),
+                          onPressed: () => _newGoalSheet(
+                            context,
+                            initialName: idea == 'Other' ? '' : idea,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _newGoalSheet(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.primary,
+                      foregroundColor: context.onSolid,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                    ),
+                    icon: const Icon(Icons.add),
+                    label:
+                        Text(AppLocalizations.of(context)!.createSavingsGoal),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                for (final g in familyGoals) ...[
+                  GoalCard(goal: g),
+                  const SizedBox(height: 12),
+                ],
+              ],
+              if (_section == SavingsSection.contributions) ...[
+                Row(children: [
+                  Expanded(
+                    child: Text(
+                      'Pledges & contributions',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: context.ink,
+                      ),
+                    ),
+                  ),
+                ]),
                 Text(
-                  'Ideas for family savings:',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: context.inkSoft,
-                  ),
+                  'Track what was promised and what has been collected.',
+                  style: TextStyle(fontSize: 12, color: context.inkSoft),
                 ),
+                const SizedBox(height: 10),
+                if (s.contributionCampaigns.isEmpty)
+                  OutlinedButton.icon(
+                    onPressed: s.canEditBudgets
+                        ? () => _newCampaignSheet(context)
+                        : null,
+                    icon: const Icon(Icons.volunteer_activism_outlined),
+                    label: const Text('Create a family contribution'),
+                  )
+                else
+                  for (final campaign in s.contributionCampaigns) ...[
+                    _CampaignCard(campaign: campaign),
+                    const SizedBox(height: 10),
+                  ],
+              ],
+              if (_section == SavingsSection.debts) ...[
+                Row(children: [
+                  Expanded(
+                    child: Text(
+                      'Debts & money owed',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: context.ink,
+                      ),
+                    ),
+                  ),
+                ]),
+                if (s.familyDebts.isEmpty)
+                  OutlinedButton.icon(
+                    onPressed:
+                        s.canEditBudgets ? () => _newDebtSheet(context) : null,
+                    icon: const Icon(Icons.handshake_outlined),
+                    label: const Text('Add debt or money owed'),
+                  )
+                else
+                  for (final debt in s.familyDebts) ...[
+                    _DebtCard(debt: debt),
+                    const SizedBox(height: 10),
+                  ],
+              ],
+              if (_section == SavingsSection.goals) ...[
+                // ── Kid jars ────────────────────────────────────────────────────
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                Row(
                   children: [
-                    for (final idea in [
-                      'Emergency fund',
-                      'School fees',
-                      'Home',
-                      'Car',
-                      'Business',
-                      'Travel',
-                      'Other',
-                    ])
-                      ActionChip(
-                        avatar: const Icon(Icons.add, size: 14),
-                        label: Text(idea),
+                    Expanded(
+                      child: Text(
+                        AppLocalizations.of(context)!.kidsJars,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: context.ink,
+                        ),
+                      ),
+                    ),
+                    if (s.canEditBudgets && kidsWithoutJar.isNotEmpty)
+                      IconButton(
+                        tooltip: AppLocalizations.of(context)!.addKidWish,
                         onPressed: () => _newGoalSheet(
                           context,
-                          initialName: idea == 'Other' ? '' : idea,
+                          kidJarMembers: kidsWithoutJar,
                         ),
+                        icon: Icon(Icons.add_circle_outline,
+                            color: context.primary, size: 24),
                       ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _newGoalSheet(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.onSolid,
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-                  ),
-                  icon: const Icon(Icons.add),
-                  label: Text(AppLocalizations.of(context)!.createSavingsGoal),
+                const SizedBox(height: 4),
+                Text(
+                  'Kids can complete chores, earn stars and save towards their own goals. '
+                  '${AppLocalizations.of(context)!.starsHome(s.stars)}',
+                  style: TextStyle(
+                      fontSize: 12, color: context.inkSoft, height: 1.4),
                 ),
                 const SizedBox(height: 12),
-              ],
-              for (final g in familyGoals) ...[
-                GoalCard(goal: g),
-                const SizedBox(height: 12),
-              ],
-
-              Row(children: [
-                Expanded(
-                    child: Text('Pledges & contributions',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: context.ink))),
-                if (s.canEditBudgets)
-                  IconButton(
-                    onPressed: () => _newCampaignSheet(context),
-                    icon: Icon(Icons.add_circle, color: context.primary),
-                  ),
-              ]),
-              Text('Track what was promised and what has been collected.',
-                  style: TextStyle(fontSize: 12, color: context.inkSoft)),
-              const SizedBox(height: 10),
-              if (s.contributionCampaigns.isEmpty)
-                OutlinedButton.icon(
-                  onPressed: s.canEditBudgets
-                      ? () => _newCampaignSheet(context)
-                      : null,
-                  icon: const Icon(Icons.volunteer_activism_outlined),
-                  label: const Text('Create a family contribution'),
-                )
-              else
-                for (final campaign in s.contributionCampaigns) ...[
-                  _CampaignCard(campaign: campaign),
-                  const SizedBox(height: 10),
+                for (final g in kidGoals) ...[
+                  GoalCard(goal: g, kidFlavored: true),
+                  const SizedBox(height: 12),
                 ],
 
-              Row(children: [
-                Expanded(
-                    child: Text('Debts & money owed',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: context.ink))),
-                if (s.canEditBudgets)
-                  IconButton(
-                    onPressed: () => _newDebtSheet(context),
-                    icon: Icon(Icons.add_circle, color: context.primary),
-                  ),
-              ]),
-              if (s.familyDebts.isEmpty)
-                OutlinedButton.icon(
-                  onPressed:
-                      s.canEditBudgets ? () => _newDebtSheet(context) : null,
-                  icon: const Icon(Icons.handshake_outlined),
-                  label: const Text('Add debt or money owed'),
-                )
-              else
-                for (final debt in s.familyDebts) ...[
-                  _DebtCard(debt: debt),
-                  const SizedBox(height: 10),
-                ],
-
-              // ── Kid jars ────────────────────────────────────────────────────
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.kidsJars,
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: context.ink),
+                // Mukando is configured in Settings. This screen only shows the
+                // circle once the family has explicitly enabled the feature.
+                const SizedBox(height: 8),
+                if (s.mukandoEnabled)
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: context.card,
+                      borderRadius: kBRadiusM,
                     ),
-                  ),
-                  if (s.canEditBudgets && kidsWithoutJar.isNotEmpty)
-                    IconButton(
-                      tooltip: AppLocalizations.of(context)!.addKidWish,
-                      onPressed: () => _newGoalSheet(
-                        context,
-                        kidJarMembers: kidsWithoutJar,
-                      ),
-                      icon: Icon(Icons.add_circle,
-                          color: context.primary, size: 28),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Kids can complete chores, earn stars and save towards their own goals. '
-                '${AppLocalizations.of(context)!.starsHome(s.stars)}',
-                style: TextStyle(
-                    fontSize: 12, color: context.inkSoft, height: 1.4),
-              ),
-              const SizedBox(height: 12),
-              for (final g in kidGoals) ...[
-                GoalCard(goal: g, kidFlavored: true),
-                const SizedBox(height: 12),
-              ],
-
-              // Mukando is configured in Settings. This screen only shows the
-              // circle once the family has explicitly enabled the feature.
-              const SizedBox(height: 8),
-              if (s.mukandoEnabled)
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: context.card,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Icon(Icons.autorenew,
-                                size: 19, color: context.primaryDark),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              AppLocalizations.of(context)!
-                                  .circleMember(m.name),
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: context.ink,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: Icon(Icons.autorenew,
+                                  size: 19, color: context.primaryDark),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                AppLocalizations.of(context)!
+                                    .circleMember(m.name),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.ink,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Round ${m.currentRound} of ${m.totalRounds} - '
-                        '${m.nextCollector} collects ${m.contribution.text}',
-                        style: TextStyle(fontSize: 13, color: context.ink),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        AppLocalizations.of(context)!.memberPot(
-                            s.hideAmounts ? '•••••' : m.potSoFar.text,
-                            m.contribution.text,
-                            m.order.length),
-                        style: TextStyle(fontSize: 12, color: context.inkSoft),
-                      ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: LinearProgressIndicator(
-                          value: m.progress,
-                          minHeight: 8,
-                          backgroundColor: context.track,
-                          color: context.primary,
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                      ElevatedButton(
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          s.circleCollect(
-                              id: 'mukando_round_${s.circle.currentRound + 1}');
-                          celebrate(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(context)!.roundOk,
-                              ),
-                              behavior: SnackBarBehavior.floating,
-                              action: SnackBarAction(
-                                label: AppLocalizations.of(context)!.undo,
-                                onPressed: s.undoCircleCollect,
-                              ),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.primary,
-                          foregroundColor: context.onSolid,
-                          minimumSize: const Size.fromHeight(46),
-                          shape:
-                              RoundedRectangleBorder(borderRadius: kBRadiusM),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Round ${m.currentRound} of ${m.totalRounds} - '
+                          '${m.nextCollector} collects ${m.contribution.text}',
+                          style: TextStyle(fontSize: 13, color: context.ink),
                         ),
-                        child: Text(AppLocalizations.of(context)!.markRound),
-                      ),
-                      const SizedBox(height: 8),
-                      Center(
-                        child: Text(
-                          AppLocalizations.of(context)!.recordsOnly,
+                        const SizedBox(height: 4),
+                        Text(
+                          AppLocalizations.of(context)!.memberPot(
+                              s.hideAmounts ? '•••••' : m.potSoFar.text,
+                              m.contribution.text,
+                              m.order.length),
                           style:
-                              TextStyle(fontSize: 11, color: context.inkSoft),
+                              TextStyle(fontSize: 12, color: context.inkSoft),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        MhuriProgress(
+                          progress: m.progress.clamp(0.0, 1.0).toDouble(),
+                          height: 4,
+                        ),
+                        const SizedBox(height: 14),
+                        ElevatedButton(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            s.circleCollect(
+                                id: 'mukando_round_${s.circle.currentRound + 1}');
+                            celebrate(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!.roundOk,
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                action: SnackBarAction(
+                                  label: AppLocalizations.of(context)!.undo,
+                                  onPressed: s.undoCircleCollect,
+                                ),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.primary,
+                            foregroundColor: context.onSolid,
+                            minimumSize: const Size.fromHeight(46),
+                            shape:
+                                RoundedRectangleBorder(borderRadius: kBRadiusM),
+                          ),
+                          child: Text(AppLocalizations.of(context)!.markRound),
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Text(
+                            AppLocalizations.of(context)!.recordsOnly,
+                            style:
+                                TextStyle(fontSize: 11, color: context.inkSoft),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+              ],
             ],
           )),
     );
+    if (widget.standalone) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Savings')),
+        body: content,
+      );
+    }
+    return content;
   }
 
   void _newGoalSheet(
@@ -520,27 +607,31 @@ class _CampaignCard extends StatelessWidget {
         campaign.target.currency);
     return InkWell(
         onTap: () => _details(context, s),
-        borderRadius: kBRadiusL,
+        borderRadius: kBRadiusM,
         child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration:
-                BoxDecoration(color: context.card, borderRadius: kBRadiusL),
+                BoxDecoration(color: context.card, borderRadius: kBRadiusM),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Icon(Icons.volunteer_activism_outlined, color: context.primary),
+                Icon(Icons.volunteer_activism_outlined,
+                    color: context.primary, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                     child: Text(campaign.name,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 16))),
-                Text(DateFormat.MMMd().format(campaign.deadline))
+                            fontWeight: FontWeight.w600, fontSize: 14.5))),
+                Text(DateFormat.MMMd().format(campaign.deadline),
+                    style: TextStyle(fontSize: 12, color: context.inkSoft)),
               ]),
-              const SizedBox(height: 10),
-              LinearProgressIndicator(
-                  value: (paid.minor / campaign.target.minor).clamp(0, 1),
-                  minHeight: 8),
               const SizedBox(height: 8),
+              MhuriProgress(
+                  progress: (paid.minor / campaign.target.minor)
+                      .clamp(0, 1)
+                      .toDouble(),
+                  height: 4),
+              const SizedBox(height: 6),
               Text(
                   'Pledged ${pledged.text} · Collected ${paid.text} · Remaining ${remaining.text}',
                   style: TextStyle(fontSize: 12, color: context.inkSoft)),
@@ -748,29 +839,35 @@ class _DebtCard extends StatelessWidget {
     };
     final counterparty = s.member(debt.counterpartyMemberId ?? '');
     return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusL),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusM),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(
                 child: Text(debt.name,
-                    style: const TextStyle(fontWeight: FontWeight.w800))),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14.5))),
             Chip(label: Text(debt.status == 'settled' ? 'Settled' : label))
           ]),
+          const SizedBox(height: 4),
           Text(
               'Original ${debt.principal.text} · Repaid ${repaid.text} · Remaining ${remaining.text}',
               style: TextStyle(fontSize: 12, color: context.inkSoft)),
           if (counterparty != null || debt.dueDate != null)
-            Text(
-              '${counterparty == null ? '' : counterparty.name}${counterparty != null && debt.dueDate != null ? ' · ' : ''}${debt.dueDate == null ? '' : 'Due ${DateFormat.yMMMd().format(debt.dueDate!)}'}',
-              style: TextStyle(fontSize: 12, color: context.inkSoft),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                '${counterparty == null ? '' : counterparty.name}${counterparty != null && debt.dueDate != null ? ' · ' : ''}${debt.dueDate == null ? '' : 'Due ${DateFormat.yMMMd().format(debt.dueDate!)}'}',
+                style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+              ),
             ),
           if (debt.status == 'active' && s.canEditBudgets)
             Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                     onPressed: () => _repay(context, s),
-                    child: const Text('Record repayment'))),
+                    child: const Text('Record repayment',
+                        style: TextStyle(fontWeight: FontWeight.w500)))),
         ]));
   }
 
@@ -835,20 +932,21 @@ class GoalCard extends StatelessWidget {
             : context.primary;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: kidFlavored ? context.warningSoft : context.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: kBRadiusM,
       ),
       child: Row(
         children: [
           RingProgress(
             value: ratio,
-            size: 56,
+            size: 44,
+            stroke: 5,
             color: ringColor,
             child: Icon(
-              iconForKey(goal.emoji) ?? Icons.flag,
-              size: 21,
+              iconForKey(goal.emoji) ?? Icons.flag_outlined,
+              size: 18,
               color: context.primaryDark,
             ),
           ),
@@ -863,7 +961,7 @@ class GoalCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: context.ink,
                   ),
                 ),
@@ -886,33 +984,54 @@ class GoalCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Column(
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ElevatedButton(
+              FilledButton(
                 onPressed: () => _contribute(context),
-                style: ElevatedButton.styleFrom(
+                style: FilledButton.styleFrom(
                   backgroundColor: context.primary,
                   foregroundColor: context.onSolid,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  elevation: 0,
+                  visualDensity: VisualDensity.compact,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: const Size(0, 36),
                   shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                child: const Text('Add'),
+                child: Text(AppLocalizations.of(context)!.add),
               ),
-              if (s.canEditBudgets)
-                PopupMenuButton<String>(
-                  tooltip: 'Savings goal actions',
-                  onSelected: (action) => _goalAction(context, s, action),
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                        value: 'edit', child: Text('Edit goal')),
-                    if (goal.status != 'done')
+              if (s.canEditBudgets) ...[
+                const SizedBox(width: 2),
+                SizedBox(
+                  width: 32,
+                  height: 36,
+                  child: PopupMenuButton<String>(
+                    tooltip: 'Savings goal actions',
+                    padding: EdgeInsets.zero,
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 20,
+                      color: context.inkSoft,
+                    ),
+                    onSelected: (action) => _goalAction(context, s, action),
+                    itemBuilder: (_) => [
                       const PopupMenuItem(
-                          value: 'complete', child: Text('Mark as completed')),
-                    if (s.canAdmin)
-                      const PopupMenuItem(
-                          value: 'archive', child: Text('Archive goal')),
-                  ],
+                          value: 'edit', child: Text('Edit goal')),
+                      if (goal.status != 'done')
+                        const PopupMenuItem(
+                            value: 'complete', child: Text('Mark as completed')),
+                      if (s.canAdmin)
+                        const PopupMenuItem(
+                            value: 'archive', child: Text('Archive goal')),
+                    ],
+                  ),
                 ),
+              ],
             ],
           ),
         ],

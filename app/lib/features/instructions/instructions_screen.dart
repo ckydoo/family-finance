@@ -161,14 +161,12 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
             tilePadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            leading: Container(
+            leading: SizedBox(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: context.primarySoft,
-                borderRadius: BorderRadius.circular(10),
+              child: Center(
+                child: Icon(guide.icon, color: context.primary, size: 22),
               ),
-              child: Icon(guide.icon, color: context.primary, size: 22),
             ),
             title: Text(
               guide.title,

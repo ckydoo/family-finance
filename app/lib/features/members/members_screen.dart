@@ -9,6 +9,9 @@ import '../../core/observability/reporter.dart';
 import '../../core/auth/pin_store.dart';
 import '../settings/settings_screen.dart';
 import '../settings/sync_screen.dart';
+import '../activity/activity_screen.dart';
+import '../family_chat/family_chat_screen.dart';
+import '../family_tasks/family_tasks_screen.dart';
 import 'invite_screen.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/l10n/app_strings.dart';
@@ -40,8 +43,6 @@ Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
       baseUrl: url,
       anonKey: key,
       tokenGet: () async {
-        final t = await s.db?.kvGet('auth_access_token');
-        if (t != null && t.isNotEmpty) return t;
         final auth = s.auth;
         if (auth == null) return null;
         return auth.refreshAccessToken();
@@ -236,7 +237,9 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
 
 Color _roleBg(BuildContext context, Role role) => switch (role) {
       Role.owner => context.successSoft,
+      Role.admin => context.infoSoft,
       Role.adult => context.warningSoft,
+      Role.contributor => context.primarySoft,
       Role.teen => context.infoSoft,
       Role.kid => context.accentSoft,
       Role.viewer => context.violetSoft,
@@ -262,14 +265,11 @@ class MembersScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
           children: [
-            // ── Space card ────────────────────────────────────────────────
+            // ── Family identity ───────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [context.primary, context.primaryDark],
-                ),
-                borderRadius: BorderRadius.circular(16),
+                border: Border(bottom: BorderSide(color: context.hairline)),
               ),
               child: Row(
                 children: [
@@ -279,8 +279,8 @@ class MembersScreen extends StatelessWidget {
                       children: [
                         Text(
                           familyName,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.ink,
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                           ),
@@ -288,8 +288,8 @@ class MembersScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           l.membersCycleDesc(s.monthStartDay),
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12),
+                          style:
+                              TextStyle(color: context.inkSoft, fontSize: 12),
                         ),
                       ],
                     ),
@@ -297,7 +297,7 @@ class MembersScreen extends StatelessWidget {
                   if (s.canAdmin)
                     PopupMenuButton<String>(
                       color: context.card,
-                      iconColor: Colors.white,
+                      iconColor: context.ink,
                       tooltip: 'Manage family',
                       onSelected: (value) {
                         if (value == 'edit') {
@@ -351,85 +351,52 @@ class MembersScreen extends StatelessWidget {
               icon: const Icon(Icons.person_add_alt_1, size: 19),
               label: Text(AppLocalizations.of(context)!.inviteTitle),
             ),
-            if (s.canApprove) ...[
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l.kidsAndChores,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: context.ink,
-                      ),
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => _addChoreSheet(context, s),
-                    icon: const Icon(Icons.add_task_rounded, size: 19),
-                    label: Text(l.addChore),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              if (s.chores.isEmpty)
-                Text(
-                  l.noFamilyChores,
-                  style: TextStyle(color: context.inkSoft, fontSize: 13),
-                )
-              else
-                for (final chore in s.chores)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      chore.state == ChoreState.confirmed
-                          ? Icons.check_circle_rounded
-                          : Icons.task_alt_rounded,
-                      color: context.primary,
-                    ),
-                    title: Text(chore.name),
-                    subtitle: Text(l.choreStars(chore.stars)),
-                    trailing: PopupMenuButton<String>(
-                      tooltip: 'Chore actions',
-                      onSelected: (action) async {
-                        if (action == 'edit') {
-                          _editChoreSheet(context, s, chore);
-                          return;
-                        }
-                        final ok = await confirmDialog(
-                          context,
-                          title: 'Remove ${chore.name}?',
-                          body: 'The chore will leave the active kids list.',
-                          confirmLabel: 'Remove chore',
-                          danger: true,
-                        );
-                        if (ok && context.mounted) {
-                          s.archiveChore(chore);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Chore removed'),
-                                  behavior: SnackBarBehavior.floating));
-                        }
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Edit chore')),
-                        PopupMenuItem(
-                            value: 'archive', child: Text('Remove chore')),
-                      ],
-                    ),
-                  ),
-            ],
-            const SizedBox(height: 8),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
+            Text('FAMILY',
+                style: Theme.of(context)
+                    .textTheme
+                    .labelMedium
+                    ?.copyWith(color: context.inkSoft, letterSpacing: 0.8)),
+            const SizedBox(height: 4),
+            _familyDestination(
+              context,
+              icon: Icons.task_alt_outlined,
+              title: 'Tasks & responsibilities',
+              subtitle:
+                  '${s.familyTasks.where((task) => !task.isArchived && !task.isDone).length} open',
+              screen: const FamilyTasksScreen(),
+            ),
+            _familyDestination(
+              context,
+              icon: Icons.workspace_premium_outlined,
+              title: 'Points & rewards',
+              subtitle: '${s.stars} family points',
+              screen: const _PointsRewardsScreen(),
+            ),
+            _familyDestination(
+              context,
+              icon: Icons.chat_bubble_outline_rounded,
+              title: 'Family chat',
+              subtitle: 'Messages and shared task discussions',
+              screen: const FamilyChatScreen(),
+            ),
+            _familyDestination(
+              context,
+              icon: Icons.history_rounded,
+              title: 'Family activity',
+              subtitle: 'Money and family updates',
+              screen: const ActivityScreen(),
+            ),
+            const SizedBox(height: 20),
 
             // ── Settings stubs ────────────────────────────────────────────
             Text(
-              AppLocalizations.of(context)!.settingsTitle,
+              'SETTINGS',
               style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: context.ink),
+                  fontSize: 12,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w600,
+                  color: context.inkSoft),
             ),
             const SizedBox(height: 10),
             _settingAction(
@@ -467,7 +434,7 @@ class MembersScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               ),
             ),
-            if (s.isLive && !s.hasSpace) _spaceCard(context, s),
+            if (s.isLive && s.shouldPromptFamilySetup) _spaceCard(context, s),
             _pinRow(context, s),
             _settingAction(
               context,
@@ -480,6 +447,25 @@ class MembersScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _familyDestination(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Widget screen,
+  }) =>
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        minTileHeight: 58,
+        leading: Icon(icon, color: context.primaryDark),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => screen),
+        ),
+      );
 
   Widget _languageRow(BuildContext context, AppState s) => InkWell(
         onTap: () => _pickLanguage(context, s),
@@ -1692,6 +1678,92 @@ class MembersScreen extends StatelessWidget {
   }
 }
 
+class _PointsRewardsScreen extends StatelessWidget {
+  const _PointsRewardsScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final pointsByMember = <String, int>{
+      for (final member in state.members) member.id: 0,
+    };
+    for (final task in state.familyTasks) {
+      if (!task.isArchived &&
+          task.isDone &&
+          task.approvedByMemberId != null &&
+          task.assigneeMemberId != null) {
+        pointsByMember.update(
+            task.assigneeMemberId!, (value) => value + task.points,
+            ifAbsent: () => task.points);
+      }
+    }
+    final ranking = state.members.toList()
+      ..sort((a, b) =>
+          (pointsByMember[b.id] ?? 0).compareTo(pointsByMember[a.id] ?? 0));
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Points & rewards'),
+        actions: [
+          if (state.canApprove)
+            IconButton(
+              tooltip: 'Add legacy chore',
+              onPressed: () => _addChoreSheet(context, state),
+              icon: const Icon(Icons.add_rounded),
+            ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        children: [
+          Text('This week', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          for (var index = 0; index < ranking.length; index++)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: SizedBox(
+                width: 28,
+                child: Text('${index + 1}',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              title: Text(ranking[index].name),
+              trailing: Text('${pointsByMember[ranking[index].id] ?? 0} pts'),
+            ),
+          const Divider(height: 28),
+          Text('Rewards', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Text(
+            'No family rewards have been configured yet.',
+            style: TextStyle(color: context.inkSoft),
+          ),
+          if (state.chores.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text('Legacy chores',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Existing chore records are preserved here while new responsibilities use Family Tasks.',
+              style: TextStyle(color: context.inkSoft, fontSize: 12),
+            ),
+            for (final chore in state.chores)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(chore.name),
+                subtitle: Text('${chore.stars} pts'),
+                trailing: state.canApprove
+                    ? IconButton(
+                        tooltip: 'Edit chore',
+                        onPressed: () => _editChoreSheet(context, state, chore),
+                        icon: const Icon(Icons.edit_outlined),
+                      )
+                    : null,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 Future<void> _editFamilySheet(
     BuildContext context, AppState state, String currentName) async {
   final controller = TextEditingController(text: currentName);
@@ -1824,17 +1896,17 @@ class _MemberRow extends StatelessWidget {
     // PIN-sealed.
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: context.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: kBRadiusM,
       ),
       child: Column(
         children: [
           Row(
             children: [
               CircleAvatar(
-                radius: 22,
+                radius: 20,
                 backgroundColor: _roleBg(context, m.role),
                 backgroundImage:
                     m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
@@ -1842,7 +1914,7 @@ class _MemberRow extends StatelessWidget {
                     ? null
                     : Icon(
                         iconForKey(m.emoji) ?? Icons.person,
-                        size: 20,
+                        size: 19,
                         color: context.ink,
                       ),
               ),
@@ -1850,7 +1922,7 @@ class _MemberRow extends StatelessWidget {
               Expanded(
                 child: InkWell(
                   onTap: isMe ? () => _editProfileSheet(context, s, m) : null,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: kBRadiusS,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1861,8 +1933,8 @@ class _MemberRow extends StatelessWidget {
                               m.name,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14.5,
                                 color: context.ink,
                               ),
                             ),
@@ -1939,6 +2011,16 @@ class _MemberRow extends StatelessWidget {
                     const PopupMenuItem(
                       value: 'promote',
                       child: Text('Make Family Admin'),
+                    ),
+                  if ((m.serverRole ?? m.role.name) == 'adult')
+                    const PopupMenuItem(
+                      value: 'contributor',
+                      child: Text('Change to Contributor'),
+                    ),
+                  if ((m.serverRole ?? m.role.name) == 'contributor')
+                    const PopupMenuItem(
+                      value: 'adult',
+                      child: Text('Change to Adult Member'),
                     ),
                   if ((m.serverRole ?? m.role.name) == 'co_parent')
                     const PopupMenuItem(
@@ -2038,13 +2120,19 @@ class _MemberRow extends StatelessWidget {
       }
       return;
     }
-    final targetRole = action == 'promote' ? 'co_parent' : 'adult';
+    final targetRole = switch (action) {
+      'promote' => 'co_parent',
+      'contributor' => 'contributor',
+      _ => 'adult',
+    };
     try {
       await s.sync?.changeMemberRole(m.id, targetRole);
       messenger.showSnackBar(SnackBar(
-        content: Text(action == 'promote'
-            ? '${m.name} is now a Family Admin'
-            : '${m.name} is now an Adult Member'),
+        content: Text(switch (action) {
+          'promote' => '${m.name} is now a Family Admin',
+          'contributor' => '${m.name} is now a Contributor',
+          _ => '${m.name} is now an Adult Member',
+        }),
         behavior: SnackBarBehavior.floating,
       ));
     } catch (_) {

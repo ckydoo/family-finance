@@ -6,7 +6,7 @@ description: >-
   shopping lists, Teen Zone and a sealed Kids Mode. Local persistence via
   sqflite; optional Supabase sync.
 publish_to: "none"
-version: 0.2.0+4
+version: 0.2.0+5
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -34,6 +34,7 @@ dependencies:
   firebase_core: ^3.15.2
   firebase_messaging: ^15.2.10
   firebase_analytics: ^11.6.0
+  flutter_secure_storage: ^9.2.4
 
 dev_dependencies:
   flutter_test:

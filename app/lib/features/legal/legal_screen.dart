@@ -362,14 +362,12 @@ class _LegalScreenState extends State<LegalScreen> {
   Widget _titleBadge(String title, String subtitle, IconData icon) {
     return Row(
       children: [
-        Container(
+        SizedBox(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
-            color: context.primarySoft,
-            borderRadius: BorderRadius.circular(12),
+          child: Center(
+            child: Icon(icon, color: context.primary, size: 24),
           ),
-          child: Icon(icon, color: context.primary, size: 24),
         ),
         const SizedBox(width: 14),
         Expanded(

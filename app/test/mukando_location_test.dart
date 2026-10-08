@@ -32,7 +32,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pumpWidget(harness(state, const SettingsScreen()));
     await tester.pumpAndSettle();
-    expect(find.text('Savings circle (mukando)'), findsOneWidget);
+    final mukandoFinder = find.text('Savings circle (mukando)');
+    await tester.scrollUntilVisible(
+      mukandoFinder,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(mukandoFinder, findsOneWidget);
     expect(find.byType(SwitchListTile), findsWidgets);
     expect(tester.takeException(), isNull);
   });

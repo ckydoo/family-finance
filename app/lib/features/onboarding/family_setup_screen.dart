@@ -985,15 +985,13 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       [
         const SizedBox(height: 16),
         Center(
-          child: Container(
+          child: SizedBox(
             width: 80,
             height: 80,
-            decoration: BoxDecoration(
-              color: context.primarySoft,
-              shape: BoxShape.circle,
+            child: Center(
+              child: Icon(Icons.check_circle_rounded,
+                  size: 52, color: context.primary),
             ),
-            child: Icon(Icons.check_circle_rounded,
-                size: 48, color: context.primary),
           ),
         ),
         const SizedBox(height: 20),

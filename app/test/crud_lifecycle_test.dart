@@ -172,7 +172,7 @@ void main() {
       ],
       meId: 'admin-b',
     );
-    expect(members.single.role, Role.owner);
+    expect(members.single.role, Role.admin);
     expect(members.single.serverRole, 'co_parent');
   });
 

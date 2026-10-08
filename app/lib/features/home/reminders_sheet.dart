@@ -9,6 +9,7 @@ import '../../l10n/generated/app_localizations.dart';
 
 /// Home bell (§7.5) → what will actually notify on this device.
 void showRemindersSheet(BuildContext context) {
+  AppScope.of(context).markNotificationsRead();
   showMhuriSheet<void>(
     context: context,
     builder: (context) => const _RemindersSheet(),

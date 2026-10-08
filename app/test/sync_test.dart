@@ -9,6 +9,7 @@ import 'package:mhuri_money/core/db/app_database.dart';
 import 'package:mhuri_money/core/db/persistence.dart';
 import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/models/models.dart';
+import 'package:mhuri_money/core/notifications/reminders.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/core/sync/sync_engine.dart';
 import 'package:mhuri_money/core/sync/supabase_sync_client.dart';
@@ -295,6 +296,51 @@ void main() {
         meId: 'u1',
       );
       expect(roster.single.avatarUrl, contains('/avatars/u1/'));
+    });
+
+    test('family setup prompt waits for persisted space identity to load',
+        () async {
+      Future<void> useManualEngine() async {
+        final client = engine.client;
+        engine.dispose();
+        engine = SyncEngine(
+          client: client,
+          database: db.raw,
+          persistence: Persistence(db),
+          state: state,
+          kvGet: (k) async => kv[k],
+          kvSet: (k, v) async => kv[k] = v,
+          autoSchedule: false,
+        );
+        state.attachSync(engine);
+      }
+
+      await useManualEngine();
+      expect(state.shouldPromptFamilySetup, isFalse);
+      await engine.start();
+      expect(engine.spaceIdentityLoaded, isTrue);
+      expect(engine.familySetupResolutionComplete, isFalse);
+      expect(state.shouldPromptFamilySetup, isFalse);
+
+      await engine.restoreFamily();
+      expect(engine.familySetupResolutionComplete, isTrue);
+      expect(state.shouldPromptFamilySetup, isTrue);
+
+      final promptStates = <bool>[];
+      void recordPromptState() {
+        promptStates.add(state.shouldPromptFamilySetup);
+      }
+
+      state.addListener(recordPromptState);
+      kv['space_id'] = 'sp1';
+      await engine.start();
+      state.removeListener(recordPromptState);
+
+      expect(engine.spaceIdentityLoaded, isTrue);
+      expect(state.hasSpace, isTrue);
+      expect(state.shouldPromptFamilySetup, isFalse);
+      expect(promptStates, isNotEmpty);
+      expect(promptStates, everyElement(isFalse));
     });
 
     test('failed family setup save does not advance local onboarding',
@@ -815,6 +861,85 @@ void main() {
       expect(stored, isEmpty);
     });
 
+    test('transaction refresh preserves its separate budget attribution',
+        () async {
+      final original = Tx(
+        id: 'tx-attributed',
+        envelopeId: 'env9',
+        memberId: 'test-user-1',
+        type: TxType.expense,
+        amount: Money.fromMajor(60, Currency.usd),
+        method: Method.cash,
+        note: 'Groceries',
+        when: DateTime.utc(2026, 10, 7),
+      );
+      state.txs.add(original);
+      await Persistence(db).saveTx(original);
+
+      // The server transaction table intentionally has no envelope_id; that
+      // relationship is returned separately from envelope_tx.
+      final row = <String, Object?>{
+        'id': original.id,
+        'space_id': 'sp1',
+        'member_id': original.memberId,
+        'type': 'expense',
+        'amount_minor': original.amount.minor,
+        'currency': 'USD',
+        'method': 'cash',
+        'note': original.note,
+        'occurred_at': original.when.toIso8601String(),
+        'deleted_at': null,
+        'updated_at': DateTime.utc(2026, 10, 8).toIso8601String(),
+      };
+
+      await Persistence(db).applyServerRows('tx', [row]);
+      state.applyPulled('tx', [row]);
+
+      expect(
+          state.txs.singleWhere((t) => t.id == original.id).envelopeId, 'env9');
+      final stored = await db.raw.query(
+        'tx',
+        columns: ['envelope_id'],
+        where: 'id = ?',
+        whereArgs: [original.id],
+      );
+      expect(stored.single['envelope_id'], 'env9');
+    });
+
+    test('incoming family chat updates unread counters and notifies once', () {
+      Reminder? shown;
+      state.immediateNotificationHook = (notification) => shown = notification;
+      final now = DateTime.now().toUtc();
+      final row = <String, Object?>{
+        'id': 'remote-chat-1',
+        'space_id': 'sp1',
+        'sender_id': 'another-member',
+        'text': 'Can we review the groceries budget?',
+        'created_at': now.toIso8601String(),
+        'is_system': false,
+        'sender_name': 'Tariro',
+        'status': 'sent',
+        'deleted': false,
+        'updated_at': now.toIso8601String(),
+      };
+
+      state.applyPulled('family_chat_message', [row]);
+
+      expect(state.unreadChatCount, 1);
+      expect(state.unreadNotificationCount, greaterThanOrEqualTo(1));
+      expect(shown?.title, 'Tariro');
+      expect(shown?.body, 'Can we review the groceries budget?');
+
+      state.applyPulled('family_chat_message', [row]);
+      expect(state.unreadChatCount, 1);
+      expect(shown?.key, 'chat_remote-chat-1');
+
+      state.markNotificationsRead();
+      expect(state.unreadNotificationCount, 0);
+      state.markFamilyChatRead();
+      expect(state.unreadChatCount, 0);
+    });
+
     test('joinSpace with a bad code surfaces a friendly error', () async {
       server.handler = (request) async {
         if (request.url.path.startsWith('/rest/v1/rpc/join_space')) {
@@ -862,6 +987,7 @@ void main() {
 
     test('restoreFamily distinguishes no family from an unavailable check',
         () async {
+      await engine.start();
       server.handler = (request) async {
         if (request.url.path == '/rest/v1/rpc/restore_my_space') {
           return _json(null);
@@ -870,6 +996,8 @@ void main() {
         return _json(null, 201);
       };
       expect(await engine.restoreFamily(), FamilyRestoreResult.notFound);
+      expect(engine.familySetupResolutionComplete, isTrue);
+      expect(state.shouldPromptFamilySetup, isTrue);
 
       server.handler = (request) async {
         if (request.url.path == '/rest/v1/rpc/restore_my_space') {
@@ -878,11 +1006,13 @@ void main() {
         return _json([]);
       };
       expect(await engine.restoreFamily(), FamilyRestoreResult.unavailable);
+      expect(engine.familySetupResolutionComplete, isFalse);
       expect(state.onboardingComplete, isFalse);
     });
 
     test('restoreFamily adopts an existing membership before routing',
         () async {
+      await engine.start();
       server.handler = (request) async {
         final path = request.url.path;
         if (path == '/rest/v1/rpc/restore_my_space') {
@@ -899,6 +1029,8 @@ void main() {
       expect(await engine.restoreFamily(), FamilyRestoreResult.restored);
       expect(kv['space_id'], 'sp_restored');
       expect(kv['space_name'], 'Moyo Family');
+      expect(engine.familySetupResolutionComplete, isTrue);
+      expect(state.shouldPromptFamilySetup, isFalse);
       expect(state.onboardingComplete, isTrue);
     });
 

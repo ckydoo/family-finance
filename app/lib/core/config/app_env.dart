@@ -24,7 +24,8 @@ class AppEnv {
   });
 
   /// Which environment this build targets: `dev` (default) | `staging` |
-  /// `prod`. Sources: `--dart-define=MHURI_ENV=…` > `.env` `ENV=` > dev.
+  /// `prod`. Sources: `--dart-define=MHURI_ENV=…` > `.env`
+  /// `MHURI_ENV`/`APP_ENV`/`ENV` > dev. `live` is normalized to `prod`.
   /// Never destructive-test against prod - run migrations/experiments on
   /// the staging project first (see UPDATE_FROM_SANDBOX #17).
   final String environment;
@@ -132,7 +133,16 @@ class AppEnv {
       fcmProjectId: map['FCM_PROJECT_ID'],
       sentryDsn: map['SENTRY_DSN'],
       rateApiUrl: map['RATE_API_URL'],
-      environment: (map['ENV'] ?? 'dev').toLowerCase(),
+      environment: _normalizeEnvironment(
+        map['MHURI_ENV'] ?? map['APP_ENV'] ?? map['ENV'] ?? 'dev',
+      ),
     );
+  }
+
+  static String _normalizeEnvironment(String value) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'live' || normalized == 'production'
+        ? 'prod'
+        : normalized;
   }
 }

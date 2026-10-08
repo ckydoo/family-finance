@@ -247,6 +247,9 @@ final kSyncAdapters = <String, SyncAdapter>{
         'reference_id': m.referenceId,
         'reference_title': m.referenceTitle,
         'reference_meta': m.referenceMeta,
+        'media_url': m.mediaUrl,
+        'media_type': m.mediaType,
+        'sticker': m.sticker,
         'deleted': m.deleted,
       };
     },
@@ -267,6 +270,9 @@ final kSyncAdapters = <String, SyncAdapter>{
       referenceId: j['reference_id'] as String?,
       referenceTitle: j['reference_title'] as String?,
       referenceMeta: j['reference_meta'] as String?,
+      mediaUrl: j['media_url'] as String?,
+      mediaType: j['media_type'] as String?,
+      sticker: j['sticker'] as String?,
       deleted: (j['deleted'] as bool?) ?? false,
     ),
   ),
@@ -728,12 +734,11 @@ List<Member> membersFromServer({
   final profiles = {for (final p in profileRows) p['id'].toString(): p};
   Role roleOf(String raw) => switch (raw) {
         'owner' => Role.owner,
+        'co_parent' => Role.admin,
+        'contributor' => Role.contributor,
         'teen' => Role.teen,
         'kid' => Role.kid,
         'viewer' => Role.viewer,
-        // `co_parent` is the existing database representation for an
-        // additional Family Admin; no risky role migration is required.
-        'co_parent' => Role.owner,
         _ => Role.adult,
       };
 

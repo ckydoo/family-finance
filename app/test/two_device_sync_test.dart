@@ -98,7 +98,8 @@ class MockCloudBackend extends http.BaseClient {
           final conflict = request.url.queryParameters['on_conflict'];
           if (table == 'envelope_tx' && conflict == 'id') {
             return http.StreamedResponse(
-              Stream.value(utf8.encode(jsonEncode({'message': 'column "id" does not exist'}))),
+              Stream.value(utf8.encode(
+                  jsonEncode({'message': 'column "id" does not exist'}))),
               400,
               headers: {'content-type': 'application/json'},
             );
@@ -303,13 +304,17 @@ void main() {
     });
 
     test('1. Baseline hydration: both devices pull the initial envelope', () {
-      expect(deviceA.state.envelopes.any((e) => e.id == 'env_groceries'), isTrue);
-      expect(deviceB.state.envelopes.any((e) => e.id == 'env_groceries'), isTrue);
+      expect(
+          deviceA.state.envelopes.any((e) => e.id == 'env_groceries'), isTrue);
+      expect(
+          deviceB.state.envelopes.any((e) => e.id == 'env_groceries'), isTrue);
       expect(deviceA.state.envelope('env_groceries')!.limit.minor, 30000);
       expect(deviceB.state.envelope('env_groceries')!.limit.minor, 30000);
     });
 
-    test('2. Two devices offline logging transactions converge without duplicates or loss', () async {
+    test(
+        '2. Two devices offline logging transactions converge without duplicates or loss',
+        () async {
       // Device A logs $15 offline
       final txAOk = deviceA.state.addTx(
         id: 'tx_devA_1',
@@ -386,7 +391,46 @@ void main() {
       expect(deviceA.state.envelope('env_groceries')!.limit.minor, 40000);
     });
 
-    test('4. Shopping list: offline creation on A, pulled to B, offline deletion with tombstone on B', () async {
+    test('3b. Simultaneous offline budget edits require review', () async {
+      final envA = deviceA.state.envelope('env_groceries')!;
+      final envB = deviceB.state.envelope('env_groceries')!;
+
+      // Both devices edit the same budget before either one reconnects.
+      envA.limit = const Money(35000, Currency.usd);
+      envB.limit = const Money(40000, Currency.usd);
+      await deviceA.syncEngine.enqueue('envelope', envA);
+      await deviceB.syncEngine.enqueue('envelope', envB);
+
+      // A reaches the family space first. B must not silently overwrite it.
+      await deviceA.sync();
+      await deviceB.sync();
+
+      expect(deviceB.syncEngine.status, SyncStatus.needsReview);
+      expect(await deviceB.syncEngine.conflictCount(), 1);
+      expect(
+        backend.tables['envelope']!
+            .singleWhere((row) => row['id'] == 'env_groceries')['limit_minor'],
+        35000,
+      );
+
+      final conflict = (await deviceB.syncEngine.conflicts()).single;
+      expect(conflict.serverPayload?['limit_minor'], 35000);
+      expect(conflict.payload['limit_minor'], 40000);
+
+      // Choosing this device's version retries it as an explicit decision.
+      await deviceB.syncEngine.keepLocalConflict(conflict.rowId);
+      await deviceB.sync();
+      expect(await deviceB.syncEngine.conflictCount(), 0);
+      expect(
+        backend.tables['envelope']!
+            .singleWhere((row) => row['id'] == 'env_groceries')['limit_minor'],
+        40000,
+      );
+    });
+
+    test(
+        '4. Shopping list: offline creation on A, pulled to B, offline deletion with tombstone on B',
+        () async {
       // Device A adds Milk and Apples
       deviceA.state.addItem('Milk', 2, const Money(300, Currency.usd));
       deviceA.state.addItem('Apples', 4, const Money(200, Currency.usd));
@@ -408,8 +452,8 @@ void main() {
 
       // Device B syncs tombstone to backend
       await deviceB.sync();
-      final backendMilk = backend.tables['list_item']!
-          .firstWhere((r) => r['name'] == 'Milk');
+      final backendMilk =
+          backend.tables['list_item']!.firstWhere((r) => r['name'] == 'Milk');
       expect(backendMilk['deleted_at'], isNotNull);
 
       // Device A syncs -> tombstone deletes Milk from Device A, keeping Apples
@@ -418,7 +462,9 @@ void main() {
       expect(deviceA.state.items.first.name, 'Apples');
     });
 
-    test('5. Savings goal and concurrent contributions merge into total saved without duplication', () async {
+    test(
+        '5. Savings goal and concurrent contributions merge into total saved without duplication',
+        () async {
       // Device A creates Goal "Holiday Fund"
       deviceA.state.addGoal(
         name: 'Holiday Fund',
@@ -429,13 +475,17 @@ void main() {
 
       // Device B pulls the goal
       await deviceB.sync();
-      final goalB = deviceB.state.goals.firstWhere((g) => g.name == 'Holiday Fund');
+      final goalB =
+          deviceB.state.goals.firstWhere((g) => g.name == 'Holiday Fund');
       expect(goalB.target.minor, 100000);
 
       // Both devices contribute offline
-      final goalA = deviceA.state.goals.firstWhere((g) => g.name == 'Holiday Fund');
-      deviceA.state.contribute(goalA, const Money(15000, Currency.usd), id: 'contrib_A');
-      deviceB.state.contribute(goalB, const Money(25000, Currency.usd), id: 'contrib_B');
+      final goalA =
+          deviceA.state.goals.firstWhere((g) => g.name == 'Holiday Fund');
+      deviceA.state
+          .contribute(goalA, const Money(15000, Currency.usd), id: 'contrib_A');
+      deviceB.state
+          .contribute(goalB, const Money(25000, Currency.usd), id: 'contrib_B');
 
       // Sync both devices
       await deviceA.sync();
@@ -451,7 +501,8 @@ void main() {
       expect(deviceA.state.savedOn(goalA).minor, 40000);
     });
 
-    test('6. Offline outbox survives app termination and restarts cleanly', () async {
+    test('6. Offline outbox survives app termination and restarts cleanly',
+        () async {
       // Device A logs a transaction while offline (simulate network failure)
       backend.rejectWith401 = false;
       deviceA.state.addTx(
@@ -487,12 +538,17 @@ void main() {
         note: 'School uniforms',
       );
       await restoredDev.sync();
-      expect(backend.tables['transaction']!.any((r) => r['id'] == 'tx_offline_survive'), isTrue);
+      expect(
+          backend.tables['transaction']!
+              .any((r) => r['id'] == 'tx_offline_survive'),
+          isTrue);
 
       await restoredDev.dispose();
     });
 
-    test('7. Token revocation / forced logout transitions session to sign-in while preserving outbox', () async {
+    test(
+        '7. Token revocation / forced logout transitions session to sign-in while preserving outbox',
+        () async {
       // Device A has a pending transaction
       deviceA.state.addTx(
         id: 'tx_pre_revocation',
@@ -528,10 +584,14 @@ void main() {
       await deviceA.sync();
       expect(deviceA.syncEngine.status, SyncStatus.idle);
       expect(await deviceA.syncEngine.pendingCount(), 0);
-      expect(backend.tables['transaction']!.any((r) => r['id'] == 'tx_pre_revocation'), isTrue);
+      expect(
+          backend.tables['transaction']!
+              .any((r) => r['id'] == 'tx_pre_revocation'),
+          isTrue);
     });
 
-    test('8. SyncHealthState evaluates accurately across lifecycle states', () async {
+    test('8. SyncHealthState evaluates accurately across lifecycle states',
+        () async {
       // Idle with no pending ops and lastSyncAt != null -> synced
       expect(deviceA.state.syncHealth, SyncHealthState.synced);
 
@@ -548,7 +608,9 @@ void main() {
       expect(deviceA.state.syncHealth, SyncHealthState.needsAttention);
     });
 
-    test('9. Transaction with envelope links pushes to envelope_tx with composite conflict target and ISO currency', () async {
+    test(
+        '9. Transaction with envelope links pushes to envelope_tx with composite conflict target and ISO currency',
+        () async {
       deviceA.state.addTx(
         id: 'tx_envelope_linked',
         type: TxType.expense,
@@ -565,7 +627,12 @@ void main() {
 
       // Verify envelope_tx contains the link with uppercase USD currency
       final links = backend.tables['envelope_tx']!;
-      expect(links.any((l) => l['envelope_id'] == 'env_books' && l['transaction_id'] == 'tx_envelope_linked' && l['currency'] == 'USD'), isTrue);
+      expect(
+          links.any((l) =>
+              l['envelope_id'] == 'env_books' &&
+              l['transaction_id'] == 'tx_envelope_linked' &&
+              l['currency'] == 'USD'),
+          isTrue);
     });
   });
 }

@@ -12,6 +12,9 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/l10n/app_strings.dart';
+import '../family_tasks/family_tasks_screen.dart';
+import '../lists/lists_screen.dart';
+import '../savings/savings_screen.dart';
 
 /// Full-screen, keyboard-safe transaction entry (UX-polish P1).
 ///
@@ -21,13 +24,120 @@ import '../../core/l10n/app_strings.dart';
 ///  · note & payment method behind "More details" (collapsed by default);
 ///  · Save is pinned above the keyboard (bottomNavigationBar + viewInsets);
 ///  · dismissing with entered data asks first - after save it never does.
-Future<void> showQuickAdd(BuildContext context, {TxType? initialType}) {
+Future<void> showQuickAdd(BuildContext context, {TxType? initialType}) =>
+    _showTransactionEntry(context, initialType ?? TxType.expense);
+
+Future<void> showQuickAddMenu(BuildContext context) async {
+  {
+    final action = await showModalBottomSheet<_QuickAction>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: context.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusSheet)),
+      ),
+      builder: (sheetContext) => const _QuickActionMenu(),
+    );
+    if (action == null || !context.mounted) return;
+    switch (action) {
+      case _QuickAction.expense:
+        return _showTransactionEntry(context, TxType.expense);
+      case _QuickAction.income:
+        return _showTransactionEntry(context, TxType.income);
+      case _QuickAction.shopping:
+        await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+          builder: (_) =>
+              const ListsScreen(standalone: true, startAdding: true),
+        ));
+        return;
+      case _QuickAction.task:
+        await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+          builder: (_) => const FamilyTasksScreen(startAdding: true),
+        ));
+        return;
+      case _QuickAction.contribution:
+        await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+          builder: (_) => const SavingsScreen(
+            standalone: true,
+            initialSection: SavingsSection.contributions,
+            startAdding: true,
+          ),
+        ));
+        return;
+    }
+  }
+}
+
+Future<void> _showTransactionEntry(BuildContext context, TxType initialType) {
   return Navigator.of(context).push(
     MaterialPageRoute<void>(
       fullscreenDialog: true,
       builder: (_) => _QuickAddSheet(initialType: initialType),
     ),
   );
+}
+
+enum _QuickAction { expense, income, shopping, task, contribution }
+
+class _QuickActionMenu extends StatelessWidget {
+  const _QuickActionMenu();
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = <(_QuickAction, IconData, String, String)>[
+      (
+        _QuickAction.expense,
+        Icons.remove_circle_outline,
+        'Expense',
+        'Record money spent'
+      ),
+      (
+        _QuickAction.income,
+        Icons.add_circle_outline,
+        'Income',
+        'Record money received'
+      ),
+      (
+        _QuickAction.shopping,
+        Icons.shopping_cart_outlined,
+        'Shopping item',
+        'Add something the family needs'
+      ),
+      (
+        _QuickAction.task,
+        Icons.task_alt_outlined,
+        'Task',
+        'Assign a responsibility'
+      ),
+      (
+        _QuickAction.contribution,
+        Icons.volunteer_activism_outlined,
+        'Contribution',
+        'Create or update a family collection'
+      ),
+    ];
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SheetHeader('Quick add', onClose: () => Navigator.pop(context)),
+          const SizedBox(height: 4),
+          for (final action in actions)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              minTileHeight: 54,
+              leading: Icon(action.$2, color: context.primaryDark),
+              title: Text(action.$3),
+              subtitle: Text(action.$4),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.pop(context, action.$1),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _QuickAddSheet extends StatefulWidget {

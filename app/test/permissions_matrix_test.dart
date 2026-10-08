@@ -125,8 +125,8 @@ void main() {
       expect(s.authRole, Role.adult);
       expect(s.canAdmin, isFalse);
       expect(s.canInvite, isFalse);
-      expect(s.canApprove, isTrue);
-      expect(s.canEditBudgets, isTrue);
+      expect(s.canApprove, isFalse);
+      expect(s.canEditBudgets, isFalse);
       expect(s.canAuthorTransact, isTrue);
       expect(s.canTransferOwnership, isFalse);
       expect(s.canDeleteSpace, isFalse);
@@ -134,7 +134,7 @@ void main() {
       // Budgets
       final moved = s.moveMoney(s.envelopes[0], s.envelopes[1],
           const Money(1000, Currency.usd), 'Shift');
-      expect(moved, isTrue);
+      expect(moved, isFalse);
 
       // Approvals: chores & kid requests
       final chore = Chore(
@@ -145,8 +145,8 @@ void main() {
       );
       final starsBefore = s.stars;
       s.confirmChore(chore);
-      expect(chore.state, ChoreState.confirmed);
-      expect(s.stars, starsBefore + 5);
+      expect(chore.state, ChoreState.waiting);
+      expect(s.stars, starsBefore);
 
       final req = KidRequest(
         id: 'r1',
@@ -156,7 +156,28 @@ void main() {
       );
       s.requests.add(req);
       s.approveRequest(req);
-      expect(req.state, RequestState.approved);
+      expect(req.state, RequestState.pending);
+    });
+
+    test('Family Admin manages the household without owner-only powers',
+        () async {
+      final s = makeStateFor(role: Role.admin);
+      expect(s.canAdmin, isTrue);
+      expect(s.canInvite, isTrue);
+      expect(s.canApprove, isTrue);
+      expect(s.canEditBudgets, isTrue);
+      expect(s.canTransferOwnership, isFalse);
+      expect(s.canDeleteSpace, isFalse);
+    });
+
+    test('Contributor can record money but cannot change shared plans',
+        () async {
+      final s = makeStateFor(role: Role.contributor);
+      expect(s.canAuthorTransact, isTrue);
+      expect(s.canContributeSavings, isTrue);
+      expect(s.canAdmin, isFalse);
+      expect(s.canEditBudgets, isFalse);
+      expect(s.canEditLists, isFalse);
     });
 
     test(

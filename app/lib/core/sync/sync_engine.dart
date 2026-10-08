@@ -22,7 +22,15 @@ import 'sync_mappers.dart';
 ///  * conflicts: last-writer-wins (family scale - see ROADMAP);
 ///  * connectivity: pull-on-start, event-driven refresh from family pushes,
 ///    debounced sync after mutations, and a short fallback poll.
-enum SyncStatus { idle, syncing, offline, needsSignIn, needsSetup, error }
+enum SyncStatus {
+  idle,
+  syncing,
+  offline,
+  needsSignIn,
+  needsSetup,
+  needsReview,
+  error,
+}
 
 /// Result of resolving the signed-in account's family before routing.
 /// [unavailable] is deliberately distinct from [notFound]: a network failure
@@ -90,6 +98,8 @@ class SyncEngine {
   String? _spaceId;
   String? inviteCode;
   String? spaceName;
+  bool _spaceIdentityLoaded = false;
+  bool _familySetupResolutionComplete = false;
 
   /// M7 reliability: exponential backoff after failed syncs (8s→15min),
   /// poison batches parked after [maxAttempts] failed pushes (retry with
@@ -103,13 +113,21 @@ class SyncEngine {
   DateTime? _nextPushOkAt;
 
   String? get spaceId => _spaceId;
+  bool get spaceIdentityLoaded => _spaceIdentityLoaded;
+  bool get familySetupResolutionComplete => _familySetupResolutionComplete;
 
   // ── lifecycle ───────────────────────────────────────────────────────────
 
   Future<void> start() async {
+    _spaceIdentityLoaded = false;
+    _familySetupResolutionComplete = false;
+    state.syncIdentityChanged();
     _spaceId = await _kvGet('space_id');
     spaceName = await _kvGet('space_name');
     inviteCode = await _kvGet('invite_code');
+    _spaceIdentityLoaded = true;
+    _familySetupResolutionComplete = _spaceId != null;
+    state.syncIdentityChanged();
 
     if (!autoSchedule) return;
 
@@ -145,6 +163,9 @@ class SyncEngine {
         localMember.isNotEmpty &&
         localMember != userId;
     if (belongsToAnotherUser || legacyMismatch) {
+      _spaceIdentityLoaded = false;
+      _familySetupResolutionComplete = false;
+      state.syncIdentityChanged();
       final previousUser =
           cachedUser?.isNotEmpty == true ? cachedUser! : (localMember ?? '');
       final previousKv = await state.db?.activeFamilyKv() ?? const {};
@@ -170,6 +191,9 @@ class SyncEngine {
         inviteCode = await _kvGet('invite_code');
         await state.refresh();
       }
+      _spaceIdentityLoaded = true;
+      _familySetupResolutionComplete = _spaceId != null;
+      state.syncIdentityChanged();
     }
     await _kvSet('cached_family_user_id', userId);
   }
@@ -188,6 +212,24 @@ class SyncEngine {
   // and the UI confirms it first.
 
   Future<List<OutboxOp>> parked() => _outbox.parked(maxAttempts);
+
+  Future<List<OutboxOp>> conflicts() => _outbox.conflicts();
+
+  Future<int> conflictCount() => _outbox.countConflicts();
+
+  Future<void> keepLocalConflict(int rowId) => _outbox.clearConflict(rowId);
+
+  Future<void> acceptServerConflict(OutboxOp op) async {
+    final server = op.serverPayload;
+    if (server == null) return;
+    await _persistence.applyServerRows(op.entity, [server]);
+    state.applyPulled(op.entity, [server]);
+    await _outbox.deleteRow(op.rowId);
+    await state.refreshPending();
+    if (await _outbox.countConflicts() == 0) {
+      _setStatus(SyncStatus.idle);
+    }
+  }
 
   Future<int> parkedCount() => _outbox.countParked(maxAttempts);
 
@@ -217,10 +259,16 @@ class SyncEngine {
   /// answers "am I still in a family?" via restore_my_space(); the match
   /// is adopted and full-synced. Never re-creates, never duplicates.
   Future<FamilyRestoreResult> restoreFamily() async {
-    if (_spaceId != null) return FamilyRestoreResult.restored;
+    if (_spaceId != null) {
+      _setFamilySetupResolutionComplete();
+      return FamilyRestoreResult.restored;
+    }
+    _familySetupResolutionComplete = false;
+    state.syncIdentityChanged();
     try {
       final r = await client.rpc('restore_my_space', {});
       if (r is! Map || r['space_id'] == null) {
+        _setFamilySetupResolutionComplete();
         return FamilyRestoreResult.notFound;
       }
       await _adoptSpace(
@@ -235,11 +283,17 @@ class SyncEngine {
       if (state.onboardingStage == 'create') {
         state.markOnboardingRestored();
       }
+      _setFamilySetupResolutionComplete();
       return FamilyRestoreResult.restored;
     } catch (e) {
       debugPrint('Mhuri restore error: $e');
       return FamilyRestoreResult.unavailable;
     }
+  }
+
+  void _setFamilySetupResolutionComplete() {
+    _familySetupResolutionComplete = true;
+    state.syncIdentityChanged();
   }
 
   /// Every active family membership for the signed-in account.
@@ -316,6 +370,7 @@ class SyncEngine {
   }
 
   void _setStatus(SyncStatus s, [String? error]) {
+    if (status == s && lastError == error) return;
     status = s;
     lastError = error;
     state.syncStatusChanged();
@@ -748,6 +803,7 @@ class SyncEngine {
     final sw = Stopwatch()..start();
     try {
       try {
+        await _detectConflicts();
         await _push(force: force);
         await _pull(sid);
       } on SyncException catch (e) {
@@ -764,6 +820,7 @@ class SyncEngine {
           state.auth?.handleForcedLogout(reason: e.message);
           rethrow;
         }
+        await _detectConflicts();
         await _push(force: force);
         await _pull(sid);
       }
@@ -771,7 +828,9 @@ class SyncEngine {
       await _kvSet('last_sync_ms', '${lastSyncAt!.millisecondsSinceEpoch}');
       _consecFail = 0;
       _nextPushOkAt = null;
-      _setStatus(SyncStatus.idle);
+      _setStatus(await _outbox.countConflicts() > 0
+          ? SyncStatus.needsReview
+          : SyncStatus.idle);
       mhuriEvent('sync.ok', {'run': run, 'ms': sw.elapsedMilliseconds});
     } on SyncException catch (e) {
       _registerFailure(
@@ -789,6 +848,59 @@ class SyncEngine {
       _busy = false;
       await state.refreshPending();
     }
+  }
+
+  static const _conflictEntities = {
+    'tx',
+    'envelope',
+    'goal',
+    'recurring',
+    'list_item',
+    'budget_cycle_plan',
+    'family_debt',
+    'contribution_campaign',
+  };
+
+  Future<void> _detectConflicts() async {
+    final pending = (await _outbox.take(200))
+        .where((op) => _conflictEntities.contains(op.entity))
+        .toList();
+    final grouped = <String, List<OutboxOp>>{};
+    for (final op in pending) {
+      if (op.payload['id'] == null) continue;
+      grouped.putIfAbsent(op.entity, () => []).add(op);
+    }
+    for (final entry in grouped.entries) {
+      final adapter = kSyncAdapters[entry.key]!;
+      final ids = entry.value.map((op) => op.payload['id']).join(',');
+      final rows = await client.pullRows(adapter.table,
+          orderCol: 'updated_at', eqFilters: {'id': 'in.($ids)'}, limit: 200);
+      final byId = {for (final row in rows) '${row['id']}': row};
+      for (final op in entry.value) {
+        final remote = byId['${op.payload['id']}'];
+        if (remote == null || _samePayload(op.payload, remote)) continue;
+        final updated = DateTime.tryParse('${remote['updated_at']}');
+        if (updated == null) continue;
+        final queued =
+            DateTime.fromMillisecondsSinceEpoch(op.createdMs).toUtc();
+        // The server row changing even a millisecond after this operation was
+        // queued means another device won the race while this device was
+        // offline. Do not add a grace window here: fast reconnects are the
+        // exact case where silent last-write-wins data loss is most likely.
+        if (updated.toUtc().isAfter(queued)) {
+          await _outbox.markConflict(
+              op.rowId, 'This record changed on another device.', remote);
+        }
+      }
+    }
+  }
+
+  bool _samePayload(Map<String, Object?> local, Map<String, Object?> remote) {
+    for (final entry in local.entries) {
+      if (entry.key == 'updated_at') continue;
+      if ('${entry.value ?? ''}' != '${remote[entry.key] ?? ''}') return false;
+    }
+    return true;
   }
 
   /// Ordered, grouped, verbatim push. A failed entity batch stays in the
@@ -888,7 +1000,7 @@ class SyncEngine {
   /// so budget attribution follows the family across devices. Full-refresh
   /// semantics: the server is the truth for links (upserts are idempotent,
   /// conflicts are rare single-field edits).
-  Future<void> _pullEnvelopeLinks() async {
+  Future<void> _pullEnvelopeLinks({bool notify = true}) async {
     final envIds = state.envelopes.map((e) => e.id).toList();
     if (envIds.isEmpty) return;
     final rows = await client.pullRows(
@@ -901,7 +1013,7 @@ class SyncEngine {
       for (final r in rows)
         r['transaction_id'].toString(): r['envelope_id'].toString(),
     };
-    await state.applyEnvelopeLinks(links);
+    await state.applyEnvelopeLinks(links, notify: notify);
   }
 
   /// Latest rbz snapshot wins unless the user set a custom rate. Falls back
@@ -1079,7 +1191,19 @@ class SyncEngine {
           }
         }
         await _persistence.applyServerRows(entity, rows);
-        state.applyPulled(entity, rows);
+        if (entity == 'tx') {
+          // A transaction and its budget attribution are stored in separate
+          // server tables. Keep this merge invisible until both have landed,
+          // otherwise the home screen briefly renders an unallocated expense.
+          state.applyPulled(entity, rows, notify: false);
+          try {
+            await _pullEnvelopeLinks(notify: false);
+          } finally {
+            state.publishPulledMerge();
+          }
+        } else {
+          state.applyPulled(entity, rows);
+        }
         if (entity == 'shopping_list') await _captureDefaultList(rows);
         if (maxCursor != null) await _kvSet(key, maxCursor);
       } catch (e, st) {

@@ -475,6 +475,22 @@ class Persistence {
       String entity, List<Map<String, Object?>> rows) async {
     final adapter = kSyncAdapters[entity];
     if (adapter == null) return;
+    final knownTxEnvelopes = <String, String?>{};
+    if (entity == 'tx') {
+      for (final row in rows) {
+        final id = row['id']?.toString();
+        if (id == null || row['deleted_at'] != null) continue;
+        final existing = await _d.query(
+          'tx',
+          columns: ['envelope_id'],
+          where: 'id = ?',
+          whereArgs: [id],
+          limit: 1,
+        );
+        knownTxEnvelopes[id] =
+            existing.isEmpty ? null : existing.first['envelope_id'] as String?;
+      }
+    }
     final batch = _d.batch();
     for (final row in rows) {
       switch (entity) {
@@ -482,7 +498,24 @@ class Persistence {
           if (row['deleted_at'] != null) {
             batch.delete('tx', where: 'id = ?', whereArgs: [row['id']]);
           } else {
-            batch.insert('tx', _txRow(adapter.decode(row) as Tx),
+            final pulled = adapter.decode(row) as Tx;
+            final envelopeId = pulled.envelopeId ?? knownTxEnvelopes[pulled.id];
+            final merged = envelopeId == pulled.envelopeId
+                ? pulled
+                : Tx(
+                    id: pulled.id,
+                    envelopeId: envelopeId,
+                    memberId: pulled.memberId,
+                    type: pulled.type,
+                    amount: pulled.amount,
+                    method: pulled.method,
+                    note: pulled.note,
+                    when: pulled.when,
+                    deletedAt: pulled.deletedAt,
+                    receiptUri: pulled.receiptUri,
+                    recurringRuleId: pulled.recurringRuleId,
+                  );
+            batch.insert('tx', _txRow(merged),
                 conflictAlgorithm: ConflictAlgorithm.replace);
           }
         case 'tx_allocation':
@@ -603,6 +636,7 @@ class Persistence {
       'debt_repayment',
       'tx_allocation',
       'family_chat_message',
+      'family_task',
     ]) {
       batch.delete(t);
     }
@@ -715,6 +749,9 @@ class Persistence {
         'reference_id': m.referenceId,
         'reference_title': m.referenceTitle,
         'reference_meta': m.referenceMeta,
+        'media_url': m.mediaUrl,
+        'media_type': m.mediaType,
+        'sticker': m.sticker,
         'deleted': m.deleted ? 1 : 0,
       };
 
@@ -728,6 +765,10 @@ class Persistence {
         'due_at_ms': t.dueDate?.millisecondsSinceEpoch,
         'status': t.status.name,
         'points': t.points,
+        'requires_approval': t.requiresApproval ? 1 : 0,
+        'approved_by_member_id': t.approvedByMemberId,
+        'approved_at_ms': t.approvedAt?.millisecondsSinceEpoch,
+        'completed_at_ms': t.completedAt?.millisecondsSinceEpoch,
         'is_archived': t.isArchived ? 1 : 0,
       };
 
@@ -1011,6 +1052,9 @@ class Persistence {
         referenceId: m['reference_id'] as String?,
         referenceTitle: m['reference_title'] as String?,
         referenceMeta: m['reference_meta'] as String?,
+        mediaUrl: m['media_url'] as String?,
+        mediaType: m['media_type'] as String?,
+        sticker: m['sticker'] as String?,
         deleted: (m['deleted'] as int? ?? 0) == 1,
       );
 
@@ -1020,13 +1064,22 @@ class Persistence {
         note: m['note'] as String?,
         assigneeMemberId: m['assignee_member_id'] as String?,
         createdByMemberId: m['created_by_member_id'] as String?,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at_ms'] as int),
+        createdAt:
+            DateTime.fromMillisecondsSinceEpoch(m['created_at_ms'] as int),
         dueDate: m['due_at_ms'] == null
             ? null
             : DateTime.fromMillisecondsSinceEpoch(m['due_at_ms'] as int),
-        status: FamilyTaskStatus.values
-            .byName(m['status'] as String? ?? 'open'),
+        status:
+            FamilyTaskStatus.values.byName(m['status'] as String? ?? 'open'),
         points: m['points'] as int? ?? 1,
+        requiresApproval: (m['requires_approval'] as int? ?? 1) == 1,
+        approvedByMemberId: m['approved_by_member_id'] as String?,
+        approvedAt: m['approved_at_ms'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(m['approved_at_ms'] as int),
+        completedAt: m['completed_at_ms'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(m['completed_at_ms'] as int),
         isArchived: (m['is_archived'] as int? ?? 0) == 1,
       );
 

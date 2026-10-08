@@ -32,6 +32,7 @@ class SyncScreen extends StatelessWidget {
       SyncStatus.offline => (l.syncStateOffline, Colors.grey),
       SyncStatus.needsSignIn => (l.syncStateNeedsSignIn, Colors.deepPurple),
       SyncStatus.needsSetup => (l.syncStateNeedsSetup, Colors.deepOrange),
+      SyncStatus.needsReview => ('Needs review', Colors.amber.shade800),
       SyncStatus.idle => (l.syncStateSaved, Colors.green),
       null => (l.syncStateSaved, Colors.green),
     };
@@ -82,6 +83,72 @@ class SyncScreen extends StatelessWidget {
                     ),
                 ],
               ),
+            ),
+            const SizedBox(height: 12),
+            FutureBuilder<List<OutboxOp>>(
+              future: s.sync?.conflicts() ?? Future.value(const []),
+              builder: (context, snapshot) {
+                final conflicts = snapshot.data ?? const <OutboxOp>[];
+                if (conflicts.isEmpty) return const SizedBox.shrink();
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                        Border.all(color: Colors.amber.shade800, width: 1.2),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Changes need review',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.amber.shade900)),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Another device changed these records while this device was offline. Choose which version the family should keep.',
+                        style:
+                            TextStyle(fontSize: 12.5, color: context.inkSoft),
+                      ),
+                      const SizedBox(height: 8),
+                      for (final op in conflicts)
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(Icons.compare_arrows,
+                              color: Colors.amber.shade800),
+                          title: Text(_parkedTitle(l, op),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                          subtitle: Text(op.conflictReason ??
+                              'Changed on another device.'),
+                          isThreeLine: true,
+                          trailing: PopupMenuButton<String>(
+                            tooltip: 'Resolve conflict',
+                            onSelected: (choice) async {
+                              final engine = s.sync;
+                              if (engine == null) return;
+                              if (choice == 'local') {
+                                await engine.keepLocalConflict(op.rowId);
+                                await engine.syncNow(force: true);
+                              } else {
+                                await engine.acceptServerConflict(op);
+                              }
+                            },
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(
+                                  value: 'server',
+                                  child: Text('Use family version')),
+                              PopupMenuItem(
+                                  value: 'local',
+                                  child: Text('Keep this device’s version')),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
             // ── parked changes: problems to resolve, never silent ──────
@@ -258,6 +325,10 @@ class SyncScreen extends StatelessWidget {
       'goal' => l.syncKindGoal,
       'list_item' => l.syncKindItem,
       'kid_request' => l.syncKindRequest,
+      'recurring' => 'Recurring payment',
+      'budget_cycle_plan' => 'Budget plan',
+      'family_debt' => 'Debt',
+      'contribution_campaign' => 'Contribution',
       _ => l.syncKindOther,
     };
     final hint =

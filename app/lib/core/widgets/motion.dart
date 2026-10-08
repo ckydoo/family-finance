@@ -10,8 +10,13 @@ import '../theme/app_theme.dart';
 /// Everything honors the OS "reduce motion" setting by rendering the final
 /// state immediately.
 
-/// Hero amounts count up instead of snapping (700 ms ease-out).
-class CountUpText extends StatelessWidget {
+/// Hero amounts animate only when their value actually changes.
+///
+/// App-wide sync/status notifications rebuild the Home tree frequently. A
+/// stateless tween beginning at zero makes an unchanged balance appear to
+/// blink on every sync, so this widget retains the displayed value and only
+/// starts a new animation for a different amount or currency.
+class CountUpText extends StatefulWidget {
   final Money amount;
   final TextStyle style;
   final Duration duration;
@@ -24,21 +29,58 @@ class CountUpText extends StatelessWidget {
   });
 
   @override
+  State<CountUpText> createState() => _CountUpTextState();
+}
+
+class _CountUpTextState extends State<CountUpText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    final value = widget.amount.minor.toDouble();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _animation = AlwaysStoppedAnimation(value);
+  }
+
+  @override
+  void didUpdateWidget(covariant CountUpText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _controller.duration = widget.duration;
+    if (oldWidget.amount.minor == widget.amount.minor &&
+        oldWidget.amount.currency == widget.amount.currency) {
+      return;
+    }
+    final from = _animation.value;
+    _animation = Tween<double>(
+      begin: from,
+      end: widget.amount.minor.toDouble(),
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (MediaQuery.disableAnimationsOf(context)) {
-      return Text(amount.text, style: style);
+      return Text(widget.amount.text, style: widget.style);
     }
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: amount.minor.toDouble()),
-      duration: duration,
-      curve: Curves.easeOutCubic,
-      builder: (context, v, _) => Semantics(
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, _) => Semantics(
         // Screen readers hear the final value once, not 60 mid-flight ones.
-        label: amount.text,
+        label: widget.amount.text,
         excludeSemantics: true,
         child: Text(
-          Money(v.round(), amount.currency).text,
-          style: style,
+          Money(_animation.value.round(), widget.amount.currency).text,
+          style: widget.style,
         ),
       ),
     );

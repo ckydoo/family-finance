@@ -8,6 +8,17 @@ type Activity = {
   detail?: Record<string, unknown>;
 };
 
+type ChatMessage = {
+  id: string;
+  space_id: string;
+  sender_id: string;
+  sender_name?: string;
+  text?: string;
+  media_url?: string;
+  sticker?: string;
+  deleted?: boolean;
+};
+
 const messages: Record<string, [string, string]> = {
   'tx.create': ['New family transaction', 'A transaction was added to your family ledger.'],
   'goal.contribute': ['Savings goal updated', 'A contribution was added to a family goal.'],
@@ -24,8 +35,25 @@ Deno.serve(async (req) => {
   }
 
   const payload = await req.json();
-  const record = (payload.record ?? payload) as Activity;
-  const copy = messages[record.action];
+  const raw = payload.record ?? payload;
+  const isChat = payload.table === 'family_chat_message';
+  const chat = raw as ChatMessage;
+  const record: Activity = isChat
+    ? {
+        space_id: chat.space_id,
+        actor_id: chat.sender_id,
+        action: 'chat.message',
+      }
+    : (raw as Activity);
+  const copy: [string, string] | undefined = isChat && !chat.deleted
+    ? [
+        chat.sender_name?.trim() || 'New family message',
+        chat.text?.trim() ||
+          (chat.sticker ? `Sent a sticker ${chat.sticker}` : null) ||
+          (chat.media_url ? 'Sent a photo.' : null) ||
+          'A family member sent an update.',
+      ]
+    : messages[record.action];
   if (!copy || !record.space_id) return Response.json({ sent: 0, ignored: true });
 
   const url = Deno.env.get('SUPABASE_URL')!;

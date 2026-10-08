@@ -52,4 +52,14 @@ SUPABASE_ANON_KEY=k
       isTrue,
     );
   });
+
+  test('APP_ENV live is treated as production', () {
+    final env = AppEnv.parse('''
+APP_ENV=live
+SUPABASE_URL=https://abcdefgh.supabase.co
+SUPABASE_ANON_KEY=k
+''');
+    expect(env.environment, 'prod');
+    expect(env.isProd, isTrue);
+  });
 }

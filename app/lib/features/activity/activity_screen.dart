@@ -23,6 +23,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   TxType? _type;
   String? _memberId;
   _ActivityPeriod _period = _ActivityPeriod.all;
+  bool _searching = false;
+  String _query = '';
 
   bool get _hasFilters =>
       _type != null || _memberId != null || _period != _ActivityPeriod.all;
@@ -174,9 +176,18 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final now = DateTime.now();
+    final query = _query.trim().toLowerCase();
     final activities = s.activityFeed.where((activity) {
       if (_memberId != null && activity.actorId != _memberId) return false;
       if (!_inPeriod(activity.at, now)) return false;
+      final searchable = [
+        activity.action,
+        activity.entity,
+        ...activity.detail.values.map((value) => '$value'),
+      ].join(' ').toLowerCase();
+      if (query.isNotEmpty && !searchable.contains(query)) {
+        return false;
+      }
       if (_type != null) {
         if (activity.entity != 'transaction') return false;
         final tx = s.txs.where((t) => t.id == activity.entityId).firstOrNull;
@@ -197,8 +208,23 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.activityTitle),
+        title: _searching
+            ? TextField(
+                autofocus: true,
+                decoration: const InputDecoration(
+                    hintText: 'Search activity', border: InputBorder.none),
+                onChanged: (value) => setState(() => _query = value),
+              )
+            : Text(AppLocalizations.of(context)!.activityTitle),
         actions: [
+          IconButton(
+            tooltip: _searching ? 'Close search' : 'Search activity',
+            onPressed: () => setState(() {
+              _searching = !_searching;
+              if (!_searching) _query = '';
+            }),
+            icon: Icon(_searching ? Icons.close : Icons.search),
+          ),
           IconButton(
             tooltip: 'Filter activity',
             onPressed: () => _showFilters(context, s),
@@ -321,6 +347,42 @@ class _FamilyActivityTile extends StatelessWidget {
           '$actor recorded an expense',
           tx?.note ?? 'Family spending',
           context.expenseRed,
+        ),
+      'tx.update' => (
+          Icons.edit_outlined,
+          '$actor edited a transaction',
+          tx?.note ?? 'Transaction updated',
+          context.primary,
+        ),
+      'tx.delete' => (
+          Icons.delete_outline,
+          '$actor deleted a transaction',
+          'The audit record has been retained',
+          context.expenseRed,
+        ),
+      'envelope.create' => (
+          Icons.account_balance_wallet_outlined,
+          '$actor created a budget',
+          activity.detail['name']?.toString() ?? 'Budget created',
+          context.primary,
+        ),
+      'envelope.update' => (
+          Icons.edit_note_outlined,
+          '$actor updated a budget',
+          activity.detail['name']?.toString() ?? 'Budget updated',
+          context.primary,
+        ),
+      'envelope.archive' => (
+          Icons.archive_outlined,
+          '$actor archived a budget',
+          activity.detail['name']?.toString() ?? 'Budget archived',
+          context.expenseRed,
+        ),
+      'member.role_change' => (
+          Icons.admin_panel_settings_outlined,
+          '$actor changed a member role',
+          '${activity.detail['from'] ?? 'member'} → ${activity.detail['to'] ?? 'member'}',
+          context.primary,
         ),
       'goal.contribute' => (
           Icons.flag_outlined,

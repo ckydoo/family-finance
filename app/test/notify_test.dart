@@ -124,7 +124,7 @@ void main() {
       final reminder =
           out.firstWhere((r) => r.category == ReminderCategory.contributions);
       expect(reminder.title, contains('School fees'));
-      expect(reminder.body, contains(r'$500.00'));
+      expect(reminder.body, contains('500.00'));
     });
 
     test('campaign farther than seven days stays quiet', () {

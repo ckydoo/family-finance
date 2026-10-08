@@ -13,7 +13,12 @@ import '../../core/widgets/ui.dart';
 /// Shared shopping list connected to the budget (spec Module F, §7.6).
 class ListsScreen extends StatefulWidget {
   final bool standalone;
-  const ListsScreen({super.key, this.standalone = false});
+  final bool startAdding;
+  const ListsScreen({
+    super.key,
+    this.standalone = false,
+    this.startAdding = false,
+  });
 
   @override
   State<ListsScreen> createState() => _ListsScreenState();
@@ -22,13 +27,28 @@ class ListsScreen extends StatefulWidget {
 class _ListsScreenState extends State<ListsScreen> {
   ItemState? _filter = ItemState.tobuy;
   bool _finishingShopping = false;
+  bool _searching = false;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.startAdding) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _addSheet(context);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final visible = _filter == null
-        ? s.items.toList()
-        : s.items.where((i) => i.state == _filter).toList();
+    final query = _query.trim().toLowerCase();
+    final visible = s.items
+        .where((item) =>
+            (_filter == null || item.state == _filter) &&
+            (query.isEmpty || item.name.toLowerCase().contains(query)))
+        .toList();
 
     final estPrimary = s.estFor(s.primaryCurrency);
     final estSecondary =
@@ -76,6 +96,17 @@ class _ListsScreenState extends State<ListsScreen> {
                                 ),
                               ),
                               IconButton(
+                                tooltip: 'Search shopping items',
+                                onPressed: () => setState(() {
+                                  _searching = !_searching;
+                                  if (!_searching) _query = '';
+                                }),
+                                icon: Icon(
+                                  _searching ? Icons.close : Icons.search,
+                                  color: context.ink,
+                                ),
+                              ),
+                              IconButton(
                                 tooltip: AppLocalizations.of(context)!.addItem,
                                 onPressed: () => _addSheet(context),
                                 icon: Icon(Icons.add_circle,
@@ -88,6 +119,18 @@ class _ListsScreenState extends State<ListsScreen> {
                             style:
                                 TextStyle(fontSize: 13, color: context.inkSoft),
                           ),
+                          if (_searching) ...[
+                            const SizedBox(height: 12),
+                            TextField(
+                              autofocus: true,
+                              decoration: const InputDecoration(
+                                hintText: 'Search shopping items',
+                                prefixIcon: Icon(Icons.search),
+                              ),
+                              onChanged: (value) =>
+                                  setState(() => _query = value),
+                            ),
+                          ],
                           const SizedBox(height: 14),
                           Wrap(
                             spacing: 8,
@@ -116,7 +159,7 @@ class _ListsScreenState extends State<ListsScreen> {
                               padding: const EdgeInsets.all(22),
                               decoration: BoxDecoration(
                                 color: context.card,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: kBRadiusM,
                               ),
                               child: Column(
                                 children: [
@@ -176,7 +219,7 @@ class _ListsScreenState extends State<ListsScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: context.card,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: kBRadiusM,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

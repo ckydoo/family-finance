@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'app.dart';
 import 'core/auth/auth_controller.dart';
+import 'core/auth/secure_token_store.dart';
 import 'core/config/app_env.dart';
 import 'core/db/app_database.dart';
 import 'core/firebase/firebase_services.dart';
@@ -36,7 +37,13 @@ Future<void> main() async {
 
   // Auth (M2). Live session restore before the first frame; first run
   // starts at the login gate.
-  final auth = AuthController(env: env, kvGet: db.kvGet, kvSet: db.kvSet);
+  final tokenStore = SecureTokenStore(legacyDatabase: db);
+  await tokenStore.migrateLegacyTokens();
+  final auth = AuthController(
+    env: env,
+    kvGet: tokenStore.get,
+    kvSet: tokenStore.set,
+  );
   await auth.restore();
 
   runApp(MhuriMoneyApp(db: db, env: env, auth: auth));

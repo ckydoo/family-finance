@@ -301,7 +301,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: context.card,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: kBRadiusM,
                   ),
                   child: Row(
                     children: [
@@ -359,7 +359,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: context.card,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: kBRadiusM,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

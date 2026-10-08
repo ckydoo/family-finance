@@ -87,6 +87,12 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       }
       Notifier.apply(plan);
     };
+    _state.immediateNotificationHook = (notification) {
+      if (_state.notifyEnabled &&
+          _state.notifyAllowed.contains(notification.category)) {
+        unawaited(Notifier.showNow(notification));
+      }
+    };
 
     // M3: configured connection + local database → real two-phone sync.
     final db = widget.db;
@@ -97,12 +103,9 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         client: SupabaseSyncClient(
           baseUrl: url!,
           anonKey: key ?? '',
-          tokenGet: () async {
-            final t = await db.kvGet('auth_access_token');
-            if (t != null && t.isNotEmpty) return t;
-            // Self-heal a wiped/expired access token from the refresh token.
-            return _auth.refreshAccessToken();
-          },
+          // Auth credentials live in Keychain/encrypted storage, never in the
+          // SQLite family ledger. The controller owns refresh and persistence.
+          tokenGet: _auth.refreshAccessToken,
         ),
         database: db.raw,
         persistence: Persistence(db),
@@ -213,12 +216,17 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
 
   void _scheduleFamilyResolution({bool notify = true}) {
     final userId = _auth.session?.userId;
-    if (userId == null || userId.isEmpty || _state.onboardingComplete) return;
+    if (userId == null || userId.isEmpty) return;
     if (_resolvingFamily || _resolvedFamilyForUser == userId) return;
 
     final engine = _engine;
     // Unconfigured/test builds have no remote membership to resolve.
     if (engine == null) {
+      _resolvedFamilyForUser = userId;
+      return;
+    }
+    if (!engine.spaceIdentityLoaded) return;
+    if (engine.spaceId != null) {
       _resolvedFamilyForUser = userId;
       return;
     }
@@ -233,9 +241,8 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     await _state.ready();
     if (!mounted || _auth.session?.userId != userId) return;
 
-    // Hydration may already have found the locally persisted family while we
-    // were waiting. In that case no network round-trip is necessary.
-    if (_state.onboardingComplete) {
+    // Identity may have loaded from local storage while this task was queued.
+    if (engine.spaceId != null) {
       setState(() {
         _resolvedFamilyForUser = userId;
         _resolvingFamily = false;

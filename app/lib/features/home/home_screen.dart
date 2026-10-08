@@ -169,27 +169,50 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
   Widget build(BuildContext context) {
     final activeId = widget.state.sync?.spaceId;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(children: [
-            Expanded(
-              child: Text('Your families',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'FAMILY SPACES',
+                      style: TextStyle(
+                        color: context.primary,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w800,
-                      )),
-            ),
-            IconButton(
-              tooltip: 'Close',
-              onPressed: _switching ? null : () => Navigator.pop(context),
-              icon: const Icon(Icons.close),
-            ),
-          ]),
-          Text('Choose which family space you want to use.',
-              style: TextStyle(color: context.inkSoft)),
-          const SizedBox(height: 14),
+                        letterSpacing: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text('Switch family',
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 5),
+                    Text('Choose the family space you want to use.',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: context.inkSoft,
+                            height: 1.35)),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Close',
+                onPressed: _switching ? null : () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
           FutureBuilder<List<FamilySpaceSummary>>(
             future: _spaces,
             builder: (context, snapshot) {
@@ -200,8 +223,12 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                 );
               }
               if (snapshot.hasError) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: context.hairline),
+                    borderRadius: kBRadiusM,
+                  ),
                   child: Column(children: [
                     const Text('Families could not be loaded.'),
                     TextButton(
@@ -211,37 +238,113 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                   ]),
                 );
               }
-              return Column(
-                children: [
-                  for (final space in snapshot.data ?? const [])
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        backgroundColor: context.primarySoft,
-                        child:
-                            Icon(Icons.family_restroom, color: context.primary),
+              final spaces = snapshot.data ?? const <FamilySpaceSummary>[];
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 286),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: spaces.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, index) {
+                    final space = spaces[index];
+                    final selected = space.id == activeId;
+                    return Material(
+                      color: selected
+                          ? context.primary.withValues(alpha: 0.07)
+                          : context.card,
+                      borderRadius: kBRadiusM,
+                      child: InkWell(
+                        borderRadius: kBRadiusM,
+                        onTap: _switching || selected
+                            ? null
+                            : () => _switch(space),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 13),
+                          decoration: BoxDecoration(
+                            borderRadius: kBRadiusM,
+                            border: Border.all(
+                              color: selected
+                                  ? context.primary.withValues(alpha: 0.5)
+                                  : context.hairline,
+                              width: selected ? 1.2 : 1,
+                            ),
+                          ),
+                          child: Row(children: [
+                            Icon(Icons.family_restroom_rounded,
+                                size: 25,
+                                color: selected
+                                    ? context.primary
+                                    : context.inkSoft),
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(space.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                          color: context.ink)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _displayFamilyRole(space.role),
+                                    style: TextStyle(
+                                        fontSize: 12, color: context.inkSoft),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (selected)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 9, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: context.primary,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_rounded,
+                                        size: 13, color: context.onSolid),
+                                    const SizedBox(width: 4),
+                                    Text('Current',
+                                        style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: context.onSolid)),
+                                  ],
+                                ),
+                              )
+                            else
+                              Icon(Icons.chevron_right_rounded,
+                                  color: context.inkSoft),
+                          ]),
+                        ),
                       ),
-                      title: Text(space.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Text(space.role.replaceAll('_', ' ')),
-                      trailing: space.id == activeId
-                          ? Icon(Icons.check_circle, color: context.primary)
-                          : const Icon(Icons.chevron_right),
-                      onTap: _switching || space.id == activeId
-                          ? null
-                          : () => _switch(space),
-                    ),
-                ],
+                    );
+                  },
+                ),
               );
             },
           ),
-          const Divider(),
+          const SizedBox(height: 20),
+          Text('ADD A FAMILY',
+              style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1,
+                  color: context.inkSoft)),
+          const SizedBox(height: 9),
           Row(children: [
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _switching ? null : _joinFamily,
                 icon: const Icon(Icons.group_add_outlined),
-                label: const Text('Join'),
+                label: const Text('Join with code'),
               ),
             ),
             const SizedBox(width: 10),
@@ -249,14 +352,17 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
               child: FilledButton.icon(
                 onPressed: _switching ? null : _createFamily,
                 icon: const Icon(Icons.add_home_outlined),
-                label: const Text('Create'),
+                label: const Text('Create family'),
               ),
             ),
           ]),
+          const SizedBox(height: 10),
           ListTile(
-            contentPadding: EdgeInsets.zero,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            minTileHeight: 50,
             leading: const Icon(Icons.manage_accounts_outlined),
             title: const Text('Manage current family'),
+            trailing: const Icon(Icons.chevron_right_rounded),
             onTap: _switching
                 ? null
                 : () {
@@ -271,6 +377,13 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
     );
   }
 }
+
+String _displayFamilyRole(String role) => role
+    .split('_')
+    .map((part) => part.isEmpty
+        ? part
+        : '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}')
+    .join(' ');
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -305,7 +418,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // G10: the pool card compresses subtly as content scrolls under it.
       child: NotificationListener<ScrollNotification>(
         onNotification: (n) {
-          final compact = n.metrics.pixels > 34;
+          if (n is! ScrollUpdateNotification) return false;
+          final pixels = n.metrics.pixels;
+          final compact = _poolCompact ? pixels > 25 : pixels > 50;
           if (compact != _poolCompact) setState(() => _poolCompact = compact);
           return false;
         },
@@ -355,272 +470,120 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                // ── Header ──────────────────────────────────────────────────────
+                // ── Compact Header ──────────────────────────────────────────────
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$greet,',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: context.inkSoft,
-                            ),
+                      child: InkWell(
+                        onTap: () => _showFamilySpaceSwitcher(context, s),
+                        borderRadius: kBRadiusS,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              MemberAvatar(
+                                key: const ValueKey('home_signed_in_avatar'),
+                                radius: 18,
+                                backgroundColor: context.primarySoft,
+                                icon: iconForKey(u.emoji) ?? Icons.person,
+                                imageUrl: u.avatarUrl,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            familyName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 17,
+                                              height: 1.15,
+                                              fontWeight: FontWeight.w700,
+                                              color: context.ink,
+                                              letterSpacing: -0.2,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Icon(Icons.keyboard_arrow_down_rounded,
+                                            size: 18, color: context.inkSoft),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$greet, ${u.name}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: context.inkSoft,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            u.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 24,
-                              height: 1.15,
-                              fontWeight: FontWeight.w700,
-                              color: context.ink,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                    // Report card: colorful badge - it leads to the app's charts,
-                    // so the button itself carries the chart colors.
+                    // Quick Chat Icon
                     IconButton(
-                      tooltip: AppLocalizations.of(context)!.reportCard,
+                      tooltip: 'Family chat',
+                      visualDensity: VisualDensity.compact,
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                            builder: (_) => const ReportsScreen()),
+                            builder: (_) => const FamilyChatScreen()),
                       ),
-                      icon: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: context.card,
-                          borderRadius: BorderRadius.circular(13),
-                          border: Border.all(
-                              color: context.primarySoft, width: 1.4),
-                        ),
-                        child: _ReportsDonutGlyph(
-                          colors: [
-                            context.primary,
-                            context.accent,
-                            context.incomeGreen,
-                            context.expenseRed,
-                            context.primaryDark,
-                            const Color(0xFF7EC8F2),
-                            const Color(0xFFFF6B6B),
-                          ],
-                        ),
+                      icon: Badge(
+                        isLabelVisible: s.unreadChatCount > 0,
+                        label: s.unreadChatCount > 0
+                            ? Text(s.unreadChatCount > 99
+                                ? '99+'
+                                : '${s.unreadChatCount}')
+                            : null,
+                        child: Icon(Icons.chat_bubble_outline_rounded,
+                            size: 22, color: context.ink),
                       ),
                     ),
+                    // Bell / Notifications
                     IconButton(
                       tooltip: AppLocalizations.of(context)!.remindersTitle,
+                      visualDensity: VisualDensity.compact,
                       onPressed: () => showRemindersSheet(context),
-                      icon: Icon(Icons.notifications_none, color: context.ink),
+                      icon: Badge(
+                        isLabelVisible: s.unreadNotificationCount > 0,
+                        label: s.unreadNotificationCount > 0
+                            ? Text(s.unreadNotificationCount > 99
+                                ? '99+'
+                                : '${s.unreadNotificationCount}')
+                            : null,
+                        child: Icon(Icons.notifications_none,
+                            size: 22, color: context.ink),
+                      ),
                     ),
+                    // Settings
                     IconButton(
                       tooltip: AppLocalizations.of(context)!.settingsTitle,
+                      visualDensity: VisualDensity.compact,
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const SettingsScreen()),
                       ),
-                      icon: Icon(Icons.settings_outlined, color: context.ink),
+                      icon: Icon(Icons.settings_outlined,
+                          size: 22, color: context.ink),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                // Family is a first-class destination, separate from app
-                // settings. Show the actual family name instead of a generic
-                // label so its purpose is immediately clear.
-                Material(
-                  color: context.card,
-                  borderRadius: kBRadiusL,
-                  child: InkWell(
-                    borderRadius: kBRadiusL,
-                    onTap: () => _showFamilySpaceSwitcher(context, s),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(12, 9, 10, 9),
-                      decoration: BoxDecoration(
-                        borderRadius: kBRadiusL,
-                        border: Border.all(color: context.hairline),
-                      ),
-                      child: Row(
-                        children: [
-                          MemberAvatar(
-                            key: const ValueKey('home_signed_in_avatar'),
-                            radius: 16,
-                            backgroundColor: context.primarySoft,
-                            icon: iconForKey(u.emoji) ?? Icons.person,
-                            imageUrl: u.avatarUrl,
-                          ),
-                          const SizedBox(width: 9),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)!.familyTitle,
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: context.inkSoft,
-                                  ),
-                                ),
-                                Text(
-                                  familyName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: context.ink,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(Icons.keyboard_arrow_down,
-                              size: 20, color: context.inkSoft),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // ── Family chat quick access ────────────────────────────────
-                Container(
-                  margin: const EdgeInsets.only(top: 10),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: context.card,
-                    borderRadius: kBRadiusM,
-                    border: Border.all(color: context.hairline),
-                  ),
-                  child: InkWell(
-                    borderRadius: kBRadiusM,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const FamilyChatScreen()),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.chat_bubble_outline_rounded,
-                            color: context.primary, size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Family chat',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: context.ink,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Open',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w800,
-                            color: context.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(Icons.chevron_right,
-                            size: 18, color: context.primary),
-                      ],
-                    ),
-                  ),
-                ),
-
-                Container(
-                  margin: const EdgeInsets.only(top: 10),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: context.card,
-                    borderRadius: kBRadiusM,
-                    border: Border.all(color: context.hairline),
-                  ),
-                  child: InkWell(
-                    borderRadius: kBRadiusM,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const FamilyTasksScreen()),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.task_alt_rounded,
-                            color: context.accent, size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Family tasks',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: context.ink,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${s.familyTasks.where((t) => !t.isArchived && !t.isDone).length} active',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w800,
-                            color: context.accent,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(Icons.chevron_right,
-                            size: 18, color: context.accent),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // ── Offline sync banner (outbox queue status) ─────────────────
-                if (s.pendingOps > 0) ...[
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      s.syncNow();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content:
-                              Text(AppLocalizations.of(context)!.allSynced),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.warningSoft,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.syncPill(s.pendingOps),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-
                 // ── Family-setup nudge (skip-for-now limbo) ────────────────────
-                if (!s.hasSpace)
+                if (s.shouldPromptFamilySetup)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 14),
                     child: Material(
@@ -679,11 +642,45 @@ class _HomeScreenState extends State<HomeScreen> {
                     curve: Curves.easeOut,
                     child: const _PoolCard(),
                   ),
-                  const SizedBox(height: 22),
                   const _MonthlySummary(),
-                  const SizedBox(height: 22),
-                  _HomeBudgets(budgets: householdBudgets),
+                  const _NeedsAttention(),
                   const _ComingUp(),
+                  // ── Today Section (Family Tasks due today/overdue) ──────────
+                  Builder(
+                    builder: (ctx) {
+                      final now = DateTime.now();
+                      final todayTasks = s.familyTasks
+                          .where((t) =>
+                              !t.isArchived &&
+                              !t.isDone &&
+                              (t.dueDate == null ||
+                                  t.dueDate!.isBefore(DateTime(
+                                      now.year, now.month, now.day + 1))))
+                          .take(3)
+                          .toList();
+                      if (todayTasks.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SectionLabel(
+                            title: 'Today\'s tasks',
+                            actionLabel: 'See all',
+                            onAction: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => const FamilyTasksScreen()),
+                            ),
+                            padding: const EdgeInsets.only(top: 14, bottom: 6),
+                          ),
+                          for (int i = 0; i < todayTasks.length; i++)
+                            _HomeTaskRow(
+                              task: todayTasks[i],
+                              isLast: i == todayTasks.length - 1,
+                            ),
+                          const SizedBox(height: 8),
+                        ],
+                      );
+                    },
+                  ),
                 ],
 
                 if (s.pendingOps > 0)
@@ -708,36 +705,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                // ── Recent activity ─────────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        AppLocalizations.of(context)!.recentActivity,
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: context.ink),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const ActivityScreen()),
-                      ),
-                      child: Text(AppLocalizations.of(context)!.seeAll),
-                    ),
-                  ],
+                if (!isNewHousehold) _HomeBudgets(budgets: householdBudgets),
+
+                const SizedBox(height: 8),
+                const SmartCard(),
+
+                // Activity intentionally closes the page: the current money
+                // position and budgets come first, then the audit trail.
+                SectionLabel(
+                  title: AppLocalizations.of(context)!.recentActivity,
+                  actionLabel: AppLocalizations.of(context)!.seeAll,
+                  onAction: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ActivityScreen()),
+                  ),
+                  padding: const EdgeInsets.only(top: 14, bottom: 6),
                 ),
                 if (s.txs.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: context.card,
-                      borderRadius: kBRadiusL,
-                      border: Border.all(color: context.hairline),
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       AppLocalizations.of(context)!.noActivityYet,
                       style: TextStyle(
@@ -745,9 +730,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 for (final t in s.txs.take(3)) TxTile(tx: t, surface: false),
-
-                const SizedBox(height: 8),
-                const SmartCard(),
+                const SizedBox(height: 12),
               ],
             )),
       ),
@@ -777,108 +760,149 @@ class _MonthlySummary extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionTitle(context, 'Your family this month'),
-        const SizedBox(height: 10),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _SummaryStat(
-                      label: 'Income',
-                      value: value(income),
-                      color: context.incomeGreen,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _SummaryStat(
-                      label: 'Spent',
-                      value: value(spent),
-                      color: context.expenseRed,
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 26),
-              Row(
-                children: [
-                  Expanded(
-                    child: _SummaryStat(
-                      label: 'Saved',
-                      value: value(saved),
-                      color: context.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _SummaryStat(
-                      label: 'Net remaining',
-                      value: value(left),
-                      color: left.minor < 0 ? context.expenseRed : context.ink,
-                      emphasize: true,
-                    ),
-                  ),
-                ],
-              ),
-              if (!masked) ...[
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: context.primarySoft,
-                      borderRadius: kBRadiusS,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      child: Text(
-                        _monthlyInsight(s),
-                        style: TextStyle(
-                          color: context.primaryDark,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          child: Text(
+            'This month',
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w600,
+              color: context.ink,
+              letterSpacing: -0.2,
+            ),
           ),
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: _SummaryStat(
+                label: 'Income',
+                value: value(income),
+                color: context.incomeGreen,
+              ),
+            ),
+            Container(
+              height: 28,
+              width: 1,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              color: context.hairline.withValues(alpha: 0.7),
+            ),
+            Expanded(
+              child: _SummaryStat(
+                label: 'Spent',
+                value: value(spent),
+                color: context.expenseRed,
+              ),
+            ),
+            Container(
+              height: 28,
+              width: 1,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              color: context.hairline.withValues(alpha: 0.7),
+            ),
+            Expanded(
+              child: _SummaryStat(
+                label: 'Remaining',
+                value: value(left),
+                color: left.minor < 0 ? context.expenseRed : context.ink,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
+}
 
-  String _monthlyInsight(AppState s) {
+class _NeedsAttention extends StatelessWidget {
+  const _NeedsAttention();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
     final budgets = s.envelopes.where((e) => !e.isPersonal).toList();
     final over = budgets.where((e) => s.remainingOn(e).minor < 0).toList();
-    if (over.isNotEmpty) {
-      return '${over.first.name} is over its budget. Open it to review your spending.';
-    }
     final close = budgets.where((e) => s.paceOf(e) == Pace.watch).toList();
-    if (close.isNotEmpty) {
-      return '${close.first.name} is getting close to its limit.';
-    }
     final upcoming = s.recurring.where((r) => r.active).toList()
       ..sort((a, b) => a.nextDue.compareTo(b.nextDue));
-    if (upcoming.isNotEmpty) {
-      final days = _daysUntil(upcoming.first.nextDue);
-      return days <= 0
-          ? '${upcoming.first.name} is due now.'
-          : '${upcoming.first.name} is due in $days ${days == 1 ? 'day' : 'days'}.';
+
+    String? warning;
+    VoidCallback? onTap;
+
+    if (over.isNotEmpty) {
+      final b = over.first;
+      warning = '${b.name} is over budget';
+      onTap = () => showEnvelopeDetailSheet(context, b);
+    } else if (close.isNotEmpty) {
+      final b = close.first;
+      warning = '${b.name} is close to its limit';
+      onTap = () => showEnvelopeDetailSheet(context, b);
+    } else if (upcoming.isNotEmpty) {
+      final r = upcoming.first;
+      final days = _daysUntil(r.nextDue);
+      if (days <= 0) {
+        warning = '${r.name} is due now';
+      } else if (days <= 2) {
+        warning = '${r.name} is due in $days ${days == 1 ? 'day' : 'days'}';
+      }
     }
-    if (budgets.isNotEmpty) {
-      final budget = budgets.first;
-      final remaining = s.remainingOn(budget);
-      return '${budget.name} has ${remaining.text} left this budget month.';
-    }
-    return 'Add a budget to give the money coming in a clear job.';
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      child: warning == null
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.only(top: 14),
+              child: Material(
+                color: context.warningSoft,
+                borderRadius: kBRadiusM,
+                child: InkWell(
+                  onTap: onTap,
+                  borderRadius: kBRadiusM,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 11),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded,
+                            size: 18, color: context.expenseRed),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Needs attention',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.inkSoft,
+                                ),
+                              ),
+                              Text(
+                                warning,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (onTap != null)
+                          Icon(Icons.chevron_right,
+                              size: 18, color: context.inkSoft),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
   }
 }
 
@@ -887,20 +911,16 @@ class _SummaryStat extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
-    this.emphasize = false,
   });
 
   final String label;
   final String value;
   final Color color;
-  final bool emphasize;
 
   @override
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 12, color: context.inkSoft)),
-          const SizedBox(height: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
@@ -908,9 +928,19 @@ class _SummaryStat extends StatelessWidget {
               value,
               style: TextStyle(
                 color: color,
-                fontSize: emphasize ? 18 : 17,
-                fontWeight: FontWeight.w800,
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
               ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              color: context.inkSoft,
             ),
           ),
         ],
@@ -938,15 +968,7 @@ class _FirstStepsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.primarySoft,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.auto_awesome,
-                    size: 20, color: context.primaryDark),
-              ),
+              Icon(Icons.auto_awesome, size: 22, color: context.primaryDark),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1210,51 +1232,76 @@ class _HomeBudgets extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (budgets.isEmpty) return const SizedBox.shrink();
+    final s = AppScope.of(context);
+
+    // Sort to highlight budgets running out first:
+    // 1. Over budget (most negative remaining first)
+    // 2. Limited budgets sorted by remaining ratio ascending (least remaining % first)
+    // 3. Lowest remaining minor balance
+    // 4. Unbudgeted / zero-limit envelopes at the end
+    final sorted = List<Envelope>.from(budgets)
+      ..sort((a, b) {
+        final aRem = s.remainingOn(a).minor;
+        final bRem = s.remainingOn(b).minor;
+        final aOver = aRem < 0;
+        final bOver = bRem < 0;
+
+        // Both over budget: the one over by more comes first
+        if (aOver && bOver) return aRem.compareTo(bRem);
+        if (aOver != bOver) return aOver ? -1 : 1;
+
+        final aLimit = s.effectiveLimit(a).minor;
+        final bLimit = s.effectiveLimit(b).minor;
+        final aHasLimit = aLimit > 0;
+        final bHasLimit = bLimit > 0;
+
+        // Limited envelopes come before unconfigured ones
+        if (aHasLimit && bHasLimit) {
+          final aRatio = aRem / aLimit;
+          final bRatio = bRem / bLimit;
+          final cmp = aRatio.compareTo(bRatio);
+          if (cmp != 0) return cmp;
+        } else if (aHasLimit != bHasLimit) {
+          return aHasLimit ? -1 : 1;
+        }
+
+        return aRem.compareTo(bRem);
+      });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(child: _sectionTitle(context, 'Your budgets')),
-            TextButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const BudgetsScreen()),
-              ),
-              child: const Text('See all budgets'),
+        SectionLabel(
+          title: 'Budgets',
+          actionLabel: 'See all',
+          onAction: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const BudgetsScreen()),
+          ),
+          padding: const EdgeInsets.only(top: 18, bottom: 8),
+        ),
+        SizedBox(
+          height: 112,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: sorted.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, index) => SizedBox(
+              width: (MediaQuery.sizeOf(context).width * 0.72)
+                  .clamp(240.0, 300.0)
+                  .toDouble(),
+              child: _HomeBudgetCard(budget: sorted[index]),
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-            final cardWidth =
-                (constraints.maxWidth * 0.78).clamp(248.0, 320.0).toDouble();
-            final carouselHeight =
-                (166 + ((textScale - 1).clamp(0, 1) * 34)).toDouble();
-            return SizedBox(
-              height: carouselHeight,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: budgets.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) => SizedBox(
-                  width: cardWidth,
-                  child: _HomeBudgetRow(budget: budgets[index]),
-                ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
       ],
     );
   }
 }
 
-class _HomeBudgetRow extends StatelessWidget {
-  const _HomeBudgetRow({required this.budget});
+class _HomeBudgetCard extends StatelessWidget {
+  const _HomeBudgetCard({required this.budget});
 
   final Envelope budget;
 
@@ -1267,6 +1314,7 @@ class _HomeBudgetRow extends StatelessWidget {
     final ratio = limit.minor <= 0 ? 0.0 : spent.minor / limit.minor;
     final over = remaining.minor < 0;
     final hidden = s.hideAmounts;
+
     return Material(
       color: context.card,
       borderRadius: kBRadiusM,
@@ -1279,16 +1327,29 @@ class _HomeBudgetRow extends StatelessWidget {
           }
         },
         borderRadius: kBRadiusM,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: kBRadiusM,
+            border: Border.all(
+              color: over
+                  ? context.expenseRed.withValues(alpha: 0.3)
+                  : context.hairline.withValues(alpha: 0.5),
+              width: 0.8,
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  Icon(iconForKey(budget.emoji) ?? Icons.pie_chart_outline,
-                      size: 19, color: context.primaryDark),
-                  const SizedBox(width: 9),
+                  Icon(
+                    iconForKey(budget.emoji) ?? Icons.pie_chart_outline_rounded,
+                    size: 16,
+                    color: over ? context.expenseRed : context.primaryDark,
+                  ),
+                  const SizedBox(width: 7),
                   Expanded(
                     child: Text(
                       budget.name,
@@ -1296,73 +1357,77 @@ class _HomeBudgetRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: context.ink,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  const Icon(Icons.chevron_right, size: 18),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      hidden
+                          ? '•••••'
+                          : over
+                              ? '${Money(-remaining.minor, remaining.currency).text} over'
+                              : limit.minor <= 0
+                                  ? 'No limit'
+                                  : '${remaining.text} left',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: over ? context.expenseRed : context.ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 10),
-              if (limit.minor <= 0 && spent.minor <= 0) ...[
-                Text(
-                  'No limit set',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: context.inkSoft,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+              const SizedBox(height: 6),
+              MhuriProgress(
+                progress: ratio,
+                height: 4,
+                color: over
+                    ? context.expenseRed
+                    : _paceColor(context, s.paceOf(budget)),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      hidden ? '•••••' : '${spent.text} spent',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: context.inkSoft,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Tap to set budget amount',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: context.primary,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      limit.minor <= 0
+                          ? 'Tap to set'
+                          : hidden
+                              ? 'of •••••'
+                              : 'of ${limit.text}',
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        color: limit.minor <= 0
+                            ? context.primary
+                            : context.inkSoft,
+                        fontSize: 11,
+                        fontWeight: limit.minor <= 0
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
                   ),
-                ),
-              ] else ...[
-                Text(
-                  hidden
-                      ? '••••• left'
-                      : over
-                          ? '${Money(-remaining.minor, remaining.currency).text} over budget'
-                          : '${remaining.text} left',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: over ? context.expenseRed : context.ink,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  hidden
-                      ? '••••• spent'
-                      : '${spent.text} spent of ${limit.text}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: context.inkSoft, fontSize: 11.5),
-                ),
-              ],
-              const SizedBox(height: 9),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(5),
-                child: LinearProgressIndicator(
-                  value: ratio.clamp(0.0, 1.0).toDouble(),
-                  minHeight: 7,
-                  backgroundColor: context.track,
-                  color: over
-                      ? context.expenseRed
-                      : _paceColor(context, s.paceOf(budget)),
-                ),
+                ],
               ),
             ],
           ),
@@ -1426,6 +1491,117 @@ class _ComingUp extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HomeTaskRow extends StatelessWidget {
+  const _HomeTaskRow({required this.task, this.isLast = false});
+
+  final FamilyTask task;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final assignee = task.assigneeMemberId != null
+        ? s.members.cast<Member?>().firstWhere(
+              (m) => m?.id == task.assigneeMemberId,
+              orElse: () => null,
+            )
+        : null;
+
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const FamilyTasksScreen()),
+      ),
+      borderRadius: kBRadiusS,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    s.toggleFamilyTaskCompletion(task);
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: Icon(
+                      task.isDone
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 20,
+                      color: task.isDone ? context.primary : context.inkSoft,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: task.isDone ? context.inkSoft : context.ink,
+                          decoration:
+                              task.isDone ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      if (assignee != null || task.dueDate != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          [
+                            if (assignee != null) assignee.name,
+                            if (task.dueDate != null) 'Due today',
+                          ].join(' · '),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: context.inkSoft,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (task.points > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: context.accentSoft,
+                      borderRadius: kBRadiusXS,
+                    ),
+                    child: Text(
+                      '+${task.points} pts',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: context.ink,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            if (!isLast)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Divider(
+                  height: 1,
+                  thickness: 0.8,
+                  color: context.hairline.withValues(alpha: 0.6),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1506,10 +1682,23 @@ class _PoolCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              _amount(primary, '•••••', s.hideAmounts, s.displayCurrency.short),
+              const SizedBox(height: 10),
+              // Simplified hero balance
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: s.hideAmounts
+                    ? Text(
+                        '•••••',
+                        style: MhuriType.display.copyWith(color: Colors.white),
+                      )
+                    : CountUpText(
+                        amount: primary,
+                        style: MhuriType.display.copyWith(color: Colors.white),
+                      ),
+              ),
               if (hasDual && secondary != null) ...[
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Semantics(
                   button: true,
                   label: AppLocalizations.of(context)!.swapCurrency,
@@ -1518,180 +1707,73 @@ class _PoolCard extends StatelessWidget {
                       HapticFeedback.selectionClick();
                       s.toggleDisplayCurrency();
                     },
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: kBRadiusXS,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Text(
                         s.hideAmounts ? '≈ •••••' : '≈ ${secondary.text}',
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
-              Material(
-                color: Colors.white24,
-                borderRadius: kBRadiusM,
-                child: InkWell(
-                  onTap: () => _showFlexibleSpendBreakdown(context, s),
-                  borderRadius: kBRadiusM,
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Available today: '
-                            '${s.hideAmounts ? '•••••' : s.safeToSpend.text}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12.5,
-                            ),
+              const SizedBox(height: 10),
+              // Available today as clean, quiet supporting line
+              InkWell(
+                onTap: () => _showFlexibleSpendBreakdown(context, s),
+                borderRadius: kBRadiusXS,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          '${s.hideAmounts ? '•••••' : s.safeToSpend.text} Available today',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.info_outline,
-                            color: Colors.white70, size: 16),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.info_outline,
+                          color: Colors.white60, size: 14),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              // Visible affordance: the whole card opens Reports (eye = hide/show only).
+              const SizedBox(height: 14),
+              // View details affordance
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Flexible(
                     child: Text(
                       AppLocalizations.of(context)!.viewDetails,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  const Icon(Icons.chevron_right,
-                      size: 16, color: Colors.white70),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded,
+                      size: 14, color: Colors.white70),
                 ],
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _amount(Money? live, String maskedText, bool masked, String label) =>
-      Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const SizedBox(height: 2),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: masked || live == null
-                ? Text(
-                    maskedText,
-                    style: MhuriType.display.copyWith(color: Colors.white),
-                  )
-                : CountUpText(
-                    amount: live,
-                    style: MhuriType.display.copyWith(color: Colors.white),
-                  ),
-          ),
-        ],
-      );
-}
-
-// ── Envelope chip ───────────────────────────────────────────────────────────
-
-// ignore: unused_element
-class _EnvChip extends StatelessWidget {
-  final Envelope e;
-
-  const _EnvChip({required this.e});
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final spent = s.spentOn(e);
-    final limit = s.effectiveLimit(e);
-    final value = limit.minor <= 0 ? 0.0 : spent.minor / limit.minor;
-    final pace = s.paceOf(e);
-
-    return Semantics(
-      button: true,
-      label: e.name,
-      child: Material(
-        color: context.card,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: () {
-            if (e.limit.minor <= 0 && s.canEditBudgets) {
-              showEditEnvelopeSheet(context, s, e);
-            } else {
-              showEnvelopeDetailSheet(context, e);
-            }
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: SizedBox(
-            width: 150,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 34,
-                    height: 34,
-                    child: Icon(
-                      iconForKey(e.emoji) ?? Icons.savings,
-                      size: 17,
-                      color: context.primaryDark,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    e.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: context.ink),
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: value.clamp(0.0, 1.0).toDouble(),
-                      minHeight: 6,
-                      backgroundColor: context.track,
-                      color: _paceColor(context, pace),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${(value * 100).round()}%',
-                    style: TextStyle(fontSize: 11, color: context.inkSoft),
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
       ),
@@ -2056,7 +2138,7 @@ class SmartCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: kBRadiusM,
       ),
       child: Row(
         children: [
@@ -2100,53 +2182,4 @@ class SmartCard extends StatelessWidget {
       ),
     );
   }
-}
-
-// ── Reports badge glyph - mini "where the money went" donut ─────────────────
-// Same palette, same order as the Reports screen donut; equal arcs with small
-// gaps so it reads as a colorful chart at 20px.
-
-class _ReportsDonutGlyph extends StatelessWidget {
-  const _ReportsDonutGlyph({required this.colors});
-
-  final List<Color> colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size.square(22),
-      painter: _ReportsDonutPainter(colors),
-    );
-  }
-}
-
-class _ReportsDonutPainter extends CustomPainter {
-  _ReportsDonutPainter(this.colors);
-
-  final List<Color> colors;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const stroke = 4.2;
-    final rect = Rect.fromLTWH(
-      stroke / 2,
-      stroke / 2,
-      size.width - stroke,
-      size.height - stroke,
-    );
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke;
-    const gap = 0.14; // radians between segments
-    final sweep = (2 * math.pi - gap * colors.length) / colors.length;
-    var start = -math.pi / 2;
-    for (final c in colors) {
-      paint.color = c;
-      canvas.drawArc(rect, start, sweep, false, paint);
-      start += sweep + gap;
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ReportsDonutPainter old) => old.colors != colors;
 }

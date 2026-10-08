@@ -2,7 +2,7 @@ import '../money/money.dart';
 
 // ── Enums ───────────────────────────────────────────────────────────────────
 
-enum Role { owner, adult, teen, kid, viewer }
+enum Role { owner, admin, adult, contributor, teen, kid, viewer }
 
 enum TxType { expense, income }
 
@@ -39,8 +39,10 @@ extension OverspendPolicyX on OverspendPolicy {
 
 extension RoleX on Role {
   String get label => switch (this) {
-        Role.owner => 'Family Admin',
+        Role.owner => 'Family Owner',
+        Role.admin => 'Family Admin',
         Role.adult => 'Adult Member',
+        Role.contributor => 'Contributor',
         Role.teen => 'Teen',
         Role.kid => 'Kid',
         Role.viewer => 'Elder · Viewer',
@@ -345,6 +347,9 @@ class FamilyChatMessage {
   final String? referenceId;
   final String? referenceTitle;
   final String? referenceMeta;
+  final String? mediaUrl;
+  final String? mediaType;
+  final String? sticker;
   final bool deleted;
 
   const FamilyChatMessage({
@@ -361,6 +366,9 @@ class FamilyChatMessage {
     this.referenceId,
     this.referenceTitle,
     this.referenceMeta,
+    this.mediaUrl,
+    this.mediaType,
+    this.sticker,
     this.deleted = false,
   });
 }
@@ -375,6 +383,10 @@ class FamilyTask {
   final DateTime? dueDate;
   FamilyTaskStatus status;
   int points;
+  bool requiresApproval;
+  String? approvedByMemberId;
+  DateTime? approvedAt;
+  DateTime? completedAt;
   bool isArchived;
 
   FamilyTask({
@@ -387,6 +399,10 @@ class FamilyTask {
     this.dueDate,
     this.status = FamilyTaskStatus.open,
     this.points = 1,
+    this.requiresApproval = true,
+    this.approvedByMemberId,
+    this.approvedAt,
+    this.completedAt,
     this.isArchived = false,
   });
 
@@ -400,8 +416,13 @@ class FamilyTask {
     DateTime? dueDate,
     FamilyTaskStatus? status,
     int? points,
+    bool? requiresApproval,
+    String? approvedByMemberId,
+    DateTime? approvedAt,
+    DateTime? completedAt,
     bool? isArchived,
-  }) => FamilyTask(
+  }) =>
+      FamilyTask(
         id: id ?? this.id,
         title: title ?? this.title,
         note: note ?? this.note,
@@ -411,10 +432,18 @@ class FamilyTask {
         dueDate: dueDate ?? this.dueDate,
         status: status ?? this.status,
         points: points ?? this.points,
+        requiresApproval: requiresApproval ?? this.requiresApproval,
+        approvedByMemberId: approvedByMemberId ?? this.approvedByMemberId,
+        approvedAt: approvedAt ?? this.approvedAt,
+        completedAt: completedAt ?? this.completedAt,
         isArchived: isArchived ?? this.isArchived,
       );
 
   bool get isDone => status == FamilyTaskStatus.done;
+  bool get isAwaitingApproval =>
+      requiresApproval &&
+      status == FamilyTaskStatus.done &&
+      approvedByMemberId == null;
 }
 
 class Tx {

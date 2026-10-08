@@ -34,11 +34,48 @@ class Outbox {
   Future<List<OutboxOp>> take(int limit) async {
     final rows = await db.query(
       'outbox',
+      where: 'conflict_reason IS NULL',
       orderBy: 'id ASC',
       limit: limit,
     );
     return [for (final r in rows) _opFrom(r)];
   }
+
+  Future<List<OutboxOp>> conflicts() async {
+    final rows = await db.query('outbox',
+        where: 'conflict_reason IS NOT NULL', orderBy: 'id ASC');
+    return [for (final row in rows) _opFrom(row)];
+  }
+
+  Future<int> countConflicts() async {
+    final rows = await db.rawQuery(
+        'SELECT COUNT(*) AS c FROM outbox WHERE conflict_reason IS NOT NULL');
+    return Sqflite.firstIntValue(rows) ?? 0;
+  }
+
+  Future<void> markConflict(
+          int rowId, String reason, Map<String, Object?> serverPayload) =>
+      db.update(
+        'outbox',
+        {
+          'conflict_reason': reason,
+          'server_payload': jsonEncode(serverPayload)
+        },
+        where: 'id = ?',
+        whereArgs: [rowId],
+      );
+
+  Future<void> clearConflict(int rowId) => db.update(
+        'outbox',
+        {
+          'conflict_reason': null,
+          'server_payload': null,
+          'attempts': 0,
+          'created_ms': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [rowId],
+      );
 
   /// Held-back ops ([minAttempts] failed pushes or more) - surfaced in
   /// Sync & data with per-item retry/discard; never dropped silently.
@@ -76,6 +113,11 @@ class Outbox {
         opId: r['op_id'] as String,
         attempts: (r['attempts'] as int?) ?? 0,
         createdMs: (r['created_ms'] as int?) ?? 0,
+        conflictReason: r['conflict_reason'] as String?,
+        serverPayload: r['server_payload'] == null
+            ? null
+            : (jsonDecode(r['server_payload'] as String)
+                as Map<String, dynamic>),
         payload: jsonDecode(r['payload'] as String) as Map<String, Object?>,
       );
 
@@ -114,6 +156,8 @@ class OutboxOp {
 
   /// When the change was made (epoch ms) - shown in the parked list.
   final int createdMs;
+  final String? conflictReason;
+  final Map<String, Object?>? serverPayload;
 
   const OutboxOp({
     required this.rowId,
@@ -121,6 +165,8 @@ class OutboxOp {
     required this.opId,
     this.attempts = 0,
     this.createdMs = 0,
+    this.conflictReason,
+    this.serverPayload,
     required this.payload,
   });
 }

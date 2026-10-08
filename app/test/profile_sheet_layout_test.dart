@@ -167,7 +167,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('adding a chore closes without using disposed fields',
+  testWidgets('legacy chore records remain editable under points and rewards',
       (tester) async {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1;
@@ -187,11 +187,13 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('Add chore'),
+      find.text('Points & rewards'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Add chore').first);
+    await tester.tap(find.text('Points & rewards'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Add legacy chore'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).first, 'Wash the car');

@@ -7,6 +7,7 @@ import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/features/activity/activity_screen.dart';
 import 'package:mhuri_money/features/budgets/budgets_screen.dart';
+import 'package:mhuri_money/features/family_chat/family_chat_screen.dart';
 import 'package:mhuri_money/features/home/home_screen.dart';
 import 'package:mhuri_money/features/lists/lists_screen.dart';
 import 'package:mhuri_money/features/onboarding/family_setup_screen.dart';
@@ -77,19 +78,69 @@ void main() {
     expect(find.textContaining('Scheduled on this device'), findsOneWidget);
   });
 
-  testWidgets('Home exposes Family and Settings as separate destinations',
+  testWidgets('Home exposes the family switcher and Settings separately',
       (tester) async {
     sizeWindow(tester);
     final s = await seeded();
     await tester.pumpWidget(harness(s, const HomeScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Family'), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_signed_in_avatar')), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets('Family Chat task action opens Tasks even when none exist',
+      (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    await tester.pumpWidget(harness(s, const FamilyChatScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Add photo or task'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Family tasks'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tasks & responsibilities'), findsOneWidget);
+    expect(find.text('No open family tasks to attach yet.'), findsNothing);
+  });
+
+  testWidgets('tapping an attached chat task opens that task detail',
+      (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    final task = FamilyTask(
+      id: 'school-uniforms',
+      title: 'Buy school uniforms',
+      createdAt: DateTime(2026, 10, 8),
+      dueDate: DateTime(2026, 10, 8),
+      points: 1,
+    );
+    s.familyTasks.add(task);
+    s.familyChatMessages.add(FamilyChatMessage(
+      id: 'task-message',
+      familyId: 'family',
+      senderId: s.user.id,
+      text: 'Please handle this.',
+      createdAt: DateTime(2026, 10, 8, 14, 56),
+      referenceType: ChatReferenceType.task,
+      referenceId: task.id,
+      referenceTitle: task.title,
+      referenceMeta: 'Due Oct 8 • 1 pts',
+    ));
+
+    await tester.pumpWidget(harness(s, const FamilyChatScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buy school uniforms'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tasks & responsibilities'), findsOneWidget);
+    expect(find.text('Start task'), findsOneWidget);
   });
 
   testWidgets('approving a proposal closes its dialog without dead context',

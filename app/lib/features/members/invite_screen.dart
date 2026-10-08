@@ -22,6 +22,7 @@ class InviteScreen extends StatefulWidget {
 class _InviteScreenState extends State<InviteScreen> {
   static const _roles = <String, String>{
     'adult': 'roleAdult',
+    'contributor': 'roleContributor',
     'co_parent': 'roleParent',
     'teen': 'roleTeen',
     'kid': 'roleChild',
@@ -57,6 +58,7 @@ class _InviteScreenState extends State<InviteScreen> {
 
   String _roleLabel(AppLocalizations l, String role) => switch (role) {
         'adult' => l.roleAdult,
+        'contributor' => 'Contributor',
         'co_parent' => l.roleParent,
         'teen' => l.roleTeen,
         'kid' => l.roleChild,
@@ -444,7 +446,7 @@ class _CreateMemberAccountSheetState extends State<_CreateMemberAccountSheet> {
   String? _error;
 
   List<String> get _roles => widget.ownerCanGrantAdult
-      ? const ['co_parent', 'adult', 'teen', 'kid', 'viewer']
+      ? const ['co_parent', 'adult', 'contributor', 'teen', 'kid', 'viewer']
       : const ['teen', 'kid', 'viewer'];
 
   @override
@@ -457,6 +459,7 @@ class _CreateMemberAccountSheetState extends State<_CreateMemberAccountSheet> {
 
   String _roleLabel(AppLocalizations l, String role) => switch (role) {
         'adult' => l.roleAdult,
+        'contributor' => 'Contributor',
         'co_parent' => l.roleParent,
         'teen' => l.roleTeen,
         'kid' => l.roleChild,

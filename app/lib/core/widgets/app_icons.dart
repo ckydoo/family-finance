@@ -81,26 +81,22 @@ class AppIconBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolved = icon ?? iconForKey(emojiKey);
-    final radius = borderRadius ?? BorderRadius.circular(size / 2);
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: bg ?? Colors.transparent,
-        borderRadius: radius,
+      child: Center(
+        child: resolved != null
+            ? Icon(
+                resolved,
+                size: iconSize ?? size * 0.46,
+                color: fg ?? context.primaryDark,
+              )
+            : Icon(
+                Icons.label_outline,
+                size: iconSize ?? size * 0.46,
+                color: fg ?? context.primaryDark,
+              ),
       ),
-      alignment: Alignment.center,
-      child: resolved != null
-          ? Icon(
-              resolved,
-              size: iconSize ?? size * 0.46,
-              color: fg ?? context.primaryDark,
-            )
-          : Icon(
-              Icons.label_outline,
-              size: iconSize ?? size * 0.46,
-              color: fg ?? context.primaryDark,
-            ),
     );
   }
 }
@@ -122,18 +118,15 @@ class AppIconBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: bg ?? Colors.transparent,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Icon(
-        icon,
-        size: size * 0.5,
-        color: color ?? Theme.of(context).colorScheme.onPrimaryContainer,
+      child: Center(
+        child: Icon(
+          icon,
+          size: size * 0.5,
+          color: color ?? Theme.of(context).colorScheme.onPrimaryContainer,
+        ),
       ),
     );
   }

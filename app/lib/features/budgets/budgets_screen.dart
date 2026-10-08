@@ -10,7 +10,6 @@ import '../../core/state/app_state.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/l10n/app_strings.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/tx_tile.dart';
 import 'recurring_ui.dart';
@@ -24,16 +23,27 @@ void showEnvelopeDetailSheet(BuildContext context, Envelope envelope) {
 }
 
 /// Envelope budgets (spec Module D, screen §7.3).
-class BudgetsScreen extends StatelessWidget {
+class BudgetsScreen extends StatefulWidget {
   final bool standalone;
   const BudgetsScreen({super.key, this.standalone = false});
+
+  @override
+  State<BudgetsScreen> createState() => _BudgetsScreenState();
+}
+
+enum _BudgetFilter { all, nearLimit, exceeded }
+
+class _BudgetsScreenState extends State<BudgetsScreen> {
+  bool _searching = false;
+  String _query = '';
+  _BudgetFilter _filter = _BudgetFilter.all;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final l = AppLocalizations.of(context)!;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
-    final isStandalone = standalone || canPop;
+    final isStandalone = widget.standalone || canPop;
     final language = Localizations.localeOf(context).languageCode;
     final locale =
         const {'es', 'fr', 'pt'}.contains(language) ? language : 'en';
@@ -41,126 +51,124 @@ class BudgetsScreen extends StatelessWidget {
     final cycleLabel = '${DateFormat.MMMd(locale).format(s.cycleStart)} - '
         '${DateFormat.MMMd(locale).format(cycleEnd)}';
 
-    final datePill = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: context.card,
-        borderRadius: kBRadiusS,
-      ),
-      child: Text(
-        cycleLabel,
-        style: TextStyle(
-          fontSize: 12.5,
-          fontWeight: FontWeight.w700,
-          color: context.inkSoft,
-        ),
-      ),
-    );
-
-    final left = <Widget>[
-      if (!isStandalone)
-        Row(
-          children: [
-            Expanded(
-              child: PageHeader(l.budgetsTitle),
-            ),
-            datePill,
-          ],
-        )
-      else
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: datePill,
-          ),
-        ),
-      const SizedBox(height: 16),
-
-      // ── Envelopes ───────────────────────────────────────────────────
-      _CyclePlanCard(state: s),
-      const SizedBox(height: 16),
-      if (s.envelopes.isEmpty)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: EmptyState(
-            icon: Icons.mail_outline,
-            title: l.noEnvelopes,
-            subtitle: l.envelopesHint,
-          ),
-        ),
-      for (final e in s.envelopes)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _EnvelopeCard(e: e),
-        ),
-      ElevatedButton.icon(
-        onPressed: () => _showNewEnvelopeSheet(context, s),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: context.primary,
-          foregroundColor: context.onSolid,
-          minimumSize: const Size.fromHeight(52),
-          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-        ),
-        icon: const Icon(Icons.add),
-        label: Text(l.newEnvelope),
-      ),
-    ];
-    final right = <Widget>[
-      Row(
-        children: [
-          Expanded(
-            child: Text(
-              l.recurringExpenses,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: context.ink,
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: l.addRecurringTip,
-            onPressed: () => showAddRecurringSheet(context),
-            icon: Icon(Icons.add_circle, color: context.primary, size: 28),
-          ),
-        ],
-      ),
-      Text(
-        l.recReviewed,
-        style: TextStyle(fontSize: 12, color: context.inkSoft),
-      ),
-      const SizedBox(height: 12),
-      if (s.recurring.isEmpty)
-        EmptyState(
-          icon: Icons.autorenew,
-          title: l.noRecurring,
-          subtitle: l.recurringHint,
-        )
-      else
-        for (final r in s.sortedBills) RecurringRow(rule: r),
-    ];
-    const pad = kTabPageInsets;
+    final query = _query.trim().toLowerCase();
+    final envelopes = s.envelopes.where((envelope) {
+      final matchesQuery =
+          query.isEmpty || envelope.name.toLowerCase().contains(query);
+      final remaining = s.remainingOn(envelope).minor;
+      final matchesFilter = switch (_filter) {
+        _BudgetFilter.all => true,
+        _BudgetFilter.nearLimit =>
+          remaining >= 0 && s.paceOf(envelope) == Pace.watch,
+        _BudgetFilter.exceeded => remaining < 0,
+      };
+      return matchesQuery && matchesFilter;
+    }).toList();
 
     final Widget content = SafeArea(
       child: RefreshIndicator(
         onRefresh: () => s.refresh(),
-        child: LayoutBuilder(
-          builder: (context, c) {
-            if (c.maxWidth >= 900) {
-              return Row(
-                children: [
-                  Expanded(child: ListView(padding: pad, children: left)),
-                  const VerticalDivider(width: 1, thickness: 1),
-                  Expanded(child: ListView(padding: pad, children: right)),
-                ],
-              );
-            }
-            return ListView(
-              padding: pad,
-              children: [...left, const SizedBox(height: 24), ...right],
-            );
-          },
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!isStandalone)
+                      Row(children: [
+                        Expanded(child: PageHeader(l.budgetsTitle)),
+                        IconButton(
+                          tooltip: 'Search budgets',
+                          onPressed: () =>
+                              setState(() => _searching = !_searching),
+                          icon: const Icon(Icons.search),
+                        ),
+                        if (s.canEditBudgets)
+                          IconButton(
+                            tooltip: l.newEnvelope,
+                            onPressed: () => _showNewEnvelopeSheet(context, s),
+                            icon: Icon(Icons.add_circle_rounded,
+                                color: context.primary, size: 30),
+                          ),
+                      ]),
+                    if (_searching) ...[
+                      const SizedBox(height: 10),
+                      TextField(
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Search budgets',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: IconButton(
+                            tooltip: 'Close search',
+                            onPressed: () => setState(() {
+                              _searching = false;
+                              _query = '';
+                            }),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ),
+                        onChanged: (value) => setState(() => _query = value),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    _CyclePlanCard(state: s, cycleLabel: cycleLabel),
+                    const SizedBox(height: 10),
+                    _RegularPaymentsCard(state: s),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      Expanded(
+                        child: Text('Budgets',
+                            style: Theme.of(context).textTheme.titleMedium),
+                      ),
+                      Text('${envelopes.length}',
+                          style: TextStyle(color: context.inkSoft)),
+                    ]),
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 8, children: [
+                      for (final filter in _BudgetFilter.values)
+                        ChoiceChip(
+                          label: Text(switch (filter) {
+                            _BudgetFilter.all => 'All',
+                            _BudgetFilter.nearLimit => 'Near limit',
+                            _BudgetFilter.exceeded => 'Exceeded',
+                          }),
+                          selected: _filter == filter,
+                          onSelected: (_) => setState(() => _filter = filter),
+                        ),
+                    ]),
+                    if (s.envelopes.isEmpty)
+                      EmptyState(
+                        icon: Icons.mail_outline,
+                        title: l.noEnvelopes,
+                        subtitle: l.envelopesHint,
+                      )
+                    else if (envelopes.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 28),
+                        child: Center(
+                          child: Text('No budgets match this view.',
+                              style: TextStyle(color: context.inkSoft)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList.separated(
+                itemCount: envelopes.length,
+                itemBuilder: (_, index) => _EnvelopeCard(e: envelopes[index]),
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+              ),
+            ),
+            const SliverPadding(
+              padding: EdgeInsets.only(bottom: 100),
+              sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
+            ),
+          ],
         ),
       ),
     );
@@ -169,6 +177,19 @@ class BudgetsScreen extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           title: Text(l.budgetsTitle),
+          actions: [
+            IconButton(
+              tooltip: 'Search budgets',
+              onPressed: () => setState(() => _searching = !_searching),
+              icon: const Icon(Icons.search),
+            ),
+            if (s.canEditBudgets)
+              IconButton(
+                tooltip: l.newEnvelope,
+                onPressed: () => _showNewEnvelopeSheet(context, s),
+                icon: const Icon(Icons.add_rounded),
+              ),
+          ],
         ),
         body: content,
       );
@@ -181,9 +202,108 @@ class BudgetsScreen extends StatelessWidget {
   }
 }
 
-class _CyclePlanCard extends StatelessWidget {
-  const _CyclePlanCard({required this.state});
+class _RegularPaymentsCard extends StatelessWidget {
+  const _RegularPaymentsCard({required this.state});
+
   final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final active = state.recurring.where((rule) => rule.active).length;
+    return Material(
+      color: context.card,
+      borderRadius: kBRadiusM,
+      child: InkWell(
+        borderRadius: kBRadiusM,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const _RegularPaymentsScreen(),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: kBRadiusM,
+            border: Border.all(color: context.hairline.withValues(alpha: 0.7)),
+          ),
+          child: Row(children: [
+            SizedBox(
+              width: 38,
+              height: 38,
+              child: Center(
+                child: Icon(Icons.autorenew_rounded,
+                    size: 22, color: context.primary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.recurringExpenses,
+                      style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: context.ink)),
+                  const SizedBox(height: 2),
+                  Text(
+                    state.recurring.isEmpty
+                        ? l.noRecurring
+                        : '$active active ${active == 1 ? 'payment' : 'payments'}',
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, size: 21, color: context.inkSoft),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _RegularPaymentsScreen extends StatelessWidget {
+  const _RegularPaymentsScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final l = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l.recurringExpenses),
+        actions: [
+          IconButton(
+            tooltip: l.addRecurringTip,
+            onPressed: () => showAddRecurringSheet(context),
+            icon: const Icon(Icons.add_rounded),
+          ),
+        ],
+      ),
+      body: state.recurring.isEmpty
+          ? EmptyState(
+              icon: Icons.autorenew,
+              title: l.noRecurring,
+              subtitle: l.recurringHint,
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              itemCount: state.sortedBills.length,
+              itemBuilder: (_, index) =>
+                  RecurringRow(rule: state.sortedBills[index]),
+              separatorBuilder: (_, __) =>
+                  Divider(height: 1, color: context.hairline),
+            ),
+    );
+  }
+}
+
+class _CyclePlanCard extends StatelessWidget {
+  const _CyclePlanCard({required this.state, required this.cycleLabel});
+  final AppState state;
+  final String cycleLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -195,30 +315,97 @@ class _CyclePlanCard extends StatelessWidget {
     final allocation = Money(allocated, state.displayCurrency);
     final expected =
         plan?.expectedIncome?.inCurrency(state.displayCurrency, state.rate);
+    final expectedLabel = plan == null
+        ? 'Not set'
+        : plan.incomeMode == IncomePlanMode.knownMonthly
+            ? expected?.text ?? '—'
+            : 'As earned';
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusL),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [context.primaryDark, context.primary],
+        ),
+        borderRadius: kBRadiusL,
+        boxShadow: [
+          BoxShadow(
+            color: context.primary.withValues(alpha: 0.16),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(Icons.event_note_outlined, color: context.primary),
-          const SizedBox(width: 10),
-          Expanded(
+          const SizedBox(
+            width: 40,
+            height: 40,
+            child: Center(
+              child: Icon(Icons.event_note_outlined,
+                  color: Colors.white, size: 23),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
               child: Text('This month\'s plan',
                   style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 19,
                       fontWeight: FontWeight.w800,
-                      color: context.ink))),
-          if (plan != null)
-            Chip(label: Text(plan.isClosed ? 'Closed' : 'Active')),
+                      color: Colors.white))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+            ),
+            child: Text(
+              plan == null ? 'Not set' : (plan.isClosed ? 'Closed' : 'Active'),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700),
+            ),
+          ),
         ]),
-        const SizedBox(height: 10),
-        Text(
-          plan == null
-              ? 'Choose how income arrives, then agree where the money should go.'
-              : plan.incomeMode == IncomePlanMode.knownMonthly
-                  ? 'Expected ${expected?.text ?? '—'} · Allocated ${allocation.text}'
-                  : 'Add money as it is earned · Allocated ${allocation.text}',
-          style: TextStyle(color: context.inkSoft, height: 1.35),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Icon(Icons.date_range_outlined,
+                size: 15, color: Colors.white.withValues(alpha: 0.72)),
+            const SizedBox(width: 6),
+            Text(
+              cycleLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.78),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.10),
+            borderRadius: kBRadiusM,
+          ),
+          child: Row(children: [
+            Expanded(
+                child: _PlanMetric(label: 'Expected', value: expectedLabel)),
+            Container(
+              width: 1,
+              height: 34,
+              color: Colors.white.withValues(alpha: 0.20),
+            ),
+            Expanded(
+              child: _PlanMetric(
+                  label: 'Allocated', value: allocation.text, alignEnd: true),
+            ),
+          ]),
         ),
         const SizedBox(height: 14),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -230,6 +417,10 @@ class _CyclePlanCard extends StatelessWidget {
               icon: Icon(plan == null ? Icons.add : Icons.edit_outlined,
                   size: 18),
               label: Text(plan == null ? 'Set up plan' : 'Edit plan'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: context.primaryDark,
+              ),
             ),
           if (plan == null && state.previousBudgetPlan != null)
             OutlinedButton.icon(
@@ -243,9 +434,13 @@ class _CyclePlanCard extends StatelessWidget {
                   : null,
               icon: const Icon(Icons.content_copy_outlined, size: 18),
               label: const Text('Use last month'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+              ),
             ),
           if (plan != null && !plan.isClosed)
-            TextButton(
+            OutlinedButton.icon(
               onPressed: state.canEditBudgets
                   ? () async {
                       final ok = await confirmDialog(context,
@@ -256,12 +451,50 @@ class _CyclePlanCard extends StatelessWidget {
                       if (ok) state.closeCurrentBudgetPlan();
                     }
                   : null,
-              child: const Text('Close month'),
+              icon: const Icon(Icons.lock_outline_rounded, size: 17),
+              label: const Text('Close month'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+              ),
             ),
         ]),
       ]),
     );
   }
+}
+
+class _PlanMetric extends StatelessWidget {
+  const _PlanMetric({
+    required this.label,
+    required this.value,
+    this.alignEnd = false,
+  });
+
+  final String label;
+  final String value;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment:
+            alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.68))),
+          const SizedBox(height: 2),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white)),
+        ],
+      );
 }
 
 Future<void> _showPlanSheet(BuildContext context, AppState state) async {
@@ -529,21 +762,21 @@ class _EnvelopeCard extends StatelessWidget {
     return InkWell(
       onTap: () => _openDetail(context, s),
       onLongPress: s.canAdmin ? () => _confirmRemove(context, s) : null,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: kBRadiusM,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: context.card,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: kBRadiusM,
         ),
         child: Row(
           children: [
             SizedBox(
-              width: 44,
-              height: 44,
+              width: 38,
+              height: 38,
               child: Icon(
-                iconForKey(e.emoji) ?? Icons.savings,
-                size: 21,
+                iconForKey(e.emoji) ?? Icons.savings_outlined,
+                size: 20,
                 color: context.primaryDark,
               ),
             ),
@@ -560,81 +793,76 @@ class _EnvelopeCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
                             color: context.ink,
                           ),
                         ),
                       ),
                       if (e.isPersonal) ...[
                         const SizedBox(width: 6),
-                        Icon(Icons.lock, size: 12, color: context.inkSoft),
+                        Icon(Icons.lock_outline,
+                            size: 12, color: context.inkSoft),
                       ],
                     ],
                   ),
-                  Text(
-                    rolloverLabel(AppLocalizations.of(context)!, e.rollover),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10.5, color: context.inkSoft),
-                  ),
+                  const SizedBox(height: 2),
                   if (effectiveLimit.minor <= 0 && spent.minor <= 0) ...[
-                    const SizedBox(height: 4),
                     Text(
-                      'No limit set',
+                      'No limit set · Tap to set budget amount',
                       style: TextStyle(
-                        fontSize: 13,
-                        color: context.inkSoft,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 11.5,
+                        color: context.primaryDark,
+                        fontWeight: FontWeight.w500,
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Tap to set budget amount',
-                      style: TextStyle(
-                          fontSize: 10.5,
-                          color: context.primary,
-                          fontWeight: FontWeight.w600),
                     ),
                   ] else ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      s.hideAmounts
-                          ? '••••• left'
-                          : over
-                              ? AppLocalizations.of(context)!.overBy(
-                                  Money(-remaining.minor, remaining.currency)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            s.hideAmounts
+                                ? '••••• spent'
+                                : '${spent.text} of ${effectiveLimit.text}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.inkSoft,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          s.hideAmounts
+                              ? '•••••'
+                              : over
+                                  ? AppLocalizations.of(context)!.overBy(Money(
+                                          -remaining.minor, remaining.currency)
                                       .text)
-                              : '${remaining.text} left',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: over ? context.expenseRed : context.ink,
-                        fontWeight: FontWeight.w700,
-                      ),
+                                  : '${remaining.text} left',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: over ? context.expenseRed : context.ink,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      s.hideAmounts
-                          ? '••••• spent'
-                          : '${spent.text} spent of ${effectiveLimit.text}',
-                      style: TextStyle(fontSize: 10.5, color: context.inkSoft),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: value.clamp(0.0, 1.0).toDouble(),
-                      minHeight: 7,
-                      backgroundColor: context.track,
+                    const SizedBox(height: 6),
+                    MhuriProgress(
+                      progress: value,
                       color:
                           over ? context.expenseRed : _paceColor(context, pace),
+                      height: 4,
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
@@ -681,26 +909,11 @@ class _EnvelopeCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                const SizedBox(height: 6),
-                if (effectiveLimit.minor <= 0 && spent.minor <= 0)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: context.track,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'No limit',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: context.inkSoft,
-                      ),
-                    ),
-                  )
-                else
+                if (pace != Pace.onTrack &&
+                    (effectiveLimit.minor > 0 || spent.minor > 0)) ...[
+                  const SizedBox(height: 4),
                   _PaceChip(pace: pace),
+                ],
               ],
             ),
           ],

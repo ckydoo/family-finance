@@ -115,6 +115,38 @@ void main() {
     expect(state.activityFeed.single.id, 'audit-1');
   });
 
+  test('offline transaction edits and deletions remain visible in audit feed',
+      () {
+    final state = AppState();
+    state.addTx(
+      id: 'tx-audit-local',
+      type: TxType.expense,
+      amount: const Money(1200, Currency.usd),
+      memberId: state.user.id,
+      method: Method.cash,
+      note: 'Market',
+    );
+    final tx = state.txs.first;
+    expect(
+      state.updateTx(tx,
+          amount: const Money(1500, Currency.usd),
+          method: Method.cash,
+          note: 'Market corrected',
+          when: tx.when),
+      isTrue,
+    );
+    expect(
+      state.activityFeed.any((activity) => activity.action == 'tx.update'),
+      isTrue,
+    );
+
+    expect(state.deleteTx(state.txs.first), isTrue);
+    expect(
+      state.activityFeed.any((activity) => activity.action == 'tx.delete'),
+      isTrue,
+    );
+  });
+
   test('family chat sync adapter round-trips a family-scoped message', () {
     final adapter = kSyncAdapters['family_chat_message']!;
     final original = FamilyChatMessage(
@@ -128,22 +160,30 @@ void main() {
       referenceId: 'tx-9',
       referenceTitle: 'Food budget',
       referenceMeta: 'USD 120.00',
+      mediaUrl: 'https://cdn.example.test/family/photo.jpg',
+      mediaType: 'image',
+      sticker: '🎉',
     );
 
-    final json = adapter.encode(original, const SyncCtx(
-      spaceId: 'space-42',
-      newId: _noopId,
-    ));
+    final json = adapter.encode(
+        original,
+        const SyncCtx(
+          spaceId: 'space-42',
+          newId: _noopId,
+        ));
     expect(json['space_id'], 'space-42');
     expect(json['status'], 'delivered');
     expect(json['reference_type'], 'expense');
+    expect(json['media_type'], 'image');
+    expect(json['sticker'], '🎉');
 
     final roundTripped = adapter.decode(json) as FamilyChatMessage;
     expect(roundTripped.familyId, 'space-42');
     expect(roundTripped.text, 'Groceries are due this Friday.');
     expect(roundTripped.referenceType, ChatReferenceType.expense);
+    expect(roundTripped.mediaUrl, 'https://cdn.example.test/family/photo.jpg');
+    expect(roundTripped.sticker, '🎉');
   });
 }
 
 String _noopId() => 'generated-id';
-

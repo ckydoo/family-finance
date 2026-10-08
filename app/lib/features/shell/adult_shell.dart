@@ -107,7 +107,7 @@ class _AdultShellState extends State<AdultShell> {
       floatingActionButton: s.canAuthorTransact
           ? FloatingActionButton(
               tooltip: AppLocalizations.of(context)!.addTransaction,
-              onPressed: () => showQuickAdd(context),
+              onPressed: () => showQuickAddMenu(context),
               backgroundColor: context.accent,
               elevation: 4,
               child: const Icon(Icons.add, size: 30, color: Colors.white),

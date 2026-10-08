@@ -125,9 +125,9 @@ class Notifier {
     try {
       await _ensureInit();
       const androidDetails = AndroidNotificationDetails(
-        'mhuri_test',
-        'Test',
-        channelDescription: 'Test notification channel',
+        'mhuri_family_updates',
+        'Family updates',
+        channelDescription: 'Messages and important updates from your family',
         importance: Importance.max,
         priority: Priority.high,
       );

@@ -557,7 +557,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: p.card,
-      indicatorColor: p.primarySoft,
+      indicatorColor: Colors.transparent,
       elevation: 0,
       height: 66,
       labelTextStyle: WidgetStatePropertyAll(

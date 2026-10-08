@@ -213,7 +213,7 @@ void main() {
     expect(roster.first.id, meId); // me first
     expect(roster, hasLength(3));
     final mai = roster.firstWhere((m) => m.id == 'uuid-mai');
-    expect(mai.role, Role.owner); // co_parent is an additional Family Admin
+    expect(mai.role, Role.admin); // co_parent is an additional Family Admin
     expect(mai.serverRole, 'co_parent');
     expect(mai.name, 'Mai');
     expect(roster.firstWhere((m) => m.id == 'uuid-zoe').role, Role.kid);

@@ -121,6 +121,7 @@ class AppState extends ChangeNotifier {
   late final List<BudgetCyclePlan> budgetPlans;
   late final List<FamilyActivity> familyActivities;
   late final List<FamilyChatMessage> familyChatMessages;
+  DateTime _chatLastReadAt = DateTime.fromMillisecondsSinceEpoch(0);
   late final List<FamilyTask> familyTasks;
   late final List<ContributionCampaign> contributionCampaigns;
   late final List<ContributionPledge> contributionPledges;
@@ -187,8 +188,10 @@ class AppState extends ChangeNotifier {
   /// Set by the app shell to receive each new reminder plan (the bridge to
   /// the OS scheduler). Null in tests → plans are computed but never sent.
   void Function(List<Reminder> plan)? reminderHook;
+  void Function(Reminder notification)? immediateNotificationHook;
   final List<Reminder> _reminderExtras = [];
   List<Reminder> _lastPlan = const [];
+  Set<String> _readNotificationKeys = {};
   Set<String> _seenRequestResults = {};
 
   /// True while the startup hydration runs (only with a database attached).
@@ -262,6 +265,11 @@ class AppState extends ChangeNotifier {
   // ── Sync getters for UI ────────────────────────────────────────────────
   bool get isLive => env.isConfigured;
   bool get hasSpace => sync?.spaceId != null;
+  bool get familySpaceIdentityLoaded => sync?.spaceIdentityLoaded ?? true;
+  bool get shouldPromptFamilySetup =>
+      familySpaceIdentityLoaded &&
+      (sync?.familySetupResolutionComplete ?? true) &&
+      !hasSpace;
   String? get spaceName => sync?.spaceName;
   String? get inviteCode => sync?.inviteCode;
   DateTime? get lastSyncAt => sync?.lastSyncAt;
@@ -273,6 +281,7 @@ class AppState extends ChangeNotifier {
       return SyncHealthState.syncing;
     }
     if (syncStatus == SyncStatus.needsSignIn ||
+        syncStatus == SyncStatus.needsReview ||
         syncStatus == SyncStatus.error ||
         (syncLastError != null && syncLastError!.isNotEmpty)) {
       return SyncHealthState.needsAttention;
@@ -534,6 +543,15 @@ class AppState extends ChangeNotifier {
           if (p.name == op) overspendPolicy = p;
         }
       }
+      final chatRead = await db?.kvGet('chat_last_read_ms');
+      final chatReadMs = int.tryParse(chatRead ?? '');
+      if (chatReadMs != null) {
+        _chatLastReadAt = DateTime.fromMillisecondsSinceEpoch(chatReadMs);
+      }
+      _readNotificationKeys = (await db?.kvGet('notification_read_keys') ?? '')
+          .split(',')
+          .where((key) => key.isNotEmpty)
+          .toSet();
       if (await store.hasData()) {
         final data = await store.loadAll();
         lastError = null;
@@ -942,6 +960,8 @@ class AppState extends ChangeNotifier {
   /// Engine reports a status change → repaint whatever shows sync state.
   /// ─── Notifications (M5 - spec J2/J3) ─────────────────────────────────
 
+  void syncIdentityChanged() => notifyListeners();
+
   NotifyConfig get _notifyConfig => NotifyConfig(
         enabled: notifyEnabled,
         allowed: notifyAllowed,
@@ -1113,6 +1133,9 @@ class AppState extends ChangeNotifier {
       referenceId: message.referenceId,
       referenceTitle: message.referenceTitle,
       referenceMeta: message.referenceMeta,
+      mediaUrl: message.mediaUrl,
+      mediaType: message.mediaType,
+      sticker: message.sticker,
       deleted: message.deleted,
     );
     final existingIndex =
@@ -1127,6 +1150,37 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  int get unreadChatCount => familyChatMessages
+      .where((message) =>
+          !message.deleted &&
+          message.senderId != realUser.id &&
+          message.createdAt.isAfter(_chatLastReadAt))
+      .length;
+
+  Set<String> get _currentNotificationKeys => {
+        for (final reminder in planReminders()) 'reminder:${reminder.key}',
+        for (final message in familyChatMessages)
+          if (!message.deleted && message.senderId != realUser.id)
+            'chat:${message.id}',
+      };
+
+  int get unreadNotificationCount => _currentNotificationKeys
+      .where((key) => !_readNotificationKeys.contains(key))
+      .length;
+
+  void markNotificationsRead() {
+    _readNotificationKeys = _currentNotificationKeys;
+    _persistKv('notification_read_keys', _readNotificationKeys.join(','));
+    notifyListeners();
+  }
+
+  void markFamilyChatRead() {
+    _chatLastReadAt = DateTime.now();
+    _persistKv(
+        'chat_last_read_ms', '${_chatLastReadAt.millisecondsSinceEpoch}');
+    notifyListeners();
+  }
+
   void addFamilyTask(FamilyTask task) {
     final clean = FamilyTask(
       id: task.id,
@@ -1138,6 +1192,10 @@ class AppState extends ChangeNotifier {
       dueDate: task.dueDate,
       status: task.status,
       points: task.points,
+      requiresApproval: task.requiresApproval,
+      approvedByMemberId: task.approvedByMemberId,
+      approvedAt: task.approvedAt,
+      completedAt: task.completedAt,
       isArchived: task.isArchived,
     );
     final existingIndex = familyTasks.indexWhere((t) => t.id == clean.id);
@@ -1159,51 +1217,112 @@ class AppState extends ChangeNotifier {
     final index = familyTasks.indexWhere((t) => t.id == task.id);
     final previous = index >= 0 ? familyTasks[index] : null;
     if (previous != null && previous.status != task.status) {
-      if (previous.status != FamilyTaskStatus.done && task.status == FamilyTaskStatus.done) {
-        stars += task.points;
-        addChatMessage(FamilyChatMessage(
-          id: newUuid(),
-          familyId: sync?.spaceId ?? space.name,
-          senderId: user.id,
-          text: 'Completed: ${task.title} (+${task.points} pts)',
-          createdAt: DateTime.now(),
-          senderName: 'Family',
-          senderAvatar: null,
-          status: ChatMessageStatus.sent,
-          isSystem: true,
-          referenceType: ChatReferenceType.task,
-          referenceId: task.id,
-          referenceTitle: task.title,
-          referenceMeta: '${task.points} pts earned',
-        ));
-      } else if (previous.status == FamilyTaskStatus.done && task.status != FamilyTaskStatus.done) {
-        stars = (stars - previous.points).clamp(0, 1000000000);
-        addChatMessage(FamilyChatMessage(
-          id: newUuid(),
-          familyId: sync?.spaceId ?? space.name,
-          senderId: user.id,
-          text: 'Reopened: ${task.title}',
-          createdAt: DateTime.now(),
-          senderName: 'Family',
-          senderAvatar: null,
-          status: ChatMessageStatus.sent,
-          isSystem: true,
-          referenceType: ChatReferenceType.task,
-          referenceId: task.id,
-          referenceTitle: task.title,
-          referenceMeta: 'Task reopened',
-        ));
+      if (previous.status != FamilyTaskStatus.done &&
+          task.status == FamilyTaskStatus.done) {
+        if (!task.requiresApproval) {
+          stars += task.points;
+          addChatMessage(FamilyChatMessage(
+            id: newUuid(),
+            familyId: sync?.spaceId ?? space.name,
+            senderId: user.id,
+            text: 'Completed: ${task.title} (+${task.points} pts)',
+            createdAt: DateTime.now(),
+            senderName: 'Family',
+            senderAvatar: null,
+            status: ChatMessageStatus.sent,
+            isSystem: true,
+            referenceType: ChatReferenceType.task,
+            referenceId: task.id,
+            referenceTitle: task.title,
+            referenceMeta: '${task.points} pts earned',
+          ));
+        } else {
+          addChatMessage(FamilyChatMessage(
+            id: newUuid(),
+            familyId: sync?.spaceId ?? space.name,
+            senderId: user.id,
+            text: 'Ready for approval: ${task.title}',
+            createdAt: DateTime.now(),
+            senderName: 'Family',
+            senderAvatar: null,
+            status: ChatMessageStatus.sent,
+            isSystem: true,
+            referenceType: ChatReferenceType.task,
+            referenceId: task.id,
+            referenceTitle: task.title,
+            referenceMeta: 'Awaiting family approval',
+          ));
+        }
+      } else if (previous.status == FamilyTaskStatus.done &&
+          task.status != FamilyTaskStatus.done) {
+        if (previous.approvedByMemberId != null) {
+          stars = (stars - previous.points).clamp(0, 1000000000);
+          addChatMessage(FamilyChatMessage(
+            id: newUuid(),
+            familyId: sync?.spaceId ?? space.name,
+            senderId: user.id,
+            text: 'Reopened: ${task.title}',
+            createdAt: DateTime.now(),
+            senderName: 'Family',
+            senderAvatar: null,
+            status: ChatMessageStatus.sent,
+            isSystem: true,
+            referenceType: ChatReferenceType.task,
+            referenceId: task.id,
+            referenceTitle: task.title,
+            referenceMeta: 'Task reopened',
+          ));
+        }
       }
       _persistKv('stars', '$stars');
     }
     addFamilyTask(task);
   }
 
+  void approveFamilyTask(FamilyTask task) {
+    final index = familyTasks.indexWhere((t) => t.id == task.id);
+    final previous = index >= 0 ? familyTasks[index] : null;
+    if (previous == null || previous.status != FamilyTaskStatus.done) return;
+    if (previous.approvedByMemberId != null) return;
+
+    final approved = task.copyWith(
+      status: FamilyTaskStatus.done,
+      approvedByMemberId: user.id,
+      approvedAt: DateTime.now(),
+      completedAt: task.completedAt ?? DateTime.now(),
+    );
+
+    stars += approved.points;
+    _persistKv('stars', '$stars');
+    addChatMessage(FamilyChatMessage(
+      id: newUuid(),
+      familyId: sync?.spaceId ?? space.name,
+      senderId: user.id,
+      text: 'Approved: ${approved.title} (+${approved.points} pts)',
+      createdAt: DateTime.now(),
+      senderName: 'Family',
+      senderAvatar: null,
+      status: ChatMessageStatus.sent,
+      isSystem: true,
+      referenceType: ChatReferenceType.task,
+      referenceId: approved.id,
+      referenceTitle: approved.title,
+      referenceMeta: '${approved.points} pts approved',
+    ));
+    addFamilyTask(approved);
+  }
+
   void toggleFamilyTaskCompletion(FamilyTask task) {
     final nextStatus = task.status == FamilyTaskStatus.done
         ? FamilyTaskStatus.open
         : FamilyTaskStatus.done;
-    updateFamilyTask(task.copyWith(status: nextStatus));
+    updateFamilyTask(task.copyWith(
+      status: nextStatus,
+      completedAt: nextStatus == FamilyTaskStatus.done ? DateTime.now() : null,
+      approvedByMemberId:
+          nextStatus == FamilyTaskStatus.done ? task.approvedByMemberId : null,
+      approvedAt: nextStatus == FamilyTaskStatus.done ? task.approvedAt : null,
+    ));
   }
 
   /// Engine wiped local synced tables after adopting a family space - the
@@ -1283,7 +1402,10 @@ class AppState extends ChangeNotifier {
   /// Sprint B: mirror server envelope_tx links into local transactions.
   /// Only rewrites rows whose link actually changed; each change is persisted
   /// locally (no re-queue - the server is the source for links).
-  Future<void> applyEnvelopeLinks(Map<String, String> txToEnvelope) async {
+  Future<void> applyEnvelopeLinks(
+    Map<String, String> txToEnvelope, {
+    bool notify = true,
+  }) async {
     var changed = false;
     for (var i = 0; i < txs.length; i++) {
       final link = txToEnvelope[txs[i].id];
@@ -1306,7 +1428,7 @@ class AppState extends ChangeNotifier {
       await _store?.saveTx(txs[i]);
       changed = true;
     }
-    if (changed) notifyListeners();
+    if (changed && notify) notifyListeners();
   }
 
   /// Latest server FX snapshot - never overrides a user-set custom rate.
@@ -1499,7 +1621,11 @@ class AppState extends ChangeNotifier {
 
   /// Server-pulled rows (raw JSON) → in-memory merge. Persistence already
   /// stored them; this updates what the screens render.
-  void applyPulled(String entity, List<Map<String, Object?>> rows) {
+  void applyPulled(
+    String entity,
+    List<Map<String, Object?>> rows, {
+    bool notify = true,
+  }) {
     if (rows.isEmpty) return;
     final adapter = kSyncAdapters[entity];
     if (adapter == null) return;
@@ -1512,7 +1638,28 @@ class AppState extends ChangeNotifier {
             changed = true;
             continue;
           }
-          final t = adapter.decode(row) as Tx;
+          final pulled = adapter.decode(row) as Tx;
+          // The backend stores budget attribution in envelope_tx, not on the
+          // transaction row. A transaction pull must therefore retain the
+          // link already known locally until the junction-table pull arrives.
+          // Dropping it here made budget spend and Available Today alternate
+          // between attributed and unattributed values on every live sync.
+          final existing = txs.where((x) => x.id == pulled.id).firstOrNull;
+          final t = pulled.envelopeId != null || existing?.envelopeId == null
+              ? pulled
+              : Tx(
+                  id: pulled.id,
+                  envelopeId: existing!.envelopeId,
+                  memberId: pulled.memberId,
+                  type: pulled.type,
+                  amount: pulled.amount,
+                  method: pulled.method,
+                  note: pulled.note,
+                  when: pulled.when,
+                  deletedAt: pulled.deletedAt,
+                  receiptUri: pulled.receiptUri,
+                  recurringRuleId: pulled.recurringRuleId,
+                );
           txs.removeWhere((x) => x.id == t.id);
           txs.insert(0, t);
           changed = true;
@@ -1548,6 +1695,44 @@ class AppState extends ChangeNotifier {
           changed = true;
         }
         familyActivities.sort((a, b) => b.at.compareTo(a.at));
+      case 'family_chat_message':
+        FamilyChatMessage? newestIncoming;
+        for (final row in rows) {
+          final message = adapter.decode(row) as FamilyChatMessage;
+          final isNew =
+              !familyChatMessages.any((item) => item.id == message.id);
+          familyChatMessages.removeWhere((item) => item.id == message.id);
+          familyChatMessages.add(message);
+          if (isNew &&
+              !message.deleted &&
+              message.senderId != realUser.id &&
+              DateTime.now().difference(message.createdAt).abs() <
+                  const Duration(minutes: 10) &&
+              (newestIncoming == null ||
+                  message.createdAt.isAfter(newestIncoming.createdAt))) {
+            newestIncoming = message;
+          }
+          changed = true;
+        }
+        familyChatMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        if (newestIncoming != null) {
+          final sender = newestIncoming.senderName ??
+              member(newestIncoming.senderId)?.name ??
+              'Family message';
+          immediateNotificationHook?.call(Reminder(
+            key: 'chat_${newestIncoming.id}',
+            category: ReminderCategory.family,
+            title: sender,
+            body: newestIncoming.text.isNotEmpty
+                ? newestIncoming.text
+                : newestIncoming.sticker != null
+                    ? 'Sent a sticker ${newestIncoming.sticker}'
+                    : newestIncoming.mediaUrl != null
+                        ? 'Sent a photo.'
+                        : 'Sent an update in family chat.',
+            when: DateTime.now(),
+          ));
+        }
       case 'contribution_campaign':
         for (final row in rows) {
           final value = adapter.decode(row) as ContributionCampaign;
@@ -1693,10 +1878,17 @@ class AppState extends ChangeNotifier {
         changed = true;
     }
     if (entity == 'kid_request') _checkRequestResults();
-    if (changed) {
+    if (changed && notify) {
       _resyncReminders();
       notifyListeners();
     }
+  }
+
+  /// Publishes a set of server rows that was deliberately merged silently
+  /// while related junction-table data was being fetched.
+  void publishPulledMerge() {
+    _resyncReminders();
+    notifyListeners();
   }
 
   // ── Display / session ─────────────────────────────────────────────────────
@@ -1841,16 +2033,16 @@ class AppState extends ChangeNotifier {
 
   /// Whether the authenticated member has admin/owner rights to manage settings,
   /// invitations, or approve requests.
-  bool get canAdmin => authRole == Role.owner;
+  bool get canAdmin => authRole == Role.owner || authRole == Role.admin;
 
   /// Whether the authenticated member can invite new members.
-  bool get canInvite => authRole == Role.owner;
+  bool get canInvite => canAdmin;
 
   /// Whether the authenticated member can approve requests or proposals.
-  bool get canApprove => authRole == Role.owner || authRole == Role.adult;
+  bool get canApprove => canAdmin;
 
   /// Whether the authenticated member can edit budgets or move allocations.
-  bool get canEditBudgets => authRole == Role.owner || authRole == Role.adult;
+  bool get canEditBudgets => canAdmin;
 
   /// Whether the authenticated member can transfer ownership of the family space.
   bool get canTransferOwnership => authRole == Role.owner;
@@ -1861,7 +2053,7 @@ class AppState extends ChangeNotifier {
   /// Whether the member has permission to initiate a transaction based on their
   /// authoritative role and family permission switches.
   bool canTransactFor(Role r) => switch (r) {
-        Role.owner || Role.adult => true,
+        Role.owner || Role.admin || Role.adult || Role.contributor => true,
         Role.teen => teenCanTransact,
         Role.kid => kidCanTransact,
         Role.viewer => false,
@@ -1870,7 +2062,12 @@ class AppState extends ChangeNotifier {
   bool get canAuthorTransact => canTransactFor(authRole);
 
   bool canViewBudgetFor(Role r) => switch (r) {
-        Role.owner || Role.adult || Role.viewer => true,
+        Role.owner ||
+        Role.admin ||
+        Role.adult ||
+        Role.contributor ||
+        Role.viewer =>
+          true,
         Role.teen => teenCanSeeBudget,
         Role.kid => kidCanSeeBudget,
       };
@@ -1878,14 +2075,19 @@ class AppState extends ChangeNotifier {
   bool get canAuthorViewBudget => canViewBudgetFor(authRole);
 
   bool canViewWalletFor(Role r) => switch (r) {
-        Role.owner || Role.adult || Role.viewer => true,
+        Role.owner ||
+        Role.admin ||
+        Role.adult ||
+        Role.contributor ||
+        Role.viewer =>
+          true,
         Role.teen => perm('teen_wallet'),
         Role.kid => perm('child_wallet'),
       };
 
   bool get canAuthorViewWallet => canViewWalletFor(authRole);
 
-  bool get canEditLists => authRole == Role.owner || authRole == Role.adult;
+  bool get canEditLists => canAdmin || authRole == Role.adult;
   bool get canContributeSavings => authRole != Role.viewer;
 
   bool get kidCanTransact => perm('child_transactions');
@@ -2275,6 +2477,8 @@ class AppState extends ChangeNotifier {
     envelopes.add(envelope);
     _persistEnvelope(envelope);
     _queue('envelope', envelope);
+    _recordLocalAudit(
+        'envelope.create', 'envelope', envelope.id, {'name': envelope.name});
     pendingOps++;
     notifyListeners();
   }
@@ -2294,6 +2498,8 @@ class AppState extends ChangeNotifier {
       ..rollover = rollover;
     _persistEnvelope(envelope);
     _queue('envelope', envelope);
+    _recordLocalAudit(
+        'envelope.update', 'envelope', envelope.id, {'name': envelope.name});
     pendingOps++;
     notifyListeners();
     return true;
@@ -2304,6 +2510,8 @@ class AppState extends ChangeNotifier {
     envelope.isArchived = true;
     _persistEnvelope(envelope);
     _queue('envelope', envelope);
+    _recordLocalAudit(
+        'envelope.archive', 'envelope', envelope.id, {'name': envelope.name});
     envelopes.removeWhere((e) => e.id == envelope.id);
     pendingOps++;
     notifyListeners();
@@ -2581,6 +2789,10 @@ class AppState extends ChangeNotifier {
     if (index >= 0) txs[index] = updated;
     _persistTx(updated);
     _queue('tx', updated);
+    _recordLocalAudit('tx.update', 'transaction', tx.id, {
+      'amount_minor': amount.minor,
+      'currency': amount.currency.code,
+    });
     txs.sort((a, b) => b.when.compareTo(a.when));
     pendingOps++;
     notifyListeners();
@@ -2605,6 +2817,10 @@ class AppState extends ChangeNotifier {
     );
     _persistTx(deleted);
     _queue('tx', deleted);
+    _recordLocalAudit('tx.delete', 'transaction', tx.id, {
+      'amount_minor': tx.amount.minor,
+      'currency': tx.amount.currency.code,
+    });
     txs.removeWhere((t) => t.id == tx.id);
     pendingOps++;
     notifyListeners();
@@ -3329,11 +3545,18 @@ class AppState extends ChangeNotifier {
   /// One chronological family feed. Synced audit rows are authoritative;
   /// unsynced money events are derived locally so they appear immediately.
   List<FamilyActivity> get activityFeed {
-    final result = List<FamilyActivity>.of(familyActivities);
     final audited = <String>{
       for (final a in familyActivities)
-        if (a.entityId != null) '${a.entity}:${a.entityId}',
+        if (a.entityId != null && !a.id.startsWith('local-audit-'))
+          '${a.entity}:${a.entityId}',
     };
+    final result = <FamilyActivity>[
+      for (final activity in familyActivities)
+        if (!activity.id.startsWith('local-audit-') ||
+            activity.entityId == null ||
+            !audited.contains('${activity.entity}:${activity.entityId}'))
+          activity,
+    ];
     for (final t in txs) {
       if (audited.contains('transaction:${t.id}')) continue;
       result.add(FamilyActivity(
@@ -3381,6 +3604,23 @@ class AppState extends ChangeNotifier {
     }
     result.sort((a, b) => b.at.compareTo(a.at));
     return result;
+  }
+
+  void _recordLocalAudit(String action, String entity, String entityId,
+      [Map<String, Object?> detail = const {}]) {
+    familyActivities.removeWhere((activity) =>
+        activity.id.startsWith('local-audit-') &&
+        activity.entity == entity &&
+        activity.entityId == entityId);
+    familyActivities.add(FamilyActivity(
+      id: 'local-audit-${newUuid()}',
+      actorId: realUser.id,
+      action: action,
+      entity: entity,
+      entityId: entityId,
+      detail: detail,
+      at: now,
+    ));
   }
 
   List<Tx> get _txsInCurrentCycle => txs
