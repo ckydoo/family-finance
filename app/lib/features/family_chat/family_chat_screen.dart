@@ -6,6 +6,7 @@ import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
 import '../../core/sync/chat_media_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/error_messages.dart';
 import '../../core/utils/ids.dart';
 import '../../core/widgets/ui.dart';
 import '../family_tasks/family_tasks_screen.dart';
@@ -81,7 +82,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       createdAt: DateTime.now(),
       senderName: state.user.name,
       senderAvatar: state.user.avatarUrl,
-      status: ChatMessageStatus.sent,
+      status: ChatMessageStatus.pending,
       referenceType: task == null ? null : ChatReferenceType.task,
       referenceId: task?.id,
       referenceTitle: task?.title,
@@ -135,32 +136,30 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   }
 
   Future<void> _attachmentMenu(AppState state) async {
-    final source = await showModalBottomSheet<ImageSource>(
+    final source = await showMhuriSheet<ImageSource>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            ListTile(
-              leading: const Icon(Icons.task_alt_rounded),
-              title: const Text('Family tasks'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _openTasks();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Photo library'),
-              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo'),
-              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
-            ),
-          ]),
-        ),
+      builder: (sheetContext) => MhuriSheetShell(
+        title: 'Share with the family',
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.task_alt_rounded),
+            title: const Text('Family tasks'),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              _openTasks();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined),
+            title: const Text('Photo library'),
+            onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_camera_outlined),
+            title: const Text('Take a photo'),
+            onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+          ),
+        ]),
       ),
     );
     if (source == null || !mounted) return;
@@ -190,7 +189,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       final url = await ChatMediaUploader(
         baseUrl: baseUrl,
         anonKey: anonKey ?? '',
-        tokenGet: auth.refreshAccessToken,
+        tokenGet: auth.validAccessToken,
       ).upload(
         bytes: await file.readAsBytes(),
         spaceId: spaceId,
@@ -222,8 +221,12 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       _scrollToLatest();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(userFacingErrorMessage(
+            error,
+            fallback: 'Could not upload photo. Please check your connection and try again.',
+          )),
+        ));
       }
     } finally {
       if (mounted) setState(() => _uploadingMedia = false);
@@ -248,7 +251,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   Future<Map<String, String>> _mediaHeaders(AppState state) {
     return _mediaHeaderFuture ??= (() async {
       final auth = state.auth;
-      final token = auth == null ? null : await auth.refreshAccessToken();
+      final token = auth == null ? null : await auth.validAccessToken();
       if (token == null || token.isEmpty) {
         throw const ChatMediaException(
             'Your session expired. Sign in again to view this photo.');
@@ -263,6 +266,11 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    if (state.unreadChatCount > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) AppScope.of(context).markFamilyChatRead();
+      });
+    }
     final query = _query.trim().toLowerCase();
     final matching = state.familyChatMessages
         .where((message) =>
@@ -396,11 +404,11 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                   color:
                                       isMine ? context.primary : context.card,
                                   borderRadius:
-                                      BorderRadius.circular(18).copyWith(
+                                      BorderRadius.circular(14).copyWith(
                                     bottomLeft:
-                                        Radius.circular(isMine ? 18 : 6),
+                                        Radius.circular(isMine ? 14 : 5),
                                     bottomRight:
-                                        Radius.circular(isMine ? 6 : 18),
+                                        Radius.circular(isMine ? 5 : 14),
                                   ),
                                   border: Border.all(
                                     color: isMine
@@ -423,7 +431,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                     const SizedBox(height: 4),
                                     if (message.mediaUrl != null) ...[
                                       ClipRRect(
-                                        borderRadius: BorderRadius.circular(14),
+                                        borderRadius: BorderRadius.circular(10),
                                         child:
                                             FutureBuilder<Map<String, String>>(
                                           future: _mediaHeaders(state),
@@ -584,16 +592,41 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                       ),
                                     ],
                                     const SizedBox(height: 4),
-                                    Text(
-                                      DateFormat('MMM d, h:mm a')
-                                          .format(message.createdAt.toLocal()),
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        color: isMine
-                                            ? context.onSolid
-                                                .withValues(alpha: 0.75)
-                                            : context.inkSoft,
-                                      ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          DateFormat('MMM d, h:mm a').format(
+                                              message.createdAt.toLocal()),
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            color: isMine
+                                                ? context.onSolid
+                                                    .withValues(alpha: 0.75)
+                                                : context.inkSoft,
+                                          ),
+                                        ),
+                                        if (isMine && !message.isSystem) ...[
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            switch (message.status) {
+                                              ChatMessageStatus.pending =>
+                                                Icons.schedule_rounded,
+                                              ChatMessageStatus.sent =>
+                                                Icons.check_rounded,
+                                              ChatMessageStatus.delivered ||
+                                              ChatMessageStatus.read =>
+                                                Icons.done_all_rounded,
+                                            },
+                                            size: 14,
+                                            color: message.status ==
+                                                    ChatMessageStatus.read
+                                                ? Colors.lightBlueAccent
+                                                : context.onSolid
+                                                    .withValues(alpha: 0.75),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ],
                                 ),

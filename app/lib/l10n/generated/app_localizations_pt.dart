@@ -2078,6 +2078,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'O início mostra o fundo familiar, a atividade recente e os orçamentos que precisam de atenção.';
 
   @override
+  String get tourFamilyTitle => 'Gira a sua família';
+
+  @override
+  String get tourFamilyBody =>
+      'Toque no nome da família para convidar pessoas, gerir membros e funções, ou mudar de família.';
+
+  @override
   String get tourPlanTitle => 'Dê uma função a cada valor';
 
   @override

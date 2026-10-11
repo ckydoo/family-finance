@@ -14,7 +14,6 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/l10n/app_strings.dart';
 import '../family_tasks/family_tasks_screen.dart';
 import '../lists/lists_screen.dart';
-import '../savings/savings_screen.dart';
 
 /// Full-screen, keyboard-safe transaction entry (UX-polish P1).
 ///
@@ -29,14 +28,12 @@ Future<void> showQuickAdd(BuildContext context, {TxType? initialType}) =>
 
 Future<void> showQuickAddMenu(BuildContext context) async {
   {
-    final action = await showModalBottomSheet<_QuickAction>(
+    final action = await showMhuriSheet<_QuickAction>(
       context: context,
-      useSafeArea: true,
-      backgroundColor: context.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusSheet)),
+      builder: (_) => const MhuriSheetShell(
+        title: 'Quick add',
+        child: _QuickActionMenu(),
       ),
-      builder: (sheetContext) => const _QuickActionMenu(),
     );
     if (action == null || !context.mounted) return;
     switch (action) {
@@ -55,15 +52,6 @@ Future<void> showQuickAddMenu(BuildContext context) async {
           builder: (_) => const FamilyTasksScreen(startAdding: true),
         ));
         return;
-      case _QuickAction.contribution:
-        await Navigator.of(context).push<void>(MaterialPageRoute<void>(
-          builder: (_) => const SavingsScreen(
-            standalone: true,
-            initialSection: SavingsSection.contributions,
-            startAdding: true,
-          ),
-        ));
-        return;
     }
   }
 }
@@ -77,7 +65,7 @@ Future<void> _showTransactionEntry(BuildContext context, TxType initialType) {
   );
 }
 
-enum _QuickAction { expense, income, shopping, task, contribution }
+enum _QuickAction { expense, income, shopping, task }
 
 class _QuickActionMenu extends StatelessWidget {
   const _QuickActionMenu();
@@ -109,33 +97,21 @@ class _QuickActionMenu extends StatelessWidget {
         'Task',
         'Assign a responsibility'
       ),
-      (
-        _QuickAction.contribution,
-        Icons.volunteer_activism_outlined,
-        'Contribution',
-        'Create or update a family collection'
-      ),
     ];
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SheetHeader('Quick add', onClose: () => Navigator.pop(context)),
-          const SizedBox(height: 4),
-          for (final action in actions)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              minTileHeight: 54,
-              leading: Icon(action.$2, color: context.primaryDark),
-              title: Text(action.$3),
-              subtitle: Text(action.$4),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.pop(context, action.$1),
-            ),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final action in actions)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            minTileHeight: 54,
+            leading: Icon(action.$2, color: context.primaryDark),
+            title: Text(action.$3),
+            subtitle: Text(action.$4),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.pop(context, action.$1),
+          ),
+      ],
     );
   }
 }

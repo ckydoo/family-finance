@@ -18,6 +18,7 @@ class Notifier {
       FlutterLocalNotificationsPlugin();
 
   static bool _inited = false;
+  static void Function(String payload)? onPayloadTap;
 
   /// Scheduling uses UTC absolute instants, so the device's time zone
   /// database is irrelevant (no flutter_timezone dependency needed).
@@ -31,14 +32,20 @@ class Notifier {
     if (_inited || !supported) return;
     tzdata.initializeTimeZones();
     const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('@drawable/ic_notification'),
       iOS: DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
         requestSoundPermission: false,
       ),
     );
-    await _plugin.initialize(settings: settings);
+    await _plugin.initialize(
+      settings: settings,
+      onDidReceiveNotificationResponse: (response) {
+        final payload = response.payload;
+        if (payload != null && payload.isNotEmpty) onPayloadTap?.call(payload);
+      },
+    );
     if (defaultTargetPlatform == TargetPlatform.android) {
       await _plugin
           .resolvePlatformSpecificImplementation<
@@ -48,6 +55,8 @@ class Notifier {
             'Family updates',
             description: 'Important updates from your family space',
             importance: Importance.high,
+            playSound: true,
+            enableVibration: true,
           ));
     }
     _inited = true;
@@ -94,10 +103,16 @@ class Notifier {
         channelDescription: 'Family money reminders',
         importance: Importance.max,
         priority: Priority.high,
+        icon: 'ic_notification',
+        playSound: true,
+        enableVibration: true,
       );
       const details = NotificationDetails(
         android: androidDetails,
-        iOS: DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(
+          presentSound: true,
+          sound: 'default',
+        ),
       );
       final nowUtc = tz.TZDateTime.now(tz.UTC);
       for (final r in reminders) {
@@ -120,7 +135,7 @@ class Notifier {
   }
 
   /// Immediate notification (used by Settings' "send a test" button).
-  static Future<bool> showNow(Reminder r) async {
+  static Future<bool> showNow(Reminder r, {String? payload}) async {
     if (!supported) return false;
     try {
       await _ensureInit();
@@ -130,16 +145,23 @@ class Notifier {
         channelDescription: 'Messages and important updates from your family',
         importance: Importance.max,
         priority: Priority.high,
+        icon: 'ic_notification',
+        playSound: true,
+        enableVibration: true,
       );
       const details = NotificationDetails(
         android: androidDetails,
-        iOS: DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(
+          presentSound: true,
+          sound: 'default',
+        ),
       );
       await _plugin.show(
         id: r.id,
         title: r.title,
         body: r.body,
         notificationDetails: details,
+        payload: payload,
       );
       return true;
     } catch (e) {

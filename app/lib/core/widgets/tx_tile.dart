@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show DateFormat;
 
 import '../models/models.dart';
 import '../money/money.dart';
@@ -31,12 +32,18 @@ class TxTile extends StatelessWidget {
     final member = s.member(tx.memberId);
     final isIn = tx.type == TxType.income;
 
+    final splits = s.txAllocations.where((a) => a.txId == tx.id).toList();
+    final budgetLabel = splits.isNotEmpty
+        ? 'Split (${splits.length})'
+        : (env?.name ?? (isIn ? null : 'Unbudgeted'));
+    final methodLabel = tx.method.label;
+
     final canManage = tx.memberId == s.realUser.id || s.canAdmin;
     return Material(
       color: surface ? context.card : Colors.transparent,
       borderRadius: surface ? kBRadiusL : null,
       child: InkWell(
-        onTap: canManage ? () => _showTransaction(context, s) : null,
+        onTap: () => _showTransaction(context, s, canManage: canManage),
         borderRadius: surface ? kBRadiusL : null,
         child: Container(
           padding: EdgeInsets.symmetric(
@@ -61,7 +68,7 @@ class TxTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      tx.note,
+                      tx.note.isEmpty ? (env?.name ?? (isIn ? 'Income' : 'Expense')) : tx.note,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -70,10 +77,27 @@ class TxTile extends StatelessWidget {
                         color: context.ink,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${member?.name ?? ''} · ${fmtWhen(tx.when)}',
-                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            [
+                              if (member?.name != null && member!.name.isNotEmpty) member.name,
+                              fmtWhen(tx.when),
+                              methodLabel,
+                              if (budgetLabel != null) budgetLabel,
+                            ].join(' · '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: context.inkSoft,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -102,7 +126,7 @@ class TxTile extends StatelessWidget {
     );
   }
 
-  void _showTransaction(BuildContext context, AppState state) {
+  void _showTransaction(BuildContext context, AppState state, {bool canManage = true}) {
     final note = TextEditingController(text: tx.note);
     final amount =
         TextEditingController(text: (tx.amount.minor / 100).toStringAsFixed(2));
@@ -111,12 +135,14 @@ class TxTile extends StatelessWidget {
     String? error;
     var editing = false;
     final splits = state.txAllocations.where((a) => a.txId == tx.id).toList();
+    final member = state.member(tx.memberId);
+    final env = state.envelope(tx.envelopeId);
     showMhuriSheet<void>(
       context: context,
       builder: (sheetContext) => StatefulBuilder(
         builder: (sheetContext, setSheet) => MhuriSheetShell(
           title: 'Transaction details',
-          subtitle: 'Added by ${state.member(tx.memberId)?.name ?? 'family'}',
+          subtitle: 'Added by ${member?.name ?? 'family'}',
           footer: Row(
             children: [
               Expanded(
@@ -135,39 +161,41 @@ class TxTile extends StatelessWidget {
                   child: Text(editing ? 'Cancel' : 'Close'),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: editing
-                      ? () {
-                          final parsed =
-                              double.tryParse(amount.text.replaceAll(',', ''));
-                          if (note.text.trim().isEmpty ||
-                              parsed == null ||
-                              parsed <= 0) {
-                            setSheet(() => error =
-                                'Enter a description and valid amount.');
-                            return;
+              if (canManage) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: editing
+                        ? () {
+                            final parsed =
+                                double.tryParse(amount.text.replaceAll(',', ''));
+                            if (note.text.trim().isEmpty ||
+                                parsed == null ||
+                                parsed <= 0) {
+                              setSheet(() => error =
+                                  'Enter a description and valid amount.');
+                              return;
+                            }
+                            state.updateTx(
+                              tx,
+                              amount: Money.fromMajor(parsed, tx.amount.currency),
+                              method: method,
+                              note: note.text,
+                              when: tx.when,
+                              envelopeId:
+                                  tx.type == TxType.expense ? envelopeId : null,
+                            );
+                            final messenger = ScaffoldMessenger.of(context);
+                            Navigator.pop(sheetContext);
+                            messenger.showSnackBar(const SnackBar(
+                                content: Text('Transaction updated'),
+                                behavior: SnackBarBehavior.floating));
                           }
-                          state.updateTx(
-                            tx,
-                            amount: Money.fromMajor(parsed, tx.amount.currency),
-                            method: method,
-                            note: note.text,
-                            when: tx.when,
-                            envelopeId:
-                                tx.type == TxType.expense ? envelopeId : null,
-                          );
-                          final messenger = ScaffoldMessenger.of(context);
-                          Navigator.pop(sheetContext);
-                          messenger.showSnackBar(const SnackBar(
-                              content: Text('Transaction updated'),
-                              behavior: SnackBarBehavior.floating));
-                        }
-                      : () => setSheet(() => editing = true),
-                  child: Text(editing ? 'Save changes' : 'Edit transaction'),
+                        : () => setSheet(() => editing = true),
+                    child: Text(editing ? 'Save changes' : 'Edit transaction'),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
           child: editing
@@ -246,17 +274,34 @@ class TxTile extends StatelessWidget {
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _detailRow(sheetContext, 'Description', tx.note),
+                    _detailRow(
+                      sheetContext,
+                      'Description',
+                      tx.note.isEmpty
+                          ? (env?.name ?? (tx.type == TxType.income ? 'Income' : 'Expense'))
+                          : tx.note,
+                    ),
                     _detailRow(sheetContext, 'Amount', tx.amount.text),
+                    if (tx.amount.currency != state.displayCurrency)
+                      _detailRow(
+                        sheetContext,
+                        'Display equivalent',
+                        tx.amount.inCurrency(state.displayCurrency, state.rate).text,
+                      ),
                     _detailRow(sheetContext, 'Type',
                         tx.type == TxType.income ? 'Income' : 'Expense'),
                     _detailRow(sheetContext, 'Payment method', tx.method.label),
+                    _detailRow(
+                      sheetContext,
+                      'Logged by',
+                      member?.name ?? 'Family member',
+                    ),
                     if (tx.type == TxType.expense)
                       _detailRow(
                         sheetContext,
                         'Budget',
                         splits.isEmpty
-                            ? state.envelope(tx.envelopeId)?.name ?? 'No budget'
+                            ? env?.name ?? 'Unbudgeted'
                             : splits
                                 .map((a) =>
                                     '${state.envelope(a.envelopeId)?.name ?? 'Budget'} ${a.amount.text}')
@@ -264,8 +309,12 @@ class TxTile extends StatelessWidget {
                       ),
                     if (tx.receiptUri != null)
                       _detailRow(sheetContext, 'Receipt', 'Attached'),
-                    _detailRow(sheetContext, 'Date', fmtWhen(tx.when),
-                        showDivider: false),
+                    _detailRow(
+                      sheetContext,
+                      'Date & time',
+                      DateFormat.yMMMd().add_jm().format(tx.when.toLocal()),
+                      showDivider: false,
+                    ),
                   ],
                 ),
         ),

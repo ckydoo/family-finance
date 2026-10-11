@@ -63,6 +63,30 @@ void main() {
   databaseFactory = databaseFactoryFfi;
 
   group('sync mappers', () {
+    test('family task survives encode and decode as shared family data', () {
+      final ctx = SyncCtx(spaceId: 'sp1', newId: () => 'x1');
+      final task = FamilyTask(
+        id: '00000000-0000-4000-8000-000000000001',
+        title: 'Collect school forms',
+        note: 'Before Friday',
+        assigneeMemberId: 'member-2',
+        createdByMemberId: 'member-1',
+        createdAt: DateTime.utc(2026, 10, 11, 8),
+        dueDate: DateTime.utc(2026, 10, 12),
+        status: FamilyTaskStatus.inProgress,
+        points: 4,
+      );
+
+      final json = kSyncAdapters['family_task']!.encode(task, ctx);
+      expect(json['space_id'], 'sp1');
+      expect(json['created_by'], 'member-1');
+      final decoded = kSyncAdapters['family_task']!.decode(json) as FamilyTask;
+      expect(decoded.title, task.title);
+      expect(decoded.status, FamilyTaskStatus.inProgress);
+      expect(decoded.assigneeMemberId, 'member-2');
+      expect(decoded.points, 4);
+    });
+
     test('tx survives encode→decode with enum bridges', () {
       final ctx = SyncCtx(spaceId: 'sp1', newId: () => 'x1');
       final t = Tx(
@@ -679,6 +703,47 @@ void main() {
       expect(row['note'], 'Synced expense');
       expect(row['method'], 'mobile_money');
       expect(row.containsKey('space_id'), isTrue);
+    });
+
+    test('family chat message is queued and pushed to the shared space',
+        () async {
+      kv['space_id'] = 'sp1';
+      await engine.start();
+      await state.ready();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      server.sent.clear();
+
+      state.addChatMessage(FamilyChatMessage(
+        id: 'chat-local-1',
+        familyId: 'sp1',
+        senderId: state.user.id,
+        text: 'Hello family',
+        createdAt: DateTime.utc(2026, 10, 11, 8),
+        senderName: state.user.name,
+        status: ChatMessageStatus.pending,
+      ));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(await engine.pendingCount(), 1);
+      await engine.syncNow();
+      expect(await engine.pendingCount(), 0);
+
+      final push = server.sent.firstWhere(
+        (r) =>
+            r.url.path == '/rest/v1/family_chat_message' && r.method == 'POST',
+      ) as http.Request;
+      final rows = jsonDecode(push.body) as List;
+      final row = rows.single as Map<String, dynamic>;
+      expect(row['id'], 'chat-local-1');
+      expect(row['space_id'], 'sp1');
+      expect(row['text'], 'Hello family');
+      expect(row['status'], 'sent');
+      expect(
+        state.familyChatMessages
+            .singleWhere((message) => message.id == 'chat-local-1')
+            .status,
+        ChatMessageStatus.sent,
+      );
     });
 
     test('pull applies remote rows and advances the cursor', () async {

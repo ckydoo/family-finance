@@ -14,6 +14,22 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/tx_tile.dart';
 import 'recurring_ui.dart';
 
+Future<void> _showBudgetRestriction(BuildContext context) => showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Family Admin permission needed'),
+        content: const Text(
+          'You can view this budget, but only the Family Owner or a Family Admin can change allocations, limits, or monthly plans.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+
 void showEnvelopeDetailSheet(BuildContext context, Envelope envelope) {
   final state = AppScope.of(context);
   showMhuriSheet<void>(
@@ -161,7 +177,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               sliver: SliverList.separated(
                 itemCount: envelopes.length,
                 itemBuilder: (_, index) => _EnvelopeCard(e: envelopes[index]),
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                separatorBuilder: (_, __) =>
+                    Divider(height: 1, color: context.hairline),
               ),
             ),
             const SliverPadding(
@@ -411,9 +428,9 @@ class _CyclePlanCard extends StatelessWidget {
         Wrap(spacing: 8, runSpacing: 8, children: [
           if (!(plan?.isClosed ?? false))
             FilledButton.icon(
-              onPressed: state.canEditBudgets
-                  ? () => _showPlanSheet(context, state)
-                  : null,
+              onPressed: () => state.canEditBudgets
+                  ? _showPlanSheet(context, state)
+                  : _showBudgetRestriction(context),
               icon: Icon(plan == null ? Icons.add : Icons.edit_outlined,
                   size: 18),
               label: Text(plan == null ? 'Set up plan' : 'Edit plan'),
@@ -424,14 +441,15 @@ class _CyclePlanCard extends StatelessWidget {
             ),
           if (plan == null && state.previousBudgetPlan != null)
             OutlinedButton.icon(
-              onPressed: state.canEditBudgets
-                  ? () {
-                      state.useLastMonthPlan();
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                          content:
-                              Text('Last month\'s plan is ready to review.')));
-                    }
-                  : null,
+              onPressed: () {
+                if (!state.canEditBudgets) {
+                  _showBudgetRestriction(context);
+                  return;
+                }
+                state.useLastMonthPlan();
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Last month\'s plan is ready to review.')));
+              },
               icon: const Icon(Icons.content_copy_outlined, size: 18),
               label: const Text('Use last month'),
               style: OutlinedButton.styleFrom(
@@ -441,16 +459,18 @@ class _CyclePlanCard extends StatelessWidget {
             ),
           if (plan != null && !plan.isClosed)
             OutlinedButton.icon(
-              onPressed: state.canEditBudgets
-                  ? () async {
-                      final ok = await confirmDialog(context,
-                          title: 'Close this month?',
-                          body:
-                              'This locks the agreed plan as a monthly record. Transactions remain unchanged.',
-                          confirmLabel: 'Close month');
-                      if (ok) state.closeCurrentBudgetPlan();
-                    }
-                  : null,
+              onPressed: () async {
+                if (!state.canEditBudgets) {
+                  await _showBudgetRestriction(context);
+                  return;
+                }
+                final ok = await confirmDialog(context,
+                    title: 'Close this month?',
+                    body:
+                        'This locks the agreed plan as a monthly record. Transactions remain unchanged.',
+                    confirmLabel: 'Close month');
+                if (ok) state.closeCurrentBudgetPlan();
+              },
               icon: const Icon(Icons.lock_outline_rounded, size: 17),
               label: const Text('Close month'),
               style: OutlinedButton.styleFrom(
@@ -762,13 +782,9 @@ class _EnvelopeCard extends StatelessWidget {
     return InkWell(
       onTap: () => _openDetail(context, s),
       onLongPress: s.canAdmin ? () => _confirmRemove(context, s) : null,
-      borderRadius: kBRadiusM,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: context.card,
-          borderRadius: kBRadiusM,
-        ),
+      borderRadius: kBRadiusS,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
         child: Row(
           children: [
             SizedBox(
@@ -1160,12 +1176,14 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                 _stat(
                   AppLocalizations.of(context)!.limitLabel,
                   effectiveLimit.text,
-                  onTap: s.canEditBudgets
-                      ? () async {
-                          await showEditEnvelopeSheet(context, s, e);
-                          if (mounted) setState(() {});
-                        }
-                      : null,
+                  onTap: () async {
+                    if (!s.canEditBudgets) {
+                      await _showBudgetRestriction(context);
+                      return;
+                    }
+                    await showEditEnvelopeSheet(context, s, e);
+                    if (mounted) setState(() {});
+                  },
                 ),
               ],
             ),

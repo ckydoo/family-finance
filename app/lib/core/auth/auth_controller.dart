@@ -14,22 +14,25 @@ class AuthController extends ChangeNotifier {
     AuthService? service,
     KvGetter? kvGet,
     KvSetter? kvSet,
-  }) : _service = service ??
+  })  : _service = service ??
             SupabaseAuthService(
               baseUrl: env.supabaseUrl ?? '',
               anonKey: env.supabaseAnonKey ?? '',
               kvGet: kvGet,
               kvSet: kvSet,
-            );
+            ),
+        _kvGet = kvGet;
 
   final AppEnv env;
   final AuthService _service;
+  final KvGetter? _kvGet;
 
   AuthSession? _session;
   String? _lastError;
   String? _lastErrorCode;
   bool _needsConfirmation = false;
   bool _busy = false;
+  bool _restoring = false;
 
   AuthSession? get session => _session;
   bool get isLoggedIn => _session != null;
@@ -43,6 +46,7 @@ class AuthController extends ChangeNotifier {
   /// shows "check your inbox" and returns to sign-in mode.
   bool get needsConfirmation => _needsConfirmation;
   bool get busy => _busy;
+  bool get restoring => _restoring;
 
   /// Supabase's hosted OAuth entry point. The provider redirects back to the
   /// custom scheme registered by the Android and iOS runners.
@@ -54,8 +58,32 @@ class AuthController extends ChangeNotifier {
 
   /// Called once at startup: restores the stored session or null (login).
   Future<void> restore() async {
-    _session = await _service.restoreSession();
+    _restoring = true;
     notifyListeners();
+    try {
+      // Restore the local identity first. This lets the app open from its
+      // encrypted on-device session while GoTrue refreshes in the background.
+      // A definite server rejection below still clears the session.
+      final get = _kvGet;
+      if (get != null) {
+        final values = await Future.wait([
+          get('auth_access_token'),
+          get('auth_user_id'),
+          get('auth_email'),
+        ]);
+        final access = values[0];
+        final userId = values[1];
+        if ((access?.isNotEmpty ?? false) && (userId?.isNotEmpty ?? false)) {
+          _session = AuthSession(userId: userId!, email: values[2] ?? '');
+          notifyListeners();
+        }
+      }
+
+      _session = await _service.restoreSession();
+    } finally {
+      _restoring = false;
+      notifyListeners();
+    }
   }
 
   Future<bool> signIn(String email, String password) async {
@@ -160,6 +188,10 @@ class AuthController extends ChangeNotifier {
 
   /// Fresh access token for the sync layer (null when unrenewable).
   Future<String?> refreshAccessToken() => _service.refreshAccessToken();
+
+  /// Current access token, refreshed only when close to expiry. Use this
+  /// for every REST request.
+  Future<String?> validAccessToken() => _service.validAccessToken();
 
   Future<void> signOut() async {
     await _service.signOut();

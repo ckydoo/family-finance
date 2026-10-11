@@ -3,6 +3,7 @@ import 'package:mhuri_money/core/db/app_database.dart';
 import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
+import 'package:mhuri_money/core/sync/sync_mappers.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'seed.dart';
@@ -349,6 +350,40 @@ void main() {
       expect(s.monthSpend.minor, 0);
       expect(s.poolCombined(Currency.usd).minor, 100000);
       expect(s.availableToSpend(Currency.usd).minor, 90000);
+    });
+
+    test('server account opening balance replaces the local value everywhere',
+        () {
+      s.accounts
+        ..clear()
+        ..add(const Account(
+          id: 'shared-cash',
+          name: 'Family cash',
+          emoji: 'cash',
+          balance: Money(1000, Currency.usd),
+        ));
+
+      s.applyPulled('account', [
+        {
+          'id': 'shared-cash',
+          'space_id': 'family-1',
+          'name': 'Family cash',
+          'kind': 'cash',
+          'currency': 'USD',
+          'opening_balance_minor': 2750,
+          'sharing': 'shared',
+          'is_archived': false,
+        }
+      ]);
+
+      expect(kPullOrder.first, 'account');
+      expect(s.accounts, hasLength(1));
+      expect(s.accounts.single.balance.minor, 2750);
+      expect(s.poolCombined(Currency.usd).minor, 2750);
+
+      s.clearAccountsForServerSnapshot();
+      expect(s.accounts, isEmpty);
+      expect(s.poolCombined(Currency.usd).minor, 0);
     });
   });
 }

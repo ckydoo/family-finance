@@ -52,6 +52,7 @@ class AppState extends ChangeNotifier {
     proposals = [];
     earnings = [];
     circle = _neutralCircle;
+    mukandoPayments = [];
     recurring = [];
     budgetPlans = [];
     familyActivities = [];
@@ -117,6 +118,7 @@ class AppState extends ChangeNotifier {
   late final List<Proposal> proposals;
   late final List<Earning> earnings;
   late SavingsCircle circle;
+  late final List<MukandoPayment> mukandoPayments;
   late final List<RecurringRule> recurring;
   late final List<BudgetCyclePlan> budgetPlans;
   late final List<FamilyActivity> familyActivities;
@@ -304,19 +306,26 @@ class AppState extends ChangeNotifier {
   /// Pull-to-refresh / retry. After the first successful load this is SOFT:
   /// the tree stays mounted (no splash flicker mid-pull); only first load
   /// and error retry use the full-screen splash.
-  Future<void> refresh() {
+  Future<void> refresh() async {
     if (_loadedOnce) {
       refreshing = true;
       notifyListeners();
-      return _hydrate().whenComplete(() {
+      try {
+        // Mutations persist asynchronously so taps stay responsive. A manual
+        // refresh must wait for those writes; otherwise it can reload the old
+        // debt/transaction snapshot and make balances appear to change twice.
+        await flushWrites();
+        await _hydrate();
+      } finally {
         refreshing = false;
         notifyListeners();
-      });
+      }
+      return;
     }
     hydrating = true;
     notifyListeners();
     _hydrationFuture = _hydrate();
-    return _hydrationFuture!;
+    await _hydrationFuture!;
   }
 
   /// Completes when every write issued so far has reached the database.
@@ -589,6 +598,9 @@ class AppState extends ChangeNotifier {
           ..clear()
           ..addAll(data.earnings);
         circle = data.circle;
+        mukandoPayments
+          ..clear()
+          ..addAll(data.mukandoPayments);
         if (data.recurring.isNotEmpty) {
           recurring
             ..clear()
@@ -617,7 +629,7 @@ class AppState extends ChangeNotifier {
           ..addAll(data.contributionPayments);
         familyDebts
           ..clear()
-          ..addAll(data.familyDebts);
+          ..addAll(data.familyDebts.where((debt) => debt.status != 'archived'));
         debtRepayments
           ..clear()
           ..addAll(data.debtRepayments);
@@ -990,7 +1002,7 @@ class AppState extends ChangeNotifier {
       circle: mukandoEnabled ? circle : null,
       memberNames: {for (final m in members) m.id: m.name},
       monthStartDay: monthStartDay,
-      campaigns: contributionCampaigns,
+      campaigns: const [],
       extra: List.of(_reminderExtras),
     );
   }
@@ -1147,7 +1159,46 @@ class AppState extends ChangeNotifier {
     }
     familyChatMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     _store?.saveChatMessage(clean);
+    _queue('family_chat_message', clean);
     notifyListeners();
+  }
+
+  /// Called only after the shared server accepts these messages. This local
+  /// update deliberately bypasses the outbox so it cannot create a loop.
+  void markChatMessagesSent(Iterable<String> ids) {
+    final sentIds = ids.toSet();
+    if (sentIds.isEmpty) return;
+    var changed = false;
+    for (var i = 0; i < familyChatMessages.length; i++) {
+      final message = familyChatMessages[i];
+      if (!sentIds.contains(message.id) ||
+          message.status != ChatMessageStatus.pending) {
+        continue;
+      }
+      final sent = FamilyChatMessage(
+        id: message.id,
+        familyId: message.familyId,
+        senderId: message.senderId,
+        text: message.text,
+        createdAt: message.createdAt,
+        isSystem: message.isSystem,
+        senderName: message.senderName,
+        senderAvatar: message.senderAvatar,
+        status: ChatMessageStatus.sent,
+        referenceType: message.referenceType,
+        referenceId: message.referenceId,
+        referenceTitle: message.referenceTitle,
+        referenceMeta: message.referenceMeta,
+        mediaUrl: message.mediaUrl,
+        mediaType: message.mediaType,
+        sticker: message.sticker,
+        deleted: message.deleted,
+      );
+      familyChatMessages[i] = sent;
+      _store?.saveChatMessage(sent);
+      changed = true;
+    }
+    if (changed) notifyListeners();
   }
 
   int get unreadChatCount => familyChatMessages
@@ -1182,6 +1233,11 @@ class AppState extends ChangeNotifier {
   }
 
   void addFamilyTask(FamilyTask task) {
+    if (!canManageFamilyTasks) {
+      debugPrint(
+          'Mhuri: unauthorized addFamilyTask for role: ${authRole.name}');
+      return;
+    }
     final clean = FamilyTask(
       id: task.id,
       title: task.title.trim(),
@@ -1210,10 +1266,16 @@ class AppState extends ChangeNotifier {
       return dueA.compareTo(dueB);
     });
     _store?.saveFamilyTask(clean);
+    _queue('family_task', clean);
     notifyListeners();
   }
 
   void updateFamilyTask(FamilyTask task) {
+    if (!canManageFamilyTasks) {
+      debugPrint(
+          'Mhuri: unauthorized updateFamilyTask for role: ${authRole.name}');
+      return;
+    }
     final index = familyTasks.indexWhere((t) => t.id == task.id);
     final previous = index >= 0 ? familyTasks[index] : null;
     if (previous != null && previous.status != task.status) {
@@ -1280,6 +1342,11 @@ class AppState extends ChangeNotifier {
   }
 
   void approveFamilyTask(FamilyTask task) {
+    if (!canApprove) {
+      debugPrint(
+          'Mhuri: unauthorized approveFamilyTask for role: ${authRole.name}');
+      return;
+    }
     final index = familyTasks.indexWhere((t) => t.id == task.id);
     final previous = index >= 0 ? familyTasks[index] : null;
     if (previous == null || previous.status != FamilyTaskStatus.done) return;
@@ -1631,6 +1698,14 @@ class AppState extends ChangeNotifier {
     if (adapter == null) return;
     var changed = false;
     switch (entity) {
+      case 'account':
+        for (final row in rows) {
+          accounts.removeWhere((x) => x.id == row['id']);
+          if (row['is_archived'] != true) {
+            accounts.add(adapter.decode(row) as Account);
+          }
+          changed = true;
+        }
       case 'tx':
         for (final row in rows) {
           if (row['deleted_at'] != null) {
@@ -1733,6 +1808,18 @@ class AppState extends ChangeNotifier {
             when: DateTime.now(),
           ));
         }
+      case 'family_task':
+        for (final row in rows) {
+          final task = adapter.decode(row) as FamilyTask;
+          familyTasks.removeWhere((item) => item.id == task.id);
+          familyTasks.add(task);
+          changed = true;
+        }
+        familyTasks.sort((a, b) {
+          final dueA = a.dueDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final dueB = b.dueDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return dueA.compareTo(dueB);
+        });
       case 'contribution_campaign':
         for (final row in rows) {
           final value = adapter.decode(row) as ContributionCampaign;
@@ -1876,12 +1963,27 @@ class AppState extends ChangeNotifier {
       case 'mukando':
         circle = adapter.decode(rows.last) as SavingsCircle;
         changed = true;
+      case 'mukando_payment':
+        for (final row in rows) {
+          final payment = adapter.decode(row) as MukandoPayment;
+          mukandoPayments.removeWhere((p) => p.id == payment.id);
+          mukandoPayments.add(payment);
+          changed = true;
+        }
     }
     if (entity == 'kid_request') _checkRequestResults();
     if (changed && notify) {
       _resyncReminders();
       notifyListeners();
     }
+  }
+
+  /// A full account pull is a server snapshot. Clearing first also removes
+  /// legacy device-only opening balances when the family has no accounts.
+  void clearAccountsForServerSnapshot({bool notify = true}) {
+    if (accounts.isEmpty) return;
+    accounts.clear();
+    if (notify) notifyListeners();
   }
 
   /// Publishes a set of server rows that was deliberately merged silently
@@ -2088,7 +2190,21 @@ class AppState extends ChangeNotifier {
   bool get canAuthorViewWallet => canViewWalletFor(authRole);
 
   bool get canEditLists => canAdmin || authRole == Role.adult;
+  bool get canManageFamilyTasks => switch (authRole) {
+        Role.owner ||
+        Role.admin ||
+        Role.adult ||
+        Role.contributor ||
+        Role.teen =>
+          true,
+        Role.kid || Role.viewer => false,
+      };
   bool get canContributeSavings => authRole != Role.viewer;
+  bool get canCreateSavingsRecords => canAdmin || authRole == Role.adult;
+  bool get canRecordDebtRepayments => canAdmin || authRole == Role.adult;
+  bool get canManageDebts => canAdmin || authRole == Role.adult;
+  bool canManageSavingsGoal(Goal goal) =>
+      canAdmin || (authRole == Role.adult && goal.createdById == realUser.id);
 
   bool get kidCanTransact => perm('child_transactions');
   bool get teenCanTransact => perm('teen_transactions');
@@ -2996,7 +3112,9 @@ class AppState extends ChangeNotifier {
       {required String name,
       required Money target,
       required DateTime deadline}) {
-    if (!canEditBudgets || name.trim().isEmpty || target.minor <= 0) return;
+    if (!canCreateSavingsRecords || name.trim().isEmpty || target.minor <= 0) {
+      return;
+    }
     final value = ContributionCampaign(
         id: newUuid(),
         name: name.trim(),
@@ -3083,7 +3201,11 @@ class AppState extends ChangeNotifier {
       required Money principal,
       String? counterpartyMemberId,
       DateTime? dueDate}) {
-    if (!canEditBudgets || name.trim().isEmpty || principal.minor <= 0) return;
+    if (!canCreateSavingsRecords ||
+        name.trim().isEmpty ||
+        principal.minor <= 0) {
+      return;
+    }
     final value = FamilyDebt(
         id: newUuid(),
         name: name.trim(),
@@ -3097,6 +3219,48 @@ class AppState extends ChangeNotifier {
     _queue('family_debt', value);
     pendingOps++;
     notifyListeners();
+  }
+
+  bool updateDebt(
+    FamilyDebt debt, {
+    required String name,
+    required DebtDirection direction,
+    required Money principal,
+    String? counterpartyMemberId,
+    DateTime? dueDate,
+  }) {
+    final repaid = repaidOn(debt);
+    if (!canManageDebts ||
+        debt.status == 'archived' ||
+        name.trim().isEmpty ||
+        principal.minor <= 0 ||
+        principal.currency != debt.principal.currency ||
+        principal.minor < repaid.minor) {
+      return false;
+    }
+    debt
+      ..name = name.trim()
+      ..direction = direction
+      ..principal = principal
+      ..counterpartyMemberId = counterpartyMemberId
+      ..dueDate = dueDate
+      ..status = principal.minor == repaid.minor ? 'settled' : 'active';
+    if (_store != null) _fire(_store!.saveFamilyDebt(debt));
+    _queue('family_debt', debt);
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  bool archiveDebt(FamilyDebt debt) {
+    if (!canManageDebts || debt.status == 'archived') return false;
+    debt.status = 'archived';
+    if (_store != null) _fire(_store!.saveFamilyDebt(debt));
+    _queue('family_debt', debt);
+    familyDebts.removeWhere((item) => item.id == debt.id);
+    pendingOps++;
+    notifyListeners();
+    return true;
   }
 
   Money repaidOn(FamilyDebt debt) {
@@ -3115,7 +3279,9 @@ class AppState extends ChangeNotifier {
       debt.principal.currency);
 
   bool recordDebtRepayment(FamilyDebt debt, Money amount, {String? id}) {
-    if (!canEditBudgets || amount.minor <= 0 || debt.status != 'active') {
+    if (!canRecordDebtRepayments ||
+        amount.minor <= 0 ||
+        debt.status != 'active') {
       return false;
     }
     final paymentId = id ?? newUuid();
@@ -3158,7 +3324,7 @@ class AppState extends ChangeNotifier {
     bool isKidJar = false,
     String? ownerMemberId,
   }) {
-    if (!canEditBudgets) {
+    if (!canCreateSavingsRecords) {
       debugPrint('Mhuri: unauthorized addGoal for role: ${authRole.name}');
       return;
     }
@@ -3169,6 +3335,7 @@ class AppState extends ChangeNotifier {
       target: target,
       isKidJar: isKidJar,
       ownerMemberId: ownerMemberId,
+      createdById: realUser.id,
     );
     goals.insert(0, goal);
     _persistGoal(goal);
@@ -3179,7 +3346,9 @@ class AppState extends ChangeNotifier {
   }
 
   bool updateGoal(Goal goal, {required String name, required Money target}) {
-    if (!canEditBudgets || name.trim().isEmpty || target.minor <= 0) {
+    if (!canManageSavingsGoal(goal) ||
+        name.trim().isEmpty ||
+        target.minor <= 0) {
       return false;
     }
     final updated = Goal(
@@ -3191,6 +3360,7 @@ class AppState extends ChangeNotifier {
       isKidJar: goal.isKidJar,
       ownerMemberId: goal.ownerMemberId,
       status: goal.status,
+      createdById: goal.createdById,
     );
     final index = goals.indexWhere((g) => g.id == goal.id);
     if (index >= 0) goals[index] = updated;
@@ -3202,7 +3372,7 @@ class AppState extends ChangeNotifier {
   }
 
   bool completeGoal(Goal goal) {
-    if (!canEditBudgets) return false;
+    if (!canManageSavingsGoal(goal)) return false;
     final updated = Goal(
       id: goal.id,
       name: goal.name,
@@ -3212,6 +3382,7 @@ class AppState extends ChangeNotifier {
       isKidJar: goal.isKidJar,
       ownerMemberId: goal.ownerMemberId,
       status: 'done',
+      createdById: goal.createdById,
     );
     final index = goals.indexWhere((g) => g.id == goal.id);
     if (index >= 0) goals[index] = updated;
@@ -3233,6 +3404,7 @@ class AppState extends ChangeNotifier {
       isKidJar: goal.isKidJar,
       ownerMemberId: goal.ownerMemberId,
       status: 'archived',
+      createdById: goal.createdById,
     );
     _persistGoal(archived);
     _queue('goal', archived);
@@ -3256,7 +3428,7 @@ class AppState extends ChangeNotifier {
     final t = GoalTx(
       id: id ?? newUuid(),
       goalId: g.id,
-      byMemberId: _user.id,
+      byMemberId: realUser.id,
       amount: amount,
       at: DateTime.now(),
     );
@@ -3270,27 +3442,172 @@ class AppState extends ChangeNotifier {
 
   void circleCollect({String? id}) {
     if (!canAdmin) return;
+    if (!currentMukandoRoundComplete) return;
     if (id != null) {
       if (_processedMutationIds.contains(id)) return;
       _processedMutationIds.add(id);
     }
     if (circle.currentRound < circle.totalRounds) {
+      final completedRound = circle.currentRound;
+      final collector = circle.nextCollector;
+      final pot = circle.roundPot;
       circle.currentRound++;
       _persistSavingsCircle();
       _queue('mukando', circle);
+      _recordLocalAudit('mukando.collect', 'mukando', 'round_$completedRound', {
+        'round': completedRound,
+        'collector': collector,
+        'amount_minor': pot.minor,
+        'currency': pot.currency.code,
+        'total_rounds': circle.totalRounds,
+      });
       _resyncReminders();
       pendingOps++;
       notifyListeners();
     }
   }
 
+  bool get currentMukandoRoundComplete =>
+      circle.participantIds.isEmpty ||
+      circle.participantIds.every((memberId) => mukandoPayments.any(
+          (p) => p.round == circle.currentRound && p.memberId == memberId));
+
+  bool hasMukandoPaid(String memberId) => mukandoPayments
+      .any((p) => p.round == circle.currentRound && p.memberId == memberId);
+
+  MukandoPayment? paymentForMember(String memberId, {int? round}) {
+    final r = round ?? circle.currentRound;
+    return mukandoPayments
+        .where((p) => p.round == r && p.memberId == memberId)
+        .firstOrNull;
+  }
+
+  /// Whether a member's payment for the current round is overdue.
+  bool isMukandoPaymentLate(String memberId) {
+    if (hasMukandoPaid(memberId)) return false;
+    if (circle.startedOnMs == 0) return false;
+    final dueDate = circle.currentDueDate;
+    return DateTime.now().isAfter(dueDate);
+  }
+
+  bool configureMukando({
+    required String name,
+    required Money contribution,
+    required String frequency,
+    required List<Member> participants,
+    int? totalRounds,
+    DateTime? startDate,
+  }) {
+    if (!canAdmin ||
+        name.trim().isEmpty ||
+        contribution.minor <= 0 ||
+        participants.isEmpty) {
+      return false;
+    }
+    final rounds = (totalRounds != null && totalRounds > 0)
+        ? totalRounds
+        : participants.length;
+    final startMs = startDate != null
+        ? startDate.millisecondsSinceEpoch
+        : (circle.startedOnMs > 0
+            ? circle.startedOnMs
+            : DateTime.now().millisecondsSinceEpoch);
+
+    circle = SavingsCircle(
+      name: name.trim(),
+      contribution: contribution,
+      totalRounds: rounds,
+      currentRound: circle.currentRound > rounds ? 1 : circle.currentRound,
+      order: participants.map((m) => m.name).toList(),
+      participantIds: participants.map((m) => m.id).toList(),
+      frequency: frequency,
+      startedOnMs: startMs,
+    );
+    mukandoEnabled = true;
+    _persistKv('mukando_enabled', '1');
+    _persistSavingsCircle();
+    _queue('mukando', circle);
+    _recordLocalAudit('mukando.configure', 'mukando', 'circle', {
+      'name': circle.name,
+      'amount_minor': contribution.minor,
+      'currency': contribution.currency.code,
+      'frequency': frequency,
+      'members_count': participants.length,
+      'total_rounds': rounds,
+    });
+    _resyncReminders();
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  bool recordMukandoPayment(String memberId) {
+    if ((!canAdmin && memberId != realUser.id) || hasMukandoPaid(memberId)) {
+      return false;
+    }
+    if (!circle.participantIds.contains(memberId)) return false;
+    final familySpaceId = sync?.spaceId ?? space.name;
+    final payment = MukandoPayment(
+      id: uuidFromSeed(
+          'mukando/$familySpaceId/${circle.currentRound}/$memberId'),
+      round: circle.currentRound,
+      memberId: memberId,
+      recordedBy: realUser.id,
+      amount: circle.contribution,
+      paidAt: DateTime.now(),
+    );
+    mukandoPayments.add(payment);
+    if (_store != null) _fire(_store!.saveMukandoPayment(payment));
+    _queue('mukando_payment', payment);
+    final memberName = member(memberId)?.name ?? 'Member';
+    _recordLocalAudit(
+        'mukando.pay', 'mukando_payment', payment.id, {
+      'round': circle.currentRound,
+      'member_id': memberId,
+      'member_name': memberName,
+      'amount_minor': circle.contribution.minor,
+      'currency': circle.contribution.currency.code,
+      'recorded_by': realUser.id,
+    });
+    _resyncReminders();
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  bool unrecordMukandoPayment(String memberId) {
+    if (!canAdmin && memberId != realUser.id) return false;
+    final paymentIndex = mukandoPayments.indexWhere(
+        (p) => p.round == circle.currentRound && p.memberId == memberId);
+    if (paymentIndex < 0) return false;
+    final payment = mukandoPayments.removeAt(paymentIndex);
+    if (_store != null) _fire(_store!.deleteMukandoPayment(payment.id));
+    final memberName = member(memberId)?.name ?? 'Member';
+    _recordLocalAudit(
+        'mukando.undo_pay', 'mukando_payment', payment.id, {
+      'round': circle.currentRound,
+      'member_id': memberId,
+      'member_name': memberName,
+      'amount_minor': circle.contribution.minor,
+      'currency': circle.contribution.currency.code,
+    });
+    _resyncReminders();
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
   /// Undo for [circleCollect] - rounds are overwrite-safe (records only).
   void undoCircleCollect() {
     if (!canAdmin) return;
     if (circle.currentRound > 1) {
+      final prevRound = circle.currentRound;
       circle.currentRound--;
       _persistSavingsCircle();
       _queue('mukando', circle);
+      _recordLocalAudit('mukando.undo_round', 'mukando', 'round_$prevRound', {
+        'round': circle.currentRound,
+      });
       _resyncReminders();
       notifyListeners();
     }
@@ -3420,7 +3737,7 @@ class AppState extends ChangeNotifier {
       final t = GoalTx(
         id: newUuid(),
         goalId: jar.id,
-        byMemberId: r.kidId,
+        byMemberId: realUser.id,
         amount: r.amount,
         at: DateTime.now(),
       );

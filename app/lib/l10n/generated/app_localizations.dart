@@ -3760,6 +3760,18 @@ abstract class AppLocalizations {
   /// **'Home shows your family pool, recent activity and the budgets that need attention.'**
   String get tourPoolBody;
 
+  /// No description provided for @tourFamilyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your family'**
+  String get tourFamilyTitle;
+
+  /// No description provided for @tourFamilyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap your family name to invite people, manage members and roles, or switch families.'**
+  String get tourFamilyBody;
+
   /// No description provided for @tourPlanTitle.
   ///
   /// In en, this message translates to:

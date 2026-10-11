@@ -6,10 +6,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:mhuri_money/core/auth/auth_controller.dart';
+import 'package:mhuri_money/core/auth/auth_service.dart';
 import 'package:mhuri_money/core/auth/pin_store.dart';
 import 'package:mhuri_money/core/auth/supabase_auth_service.dart';
 
 import 'fake_auth.dart';
+
+class _DelayedRestoreAuthService extends FakeAuthService {
+  _DelayedRestoreAuthService(this.result);
+
+  final Completer<AuthSession?> result;
+
+  @override
+  Future<AuthSession?> restoreSession() => result.future;
+}
 
 /// Queues canned responses; records every request so tests can assert the
 /// exact endpoints and payloads the hand-written GoTrue client produces.
@@ -66,6 +76,35 @@ void main() {
   });
 
   group('AuthController', () {
+    test('publishes the cached identity before server restore completes',
+        () async {
+      final remote = Completer<AuthSession?>();
+      final kv = <String, String>{
+        'auth_access_token': 'cached-access',
+        'auth_user_id': 'family-user-1',
+        'auth_email': 'mai@mhuri.app',
+      };
+      final c = AuthController(
+        env: testEnv(),
+        service: _DelayedRestoreAuthService(remote),
+        kvGet: (key) async => kv[key],
+      );
+
+      final restoring = c.restore();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(c.restoring, isTrue);
+      expect(c.isLoggedIn, isTrue);
+      expect(c.session?.userId, 'family-user-1');
+
+      remote.complete(const AuthSession(
+        userId: 'family-user-1',
+        email: 'mai@mhuri.app',
+      ));
+      await restoring;
+      expect(c.restoring, isFalse);
+    });
+
     test(
         'sign-in flow: bad input fails, good input sets a session, signOut clears it',
         () async {

@@ -52,4 +52,63 @@ void main() {
             id: 'same'),
         isFalse);
   });
+
+  test('debt can be edited without losing repayments and then archived', () {
+    final state = AppState();
+    state.members.add(state.user);
+    state.createDebt(
+      name: 'Old name',
+      direction: DebtDirection.iOwe,
+      principal: const Money(10000, Currency.usd),
+    );
+    final debt = state.familyDebts.single;
+    expect(
+      state.recordDebtRepayment(debt, const Money(2500, Currency.usd),
+          id: 'payment-kept'),
+      isTrue,
+    );
+
+    expect(
+      state.updateDebt(
+        debt,
+        name: 'School advance',
+        direction: DebtDirection.familyLoan,
+        principal: const Money(12000, Currency.usd),
+        dueDate: DateTime(2027, 1, 15),
+      ),
+      isTrue,
+    );
+    expect(debt.name, 'School advance');
+    expect(debt.direction, DebtDirection.familyLoan);
+    expect(state.remainingOnDebt(debt).minor, 9500);
+    expect(state.debtRepayments.single.id, 'payment-kept');
+
+    expect(state.archiveDebt(debt), isTrue);
+    expect(state.familyDebts, isEmpty);
+    expect(debt.status, 'archived');
+    expect(state.debtRepayments.single.id, 'payment-kept');
+  });
+
+  test('debt principal cannot be reduced below repayments', () {
+    final state = AppState();
+    state.members.add(state.user);
+    state.createDebt(
+      name: 'Advance',
+      direction: DebtDirection.iOwe,
+      principal: const Money(10000, Currency.usd),
+    );
+    final debt = state.familyDebts.single;
+    state.recordDebtRepayment(debt, const Money(6000, Currency.usd), id: 'p1');
+
+    expect(
+      state.updateDebt(
+        debt,
+        name: 'Advance',
+        direction: DebtDirection.iOwe,
+        principal: const Money(5000, Currency.usd),
+      ),
+      isFalse,
+    );
+    expect(debt.principal.minor, 10000);
+  });
 }

@@ -28,6 +28,18 @@ class FirebaseServices {
   static String? _anonKey;
   static Future<String?> Function()? _accessToken;
   static Future<void> Function()? onFamilyUpdate;
+  static void Function(String destination)? _notificationOpenHandler;
+  static String? _pendingDestination;
+  static String? _registeredToken;
+
+  static set onNotificationOpen(void Function(String destination)? handler) {
+    _notificationOpenHandler = handler;
+    final pending = _pendingDestination;
+    if (handler != null && pending != null) {
+      _pendingDestination = null;
+      scheduleMicrotask(() => handler(pending));
+    }
+  }
 
   static bool get ready => _ready;
 
@@ -47,6 +59,7 @@ class FirebaseServices {
       _observer =
           FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance);
       await Notifier.initialize();
+      Notifier.onPayloadTap = _dispatchDestination;
       _messageSub = FirebaseMessaging.onMessage.listen(_onForegroundMessage);
       _openedSub = FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpen);
       final initial = await FirebaseMessaging.instance.getInitialMessage();
@@ -80,7 +93,11 @@ class FirebaseServices {
     required bool notificationsEnabled,
   }) async {
     if (!_ready) return;
-    if (_boundUserId == userId && _tokenSub != null) return;
+    if (_boundUserId == userId &&
+        _tokenSub != null &&
+        _registeredToken != null) {
+      return;
+    }
     _boundUserId = userId;
     _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), '');
     _anonKey = anonKey;
@@ -123,8 +140,11 @@ class FirebaseServices {
     // receiving pushes addressed to its previous account, and honors the
     // in-app notification master switch immediately.
     try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && token.isNotEmpty) await _deleteTokenRecord(token);
       await FirebaseMessaging.instance.deleteToken();
     } catch (_) {}
+    _registeredToken = null;
   }
 
   static Future<void> logEvent(String name,
@@ -144,7 +164,7 @@ class FirebaseServices {
     final access = await getAccess();
     if (access == null || access.isEmpty) return;
     try {
-      await http
+      final response = await http
           .post(
             Uri.parse('$base/rest/v1/push_device?on_conflict=token'),
             headers: {
@@ -157,9 +177,31 @@ class FirebaseServices {
                 '"platform":"${Platform.isIOS ? 'ios' : 'android'}"}',
           )
           .timeout(const Duration(seconds: 20));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        debugPrint('FCM token registration rejected (${response.statusCode}): '
+            '${response.body}');
+        return;
+      }
+      _registeredToken = token;
     } catch (error) {
       debugPrint('FCM token registration failed: $error');
     }
+  }
+
+  static Future<void> _deleteTokenRecord(String token) async {
+    final base = _baseUrl;
+    final key = _anonKey;
+    final getAccess = _accessToken;
+    if (base == null || key == null || getAccess == null) return;
+    final access = await getAccess();
+    if (access == null || access.isEmpty) return;
+    final uri = Uri.parse('$base/rest/v1/push_device').replace(
+      queryParameters: {'token': 'eq.$token'},
+    );
+    await http.delete(uri, headers: {
+      'apikey': key,
+      'Authorization': 'Bearer $access',
+    }).timeout(const Duration(seconds: 20));
   }
 
   static String _jsonEscape(String value) => value
@@ -173,23 +215,56 @@ class FirebaseServices {
         'push_received', {'event': message.data['event'] ?? 'unknown'});
     final notification = message.notification;
     if (notification == null) return;
-    await Notifier.showNow(Reminder(
-      key: message.messageId ?? 'push_${DateTime.now().millisecondsSinceEpoch}',
-      category: ReminderCategory.family,
-      title: notification.title ?? 'Mhuri',
-      body: notification.body ?? 'Your family has an update.',
-      when: DateTime.now(),
-    ));
+    // Pulling a chat message emits the richer sender/message notification via
+    // AppState. Showing the FCM envelope too would create two alerts.
+    if (destinationForData(message.data) == 'family_chat') return;
+    await Notifier.showNow(
+        Reminder(
+          key: message.messageId ??
+              'push_${DateTime.now().millisecondsSinceEpoch}',
+          category: ReminderCategory.family,
+          title: notification.title ?? 'Mhuri',
+          body: notification.body ?? 'Your family has an update.',
+          when: DateTime.now(),
+        ),
+        payload: destinationForData(message.data));
   }
 
   static Future<void> _onMessageOpen(RemoteMessage message) async {
     await onFamilyUpdate?.call();
     await logEvent('push_open', {'event': message.data['event'] ?? 'unknown'});
+    final destination = destinationForData(message.data);
+    if (destination != null) _dispatchDestination(destination);
+  }
+
+  static String? destinationForData(Map<String, dynamic> data) {
+    final values = [data['route'], data['event'], data['table'], data['type']]
+        .whereType<Object>()
+        .map((value) => value.toString().toLowerCase())
+        .toSet();
+    if (values.any((value) =>
+        value == 'family_chat' ||
+        value == 'family_chat_message' ||
+        value == 'chat')) {
+      return 'family_chat';
+    }
+    return null;
+  }
+
+  static void _dispatchDestination(String destination) {
+    final handler = _notificationOpenHandler;
+    if (handler == null) {
+      _pendingDestination = destination;
+    } else {
+      handler(destination);
+    }
   }
 
   static Future<void> dispose() async {
     await _tokenSub?.cancel();
     await _messageSub?.cancel();
     await _openedSub?.cancel();
+    Notifier.onPayloadTap = null;
+    _notificationOpenHandler = null;
   }
 }

@@ -50,6 +50,7 @@ CREATE TABLE public.account (
   opening_balance_minor bigint NOT NULL DEFAULT 0 CHECK (opening_balance_minor >= 0),
   is_archived boolean NOT NULL DEFAULT false,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT account_pkey PRIMARY KEY (id),
   CONSTRAINT account_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
   CONSTRAINT account_owner_member_id_fkey FOREIGN KEY (owner_member_id) REFERENCES public.user_profile(id)
@@ -502,4 +503,27 @@ CREATE TABLE public.transaction_split (
   CONSTRAINT transaction_split_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
   CONSTRAINT transaction_split_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transaction(id),
   CONSTRAINT transaction_split_envelope_id_fkey FOREIGN KEY (envelope_id) REFERENCES public.envelope(id)
+);
+CREATE TABLE public.family_task (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  title text NOT NULL CHECK (length(btrim(title)) >= 1 AND length(btrim(title)) <= 200),
+  note text,
+  assignee_member_id uuid,
+  created_by uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  due_at timestamp with time zone,
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'inProgress'::text, 'done'::text])),
+  points integer NOT NULL DEFAULT 1 CHECK (points >= 0 AND points <= 20),
+  requires_approval boolean NOT NULL DEFAULT true,
+  approved_by_member_id uuid,
+  approved_at timestamp with time zone,
+  completed_at timestamp with time zone,
+  is_archived boolean NOT NULL DEFAULT false,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT family_task_pkey PRIMARY KEY (id),
+  CONSTRAINT family_task_approved_by_member_id_fkey FOREIGN KEY (approved_by_member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT family_task_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT family_task_assignee_member_id_fkey FOREIGN KEY (assignee_member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT family_task_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id)
 );

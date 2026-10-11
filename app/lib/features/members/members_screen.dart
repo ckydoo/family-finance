@@ -21,6 +21,7 @@ import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
 import '../../core/sync/avatar_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/error_messages.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
@@ -45,7 +46,7 @@ Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
       tokenGet: () async {
         final auth = s.auth;
         if (auth == null) return null;
-        return auth.refreshAccessToken();
+        return auth.validAccessToken();
       },
     );
     final publicUrl =
@@ -53,9 +54,9 @@ Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
     s.setMyAvatar(publicUrl);
     messenger.showSnackBar(SnackBar(
         content: Text(l.photoSaved), behavior: SnackBarBehavior.floating));
-  } on AvatarException {
+  } on AvatarException catch (e) {
     messenger.showSnackBar(SnackBar(
-        content: Text(l.avatarError), behavior: SnackBarBehavior.floating));
+        content: Text(e.message), behavior: SnackBarBehavior.floating));
   } catch (_) {
     messenger.showSnackBar(SnackBar(
         content: Text(l.photoFailed), behavior: SnackBarBehavior.floating));
@@ -245,6 +246,73 @@ Color _roleBg(BuildContext context, Role role) => switch (role) {
       Role.viewer => context.violetSoft,
     };
 
+Future<void> _showRoleGuide(BuildContext context) => showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Who can do what?'),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Family Owner',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              Text('Full family, money, member and ownership control.'),
+              SizedBox(height: 12),
+              Text('Family Admin',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(
+                  'Manages budgets, approvals and members, without ownership transfer or family deletion.'),
+              SizedBox(height: 12),
+              Text('Adult Member',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(
+                  'Adds personal transactions, savings goals and debts; can edit shopping lists.'),
+              SizedBox(height: 12),
+              Text('Contributor',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(
+                  'Adds personal transactions and contributes to existing savings records.'),
+              SizedBox(height: 12),
+              Text('Teen', style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(
+                  'Uses transactions, budgets and savings according to the family permission switches.'),
+              SizedBox(height: 12),
+              Text('Kid', style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(
+                  'Claims chores, makes requests and uses enabled child money features.'),
+              SizedBox(height: 12),
+              Text('Viewer', style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(
+                  'Can view shared family information but cannot change money records.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+
+Future<void> _showAdminRestriction(BuildContext context) => showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Family Admin permission needed'),
+        content: const Text(
+          'Only the Family Owner or a Family Admin can invite and manage family members.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+
 /// Members, roles and the "View as" profile switcher (spec §3, §7.10).
 class MembersScreen extends StatelessWidget {
   const MembersScreen({super.key});
@@ -325,6 +393,13 @@ class MembersScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: context.inkSoft),
               ),
             ),
+            Center(
+              child: TextButton.icon(
+                onPressed: () => _showRoleGuide(context),
+                icon: const Icon(Icons.shield_outlined, size: 18),
+                label: const Text('See role permissions'),
+              ),
+            ),
             const SizedBox(height: 16),
 
             // ── Members ───────────────────────────────────────────────────
@@ -335,13 +410,15 @@ class MembersScreen extends StatelessWidget {
 
             const SizedBox(height: 14),
             OutlinedButton.icon(
-              onPressed: s.canInvite
-                  ? () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const InviteScreen(),
-                        ),
-                      )
-                  : null,
+              onPressed: () {
+                if (!s.canInvite) {
+                  _showAdminRestriction(context);
+                  return;
+                }
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const InviteScreen()),
+                );
+              },
               style: OutlinedButton.styleFrom(
                 foregroundColor: context.primary,
                 side: BorderSide(color: context.primary),
@@ -377,8 +454,11 @@ class MembersScreen extends StatelessWidget {
               context,
               icon: Icons.chat_bubble_outline_rounded,
               title: 'Family chat',
-              subtitle: 'Messages and shared task discussions',
+              subtitle: s.unreadChatCount > 0
+                  ? '${s.unreadChatCount > 99 ? '99+' : s.unreadChatCount} unread ${s.unreadChatCount == 1 ? 'message' : 'messages'}'
+                  : 'Messages and shared task discussions',
               screen: const FamilyChatScreen(),
+              badgeCount: s.unreadChatCount,
             ),
             _familyDestination(
               context,
@@ -454,11 +534,18 @@ class MembersScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required Widget screen,
+    int badgeCount = 0,
   }) =>
       ListTile(
         contentPadding: EdgeInsets.zero,
         minTileHeight: 58,
-        leading: Icon(icon, color: context.primaryDark),
+        leading: Badge(
+          isLabelVisible: badgeCount > 0,
+          label: badgeCount > 0
+              ? Text(badgeCount > 99 ? '99+' : '$badgeCount')
+              : null,
+          child: Icon(icon, color: context.primaryDark),
+        ),
         title: Text(title),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right_rounded),
@@ -630,8 +717,10 @@ class MembersScreen extends StatelessWidget {
     final statusText = switch (s.syncStatus) {
       SyncStatus.syncing => AppLocalizations.of(context)!.syncing,
       SyncStatus.offline => AppLocalizations.of(context)!.offlineRetry,
-      SyncStatus.error =>
-        s.syncLastError ?? AppLocalizations.of(context)!.syncProblem,
+      SyncStatus.error => userFacingErrorMessage(
+            s.syncLastError,
+            fallback: AppLocalizations.of(context)!.syncProblem,
+          ),
       SyncStatus.needsSignIn => AppLocalizations.of(context)!.signinExpired,
       _ => AppLocalizations.of(context)!.lastSync(lastText),
     };
@@ -755,7 +844,7 @@ class MembersScreen extends StatelessWidget {
         content: Text(
           ok
               ? l.spaceCreated(s.inviteCode ?? '?')
-              : (s.syncLastError ?? l.createFail),
+              : userFacingErrorMessage(s.syncLastError, fallback: l.createFail),
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -808,7 +897,10 @@ class MembersScreen extends StatelessWidget {
         content: Text(
           ok
               ? AppLocalizations.of(context)!.joinedOk
-              : (s.syncLastError ?? AppLocalizations.of(context)!.joinFail),
+              : userFacingErrorMessage(
+                  s.syncLastError,
+                  fallback: AppLocalizations.of(context)!.joinFail,
+                ),
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -1244,7 +1336,10 @@ class MembersScreen extends StatelessWidget {
     }
     messenger.showSnackBar(
       SnackBar(
-        content: Text(auth.lastError ?? l.deleteAccountFailed),
+        content: Text(userFacingErrorMessage(
+          auth.lastError,
+          fallback: l.deleteAccountFailed,
+        )),
         behavior: SnackBarBehavior.floating,
       ),
     );

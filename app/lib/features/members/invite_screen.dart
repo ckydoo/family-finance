@@ -329,7 +329,27 @@ class _InviteScreenState extends State<InviteScreen> {
                       style: TextStyle(fontSize: 12.5, color: context.inkSoft)),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: s.canInvite ? _showCreateAccount : null,
+                    onPressed: () {
+                      if (!s.canInvite) {
+                        showDialog<void>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Family Admin permission needed'),
+                            content: const Text(
+                              'Only the Family Owner or a Family Admin can create and invite member accounts.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+                      _showCreateAccount();
+                    },
                     icon: const Icon(Icons.manage_accounts_outlined, size: 19),
                     label: Text(l.memberAccountAction),
                   ),

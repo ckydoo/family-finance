@@ -1,7 +1,7 @@
 /// The synced entity set (M3 + premium pass). The family ledger - money,
 /// budgets, lists, approvals, earnings - syncs, and as of the premium pass so
-/// do chores (stars), the savings-circle header (mukando, one per family) and
-/// recurring rules. Wallet balances stay device-local (see ROADMAP notes).
+/// do chores (stars), the savings-circle header (mukando, one per family),
+/// recurring rules and opening account balances.
 library;
 
 import '../models/models.dart';
@@ -86,6 +86,77 @@ DateTime? _iso(Object? v) =>
 // ── adapters ───────────────────────────────────────────────────────────────
 
 final kSyncAdapters = <String, SyncAdapter>{
+  'account': SyncAdapter(
+    entity: 'account',
+    table: 'account',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final a = d as Account;
+      return {
+        'id': a.id,
+        'space_id': ctx.spaceId,
+        'name': a.name,
+        'kind': 'other',
+        'currency': a.balance.currency.code,
+        'sharing': 'shared',
+        'opening_balance_minor': a.balance.minor,
+        'is_archived': false,
+      };
+    },
+    decode: (j) => Account(
+      id: j['id'] as String,
+      name: j['name'] as String? ?? 'Account',
+      emoji: switch (j['kind'] as String? ?? 'other') {
+        'cash' => 'cash',
+        'ecocash' => 'phone_android',
+        'bank_card' => 'credit_card',
+        'bank_transfer' => 'account_balance',
+        _ => 'wallet',
+      },
+      balance: _moneyOf(j, 'opening_balance_minor', 'currency'),
+    ),
+  ),
+  'family_task': SyncAdapter(
+    entity: 'family_task',
+    table: 'family_task',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final task = d as FamilyTask;
+      return {
+        'id': task.id,
+        'space_id': ctx.spaceId,
+        'title': task.title,
+        'note': task.note,
+        'assignee_member_id': task.assigneeMemberId,
+        'created_by': task.createdByMemberId,
+        'created_at': task.createdAt.toUtc().toIso8601String(),
+        'due_at': task.dueDate?.toUtc().toIso8601String(),
+        'status': task.status.name,
+        'points': task.points,
+        'requires_approval': task.requiresApproval,
+        'approved_by_member_id': task.approvedByMemberId,
+        'approved_at': task.approvedAt?.toUtc().toIso8601String(),
+        'completed_at': task.completedAt?.toUtc().toIso8601String(),
+        'is_archived': task.isArchived,
+      };
+    },
+    decode: (j) => FamilyTask(
+      id: j['id'] as String,
+      title: j['title'] as String? ?? '',
+      note: j['note'] as String?,
+      assigneeMemberId: j['assignee_member_id'] as String?,
+      createdByMemberId: j['created_by'] as String?,
+      createdAt: _iso(j['created_at']) ?? DateTime.now(),
+      dueDate: _iso(j['due_at']),
+      status: FamilyTaskStatus.values.byName(j['status'] as String? ?? 'open'),
+      points: j['points'] as int? ?? 1,
+      requiresApproval: j['requires_approval'] as bool? ?? true,
+      approvedByMemberId: j['approved_by_member_id'] as String?,
+      approvedAt: _iso(j['approved_at']),
+      completedAt: _iso(j['completed_at']),
+      isArchived: j['is_archived'] as bool? ?? false,
+    ),
+  ),
   'tx_allocation': SyncAdapter(
     entity: 'tx_allocation',
     table: 'transaction_split',
@@ -242,7 +313,10 @@ final kSyncAdapters = <String, SyncAdapter>{
         'is_system': m.isSystem,
         'sender_name': m.senderName,
         'sender_avatar': m.senderAvatar,
-        'status': m.status.name,
+        // `pending` is device-local. Once this row reaches the shared server,
+        // it has been sent successfully.
+        'status':
+            m.status == ChatMessageStatus.pending ? 'sent' : m.status.name,
         'reference_type': m.referenceType?.name,
         'reference_id': m.referenceId,
         'reference_title': m.referenceTitle,
@@ -418,6 +492,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'owner_member_id': g.ownerMemberId,
         'is_kid_jar': g.isKidJar,
         'status': g.status,
+        'created_by': g.createdById,
       };
     },
     decode: (j) => Goal(
@@ -431,6 +506,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       ownerMemberId: j['owner_member_id'] as String?,
       isKidJar: (j['is_kid_jar'] as bool?) ?? false,
       status: j['status'] as String? ?? 'active',
+      createdById: j['created_by'] as String?,
       // auto-save rules are device-local for M3
     ),
   ),
@@ -677,10 +753,16 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': c.name,
         'contribution_minor': c.contribution.minor,
         'currency': c.contribution.currency.code,
-        'frequency': 'monthly',
+        'frequency': c.frequency,
         'total_rounds': c.totalRounds,
         'current_round': c.currentRound,
         'round_order': c.order,
+        'participant_ids': c.participantIds,
+        'started_on': c.startedOnMs == 0
+            ? DateTime.now().toIso8601String().substring(0, 10)
+            : DateTime.fromMillisecondsSinceEpoch(c.startedOnMs)
+                .toIso8601String()
+                .substring(0, 10),
       };
     },
     decode: (j) {
@@ -694,20 +776,56 @@ final kSyncAdapters = <String, SyncAdapter>{
         totalRounds: j['total_rounds'] as int? ?? 1,
         currentRound: j['current_round'] as int? ?? 1,
         order: names.isEmpty ? <String>['Member'] : names,
+        participantIds: [
+          if (j['participant_ids'] is List)
+            for (final id in j['participant_ids'] as List) id as String,
+        ],
+        frequency: j['frequency'] as String? ?? 'monthly',
+        startedOnMs: DateTime.tryParse(j['started_on'] as String? ?? '')
+                ?.millisecondsSinceEpoch ??
+            0,
       );
     },
+  ),
+  'mukando_payment': SyncAdapter(
+    entity: 'mukando_payment',
+    table: 'mukando_payment',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final p = d as MukandoPayment;
+      return {
+        'id': p.id,
+        'space_id': ctx.spaceId,
+        'round_no': p.round,
+        'member_id': p.memberId,
+        'recorded_by': p.recordedBy,
+        'amount_minor': p.amount.minor,
+        'currency': p.amount.currency.code,
+        'paid_at': p.paidAt.toUtc().toIso8601String(),
+      };
+    },
+    decode: (j) => MukandoPayment(
+      id: j['id'] as String,
+      round: j['round_no'] as int,
+      memberId: j['member_id'] as String,
+      recordedBy: j['recorded_by'] as String,
+      amount: _moneyOf(j, 'amount_minor', 'currency'),
+      paidAt: _iso(j['paid_at']) ?? DateTime.now(),
+    ),
   ),
 };
 
 /// Pull order: envelopes/goals before their children; the shopping-list
 /// header before its items (joiners learn the list id first).
 const kPullOrder = [
-  'envelope', 'budget_cycle_plan', 'goal', 'shopping_list', 'tx', 'goal_tx',
+  'account', 'envelope', 'budget_cycle_plan', 'goal', 'shopping_list', 'tx',
+  'goal_tx',
   'list_item',
   'kid_request', 'earning',
-  'recurring', 'chore', 'mukando',
+  'recurring', 'chore', 'mukando', 'mukando_payment',
   'family_activity', // immutable server-authored audit trail
   'family_chat_message', // family-scoped conversation thread
+  'family_task', // shared responsibilities; kid memberships cannot read it
   'contribution_campaign', 'contribution_pledge', 'contribution_payment',
   'family_debt', 'debt_repayment',
   'tx_allocation',

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -35,8 +37,9 @@ Future<void> main() async {
     return;
   }
 
-  // Auth (M2). Live session restore before the first frame; first run
-  // starts at the login gate.
+  // Auth (M2). Start session restore before the first frame, but never hold
+  // Flutter's UI behind a network refresh. Cached users enter immediately;
+  // the server check completes in the background.
   final tokenStore = SecureTokenStore(legacyDatabase: db);
   await tokenStore.migrateLegacyTokens();
   final auth = AuthController(
@@ -44,9 +47,8 @@ Future<void> main() async {
     kvGet: tokenStore.get,
     kvSet: tokenStore.set,
   );
-  await auth.restore();
-
   runApp(MhuriMoneyApp(db: db, env: env, auth: auth));
+  unawaited(auth.restore());
 }
 
 /// Shown when a build has no Supabase connection (or the device refuses

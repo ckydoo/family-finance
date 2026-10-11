@@ -32,6 +32,7 @@ class DbSnapshot {
   final List<FamilyChatMessage> familyChatMessages;
   final List<Earning> earnings;
   final SavingsCircle circle;
+  final List<MukandoPayment> mukandoPayments;
   final int stars;
   final String? locale;
   final String? displayCurrency;
@@ -73,6 +74,7 @@ class DbSnapshot {
     required this.familyChatMessages,
     required this.earnings,
     required this.circle,
+    required this.mukandoPayments,
     required this.stars,
     this.locale,
     this.displayCurrency,
@@ -236,6 +238,10 @@ class Persistence {
       _circleRow(s.circle),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    for (final payment in s.mukandoPayments) {
+      batch.insert('mukando_payment', _mukandoPaymentRow(payment),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
     batch.insert(
       'kv',
       {'k': 'stars', 'v': '${s.stars}'},
@@ -332,6 +338,10 @@ class Persistence {
     final mRows = await _d.query('circle', limit: 1);
     final circle =
         mRows.isEmpty ? _fallbackSavingsCircle() : _circleFrom(mRows.first);
+    final mukandoPayments =
+        (await _d.query('mukando_payment', orderBy: 'paid_at_ms DESC'))
+            .map(_mukandoPaymentFrom)
+            .toList();
 
     final kv = {
       for (final r in await _d.query('kv')) r['k'] as String: r['v'] as String,
@@ -360,6 +370,7 @@ class Persistence {
       familyChatMessages: familyChatMessages,
       earnings: earnings,
       circle: circle,
+      mukandoPayments: mukandoPayments,
       stars: int.tryParse(kv['stars'] ?? '') ?? 0,
       locale: kv['locale'],
       displayCurrency: kv['displayCurrency'],
@@ -454,6 +465,13 @@ class Persistence {
       _d.insert('circle', _circleRow(m),
           conflictAlgorithm: ConflictAlgorithm.replace);
 
+  Future<void> saveMukandoPayment(MukandoPayment payment) async =>
+      _d.insert('mukando_payment', _mukandoPaymentRow(payment),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> deleteMukandoPayment(String paymentId) async =>
+      _d.delete('mukando_payment', where: 'id = ?', whereArgs: [paymentId]);
+
   Future<void> saveGoal(Goal g) async => _d.insert('goal', _goalRow(g),
       conflictAlgorithm: ConflictAlgorithm.replace);
 
@@ -468,6 +486,8 @@ class Persistence {
   Future<void> saveKv(String k, String v) async =>
       _d.insert('kv', {'k': k, 'v': v},
           conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> clearAccounts() => _d.delete('account');
 
   /// Server rows (already decode-ready JSON) upserted into local tables.
   /// goal_tx dedupes on server_id; everything else replaces by TEXT pk.
@@ -494,6 +514,13 @@ class Persistence {
     final batch = _d.batch();
     for (final row in rows) {
       switch (entity) {
+        case 'account':
+          if (row['is_archived'] == true) {
+            batch.delete('account', where: 'id = ?', whereArgs: [row['id']]);
+          } else {
+            batch.insert('account', _accountRow(adapter.decode(row) as Account),
+                conflictAlgorithm: ConflictAlgorithm.replace);
+          }
         case 'tx':
           if (row['deleted_at'] != null) {
             batch.delete('tx', where: 'id = ?', whereArgs: [row['id']]);
@@ -572,6 +599,10 @@ class Persistence {
           batch.insert(
               'circle', _circleRow(adapter.decode(row) as SavingsCircle),
               conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'mukando_payment':
+          batch.insert('mukando_payment',
+              _mukandoPaymentRow(adapter.decode(row) as MukandoPayment),
+              conflictAlgorithm: ConflictAlgorithm.replace);
         case 'budget_cycle_plan':
           batch.insert('budget_cycle_plan',
               _budgetPlanRow(adapter.decode(row) as BudgetCyclePlan),
@@ -604,17 +635,21 @@ class Persistence {
           batch.insert('family_chat_message',
               _chatMessageRow(adapter.decode(row) as FamilyChatMessage),
               conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'family_task':
+          batch.insert(
+              'family_task', _familyTaskRow(adapter.decode(row) as FamilyTask),
+              conflictAlgorithm: ConflictAlgorithm.replace);
       }
     }
     await batch.commit(noResult: true);
   }
 
-  /// Clears the synced entity set (used when adopting a family space, so the
-  /// local-only rows never leak into the family's server data). Local-only data -
-  /// accounts, chores, savings circles, kv - is kept.
+  /// Clears the synced entity set when adopting a family space, so rows from a
+  /// previous family never leak into the newly selected family.
   Future<void> wipeSynced() async {
     final batch = _d.batch();
     for (final t in [
+      'account',
       'tx',
       'envelope',
       'goal',
@@ -627,6 +662,7 @@ class Persistence {
       'chore',
       'recurring',
       'circle',
+      'mukando_payment',
       'budget_cycle_plan',
       'family_activity',
       'contribution_campaign',
@@ -807,6 +843,7 @@ class Persistence {
         'auto_save': g.autoSave,
         'is_kid_jar': g.isKidJar ? 1 : 0,
         'owner_member_id': g.ownerMemberId,
+        'created_by_id': g.createdById,
         'status': g.status,
       };
 
@@ -920,6 +957,19 @@ class Persistence {
         'total_rounds': m.totalRounds,
         'current_round': m.currentRound,
         'order_json': jsonEncode(m.order),
+        'participant_ids_json': jsonEncode(m.participantIds),
+        'frequency': m.frequency,
+        'started_on_ms': m.startedOnMs,
+      };
+
+  Map<String, Object?> _mukandoPaymentRow(MukandoPayment p) => {
+        'id': p.id,
+        'round_no': p.round,
+        'member_id': p.memberId,
+        'recorded_by': p.recordedBy,
+        'amount_minor': p.amount.minor,
+        'currency': p.amount.currency.name,
+        'paid_at_ms': p.paidAt.millisecondsSinceEpoch,
       };
 
   // ── Parsers ────────────────────────────────────────────────────────────
@@ -1121,6 +1171,7 @@ class Persistence {
         autoSave: m['auto_save'] as String?,
         isKidJar: (m['is_kid_jar'] as int) == 1,
         ownerMemberId: m['owner_member_id'] as String?,
+        createdById: m['created_by_id'] as String?,
         status: m['status'] as String? ?? 'active',
       );
 
@@ -1209,6 +1260,21 @@ class Persistence {
         totalRounds: m['total_rounds'] as int,
         currentRound: m['current_round'] as int,
         order: (jsonDecode(m['order_json'] as String) as List).cast<String>(),
+        participantIds:
+            (jsonDecode(m['participant_ids_json'] as String? ?? '[]') as List)
+                .cast<String>(),
+        frequency: m['frequency'] as String? ?? 'monthly',
+        startedOnMs: m['started_on_ms'] as int? ?? 0,
+      );
+
+  MukandoPayment _mukandoPaymentFrom(Map<String, Object?> m) => MukandoPayment(
+        id: m['id'] as String,
+        round: m['round_no'] as int,
+        memberId: m['member_id'] as String,
+        recordedBy: m['recorded_by'] as String,
+        amount: Money(m['amount_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        paidAt: DateTime.fromMillisecondsSinceEpoch(m['paid_at_ms'] as int),
       );
 
   static SavingsCircle _fallbackSavingsCircle() => SavingsCircle(

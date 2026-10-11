@@ -25,7 +25,7 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
-  testWidgets('global quick add exposes exactly the five product actions',
+  testWidgets('global quick add exposes the four active product actions',
       (tester) async {
     phone(tester);
     final state = AppState()..members.add(AppState().user);
@@ -43,15 +43,10 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    for (final label in [
-      'Expense',
-      'Income',
-      'Shopping item',
-      'Task',
-      'Contribution'
-    ]) {
+    for (final label in ['Expense', 'Income', 'Shopping item', 'Task']) {
       expect(find.text(label), findsOneWidget);
     }
+    expect(find.text('Contribution'), findsNothing);
   });
 
   testWidgets('budgets lazily handles 100 records and can search the last one',
@@ -76,7 +71,7 @@ void main() {
     expect(find.text('Budget 100'), findsNWidgets(2));
   });
 
-  testWidgets('savings separates goals contributions and debts',
+  testWidgets('savings exposes goals and debts without contributions',
       (tester) async {
     phone(tester);
     final state = AppState();
@@ -85,13 +80,6 @@ void main() {
       name: 'Emergency fund',
       emoji: 'savings',
       target: Money(10000, Currency.usd),
-    ));
-    state.contributionCampaigns.add(ContributionCampaign(
-      id: 'campaign',
-      name: 'Christmas',
-      target: const Money(60000, Currency.usd),
-      deadline: DateTime(2030),
-      createdById: state.user.id,
     ));
     state.familyDebts.add(FamilyDebt(
       id: 'debt',
@@ -104,14 +92,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Emergency fund'), findsOneWidget);
-    expect(find.text('Christmas'), findsNothing);
-    await tester.tap(find.text('Contributions'));
-    await tester.pumpAndSettle();
-    expect(find.text('Christmas'), findsOneWidget);
-    expect(find.text('Emergency fund'), findsNothing);
+    expect(find.text('Contributions'), findsNothing);
     await tester.tap(find.text('Debts'));
     await tester.pumpAndSettle();
     expect(find.text('School loan'), findsOneWidget);
-    expect(find.text('Christmas'), findsNothing);
   });
 }

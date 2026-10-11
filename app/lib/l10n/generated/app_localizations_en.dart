@@ -2064,6 +2064,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Home shows your family pool, recent activity and the budgets that need attention.';
 
   @override
+  String get tourFamilyTitle => 'Manage your family';
+
+  @override
+  String get tourFamilyBody =>
+      'Tap your family name to invite people, manage members and roles, or switch families.';
+
+  @override
   String get tourPlanTitle => 'Give every dollar a job';
 
   @override

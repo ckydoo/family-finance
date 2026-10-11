@@ -11,6 +11,9 @@ import '../../core/widgets/ring_progress.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../meeting/family_meeting_screen.dart';
 import '../lists/lists_screen.dart';
+import '../../core/widgets/tx_tile.dart';
+import '../../core/widgets/app_icons.dart';
+import '../../core/widgets/ui.dart';
 
 /// Monthly report card (spec Module I1/I2) - one screen the family can
 /// review together at the monthly Family Meeting.
@@ -66,6 +69,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     for (final allocation in s.txAllocations) {
       allocationsByTx.putIfAbsent(allocation.txId, () => []).add(allocation);
     }
+    final incomeByCur = <Currency, int>{};
+    final spentByCur = <Currency, int>{};
+    final spentByMember = <String, int>{};
+    final txCountByMember = <String, int>{};
     var incomeMinor = 0;
     var spentMinor = 0;
     var cashSpent = 0;
@@ -73,9 +80,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final inDisplay = tx.amount.inCurrency(displayCur, s.rate).minor;
       if (tx.type == TxType.income) {
         incomeMinor += inDisplay;
+        incomeByCur.update(tx.amount.currency, (v) => v + tx.amount.minor,
+            ifAbsent: () => tx.amount.minor);
         continue;
       }
       spentMinor += inDisplay;
+      spentByCur.update(tx.amount.currency, (v) => v + tx.amount.minor,
+          ifAbsent: () => tx.amount.minor);
+      if (tx.memberId.isNotEmpty) {
+        spentByMember.update(tx.memberId, (v) => v + inDisplay,
+            ifAbsent: () => inDisplay);
+        txCountByMember.update(tx.memberId, (v) => v + 1, ifAbsent: () => 1);
+      }
       if (tx.method == Method.cash) cashSpent += inDisplay;
       final allocations = allocationsByTx[tx.id] ?? const <TxAllocation>[];
       final categoryParts = allocations.isNotEmpty
@@ -102,6 +118,25 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
     final income = Money(incomeMinor, displayCur);
     final spent = Money(spentMinor, displayCur);
+    String? formatCurBreakdown(Map<Currency, int> byCur, Currency display) {
+      if (byCur.isEmpty) return null;
+      final nonZero = byCur.entries.where((e) => e.value > 0).toList();
+      if (nonZero.isEmpty) return null;
+      if (nonZero.length == 1 && nonZero.first.key == display) return null;
+      return nonZero.map((e) => Money(e.value, e.key).text).join(' · ');
+    }
+
+    final incomeSubtext = formatCurBreakdown(incomeByCur, displayCur);
+    final spentSubtext = formatCurBreakdown(spentByCur, displayCur);
+    final savedByCur = <Currency, int>{};
+    for (final tx in savings) {
+      savedByCur.update(
+        tx.amount.currency,
+        (v) => v + tx.amount.minor,
+        ifAbsent: () => tx.amount.minor,
+      );
+    }
+    final savedSubtext = formatCurBreakdown(savedByCur, displayCur);
     final saved = Money(
       savings.fold(
           0, (sum, tx) => sum + tx.amount.inCurrency(displayCur, s.rate).minor),
@@ -235,6 +270,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         income.text,
                         context.incomeGreen,
                         Icons.trending_up,
+                        subtext: incomeSubtext,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -245,6 +281,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         spent.text,
                         context.expenseRed,
                         Icons.trending_down,
+                        subtext: spentSubtext,
                       ),
                     ),
                   ],
@@ -259,6 +296,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         saved.text,
                         context.primary,
                         Icons.track_changes,
+                        subtext: savedSubtext,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -440,6 +478,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
                 const SizedBox(height: 12),
 
+                _MemberSpendingCard(
+                  state: s,
+                  spentByMember: spentByMember,
+                  txCountByMember: txCountByMember,
+                  totalSpentMinor: spentMinor,
+                  displayCurrency: displayCur,
+                ),
+                const SizedBox(height: 12),
+
                 // ── Shopping & List Tracking ─────────────────────────────────
                 _ShoppingTrackingCard(
                   state: s,
@@ -455,6 +502,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   transactions: transactions,
                   displayCurrency: displayCur,
                 ),
+                const SizedBox(height: 12),
+
+                _CycleTransactionsCard(transactions: transactions),
                 const SizedBox(height: 16),
 
                 ElevatedButton.icon(
@@ -513,7 +563,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _stat(BuildContext context, String label, String value, Color color,
-          IconData icon) =>
+          IconData icon,
+          {String? subtext}) =>
       Container(
         padding: const EdgeInsets.fromLTRB(4, 10, 4, 12),
         decoration: BoxDecoration(
@@ -540,6 +591,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
               ),
             ),
+            if (subtext != null && subtext.isNotEmpty) ...[
+              const SizedBox(height: 3),
+              Text(
+                subtext,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: context.inkSoft,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
         ),
       );
@@ -703,23 +767,6 @@ class _FamilyProgressCard extends StatelessWidget {
         0,
         (sum, tx) =>
             sum + tx.amount.inCurrency(displayCurrency, state.rate).minor);
-    final campaignTarget = state.contributionCampaigns
-        .where((campaign) => campaign.status == 'active')
-        .fold<int>(
-            0,
-            (sum, campaign) =>
-                sum +
-                campaign.target.inCurrency(displayCurrency, state.rate).minor);
-    final campaignCollected = state.contributionCampaigns
-        .where((campaign) => campaign.status == 'active')
-        .fold<int>(
-            0,
-            (sum, campaign) =>
-                sum +
-                state
-                    .collectedFor(campaign)
-                    .inCurrency(displayCurrency, state.rate)
-                    .minor);
     return _ReportCard(
       title: 'Family progress',
       icon: Icons.flag_outlined,
@@ -728,12 +775,6 @@ class _FamilyProgressCard extends StatelessWidget {
           label: 'Savings goals',
           value: Money(goalSaved, displayCurrency),
           target: Money(goalTarget, displayCurrency),
-        ),
-        const SizedBox(height: 14),
-        _ProgressRow(
-          label: 'Contributions collected',
-          value: Money(campaignCollected, displayCurrency),
-          target: Money(campaignTarget, displayCurrency),
         ),
       ]),
     );
@@ -1446,6 +1487,310 @@ class _ShoppingTrackingCard extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ── Member spending breakdown: "Who spent what" ────────────────────────────
+class _MemberSpendingCard extends StatelessWidget {
+  final AppState state;
+  final Map<String, int> spentByMember;
+  final Map<String, int> txCountByMember;
+  final int totalSpentMinor;
+  final Currency displayCurrency;
+
+  const _MemberSpendingCard({
+    required this.state,
+    required this.spentByMember,
+    required this.txCountByMember,
+    required this.totalSpentMinor,
+    required this.displayCurrency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final membersWithSpend = state.members.toList()
+      ..sort((a, b) {
+        final aSpend = spentByMember[a.id] ?? 0;
+        final bSpend = spentByMember[b.id] ?? 0;
+        return bSpend.compareTo(aSpend);
+      });
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.groups_outlined, size: 20, color: context.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Who spent what',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: context.ink,
+                  ),
+                ),
+              ),
+              Text(
+                '${spentByMember.values.where((v) => v > 0).length} active',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: context.inkSoft,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (totalSpentMinor == 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No member expenses recorded for this cycle.',
+                style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+              ),
+            )
+          else ...[
+            for (final member in membersWithSpend) ...[
+              () {
+                final memberSpend = spentByMember[member.id] ?? 0;
+                final count = txCountByMember[member.id] ?? 0;
+                final ratio = totalSpentMinor > 0
+                    ? (memberSpend / totalSpentMinor).clamp(0.0, 1.0)
+                    : 0.0;
+                final sharePercent = (ratio * 100).round();
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          MemberAvatar(
+                            key: ValueKey('report_member_avatar_${member.id}'),
+                            radius: 16,
+                            backgroundColor:
+                                _memberRoleColor(context, member.role),
+                            icon: iconForKey(member.emoji) ??
+                                Icons.person_rounded,
+                            imageUrl: member.avatarUrl,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        member.name,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13.5,
+                                          color: context.ink,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: context.track,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        member.role.label,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.inkSoft,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  count == 1 ? '1 expense' : '$count expenses',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: context.inkSoft,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                Money(memberSpend, displayCurrency).text,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13.5,
+                                  color: memberSpend > 0
+                                      ? context.ink
+                                      : context.inkSoft,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$sharePercent%',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.inkSoft,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: ratio,
+                          minHeight: 5,
+                          backgroundColor: context.track,
+                          color: memberSpend > 0
+                              ? context.primary
+                              : Colors.transparent,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }(),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+Color _memberRoleColor(BuildContext context, Role role) => switch (role) {
+      Role.owner => context.successSoft,
+      Role.admin => context.infoSoft,
+      Role.adult => context.warningSoft,
+      Role.contributor => context.primarySoft,
+      Role.teen => context.infoSoft,
+      Role.kid => context.accentSoft,
+      Role.viewer => context.violetSoft,
+    };
+
+/// ── Cycle Transactions Audit List ──────────────────────────────────────────
+class _CycleTransactionsCard extends StatefulWidget {
+  final List<Tx> transactions;
+
+  const _CycleTransactionsCard({required this.transactions});
+
+  @override
+  State<_CycleTransactionsCard> createState() => _CycleTransactionsCardState();
+}
+
+class _CycleTransactionsCardState extends State<_CycleTransactionsCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = widget.transactions.toList()
+      ..sort((a, b) => b.when.compareTo(a.when));
+    final displayList =
+        _expanded ? sorted : sorted.take(5).toList(growable: false);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_outlined,
+                  size: 20, color: context.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Cycle transactions (${sorted.length})',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: context.ink,
+                  ),
+                ),
+              ),
+              if (sorted.length > 5)
+                GestureDetector(
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  child: Text(
+                    _expanded ? 'Show fewer' : 'Show all (${sorted.length})',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: context.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tap any item to audit splits, payment method, and details',
+            style: TextStyle(
+              fontSize: 11.5,
+              color: context.inkSoft,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (sorted.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No transactions recorded in this cycle.',
+                style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+              ),
+            )
+          else ...[
+            for (final tx in displayList)
+              TxTile(
+                tx: tx,
+                dense: true,
+                surface: false,
+              ),
+            if (sorted.length > 5 && !_expanded) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _expanded = true),
+                  icon: const Icon(Icons.expand_more, size: 18),
+                  label: Text('View all ${sorted.length} transactions'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.primary,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );

@@ -378,6 +378,11 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Start the family meeting'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Export transactions (CSV)'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Export transactions (CSV)'), findsOneWidget);
   });
 

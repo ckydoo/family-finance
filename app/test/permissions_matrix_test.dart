@@ -74,6 +74,7 @@ void main() {
       expect(s.canAuthorViewWallet, isTrue);
       expect(s.canEditLists, isTrue);
       expect(s.canContributeSavings, isTrue);
+      expect(s.canManageFamilyTasks, isTrue);
 
       final chore = s.addChore(name: 'Wash dishes', starsReward: 4);
       expect(chore, isNotNull);
@@ -127,9 +128,30 @@ void main() {
       expect(s.canInvite, isFalse);
       expect(s.canApprove, isFalse);
       expect(s.canEditBudgets, isFalse);
+      expect(s.canCreateSavingsRecords, isTrue);
+      expect(s.canRecordDebtRepayments, isTrue);
       expect(s.canAuthorTransact, isTrue);
       expect(s.canTransferOwnership, isFalse);
       expect(s.canDeleteSpace, isFalse);
+      expect(s.canManageFamilyTasks, isTrue);
+
+      s.addGoal(
+        name: 'Adult emergency fund',
+        target: const Money(25000, Currency.usd),
+      );
+      final adultGoal =
+          s.goals.singleWhere((goal) => goal.name == 'Adult emergency fund');
+      expect(adultGoal.createdById, s.realUser.id);
+      s.contribute(adultGoal, const Money(1000, Currency.usd),
+          id: 'adult-save');
+      expect(s.goalTxs.single.byMemberId, s.realUser.id);
+
+      s.createDebt(
+        name: 'School advance',
+        direction: DebtDirection.iOwe,
+        principal: const Money(5000, Currency.usd),
+      );
+      expect(s.familyDebts.single.createdById, s.realUser.id);
 
       // Budgets
       final moved = s.moveMoney(s.envelopes[0], s.envelopes[1],
@@ -168,6 +190,7 @@ void main() {
       expect(s.canEditBudgets, isTrue);
       expect(s.canTransferOwnership, isFalse);
       expect(s.canDeleteSpace, isFalse);
+      expect(s.canManageFamilyTasks, isTrue);
     });
 
     test('Contributor can record money but cannot change shared plans',
@@ -178,6 +201,8 @@ void main() {
       expect(s.canAdmin, isFalse);
       expect(s.canEditBudgets, isFalse);
       expect(s.canEditLists, isFalse);
+      expect(s.canManageFamilyTasks, isTrue);
+      expect(s.canCreateSavingsRecords, isFalse);
     });
 
     test(
@@ -190,9 +215,11 @@ void main() {
       expect(s.canInvite, isFalse);
       expect(s.canApprove, isFalse);
       expect(s.canEditBudgets, isFalse);
+      expect(s.canCreateSavingsRecords, isFalse);
       expect(s.canTransferOwnership, isFalse);
       expect(s.canDeleteSpace, isFalse);
       expect(s.canEditLists, isFalse);
+      expect(s.canManageFamilyTasks, isTrue);
 
       expect(
         s.addChore(name: 'Unauthorized chore', starsReward: 3),
@@ -264,6 +291,7 @@ void main() {
           s.canAuthorTransact, isFalse); // child_transactions defaults to false
       expect(s.canAuthorViewBudget, isTrue); // child_budget defaults to true
       expect(s.canEditLists, isFalse);
+      expect(s.canManageFamilyTasks, isFalse);
 
       // Cannot add transactions directly
       final txBlocked = s.addTx(
@@ -311,6 +339,8 @@ void main() {
       expect(s.canAuthorTransact, isFalse);
       expect(s.canEditLists, isFalse);
       expect(s.canContributeSavings, isFalse);
+      expect(s.canCreateSavingsRecords, isFalse);
+      expect(s.canManageFamilyTasks, isFalse);
       expect(s.canAuthorViewBudget, isTrue); // Read-only viewing allowed
       expect(s.canAuthorViewWallet, isTrue); // Read-only viewing allowed
 

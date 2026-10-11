@@ -76,6 +76,11 @@ abstract class AuthService {
   /// out rather than sending an empty credential).
   Future<String?> refreshAccessToken();
 
+  /// Access token for REST calls: the stored token while it is still valid,
+  /// otherwise a refreshed one (null when the session cannot be renewed).
+  /// Use this per request; reserve [refreshAccessToken] for forced renewal.
+  Future<String?> validAccessToken();
+
   Future<void> signOut();
 
   /// Permanently deletes the authenticated account and its server identity.

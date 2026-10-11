@@ -13,6 +13,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/ring_progress.dart';
 import '../members/members_screen.dart';
+import '../family_tasks/family_tasks_screen.dart';
 
 /// Teen dashboard for 13–17s (spec Module H, §7.9).
 /// Own jar + earnings + proposals; optional read-only peek at one envelope.
@@ -39,8 +40,7 @@ class TeenZone extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: context.warningSoft,
                   borderRadius: BorderRadius.circular(14),
-                  border:
-                      Border.all(color: context.accentSoft),
+                  border: Border.all(color: context.accentSoft),
                 ),
                 child: Row(
                   children: [
@@ -129,6 +129,9 @@ class TeenZone extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+
+            _TeenFamilyTasks(state: s),
+            const SizedBox(height: 12),
 
             // ── My jar ────────────────────────────────────────────────
             Container(
@@ -833,6 +836,81 @@ class TeenZone extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TeenFamilyTasks extends StatelessWidget {
+  const _TeenFamilyTasks({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final tasks = state.familyTasks
+        .where((task) => !task.isArchived && !task.isDone)
+        .take(3)
+        .toList();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.task_alt_rounded, color: context.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Family tasks',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: context.ink,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const FamilyTasksScreen(),
+                  ),
+                ),
+                child: Text(tasks.isEmpty ? 'Open' : 'See all'),
+              ),
+            ],
+          ),
+          if (tasks.isEmpty)
+            Text(
+              'No open family tasks.',
+              style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+            )
+          else
+            for (final task in tasks)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: const Icon(Icons.radio_button_unchecked_rounded),
+                title: Text(
+                  task.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: task.assigneeMemberId == state.realUser.id
+                    ? const Text('Assigned to you')
+                    : null,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const FamilyTasksScreen(),
+                  ),
+                ),
+              ),
+        ],
       ),
     );
   }

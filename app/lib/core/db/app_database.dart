@@ -34,6 +34,7 @@ class AppDatabase {
     'proposal',
     'earning',
     'circle',
+    'mukando_payment',
     'budget_cycle_plan',
     'family_activity',
     'contribution_campaign',
@@ -116,6 +117,7 @@ class AppDatabase {
       'proposal',
       'earning',
       'circle',
+      'mukando_payment',
       'budget_cycle_plan',
       'family_activity',
       'contribution_campaign',
@@ -138,7 +140,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 17,
+        version: 19,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -197,6 +199,7 @@ class AppDatabase {
       auto_save TEXT,
       is_kid_jar INTEGER NOT NULL DEFAULT 0,
       owner_member_id TEXT
+      ,created_by_id TEXT
       ,status TEXT NOT NULL DEFAULT 'active'
     )
     ''',
@@ -318,7 +321,18 @@ class AppDatabase {
       currency TEXT NOT NULL,
       total_rounds INTEGER NOT NULL,
       current_round INTEGER NOT NULL,
-      order_json TEXT NOT NULL
+      order_json TEXT NOT NULL,
+      participant_ids_json TEXT NOT NULL DEFAULT '[]',
+      frequency TEXT NOT NULL DEFAULT 'monthly',
+      started_on_ms INTEGER NOT NULL DEFAULT 0
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS mukando_payment (
+      id TEXT PRIMARY KEY, round_no INTEGER NOT NULL, member_id TEXT NOT NULL,
+      recorded_by TEXT NOT NULL, amount_minor INTEGER NOT NULL,
+      currency TEXT NOT NULL, paid_at_ms INTEGER NOT NULL,
+      UNIQUE(round_no, member_id)
     )
     ''',
     '''
@@ -586,7 +600,8 @@ class AppDatabase {
   /// · v8: cycle plans · v9: activity · v10: shopping
   /// · v11: contributions · v12: debts · v13: receipts/splits
   /// · v14: recurring bill links · v15: family-task approvals
-  /// · v16: reviewable sync conflicts · v17: chat media and stickers.
+  /// · v16: reviewable sync conflicts · v17: chat media and stickers
+  /// · v18: savings-goal creator attribution.
   static Future<void> upgrade(Database d, int oldVersion) async {
     if (oldVersion >= 2 && oldVersion < 2) return;
     if (oldVersion < 2) {
@@ -686,6 +701,22 @@ class AppDatabase {
         'ALTER TABLE family_chat_message ADD COLUMN media_url TEXT',
         'ALTER TABLE family_chat_message ADD COLUMN media_type TEXT',
         'ALTER TABLE family_chat_message ADD COLUMN sticker TEXT',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {}
+      }
+    }
+    if (oldVersion < 18) {
+      try {
+        await d.execute('ALTER TABLE goal ADD COLUMN created_by_id TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 19) {
+      for (final sql in const [
+        "ALTER TABLE circle ADD COLUMN participant_ids_json TEXT NOT NULL DEFAULT '[]'",
+        "ALTER TABLE circle ADD COLUMN frequency TEXT NOT NULL DEFAULT 'monthly'",
+        'ALTER TABLE circle ADD COLUMN started_on_ms INTEGER NOT NULL DEFAULT 0',
       ]) {
         try {
           await d.execute(sql);

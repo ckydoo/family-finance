@@ -2089,6 +2089,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'accueil affiche la cagnotte familiale, l\'activité récente et les budgets à surveiller.';
 
   @override
+  String get tourFamilyTitle => 'Gère ta famille';
+
+  @override
+  String get tourFamilyBody =>
+      'Appuie sur le nom de la famille pour inviter des personnes, gérer les membres et les rôles, ou changer de famille.';
+
+  @override
   String get tourPlanTitle => 'Donne un rôle à chaque montant';
 
   @override

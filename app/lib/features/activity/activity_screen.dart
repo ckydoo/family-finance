@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show DateFormat;
 
 import '../../core/models/models.dart' show FamilyActivity, TxType;
 import '../../core/money/money.dart';
@@ -8,6 +9,7 @@ import '../../core/utils/when.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/tx_tile.dart';
+import '../../core/widgets/ui.dart';
 
 /// Full transaction feed grouped by day (spec §7.4).
 class ActivityScreen extends StatefulWidget {
@@ -59,12 +61,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
+      showDragHandle: true,
       backgroundColor: context.bg,
       builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheet) => Padding(
+        builder: (sheetContext, setSheet) => SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.fromLTRB(
             20,
-            18,
+            8,
             20,
             20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
@@ -178,6 +182,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final now = DateTime.now();
     final query = _query.trim().toLowerCase();
     final activities = s.activityFeed.where((activity) {
+      if (activity.action.startsWith('contribution.') ||
+          activity.action.startsWith('contribution_campaign.')) {
+        return false;
+      }
       if (_memberId != null && activity.actorId != _memberId) return false;
       if (!_inPeriod(activity.at, now)) return false;
       final searchable = [
@@ -276,7 +284,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                           row,
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: context.inkSoft,
                           ),
                         ),
@@ -390,6 +398,30 @@ class _FamilyActivityTile extends StatelessWidget {
           'Savings contribution',
           context.primary,
         ),
+      'goal.create' => (
+          Icons.flag_outlined,
+          '$actor created a savings goal',
+          activity.detail['name']?.toString() ?? 'Savings goal',
+          context.primary,
+        ),
+      'goal.update' => (
+          Icons.edit_outlined,
+          '$actor updated a savings goal',
+          activity.detail['name']?.toString() ?? 'Savings goal',
+          context.primary,
+        ),
+      'contribution_campaign.create' => (
+          Icons.volunteer_activism_outlined,
+          '$actor created a family contribution',
+          activity.detail['name']?.toString() ?? 'Family contribution',
+          context.primary,
+        ),
+      'contribution_campaign.update' => (
+          Icons.edit_outlined,
+          '$actor updated a family contribution',
+          activity.detail['name']?.toString() ?? 'Family contribution',
+          context.primary,
+        ),
       'contribution.pledge' => (
           Icons.volunteer_activism_outlined,
           '$actor pledged to ${campaign?.name ?? 'a family contribution'}',
@@ -407,6 +439,24 @@ class _FamilyActivityTile extends StatelessWidget {
           '$actor recorded a repayment',
           debt?.name ?? 'Debt repayment',
           context.incomeGreen,
+        ),
+      'family_debt.create' => (
+          Icons.handshake_outlined,
+          '$actor added a debt',
+          activity.detail['name']?.toString() ?? 'Debt or money owed',
+          context.primary,
+        ),
+      'family_debt.update' => (
+          Icons.edit_outlined,
+          '$actor updated a debt',
+          activity.detail['name']?.toString() ?? 'Debt or money owed',
+          context.primary,
+        ),
+      'family_debt.archive' => (
+          Icons.delete_outline,
+          '$actor deleted a debt',
+          activity.detail['name']?.toString() ?? 'Debt or money owed',
+          context.expenseRed,
         ),
       'plan.close' || 'budget_plan.close' => (
           Icons.event_available_outlined,
@@ -456,6 +506,108 @@ class _FamilyActivityTile extends StatelessWidget {
           'Family membership',
           context.primary,
         ),
+      'task.create' => (
+          Icons.add_task_outlined,
+          '$actor created a family task',
+          activity.detail['title']?.toString() ?? 'Family task',
+          context.primary,
+        ),
+      'task.update' => (
+          Icons.edit_calendar_outlined,
+          '$actor updated a family task',
+          activity.detail['title']?.toString() ?? 'Family task',
+          context.primary,
+        ),
+      'task.complete' => (
+          Icons.task_alt,
+          '$actor completed a family task',
+          activity.detail['title']?.toString() ?? 'Family task',
+          context.incomeGreen,
+        ),
+      'task.archive' => (
+          Icons.archive_outlined,
+          '$actor archived a family task',
+          activity.detail['title']?.toString() ?? 'Family task',
+          context.expenseRed,
+        ),
+      'chat.send' => (
+          Icons.chat_bubble_outline,
+          '$actor sent a family message',
+          'Family chat',
+          context.primary,
+        ),
+      'chat.update' => (
+          Icons.edit_outlined,
+          '$actor edited a family message',
+          'Family chat',
+          context.primary,
+        ),
+      'chat.delete' => (
+          Icons.delete_outline,
+          '$actor deleted a family message',
+          'Message content is not included in the audit feed',
+          context.expenseRed,
+        ),
+      'chore.create' || 'chore.update' => (
+          Icons.stars_outlined,
+          '$actor updated points and rewards',
+          activity.detail['name']?.toString() ?? 'Points and rewards',
+          context.primary,
+        ),
+      'earning.create' || 'earning.update' => (
+          Icons.emoji_events_outlined,
+          '$actor updated a teen earning',
+          activity.detail['name']?.toString() ?? 'Teen earning',
+          context.primary,
+        ),
+      'mukando.configure' || 'mukando.create' || 'mukando.update' => (
+          Icons.groups_outlined,
+          '$actor configured Mukando',
+          '${activity.detail['name'] ?? 'Family Mukando'} • ${activity.detail['members_count'] ?? ''} members',
+          context.primary,
+        ),
+      'mukando.pay' => (
+          Icons.payments_outlined,
+          '$actor recorded a Mukando contribution',
+          '${activity.detail['member_name'] ?? 'Member'} paid round ${activity.detail['round'] ?? ''}',
+          context.incomeGreen,
+        ),
+      'mukando.undo_pay' => (
+          Icons.undo_outlined,
+          '$actor unrecorded a payment',
+          'Payment removed for round ${activity.detail['round'] ?? ''}',
+          context.expenseRed,
+        ),
+      'mukando.collect' => (
+          Icons.celebration_outlined,
+          'Round ${activity.detail['round'] ?? ''} completed',
+          '${activity.detail['collector'] ?? 'Collector'} collected the round pot',
+          context.primary,
+        ),
+      'mukando.undo_round' => (
+          Icons.history_outlined,
+          '$actor reverted a Mukando round',
+          'Reverted to round ${activity.detail['round'] ?? ''}',
+          context.expenseRed,
+        ),
+      'shopping.list_create' => (
+          Icons.playlist_add,
+          '$actor created a shopping list',
+          activity.detail['name']?.toString() ?? 'Shopping list',
+          context.primary,
+        ),
+      'shopping.list_update' || 'shopping.list_delete' => (
+          Icons.playlist_add_check,
+          '$actor updated a shopping list',
+          activity.detail['name']?.toString() ?? 'Shopping list',
+          context.primary,
+        ),
+      'profile.update' => (
+          Icons.manage_accounts_outlined,
+          '$actor updated their profile',
+          activity.detail['name']?.toString() ?? 'Member profile',
+          context.primary,
+        ),
       _ => (
           Icons.history,
           '$actor updated the family',
@@ -464,33 +616,196 @@ class _FamilyActivityTile extends StatelessWidget {
         ),
     };
 
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showActivityDetails(
+          context,
+          state,
+          activity,
+          actor,
+          title,
+          subtitle,
+          amount,
+          icon,
+          color,
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.hairline))),
+          child: Row(children: [
+            SizedBox(width: 42, height: 42, child: Icon(icon, color: color)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, color: context.ink)),
+                  const SizedBox(height: 2),
+                  Text('$subtitle · ${fmtWhen(activity.at)}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: context.inkSoft)),
+                ])),
+            if (amount != null) ...[
+              const SizedBox(width: 8),
+              Text(amount.text,
+                  style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+            ],
+            const SizedBox(width: 6),
+            Icon(Icons.chevron_right,
+                size: 16, color: context.inkSoft.withValues(alpha: 0.45)),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  void _showActivityDetails(
+    BuildContext context,
+    AppState state,
+    FamilyActivity activity,
+    String actor,
+    String title,
+    String subtitle,
+    Money? amount,
+    IconData icon,
+    Color color,
+  ) {
+    showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => MhuriSheetShell(
+        title: 'Activity details',
+        subtitle: fmtWhen(activity.at),
+        footer: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () => Navigator.pop(sheetContext),
+            child: const Text('Close'),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.track,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: color, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: context.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.inkSoft,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _activityRow(
+                sheetContext, 'Action', activity.action.replaceAll('.', ' ')),
+            _activityRow(sheetContext, 'Performed by', actor),
+            if (amount != null)
+              _activityRow(sheetContext, 'Amount', amount.text),
+            for (final entry in activity.detail.entries)
+              if (entry.value != null && entry.value.toString().isNotEmpty)
+                _activityRow(
+                  sheetContext,
+                  _formatKey(entry.key),
+                  entry.value.toString(),
+                ),
+            _activityRow(
+              sheetContext,
+              'Timestamp',
+              DateFormat.yMMMd().add_jms().format(activity.at.toLocal()),
+              showDivider: false,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _formatKey(String key) {
+    if (key.isEmpty) return key;
+    final words = key.replaceAll('_', ' ').split(' ');
+    return words
+        .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
+  }
+
+  static Widget _activityRow(BuildContext context, String label, String value,
+      {bool showDivider = true}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 11),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: context.hairline))),
-      child: Row(children: [
-        SizedBox(width: 42, height: 42, child: Icon(icon, color: color)),
-        const SizedBox(width: 12),
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style:
-                  TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
-          const SizedBox(height: 2),
-          Text('$subtitle · ${fmtWhen(activity.at)}',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: context.inkSoft)),
-        ])),
-        if (amount != null) ...[
-          const SizedBox(width: 8),
-          Text(amount.text,
-              style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+        border: showDivider
+            ? Border(bottom: BorderSide(color: context.hairline))
+            : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: context.inkSoft,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: context.ink,
+              ),
+            ),
+          ),
         ],
-      ]),
+      ),
     );
   }
 }

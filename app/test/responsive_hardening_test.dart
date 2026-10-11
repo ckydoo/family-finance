@@ -4,6 +4,7 @@ import 'package:mhuri_money/core/l10n/localization_delegates.dart';
 import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
+import 'package:mhuri_money/core/widgets/ui.dart';
 import 'package:mhuri_money/features/budgets/budgets_screen.dart';
 import 'package:mhuri_money/features/home/home_screen.dart';
 import 'package:mhuri_money/features/lists/lists_screen.dart';
@@ -23,9 +24,16 @@ void main() {
         ),
       );
 
-  void viewport(WidgetTester tester, Size size, {double textScale = 1}) {
+  void viewport(
+    WidgetTester tester,
+    Size size, {
+    double textScale = 1,
+    double bottomSystemInset = 0,
+  }) {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
+    tester.view.padding = FakeViewPadding(bottom: bottomSystemInset);
+    tester.view.viewPadding = FakeViewPadding(bottom: bottomSystemInset);
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(() {
       tester.view.reset();
@@ -135,6 +143,77 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('shared sheet footer clears keyboard and three-button navigation',
+      (tester) async {
+    viewport(
+      tester,
+      const Size(360, 640),
+      textScale: 1.5,
+      bottomSystemInset: 48,
+    );
+    final state = populatedState();
+    await tester.pumpWidget(harness(
+      state,
+      Builder(
+        builder: (context) => TextButton(
+          onPressed: () => showMhuriSheet<void>(
+            context: context,
+            builder: (_) => const MhuriSheetShell(
+              title: 'Responsive sheet',
+              footer: FilledButton(
+                onPressed: null,
+                child: Text('Save changes'),
+              ),
+              child: TextField(decoration: InputDecoration(labelText: 'Name')),
+            ),
+          ),
+          child: const Text('Open sheet'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Open sheet'));
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getBottomRight(find.text('Save changes')).dy,
+      lessThanOrEqualTo(360),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('quick action sheet scrolls on a small phone at large text',
+      (tester) async {
+    viewport(
+      tester,
+      const Size(320, 568),
+      textScale: 2,
+      bottomSystemInset: 48,
+    );
+    final state = populatedState();
+    await tester.pumpWidget(harness(
+      state,
+      Builder(
+        builder: (context) => TextButton(
+          onPressed: () => showQuickAddMenu(context),
+          child: const Text('Open actions'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Open actions'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Task'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+
+    expect(find.text('Task'), findsOneWidget);
+    expect(find.text('Contribution'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Settings remains scrollable at 200 percent text',
       (tester) async {
     viewport(tester, const Size(360, 640), textScale: 2);
@@ -147,6 +226,28 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('How Mhuri Works (User Guide)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('long home identity names do not crowd header actions',
+      (tester) async {
+    viewport(tester, const Size(360, 720));
+    final state = populatedState()
+      ..setMyName(
+        'A very long household member name that must be truncated safely',
+      );
+
+    await tester.pumpWidget(harness(state, const HomeScreen()));
+    await tester.pumpAndSettle();
+
+    final greeting = find.textContaining('A very long household member name');
+    final chat = find.byTooltip('Family chat');
+    expect(greeting, findsOneWidget);
+    expect(chat, findsOneWidget);
+    expect(
+      tester.getTopRight(greeting).dx,
+      lessThan(tester.getTopLeft(chat).dx),
+    );
     expect(tester.takeException(), isNull);
   });
 

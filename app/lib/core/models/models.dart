@@ -14,7 +14,7 @@ enum ItemState { tobuy, incart, done }
 
 enum ChoreState { todo, waiting, confirmed }
 
-enum ChatMessageStatus { sent, delivered, read }
+enum ChatMessageStatus { pending, sent, delivered, read }
 
 enum FamilyTaskStatus { open, inProgress, done }
 
@@ -496,6 +496,7 @@ class Goal {
   final bool isKidJar;
   final String? ownerMemberId;
   final String status;
+  final String? createdById;
 
   const Goal({
     required this.id,
@@ -506,6 +507,7 @@ class Goal {
     this.isKidJar = false,
     this.ownerMemberId,
     this.status = 'active',
+    this.createdById,
   });
 }
 
@@ -685,6 +687,9 @@ class SavingsCircle {
   final int totalRounds;
   int currentRound; // 1-based; rounds before this are collected
   final List<String> order;
+  final List<String> participantIds;
+  final String frequency;
+  final int startedOnMs;
 
   SavingsCircle({
     required this.name,
@@ -692,15 +697,83 @@ class SavingsCircle {
     required this.totalRounds,
     required this.currentRound,
     required this.order,
+    this.participantIds = const [],
+    this.frequency = 'monthly',
+    this.startedOnMs = 0,
   });
+
+  /// A circle is configured once it has assigned participants.
+  bool get isConfigured => participantIds.isNotEmpty;
 
   /// Rotation wraps: a circle can run more rounds than members (cycle 2
   /// starts at the top of [order]) - and an empty order can never crash.
   String get nextCollector =>
       order.isEmpty ? '' : order[(currentRound - 1) % order.length];
 
+  String? get nextCollectorId => participantIds.isEmpty
+      ? null
+      : participantIds[(currentRound - 1) % participantIds.length];
+
+  /// Collector for a specific round (1-based).
+  String collectorForRound(int round) =>
+      order.isEmpty ? '' : order[(round - 1) % order.length];
+
+  String? collectorIdForRound(int round) => participantIds.isEmpty
+      ? null
+      : participantIds[(round - 1) % participantIds.length];
+
+  /// Calculates the expected due date for a specific round (1-based).
+  DateTime dueDateForRound(int round) {
+    final start = startedOnMs == 0
+        ? DateTime.now()
+        : DateTime.fromMillisecondsSinceEpoch(startedOnMs);
+    final offset = (round - 1).clamp(0, 1000);
+    switch (frequency) {
+      case 'weekly':
+        return start.add(Duration(days: 7 * offset));
+      case 'fortnightly':
+        return start.add(Duration(days: 14 * offset));
+      case 'monthly':
+      default:
+        // Month addition: handle year and month wrap cleanly
+        final totalMonths = (start.year * 12 + (start.month - 1)) + offset;
+        final year = totalMonths ~/ 12;
+        final month = (totalMonths % 12) + 1;
+        // Clamp day to max days in month
+        final lastDay = DateTime(year, month + 1, 0).day;
+        final day = start.day > lastDay ? lastDay : start.day;
+        return DateTime(year, month, day, start.hour, start.minute);
+    }
+  }
+
+  DateTime get currentDueDate => dueDateForRound(currentRound);
+
   Money get potSoFar =>
       Money(contribution.minor * (currentRound - 1), contribution.currency);
 
-  double get progress => currentRound / totalRounds;
+  double get progress =>
+      totalRounds <= 0 ? 0.0 : (currentRound / totalRounds).clamp(0.0, 1.0);
+
+  Money get roundPot => Money(
+        contribution.minor * participantIds.length,
+        contribution.currency,
+      );
+}
+
+class MukandoPayment {
+  final String id;
+  final int round;
+  final String memberId;
+  final String recordedBy;
+  final Money amount;
+  final DateTime paidAt;
+
+  const MukandoPayment({
+    required this.id,
+    required this.round,
+    required this.memberId,
+    required this.recordedBy,
+    required this.amount,
+    required this.paidAt,
+  });
 }

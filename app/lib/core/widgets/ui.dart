@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -625,13 +627,34 @@ class MemberAvatar extends StatelessWidget {
   final double radius;
 
   @override
-  Widget build(BuildContext context) => CircleAvatar(
-        radius: radius,
-        backgroundColor: backgroundColor,
-        backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
-        child:
-            imageUrl != null ? null : Icon(icon, size: 20, color: context.ink),
-      );
+  Widget build(BuildContext context) {
+    final fallback = Icon(
+      icon,
+      size: radius,
+      color: context.ink,
+      semanticLabel: 'Member avatar',
+    );
+    final url = imageUrl?.trim();
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: backgroundColor,
+      child: url == null || url.isEmpty
+          ? fallback
+          : ClipOval(
+              child: Image.network(
+                url,
+                width: radius * 2,
+                height: radius * 2,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => SizedBox(
+                  width: radius * 2,
+                  height: radius * 2,
+                  child: Center(child: fallback),
+                ),
+              ),
+            ),
+    );
+  }
 }
 
 /// ── Bottom-sheet header ─────────────────────────────────────────────────────
@@ -866,7 +889,15 @@ class MhuriSheetShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.90;
+    final media = MediaQuery.of(context);
+    final maxHeight = media.size.height * 0.90;
+    // Android may report either a gesture inset or a much taller three-button
+    // navigation inset. When the keyboard opens its inset already covers that
+    // area, so use the larger obstruction instead of adding both together.
+    final bottomObstruction = math.max(
+      media.viewInsets.bottom,
+      media.viewPadding.bottom,
+    );
     return PopScope(
       canPop: !isDirty,
       onPopInvokedWithResult: (didPop, _) async {
@@ -876,10 +907,10 @@ class MhuriSheetShell extends StatelessWidget {
       },
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.only(bottom: bottomObstruction),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -939,14 +970,14 @@ class MhuriSheetShell extends StatelessWidget {
               ),
               if (footer != null) ...[
                 const Divider(height: 1),
-                SafeArea(
-                  top: false,
-                  minimum: const EdgeInsets.only(bottom: 4),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-                    child: footer!,
-                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                  child: footer!,
                 ),
+              ] else ...[
+                // Keep the final scrollable control clear of system navigation
+                // even on sheets without a fixed footer.
+                const SizedBox(height: 4),
               ],
             ],
           ),

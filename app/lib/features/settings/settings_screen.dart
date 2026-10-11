@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../instructions/instructions_screen.dart';
 import '../legal/legal_screen.dart';
 import 'sync_screen.dart';
+import '../../core/utils/error_messages.dart';
 import '../../core/widgets/ui.dart';
 
 /// Settings (spec §7 Settings: notifications J3, month start, data).
@@ -142,19 +143,20 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 if (s.notifyEnabled)
                   for (final c in ReminderCategory.values)
-                    SwitchListTile.adaptive(
-                      value: s.notifyAllowed.contains(c),
-                      onChanged: (v) => s.setReminderPref(c, v),
-                      dense: true,
-                      contentPadding: const EdgeInsets.only(left: 8),
-                      title: Text(
-                        _categoryLabel(AppLocalizations.of(context)!, c),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: context.ink,
+                    if (c != ReminderCategory.contributions)
+                      SwitchListTile.adaptive(
+                        value: s.notifyAllowed.contains(c),
+                        onChanged: (v) => s.setReminderPref(c, v),
+                        dense: true,
+                        contentPadding: const EdgeInsets.only(left: 8),
+                        title: Text(
+                          _categoryLabel(AppLocalizations.of(context)!, c),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.ink,
+                          ),
                         ),
                       ),
-                    ),
                 if (s.notifyEnabled) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -616,7 +618,10 @@ class SettingsScreen extends StatelessWidget {
       return;
     }
     messenger.showSnackBar(SnackBar(
-      content: Text(auth.lastError ?? l.deleteAccountFailed),
+      content: Text(userFacingErrorMessage(
+        auth.lastError,
+        fallback: l.deleteAccountFailed,
+      )),
       behavior: SnackBarBehavior.floating,
     ));
   }

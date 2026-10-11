@@ -609,6 +609,8 @@
   "tourTitle": "Visite rapide",
   "tourPoolTitle": "Sache ce qui est disponible",
   "tourPoolBody": "L'accueil affiche la cagnotte familiale, l'activité récente et les budgets à surveiller.",
+  "tourFamilyTitle": "Gère ta famille",
+  "tourFamilyBody": "Appuie sur le nom de la famille pour inviter des personnes, gérer les membres et les rôles, ou changer de famille.",
   "tourPlanTitle": "Donne un rôle à chaque montant",
   "tourPlanBody": "Utilise Budgets pour les enveloppes, Épargne pour les objectifs et Listes pour les courses partagées.",
   "tourAddTitle": "Ajoute de l'argent en quelques secondes",

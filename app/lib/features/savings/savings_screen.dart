@@ -16,7 +16,391 @@ import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 /// Savings goals, kid jars and the savings-circle tracker (spec Module E, §7.5).
-enum SavingsSection { goals, contributions, debts }
+enum SavingsSection { goals, debts }
+
+Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
+  if (!s.canAdmin) {
+    await _showSavingsRestriction(context, action: 'configure Mukando');
+    return;
+  }
+  final name = TextEditingController(
+      text: s.circle.name == 'Savings circle' ? 'Family Mukando' : s.circle.name);
+  final amount = TextEditingController(
+      text: s.circle.contribution.minor > 0
+          ? s.circle.contribution.major.toStringAsFixed(2)
+          : '20.00');
+  var currency = s.circle.contribution.currency;
+  var frequency = s.circle.frequency;
+  var totalRounds = s.circle.totalRounds > 0 ? s.circle.totalRounds : 0;
+  var startDate = s.circle.startedOnMs > 0
+      ? DateTime.fromMillisecondsSinceEpoch(s.circle.startedOnMs)
+      : DateTime.now();
+
+  // Eligible members (exclude kid and viewer roles)
+  final eligibleMembers = s.members
+      .where((m) => m.role != Role.kid && m.role != Role.viewer)
+      .toList();
+
+  // Selected participant IDs preserving existing order if any, or default eligible
+  final orderedIds = <String>[];
+  for (final id in s.circle.participantIds) {
+    if (eligibleMembers.any((m) => m.id == id) && !orderedIds.contains(id)) {
+      orderedIds.add(id);
+    }
+  }
+  if (orderedIds.isEmpty) {
+    orderedIds.addAll(eligibleMembers.map((m) => m.id));
+  }
+
+  await showMhuriSheet<void>(
+    context: context,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (context, setSheetState) {
+        if (totalRounds == 0) {
+          totalRounds = orderedIds.isNotEmpty ? orderedIds.length : 1;
+        }
+
+        return MhuriSheetShell(
+          title: s.circle.isConfigured ? 'Configure Mukando' : 'Set up Mukando',
+          subtitle: 'Rotating savings circle for family members',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: name,
+                decoration: InputDecoration(
+                  labelText: 'Circle name',
+                  hintText: 'e.g. Family Mukando',
+                  filled: true,
+                  fillColor: context.card,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextField(
+                      controller: amount,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Contribution per turn',
+                        filled: true,
+                        fillColor: context.card,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<Currency>(
+                      initialValue: currency,
+                      decoration: InputDecoration(
+                        labelText: 'Currency',
+                        filled: true,
+                        fillColor: context.card,
+                      ),
+                      items: Currency.values
+                          .map((c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(c.code),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setSheetState(() => currency = v);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: frequency,
+                      decoration: InputDecoration(
+                        labelText: 'Frequency',
+                        filled: true,
+                        fillColor: context.card,
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                        DropdownMenuItem(
+                            value: 'fortnightly', child: Text('Fortnightly')),
+                        DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setSheetState(() => frequency = v);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: startDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2035),
+                        );
+                        if (picked != null) {
+                          setSheetState(() => startDate = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Start date',
+                          filled: true,
+                          fillColor: context.card,
+                        ),
+                        child: Text(
+                          DateFormat.yMMMd().format(startDate),
+                          style: TextStyle(fontSize: 13, color: context.ink),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Total rounds: $totalRounds',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: context.ink,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: totalRounds > 1
+                        ? () => setSheetState(() => totalRounds--)
+                        : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: () => setSheetState(() => totalRounds++),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Members & Collection Order',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  Text(
+                    '${orderedIds.length} selected',
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Top member collects in Round 1. Use arrows to reorder collection turns.',
+                style: TextStyle(fontSize: 12, color: context.inkSoft),
+              ),
+              const SizedBox(height: 8),
+              for (var i = 0; i < orderedIds.length; i++) ...[
+                Builder(builder: (ctx) {
+                  final memberId = orderedIds[i];
+                  final m = s.member(memberId);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: context.card,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: context.hairline),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: context.primarySoft,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: context.primaryDark,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        MemberAvatar(
+                          backgroundColor: context.primarySoft,
+                          icon: iconForKey(m?.emoji) ?? Icons.person,
+                          imageUrl: m?.avatarUrl,
+                          radius: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            m?.name ?? 'Member',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: context.ink,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_upward, size: 18),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: i > 0
+                              ? () => setSheetState(() {
+                                    final item = orderedIds.removeAt(i);
+                                    orderedIds.insert(i - 1, item);
+                                  })
+                              : null,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_downward, size: 18),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: i < orderedIds.length - 1
+                              ? () => setSheetState(() {
+                                    final item = orderedIds.removeAt(i);
+                                    orderedIds.insert(i + 1, item);
+                                  })
+                              : null,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: orderedIds.length > 1
+                              ? () => setSheetState(() {
+                                    orderedIds.removeAt(i);
+                                    if (totalRounds > orderedIds.length &&
+                                        totalRounds > 1) {
+                                      totalRounds = orderedIds.length;
+                                    }
+                                  })
+                              : null,
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+              // Add remaining members dropdown
+              if (eligibleMembers
+                  .any((m) => !orderedIds.contains(m.id))) ...[
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    hintText: '+ Add member to circle',
+                    filled: true,
+                    fillColor: context.card,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                  ),
+                  items: eligibleMembers
+                      .where((m) => !orderedIds.contains(m.id))
+                      .map((m) => DropdownMenuItem(
+                            value: m.id,
+                            child: Text(m.name),
+                          ))
+                      .toList(),
+                  onChanged: (id) {
+                    if (id != null) {
+                      setSheetState(() {
+                        orderedIds.add(id);
+                        if (totalRounds < orderedIds.length) {
+                          totalRounds = orderedIds.length;
+                        }
+                      });
+                    }
+                  },
+                ),
+              ],
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () {
+                  final val = double.tryParse(amount.text.trim());
+                  final selectedParticipants = [
+                    for (final id in orderedIds)
+                      if (s.member(id) != null) s.member(id)!
+                  ];
+                  if (val == null ||
+                      val <= 0 ||
+                      selectedParticipants.isEmpty) {
+                    return;
+                  }
+                  s.configureMukando(
+                    name: name.text.trim().isEmpty
+                        ? 'Family Mukando'
+                        : name.text.trim(),
+                    contribution: Money.fromMajor(val, currency),
+                    frequency: frequency,
+                    participants: selectedParticipants,
+                    totalRounds: totalRounds,
+                    startDate: startDate,
+                  );
+                  Navigator.pop(sheetContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Mukando configured successfully'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                ),
+                child: const Text('Save Mukando'),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+  name.dispose();
+  amount.dispose();
+}
+
+Future<void> _showSavingsRestriction(
+  BuildContext context, {
+  required String action,
+}) =>
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Permission needed'),
+        content: Text(
+          'Your family role cannot $action. A Family Owner, Family Admin, or Adult Member can do this.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
 
 class SavingsScreen extends StatefulWidget {
   const SavingsScreen({
@@ -44,14 +428,21 @@ class _SavingsScreenState extends State<SavingsScreen> {
     if (widget.startAdding) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        if (_section == SavingsSection.contributions) {
-          _newCampaignSheet(context);
-        } else if (_section == SavingsSection.debts) {
-          _newDebtSheet(context);
-        } else {
-          _newGoalSheet(context);
-        }
+        _openCreate(AppScope.of(context));
       });
+    }
+  }
+
+  void _openCreate(AppState state) {
+    if (!state.canCreateSavingsRecords) {
+      _showSavingsRestriction(context, action: 'create shared savings records');
+      return;
+    }
+    switch (_section) {
+      case SavingsSection.goals:
+        _newGoalSheet(context);
+      case SavingsSection.debts:
+        _newDebtSheet(context);
     }
   }
 
@@ -83,39 +474,22 @@ class _SavingsScreenState extends State<SavingsScreen> {
                           color: context.ink),
                     ),
                   ),
-                  if (s.canEditBudgets)
-                    IconButton(
-                      tooltip: switch (_section) {
-                        SavingsSection.goals =>
-                          AppLocalizations.of(context)!.newSavingsGoal,
-                        SavingsSection.contributions =>
-                          'Create a family contribution',
-                        SavingsSection.debts => 'Add debt or money owed',
-                      },
-                      onPressed: () {
-                        switch (_section) {
-                          case SavingsSection.goals:
-                            _newGoalSheet(context);
-                            return;
-                          case SavingsSection.contributions:
-                            _newCampaignSheet(context);
-                            return;
-                          case SavingsSection.debts:
-                            _newDebtSheet(context);
-                            return;
-                        }
-                      },
-                      icon: Icon(Icons.add_circle_rounded,
-                          color: context.primary, size: 30),
-                    ),
+                  IconButton(
+                    tooltip: switch (_section) {
+                      SavingsSection.goals =>
+                        AppLocalizations.of(context)!.newSavingsGoal,
+                      SavingsSection.debts => 'Add debt or money owed',
+                    },
+                    onPressed: () => _openCreate(s),
+                    icon: Icon(Icons.add_circle_rounded,
+                        color: context.primary, size: 30),
+                  ),
                 ],
               ),
               Text(
                 switch (_section) {
                   SavingsSection.goals =>
                     'Save towards the things that matter to your family.',
-                  SavingsSection.contributions =>
-                    'Track what was promised and what has been collected.',
                   SavingsSection.debts =>
                     'Keep repayments, due dates and balances clear.',
                 },
@@ -127,9 +501,6 @@ class _SavingsScreenState extends State<SavingsScreen> {
                 segments: const [
                   ButtonSegment(
                       value: SavingsSection.goals, label: Text('Goals')),
-                  ButtonSegment(
-                      value: SavingsSection.contributions,
-                      label: Text('Contributions')),
                   ButtonSegment(
                       value: SavingsSection.debts, label: Text('Debts')),
                 ],
@@ -173,16 +544,28 @@ class _SavingsScreenState extends State<SavingsScreen> {
                         ActionChip(
                           avatar: const Icon(Icons.add, size: 14),
                           label: Text(idea),
-                          onPressed: () => _newGoalSheet(
-                            context,
-                            initialName: idea == 'Other' ? '' : idea,
-                          ),
+                          onPressed: () {
+                            if (!s.canCreateSavingsRecords) {
+                              _showSavingsRestriction(context,
+                                  action: 'create a savings goal');
+                              return;
+                            }
+                            _newGoalSheet(context,
+                                initialName: idea == 'Other' ? '' : idea);
+                          },
                         ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: () => _newGoalSheet(context),
+                    onPressed: () {
+                      if (!s.canCreateSavingsRecords) {
+                        _showSavingsRestriction(context,
+                            action: 'create a savings goal');
+                        return;
+                      }
+                      _newGoalSheet(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.primary,
                       foregroundColor: context.onSolid,
@@ -200,38 +583,6 @@ class _SavingsScreenState extends State<SavingsScreen> {
                   const SizedBox(height: 12),
                 ],
               ],
-              if (_section == SavingsSection.contributions) ...[
-                Row(children: [
-                  Expanded(
-                    child: Text(
-                      'Pledges & contributions',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: context.ink,
-                      ),
-                    ),
-                  ),
-                ]),
-                Text(
-                  'Track what was promised and what has been collected.',
-                  style: TextStyle(fontSize: 12, color: context.inkSoft),
-                ),
-                const SizedBox(height: 10),
-                if (s.contributionCampaigns.isEmpty)
-                  OutlinedButton.icon(
-                    onPressed: s.canEditBudgets
-                        ? () => _newCampaignSheet(context)
-                        : null,
-                    icon: const Icon(Icons.volunteer_activism_outlined),
-                    label: const Text('Create a family contribution'),
-                  )
-                else
-                  for (final campaign in s.contributionCampaigns) ...[
-                    _CampaignCard(campaign: campaign),
-                    const SizedBox(height: 10),
-                  ],
-              ],
               if (_section == SavingsSection.debts) ...[
                 Row(children: [
                   Expanded(
@@ -247,8 +598,13 @@ class _SavingsScreenState extends State<SavingsScreen> {
                 ]),
                 if (s.familyDebts.isEmpty)
                   OutlinedButton.icon(
-                    onPressed:
-                        s.canEditBudgets ? () => _newDebtSheet(context) : null,
+                    onPressed: () {
+                      if (!s.canCreateSavingsRecords) {
+                        _showSavingsRestriction(context, action: 'add a debt');
+                        return;
+                      }
+                      _newDebtSheet(context);
+                    },
                     icon: const Icon(Icons.handshake_outlined),
                     label: const Text('Add debt or money owed'),
                   )
@@ -331,65 +687,299 @@ class _SavingsScreenState extends State<SavingsScreen> {
                                 ),
                               ),
                             ),
+                            if (s.canAdmin)
+                              IconButton(
+                                tooltip: 'Configure Mukando',
+                                onPressed: () => _showMukandoSetup(context, s),
+                                icon: const Icon(Icons.tune_rounded),
+                              ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Round ${m.currentRound} of ${m.totalRounds} - '
-                          '${m.nextCollector} collects ${m.contribution.text}',
-                          style: TextStyle(fontSize: 13, color: context.ink),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          AppLocalizations.of(context)!.memberPot(
-                              s.hideAmounts ? '•••••' : m.potSoFar.text,
-                              m.contribution.text,
-                              m.order.length),
-                          style:
-                              TextStyle(fontSize: 12, color: context.inkSoft),
-                        ),
-                        const SizedBox(height: 12),
-                        MhuriProgress(
-                          progress: m.progress.clamp(0.0, 1.0).toDouble(),
-                          height: 4,
-                        ),
-                        const SizedBox(height: 14),
-                        ElevatedButton(
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            s.circleCollect(
-                                id: 'mukando_round_${s.circle.currentRound + 1}');
-                            celebrate(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  AppLocalizations.of(context)!.roundOk,
+                        if (m.participantIds.isEmpty) ...[
+                          const SizedBox(height: 12),
+                          const Text(
+                              'Set the contribution, frequency, members and collection order before starting.'),
+                          const SizedBox(height: 10),
+                          FilledButton.icon(
+                              onPressed: () => _showMukandoSetup(context, s),
+                              icon: const Icon(Icons.settings_outlined),
+                              label: const Text('Set up Mukando')),
+                        ] else ...[
+                          const SizedBox(height: 12),
+                          // Next collector highlight box
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: context.primarySoft.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: context.primary.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                MemberAvatar(
+                                  backgroundColor: context.primarySoft,
+                                  icon: iconForKey(s
+                                          .member(m.nextCollectorId ?? '')
+                                          ?.emoji) ??
+                                      Icons.person,
+                                  imageUrl: s
+                                      .member(m.nextCollectorId ?? '')
+                                      ?.avatarUrl,
+                                  radius: 18,
                                 ),
-                                behavior: SnackBarBehavior.floating,
-                                action: SnackBarAction(
-                                  label: AppLocalizations.of(context)!.undo,
-                                  onPressed: s.undoCircleCollect,
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Round ${m.currentRound} of ${m.totalRounds} • ${m.nextCollector} collects',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: context.ink,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Round pot: ${s.hideAmounts ? '•••••' : m.roundPot.text} (${m.contribution.text} × ${m.participantIds.length})',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: context.inkSoft,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: context.card,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border:
+                                        Border.all(color: context.hairline),
+                                  ),
+                                  child: Text(
+                                    m.frequency.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.primaryDark,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          // Due date row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Round due: ${DateFormat.yMMMd().format(m.currentDueDate)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: DateTime.now().isAfter(m.currentDueDate)
+                                      ? context.expenseRed
+                                      : context.inkSoft,
                                 ),
                               ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: context.primary,
-                            foregroundColor: context.onSolid,
-                            minimumSize: const Size.fromHeight(46),
-                            shape:
-                                RoundedRectangleBorder(borderRadius: kBRadiusM),
+                              Builder(builder: (ctx) {
+                                final paidCount = m.participantIds
+                                    .where((id) => s.hasMukandoPaid(id))
+                                    .length;
+                                return Text(
+                                  '$paidCount of ${m.participantIds.length} paid',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: paidCount == m.participantIds.length
+                                        ? context.incomeGreen
+                                        : context.inkSoft,
+                                  ),
+                                );
+                              }),
+                            ],
                           ),
-                          child: Text(AppLocalizations.of(context)!.markRound),
-                        ),
-                        const SizedBox(height: 8),
-                        Center(
-                          child: Text(
-                            AppLocalizations.of(context)!.recordsOnly,
-                            style:
-                                TextStyle(fontSize: 11, color: context.inkSoft),
+                          const SizedBox(height: 8),
+                          MhuriProgress(
+                            progress: m.progress.clamp(0.0, 1.0).toDouble(),
+                            height: 4,
                           ),
-                        ),
+                          const SizedBox(height: 14),
+                          // Participant payment list
+                          for (var i = 0; i < m.participantIds.length; i++)
+                            Builder(builder: (ctx) {
+                              final memberId = m.participantIds[i];
+                              final isPaid = s.hasMukandoPaid(memberId);
+                              final isLate = s.isMukandoPaymentLate(memberId);
+                              final memberName = i < m.order.length
+                                  ? m.order[i]
+                                  : s.member(memberId)?.name ?? 'Member';
+                              final mem = s.member(memberId);
+                              final payment = s.paymentForMember(memberId);
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isPaid
+                                      ? context.card
+                                      : (isLate
+                                          ? context.expenseRed
+                                              .withValues(alpha: 0.05)
+                                          : context.track),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isPaid
+                                        ? context.hairline
+                                        : (isLate
+                                            ? context.expenseRed
+                                                .withValues(alpha: 0.3)
+                                            : context.hairline),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isPaid
+                                          ? Icons.check_circle
+                                          : (isLate
+                                              ? Icons.warning_amber_rounded
+                                              : Icons.radio_button_unchecked),
+                                      size: 20,
+                                      color: isPaid
+                                          ? context.incomeGreen
+                                          : (isLate
+                                              ? context.expenseRed
+                                              : context.inkSoft),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    MemberAvatar(
+                                      backgroundColor: context.primarySoft,
+                                      icon: iconForKey(mem?.emoji) ??
+                                          Icons.person,
+                                      imageUrl: mem?.avatarUrl,
+                                      radius: 14,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            memberName,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: context.ink,
+                                            ),
+                                          ),
+                                          Text(
+                                            isPaid
+                                                ? 'Paid ${payment != null ? DateFormat.MMMd().format(payment.paidAt) : ''}'
+                                                : (isLate
+                                                    ? 'Late • Overdue'
+                                                    : 'Payment due'),
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: isPaid
+                                                  ? context.incomeGreen
+                                                  : (isLate
+                                                      ? context.expenseRed
+                                                      : context.inkSoft),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isPaid) ...[
+                                      if (s.canAdmin ||
+                                          memberId == s.realUser.id)
+                                        IconButton(
+                                          tooltip: 'Undo payment',
+                                          icon: const Icon(Icons.undo,
+                                              size: 16),
+                                          visualDensity: VisualDensity.compact,
+                                          onPressed: () {
+                                            s.unrecordMukandoPayment(memberId);
+                                          },
+                                        ),
+                                    ] else ...[
+                                      if (s.canAdmin ||
+                                          memberId == s.realUser.id)
+                                        TextButton(
+                                          onPressed: () => s
+                                              .recordMukandoPayment(memberId),
+                                          style: TextButton.styleFrom(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                          ),
+                                          child: const Text('Mark paid'),
+                                        ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            }),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: s.currentMukandoRoundComplete
+                                ? () {
+                                    HapticFeedback.lightImpact();
+                                    s.circleCollect(
+                                        id: 'mukando_round_${s.circle.currentRound + 1}');
+                                    celebrate(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          AppLocalizations.of(context)!.roundOk,
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        action: SnackBarAction(
+                                          label: AppLocalizations.of(context)!
+                                              .undo,
+                                          onPressed: s.undoCircleCollect,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.primary,
+                              foregroundColor: context.onSolid,
+                              minimumSize: const Size.fromHeight(46),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: kBRadiusM),
+                            ),
+                            child: Builder(builder: (ctx) {
+                              final paidCount = m.participantIds
+                                  .where((id) => s.hasMukandoPaid(id))
+                                  .length;
+                              if (!s.currentMukandoRoundComplete) {
+                                return Text(
+                                    'Complete Round ($paidCount/${m.participantIds.length} paid)');
+                              }
+                              return Text(
+                                  AppLocalizations.of(context)!.markRound);
+                            }),
+                          ),
+                          const SizedBox(height: 8),
+                          Center(
+                            child: Text(
+                              AppLocalizations.of(context)!.recordsOnly,
+                              style: TextStyle(
+                                  fontSize: 11, color: context.inkSoft),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -532,6 +1122,9 @@ class _SavingsScreenState extends State<SavingsScreen> {
   }
 }
 
+// Kept dormant with the stored campaign model so historical records can be
+// restored if this feature returns; there is no route or visible entry point.
+// ignore: unused_element
 Future<void> _newCampaignSheet(BuildContext context) async {
   final s = AppScope.of(context);
   final name = TextEditingController();
@@ -595,6 +1188,7 @@ Future<void> _newCampaignSheet(BuildContext context) async {
   );
 }
 
+// ignore: unused_element
 class _CampaignCard extends StatelessWidget {
   const _CampaignCard({required this.campaign});
   final ContributionCampaign campaign;
@@ -602,6 +1196,7 @@ class _CampaignCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final pledged = s.pledgedFor(campaign), paid = s.collectedFor(campaign);
+    final creator = s.member(campaign.createdById)?.name ?? 'Former member';
     final remaining = Money(
         (campaign.target.minor - paid.minor).clamp(0, campaign.target.minor),
         campaign.target.currency);
@@ -609,9 +1204,10 @@ class _CampaignCard extends StatelessWidget {
         onTap: () => _details(context, s),
         borderRadius: kBRadiusM,
         child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration:
-                BoxDecoration(color: context.card, borderRadius: kBRadiusM),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.hairline)),
+            ),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
@@ -635,6 +1231,9 @@ class _CampaignCard extends StatelessWidget {
               Text(
                   'Pledged ${pledged.text} · Collected ${paid.text} · Remaining ${remaining.text}',
                   style: TextStyle(fontSize: 12, color: context.inkSoft)),
+              const SizedBox(height: 2),
+              Text('Created by $creator',
+                  style: TextStyle(fontSize: 11.5, color: context.inkSoft)),
             ])));
   }
 
@@ -838,21 +1437,41 @@ class _DebtCard extends StatelessWidget {
       DebtDirection.familyLoan => 'Family loan'
     };
     final counterparty = s.member(debt.counterpartyMemberId ?? '');
-    return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusM),
+    final creator = s.member(debt.createdById)?.name ?? 'Former member';
+    return InkWell(
+      onTap: () => _details(context, s),
+      borderRadius: kBRadiusM,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: context.hairline)),
+        ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(
                 child: Text(debt.name,
                     style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 14.5))),
-            Chip(label: Text(debt.status == 'settled' ? 'Settled' : label))
+            Text(
+              debt.status == 'settled' ? 'Settled' : label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: debt.status == 'settled'
+                    ? context.primary
+                    : context.inkSoft,
+              ),
+            )
           ]),
           const SizedBox(height: 4),
           Text(
               'Original ${debt.principal.text} · Repaid ${repaid.text} · Remaining ${remaining.text}',
               style: TextStyle(fontSize: 12, color: context.inkSoft)),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text('Added by $creator',
+                style: TextStyle(fontSize: 11.5, color: context.inkSoft)),
+          ),
           if (counterparty != null || debt.dueDate != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
@@ -861,14 +1480,148 @@ class _DebtCard extends StatelessWidget {
                 style: TextStyle(fontSize: 11.5, color: context.inkSoft),
               ),
             ),
-          if (debt.status == 'active' && s.canEditBudgets)
+          if (debt.status == 'active')
             Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                    onPressed: () => _repay(context, s),
+                    onPressed: () {
+                      if (!s.canRecordDebtRepayments) {
+                        _showSavingsRestriction(context,
+                            action: 'record a debt repayment');
+                        return;
+                      }
+                      _repay(context, s);
+                    },
                     child: const Text('Record repayment',
                         style: TextStyle(fontWeight: FontWeight.w500)))),
-        ]));
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _details(BuildContext context, AppState s) {
+    return showMhuriSheet<void>(
+      context: context,
+      builder: (_) => ListenableBuilder(
+        listenable: s,
+        builder: (context, _) {
+          final creator = s.member(debt.createdById)?.name ?? 'Former member';
+          final counterparty = s.member(debt.counterpartyMemberId ?? '');
+          final repayments = s.debtRepayments
+              .where((payment) => payment.debtId == debt.id)
+              .toList()
+            ..sort((a, b) => b.paidAt.compareTo(a.paidAt));
+          final direction = switch (debt.direction) {
+            DebtDirection.iOwe => 'I owe',
+            DebtDirection.owedToMe => 'Owed to me',
+            DebtDirection.familyLoan => 'Family loan',
+          };
+          return MhuriSheetShell(
+            title: debt.name,
+            subtitle: debt.status == 'settled' ? 'Settled' : direction,
+            footer: s.canManageDebts ||
+                    (debt.status == 'active' && s.canRecordDebtRepayments)
+                ? Row(
+                    children: [
+                      if (s.canManageDebts) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _delete(context, s),
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            label: const Text('Delete'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _edit(context, s),
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: const Text('Edit'),
+                          ),
+                        ),
+                      ],
+                      if (debt.status == 'active' &&
+                          s.canRecordDebtRepayments) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => _repay(context, s),
+                            child: const Text('Repay'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  )
+                : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _DebtDetailAmount(
+                      label: 'Original',
+                      amount: debt.principal.text,
+                    ),
+                    _DebtDetailAmount(
+                      label: 'Repaid',
+                      amount: s.repaidOn(debt).text,
+                    ),
+                    _DebtDetailAmount(
+                      label: 'Remaining',
+                      amount: s.remainingOnDebt(debt).text,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text('Added by $creator'),
+                if (counterparty != null) ...[
+                  const SizedBox(height: 6),
+                  Text('Family member: ${counterparty.name}'),
+                ],
+                if (debt.dueDate != null) ...[
+                  const SizedBox(height: 6),
+                  Text('Due ${DateFormat.yMMMd().format(debt.dueDate!)}'),
+                ],
+                const SizedBox(height: 22),
+                Text(
+                  'Repayment history',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.ink,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (repayments.isEmpty)
+                  Text(
+                    'No repayments have been recorded.',
+                    style: TextStyle(color: context.inkSoft),
+                  )
+                else
+                  for (final payment in repayments)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.payments_outlined,
+                        color: context.primary,
+                      ),
+                      title: Text(
+                        payment.amount.text,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        'Recorded by ${s.member(payment.memberId)?.name ?? 'Former member'} · '
+                        '${DateFormat.yMMMd().add_jm().format(payment.paidAt.toLocal())}',
+                      ),
+                    ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _repay(BuildContext context, AppState s) async {
@@ -911,6 +1664,189 @@ class _DebtCard extends StatelessWidget {
                   ],
                 ]))));
   }
+
+  Future<void> _edit(BuildContext context, AppState s) async {
+    final name = TextEditingController(text: debt.name);
+    final amount = TextEditingController(
+        text: (debt.principal.minor / 100).toStringAsFixed(2));
+    var direction = debt.direction;
+    var counterpartyMemberId = debt.counterpartyMemberId;
+    var dueDate = debt.dueDate;
+    String? error;
+    await showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) => MhuriSheetShell(
+          title: 'Edit debt',
+          subtitle: 'Repayments and the original recorder stay unchanged.',
+          footer: PrimaryButton(
+            label: 'Save changes',
+            onPressed: () {
+              final value = double.tryParse(amount.text.replaceAll(',', ''));
+              if (value == null ||
+                  !s.updateDebt(
+                    debt,
+                    name: name.text,
+                    direction: direction,
+                    principal: Money.fromMajor(value, debt.principal.currency),
+                    counterpartyMemberId: counterpartyMemberId,
+                    dueDate: dueDate,
+                  )) {
+                setSheet(() => error =
+                    'Enter a name and an amount that is not below the repaid total.');
+                return;
+              }
+              Navigator.pop(sheetContext);
+            },
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: name,
+                autofocus: true,
+                decoration: const InputDecoration(
+                    labelText: 'Who or what is this for?'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<DebtDirection>(
+                initialValue: direction,
+                decoration: const InputDecoration(labelText: 'Type'),
+                items: const [
+                  DropdownMenuItem(
+                      value: DebtDirection.iOwe, child: Text('I owe')),
+                  DropdownMenuItem(
+                      value: DebtDirection.owedToMe, child: Text('Owed to me')),
+                  DropdownMenuItem(
+                      value: DebtDirection.familyLoan,
+                      child: Text('Family loan')),
+                ],
+                onChanged: (value) {
+                  if (value != null) setSheet(() => direction = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: amount,
+                inputFormatters: amountInputFormatters,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Original amount',
+                  prefixText: '${debt.principal.currency.symbol} ',
+                  helperText: s.repaidOn(debt).minor > 0
+                      ? 'Cannot be less than ${s.repaidOn(debt).text} already repaid'
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                initialValue: counterpartyMemberId,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                    labelText: 'Family member (optional)'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Someone outside the family'),
+                  ),
+                  for (final member in s.members)
+                    DropdownMenuItem<String?>(
+                      value: member.id,
+                      child: Text(member.name),
+                    ),
+                ],
+                onChanged: (value) =>
+                    setSheet(() => counterpartyMemberId = value),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Due date (optional)'),
+                subtitle: Text(dueDate == null
+                    ? 'No due date'
+                    : DateFormat.yMMMd().format(dueDate!)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (dueDate != null)
+                      IconButton(
+                        tooltip: 'Remove due date',
+                        onPressed: () => setSheet(() => dueDate = null),
+                        icon: const Icon(Icons.close),
+                      ),
+                    const Icon(Icons.calendar_today_outlined),
+                  ],
+                ),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: sheetContext,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now().add(const Duration(days: 3650)),
+                    initialDate: dueDate ?? DateTime.now(),
+                  );
+                  if (picked != null) setSheet(() => dueDate = picked);
+                },
+              ),
+              if (error != null) ErrorNotice(error!),
+            ],
+          ),
+        ),
+      ),
+    );
+    name.dispose();
+    amount.dispose();
+  }
+
+  Future<void> _delete(BuildContext sheetContext, AppState s) async {
+    final confirmed = await showDialog<bool>(
+          context: sheetContext,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Delete this debt?'),
+            content: const Text(
+              'The debt will disappear from the family list. Its repayment history and audit record will be preserved.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Delete debt'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !s.archiveDebt(debt)) return;
+    if (sheetContext.mounted) Navigator.pop(sheetContext);
+  }
+}
+
+class _DebtDetailAmount extends StatelessWidget {
+  const _DebtDetailAmount({required this.label, required this.amount});
+
+  final String label;
+  final String amount;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        constraints: const BoxConstraints(minWidth: 96),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: context.card,
+          borderRadius: kBRadiusS,
+          border: Border.all(color: context.hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 11, color: context.inkSoft)),
+            const SizedBox(height: 2),
+            Text(amount, style: const TextStyle(fontWeight: FontWeight.w800)),
+          ],
+        ),
+      );
 }
 
 class GoalCard extends StatelessWidget {
@@ -923,6 +1859,9 @@ class GoalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final saved = s.savedOn(goal);
+    final creator = goal.createdById == null
+        ? null
+        : s.member(goal.createdById!)?.name ?? 'Former member';
     final ratio =
         goal.target.minor <= 0 ? 0.0 : saved.minor / goal.target.minor;
     final ringColor = kidFlavored
@@ -932,10 +1871,9 @@ class GoalCard extends StatelessWidget {
             : context.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: kidFlavored ? context.warningSoft : context.card,
-        borderRadius: kBRadiusM,
+        border: Border(bottom: BorderSide(color: context.hairline)),
       ),
       child: Row(
         children: [
@@ -980,6 +1918,13 @@ class GoalCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 11, color: context.inkSoft),
                 ),
+                if (creator != null)
+                  Text(
+                    'Created by $creator',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: context.inkSoft),
+                  ),
               ],
             ),
           ),
@@ -988,7 +1933,14 @@ class GoalCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               FilledButton(
-                onPressed: () => _contribute(context),
+                onPressed: () {
+                  if (!s.canContributeSavings) {
+                    _showSavingsRestriction(context,
+                        action: 'add money to a savings goal');
+                    return;
+                  }
+                  _contribute(context);
+                },
                 style: FilledButton.styleFrom(
                   backgroundColor: context.primary,
                   foregroundColor: context.onSolid,
@@ -1005,7 +1957,7 @@ class GoalCard extends StatelessWidget {
                 ),
                 child: Text(AppLocalizations.of(context)!.add),
               ),
-              if (s.canEditBudgets) ...[
+              if (s.canManageSavingsGoal(goal)) ...[
                 const SizedBox(width: 2),
                 SizedBox(
                   width: 32,
@@ -1024,7 +1976,8 @@ class GoalCard extends StatelessWidget {
                           value: 'edit', child: Text('Edit goal')),
                       if (goal.status != 'done')
                         const PopupMenuItem(
-                            value: 'complete', child: Text('Mark as completed')),
+                            value: 'complete',
+                            child: Text('Mark as completed')),
                       if (s.canAdmin)
                         const PopupMenuItem(
                             value: 'archive', child: Text('Archive goal')),

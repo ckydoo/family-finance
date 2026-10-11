@@ -47,13 +47,13 @@ class MhuriType {
   static const titleL = TextStyle(
     fontFamily: kFontFamily,
     fontSize: 20,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w600,
     letterSpacing: -0.3,
   );
   static const titleM = TextStyle(
     fontFamily: kFontFamily,
     fontSize: 17,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w600,
   );
   static const body = TextStyle(
     fontFamily: kFontFamily,
@@ -544,11 +544,11 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: p.accent,
-      foregroundColor: p.ink,
-      elevation: 3,
-      focusElevation: 5,
-      highlightElevation: 5,
-      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+      foregroundColor: p.onSolid,
+      elevation: 2,
+      focusElevation: 3,
+      highlightElevation: 3,
+      shape: const CircleBorder(),
     ),
     bottomAppBarTheme: BottomAppBarThemeData(
       color: p.card,

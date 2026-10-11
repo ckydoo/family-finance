@@ -11,6 +11,7 @@ import '../../core/sync/sync_engine.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/error_messages.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/tx_tile.dart';
 import '../../core/widgets/ui.dart';
@@ -36,7 +37,18 @@ Future<void> _showFamilySpaceSwitcher(BuildContext context, AppState s) async {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (sheetContext) => _FamilySpaceSwitcher(state: s),
+    showDragHandle: true,
+    backgroundColor: context.bg,
+    builder: (sheetContext) => FractionallySizedBox(
+      heightFactor: 0.9,
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: _FamilySpaceSwitcher(state: s),
+        ),
+      ),
+    ),
   );
 }
 
@@ -72,8 +84,10 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(widget.state.sync?.lastError ??
-            'Could not switch families. Please try again.'),
+        content: Text(userFacingErrorMessage(
+          widget.state.sync?.lastError,
+          fallback: 'Could not switch families. Please try again.',
+        )),
       ));
     }
   }
@@ -118,8 +132,10 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
     } else {
       setState(() => _switching = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:
-            Text(widget.state.sync?.lastError ?? 'Could not create family.'),
+        content: Text(userFacingErrorMessage(
+          widget.state.sync?.lastError,
+          fallback: 'Could not create family.',
+        )),
       ));
     }
   }
@@ -160,7 +176,10 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
     } else {
       setState(() => _switching = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(widget.state.sync?.lastError ?? 'Could not join family.'),
+        content: Text(userFacingErrorMessage(
+          widget.state.sync?.lastError,
+          fallback: 'Could not join family.',
+        )),
       ));
     }
   }
@@ -386,7 +405,14 @@ String _displayFamilyRole(String role) => role
     .join(' ');
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.tourOverviewKey,
+    this.tourFamilyKey,
+  });
+
+  final Key? tourOverviewKey;
+  final Key? tourFamilyKey;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -476,6 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Expanded(
                       child: InkWell(
+                        key: widget.tourFamilyKey,
                         onTap: () => _showFamilySpaceSwitcher(context, s),
                         borderRadius: kBRadiusS,
                         child: Padding(
@@ -494,6 +521,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    Text(
+                                      '$greet, ${u.name}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        height: 1.15,
+                                        fontWeight: FontWeight.w600,
+                                        color: context.ink,
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
                                     Row(
                                       children: [
                                         Flexible(
@@ -502,29 +542,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
-                                              fontSize: 17,
-                                              height: 1.15,
-                                              fontWeight: FontWeight.w700,
-                                              color: context.ink,
-                                              letterSpacing: -0.2,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: context.inkSoft,
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 2),
+                                        const SizedBox(width: 1),
                                         Icon(Icons.keyboard_arrow_down_rounded,
-                                            size: 18, color: context.inkSoft),
+                                            size: 16, color: context.inkSoft),
                                       ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '$greet, ${u.name}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: context.inkSoft,
-                                      ),
                                     ),
                                   ],
                                 ),
@@ -534,6 +561,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
+                    // Keep the identity copy visually separate from the action
+                    // cluster. Long member/space names stay inside the Expanded
+                    // area above and ellipsize before reaching this gutter.
+                    const SizedBox(width: 8),
                     // Quick Chat Icon
                     IconButton(
                       tooltip: 'Family chat',
@@ -634,17 +665,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 18),
 
                 if (isNewHousehold)
-                  const _FirstStepsCard()
+                  KeyedSubtree(
+                    key: widget.tourOverviewKey,
+                    child: const _FirstStepsCard(),
+                  )
                 else ...[
-                  AnimatedScale(
-                    scale: _poolCompact ? 0.97 : 1.0,
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    child: const _PoolCard(),
+                  KeyedSubtree(
+                    key: widget.tourOverviewKey,
+                    child: AnimatedScale(
+                      scale: _poolCompact ? 0.97 : 1.0,
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
+                      child: const _PoolCard(),
+                    ),
                   ),
                   const _MonthlySummary(),
                   const _NeedsAttention(),
                   const _ComingUp(),
+                ],
+                if (!isNewHousehold) ...[
                   // ── Today Section (Family Tasks due today/overdue) ──────────
                   Builder(
                     builder: (ctx) {
@@ -1524,10 +1563,12 @@ class _HomeTaskRow extends StatelessWidget {
             Row(
               children: [
                 GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    s.toggleFamilyTaskCompletion(task);
-                  },
+                  onTap: s.canManageFamilyTasks
+                      ? () {
+                          HapticFeedback.lightImpact();
+                          s.toggleFamilyTaskCompletion(task);
+                        }
+                      : null,
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
                     padding: const EdgeInsets.only(right: 10),
@@ -1991,6 +2032,24 @@ class SmartCard extends StatelessWidget {
     // 3. Savings circle turn - OPT-IN: hidden until the family turns
     // mukando on (Savings tab or Settings).
     if (!s.mukandoEnabled) return const SizedBox.shrink();
+    if (!s.circle.isConfigured) {
+      return _card(
+        context,
+        color: context.violetSoft,
+        icon: Icons.autorenew,
+        title: 'Mukando savings circle',
+        subtitle: 'Configure members, amounts and collection order to start.',
+        actionLabel: 'Set up',
+        onTap: () {
+          DefaultTabController.maybeOf(context)?.animateTo(2);
+        },
+      );
+    }
+    final paidCount = s.circle.participantIds
+        .where((id) => s.hasMukandoPaid(id))
+        .length;
+    final canComplete = s.currentMukandoRoundComplete;
+
     return _card(
       context,
       color: context.violetSoft,
@@ -1998,16 +2057,26 @@ class SmartCard extends StatelessWidget {
       title: AppLocalizations.of(context)!
           .circleTitle(s.circle.currentRound, s.circle.totalRounds),
       subtitle: AppLocalizations.of(context)!.circleSub(s.circle.nextCollector,
-          s.circle.contribution.text, s.circle.potSoFar.text),
-      actionLabel: AppLocalizations.of(context)!.markCollected,
+          s.circle.contribution.text, s.circle.roundPot.text),
+      actionLabel: canComplete
+          ? AppLocalizations.of(context)!.markCollected
+          : '$paidCount/${s.circle.participantIds.length} paid',
       onTap: () {
+        if (!canComplete) {
+          DefaultTabController.maybeOf(context)?.animateTo(2);
+          return;
+        }
         HapticFeedback.lightImpact();
-        s.circleCollect();
+        s.circleCollect(id: 'mukando_round_${s.circle.currentRound + 1}');
         celebrate(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!.roundOk),
             behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: AppLocalizations.of(context)!.undo,
+              onPressed: s.undoCircleCollect,
+            ),
           ),
         );
       },

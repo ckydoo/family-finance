@@ -102,6 +102,45 @@ void main() {
     expect(state.monthSpend.minor, 4000);
   });
 
+  testWidgets('home explains when close-to-limit alert clears', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final now = DateTime(2026, 10, 11);
+    final state = AppState(clock: () => now);
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Groceries',
+      limit: Money.fromMajor(300, Currency.usd),
+    );
+    state.addTx(
+      type: TxType.expense,
+      amount: Money.fromMajor(200, Currency.usd),
+      memberId: state.user.id,
+      method: Method.bankCard,
+      note: 'Groceries',
+      envelopeId: state.envelopes.single.id,
+      when: now,
+    );
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HomeScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Groceries is close to its limit'), findsOneWidget);
+
+  });
+
   testWidgets('home envelope card opens its details', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

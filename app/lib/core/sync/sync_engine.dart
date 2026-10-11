@@ -803,6 +803,7 @@ class SyncEngine {
     final sw = Stopwatch()..start();
     try {
       try {
+        await _backfillLocalFamilyTasks(sid);
         await _detectConflicts();
         await _push(force: force);
         await _pull(sid);
@@ -851,6 +852,7 @@ class SyncEngine {
   }
 
   static const _conflictEntities = {
+    'account',
     'tx',
     'envelope',
     'goal',
@@ -859,7 +861,21 @@ class SyncEngine {
     'budget_cycle_plan',
     'family_debt',
     'contribution_campaign',
+    'family_task',
   };
+
+  /// Family tasks pre-dated their server table. On the first sync after this
+  /// upgrade, publish this family's existing local tasks exactly once so they
+  /// do not disappear for the people who already created them.
+  Future<void> _backfillLocalFamilyTasks(String sid) async {
+    if (!state.canManageFamilyTasks || state.familyTasks.isEmpty) return;
+    final key = 'family_tasks_backfilled_v1_$sid';
+    if (await _kvGet(key) == '1') return;
+    for (final task in state.familyTasks) {
+      await enqueue('family_task', task);
+    }
+    await _kvSet(key, '1');
+  }
 
   Future<void> _detectConflicts() async {
     final pending = (await _outbox.take(200))
@@ -903,6 +919,30 @@ class SyncEngine {
     return true;
   }
 
+  /// One row per `id`, merged in queue order (later fields win). Rows
+  /// without an id are passed through untouched.
+  static List<Map<String, Object?>> _collapseById(
+      List<Map<String, Object?>> payloads) {
+    final merged = <String, Map<String, Object?>>{};
+    final out = <Map<String, Object?>>[];
+    for (final p in payloads) {
+      final id = p['id'];
+      if (id == null) {
+        out.add(p);
+        continue;
+      }
+      final existing = merged['$id'];
+      if (existing == null) {
+        final copy = Map<String, Object?>.of(p);
+        merged['$id'] = copy;
+        out.add(copy);
+      } else {
+        existing.addAll(p);
+      }
+    }
+    return out;
+  }
+
   /// Ordered, grouped, verbatim push. A failed entity batch stays in the
   /// outbox (attempts++) and retries on the next sync.
   Future<void> _push({bool force = false}) async {
@@ -937,22 +977,30 @@ class SyncEngine {
     final doneRowIds = <int>[];
     for (final entry in byEntity.entries) {
       final adapter = kSyncAdapters[entry.key]!;
+      // Several edits to the same record (e.g. a list item moved to the
+      // cart, then checked out) queue several ops. One upsert statement may
+      // not touch a row twice - Postgres rejects the whole batch with
+      // "ON CONFLICT DO UPDATE command cannot affect row a second time" - so
+      // collapse them in queue order, later fields winning.
+      final rows = _collapseById([for (final o in entry.value) o.payload]);
       try {
-        await client
-            .pushRows(adapter.table, [for (final o in entry.value) o.payload]);
+        await client.pushRows(adapter.table, rows);
+        if (entry.key == 'family_chat_message') {
+          state.markChatMessagesSent(rows.map((row) => row['id'].toString()));
+        }
         // Sprint B: budget attribution rides with transaction pushes - the
         // server models it as the envelope_tx junction (no envelope_id col).
         if (entry.key == 'tx') {
           final byId = {for (final t in state.txs) t.id: t};
           final links = <Map<String, Object?>>[
-            for (final o in entry.value)
-              if (byId[o.payload['id']]?.envelopeId case final envId?
+            for (final row in rows)
+              if (byId[row['id']]?.envelopeId case final envId?
                   when envId.isNotEmpty)
                 {
                   'envelope_id': envId,
-                  'transaction_id': o.payload['id'],
-                  'allocated_minor': byId[o.payload['id']]!.amount.minor,
-                  'currency': byId[o.payload['id']]!.amount.currency.code,
+                  'transaction_id': row['id'],
+                  'allocated_minor': byId[row['id']]!.amount.minor,
+                  'currency': byId[row['id']]!.amount.currency.code,
                 },
           ];
           if (links.isNotEmpty) {
@@ -968,6 +1016,9 @@ class SyncEngine {
         doneRowIds.addAll(entry.value.map((o) => o.rowId));
       } on SyncException catch (e) {
         if (e.isAuthError) rethrow;
+        debugPrint('Mhuri push failed [${entry.key} → ${adapter.table}, '
+            '${entry.value.length} op(s)]: $e');
+        reportError?.call('push:${entry.key}', e, StackTrace.current);
         allOk = false;
       }
     }
@@ -1181,6 +1232,12 @@ class SyncEngine {
           spaceId: adapter.spaceScoped ? sid : null,
           spaceCol: adapter.spaceScoped ? 'space_id' : null,
         );
+        if (full && entity == 'account') {
+          // Accounts used to be device-local. A successful full pull is the
+          // authoritative snapshot, including an empty result.
+          await _persistence.clearAccounts();
+          state.clearAccountsForServerSnapshot(notify: rows.isEmpty);
+        }
         if (rows.isEmpty) continue;
         var maxCursor = since;
         for (final row in rows) {

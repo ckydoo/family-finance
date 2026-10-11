@@ -20,6 +20,9 @@ class FakeAuthService implements AuthService {
       _session == null ? null : 'fake-access-token';
 
   @override
+  Future<String?> validAccessToken() => refreshAccessToken();
+
+  @override
   Future<AuthResult> signIn(String email, String password) async {
     if (!_valid(email, password)) {
       return const AuthResult.failure(

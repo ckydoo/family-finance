@@ -2,11 +2,11 @@ name: mhuri_money
 description: >-
   Mhuri - family finance management for every kind of family,
   built international. Offline-first: multi-currency ledgers (ships with
-  USD + ZiG), envelopes, goals, savings-circle (ROSCA) tracker, shared
+  USD etc), envelopes, goals, savings-circle (ROSCA) tracker, shared
   shopping lists, Teen Zone and a sealed Kids Mode. Local persistence via
   sqflite; optional Supabase sync.
 publish_to: "none"
-version: 0.2.0+5
+version: 0.2.0+6
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

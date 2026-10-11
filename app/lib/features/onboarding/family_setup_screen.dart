@@ -9,6 +9,7 @@ import '../../core/money/money.dart';
 import '../../core/state/app_state.dart';
 import '../../core/sync/avatar_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/error_messages.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -193,7 +194,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       final uploader = AvatarUploader(
         baseUrl: widget.state.env.supabaseUrl!,
         anonKey: widget.state.env.supabaseAnonKey!,
-        tokenGet: auth!.refreshAccessToken,
+        tokenGet: auth!.validAccessToken,
       );
       final url = await uploader.upload(
         bytes: photo,
@@ -247,7 +248,10 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       if (!ok) {
         setState(() {
           _busy = false;
-          _error = engine.lastError ?? 'Could not create the family.';
+          _error = userFacingErrorMessage(
+            engine.lastError,
+            fallback: 'Could not create the family.',
+          );
         });
         return;
       }
@@ -300,8 +304,11 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       if (!saved) {
         setState(() {
           _busy = false;
-          _error = sync.lastError ??
-              'We could not save your setup. Your previous steps are still safe.';
+          _error = userFacingErrorMessage(
+            sync.lastError,
+            fallback:
+                'We could not save your setup. Your previous steps are still safe.',
+          );
         });
         return;
       }
@@ -370,8 +377,11 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       if (!saved) {
         setState(() {
           _busy = false;
-          _error = sync.lastError ??
-              'We could not save your setup. Your previous steps are still safe.';
+          _error = userFacingErrorMessage(
+            sync.lastError,
+            fallback:
+                'We could not save your setup. Your previous steps are still safe.',
+          );
         });
         return;
       }
@@ -428,8 +438,11 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       if (!saved) {
         setState(() {
           _busy = false;
-          _error = sync.lastError ??
-              'We could not finish your setup. Your previous steps are still safe.';
+          _error = userFacingErrorMessage(
+            sync.lastError,
+            fallback:
+                'We could not finish your setup. Your previous steps are still safe.',
+          );
         });
         return false;
       }
@@ -472,8 +485,10 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     } else {
       setState(() {
         _busy = false;
-        _error = widget.state.sync?.lastError ??
-            'Could not join the family. Check the code and try again.';
+        _error = userFacingErrorMessage(
+          widget.state.sync?.lastError,
+          fallback: 'Could not join the family. Check the code and try again.',
+        );
       });
     }
   }

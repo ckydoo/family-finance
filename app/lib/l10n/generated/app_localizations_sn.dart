@@ -2067,6 +2067,13 @@ class AppLocalizationsSn extends AppLocalizations {
       'Peji rekutanga rinoratidza mari yemhuri, zvakaitwa nguva pfupi yapfuura nemabhajeti anoda kutariswa.';
 
   @override
+  String get tourFamilyTitle => 'Tungamirira mhuri yako';
+
+  @override
+  String get tourFamilyBody =>
+      'Baya zita remhuri kukoka vanhu, kutungamirira nhengo nemabasa, kana kuchinja mhuri.';
+
+  @override
   String get tourPlanTitle => 'Ipa mari yese basa';
 
   @override

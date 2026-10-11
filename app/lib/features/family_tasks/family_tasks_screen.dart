@@ -51,15 +51,21 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
     final assignee = task.assigneeMemberId == null
         ? null
         : state.member(task.assigneeMemberId!);
+    final creator = task.createdByMemberId == null
+        ? null
+        : state.member(task.createdByMemberId!);
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        child: SafeArea(
-          top: false,
+      showDragHandle: true,
+      backgroundColor: context.bg,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,6 +94,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                 children: [
                   if (assignee != null)
                     Chip(label: Text('Assigned to ${assignee.name}')),
+                  if (creator != null)
+                    Chip(label: Text('Added by ${creator.name}')),
                   if (task.dueDate != null)
                     Chip(
                       label: Text(
@@ -120,28 +128,32 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                   if (task.status != FamilyTaskStatus.done)
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: () {
-                          Navigator.of(sheetContext).pop();
-                          final nextStatus =
-                              task.status == FamilyTaskStatus.inProgress
-                                  ? FamilyTaskStatus.done
-                                  : FamilyTaskStatus.inProgress;
-                          state.updateFamilyTask(
-                            task.copyWith(
-                              status: nextStatus,
-                              completedAt: nextStatus == FamilyTaskStatus.done
-                                  ? DateTime.now()
-                                  : null,
-                              approvedByMemberId:
-                                  nextStatus == FamilyTaskStatus.done
-                                      ? task.approvedByMemberId
-                                      : null,
-                              approvedAt: nextStatus == FamilyTaskStatus.done
-                                  ? task.approvedAt
-                                  : null,
-                            ),
-                          );
-                        },
+                        onPressed: state.canManageFamilyTasks
+                            ? () {
+                                Navigator.of(sheetContext).pop();
+                                final nextStatus =
+                                    task.status == FamilyTaskStatus.inProgress
+                                        ? FamilyTaskStatus.done
+                                        : FamilyTaskStatus.inProgress;
+                                state.updateFamilyTask(
+                                  task.copyWith(
+                                    status: nextStatus,
+                                    completedAt:
+                                        nextStatus == FamilyTaskStatus.done
+                                            ? DateTime.now()
+                                            : null,
+                                    approvedByMemberId:
+                                        nextStatus == FamilyTaskStatus.done
+                                            ? task.approvedByMemberId
+                                            : null,
+                                    approvedAt:
+                                        nextStatus == FamilyTaskStatus.done
+                                            ? task.approvedAt
+                                            : null,
+                                  ),
+                                );
+                              }
+                            : null,
                         icon: Icon(
                           task.status == FamilyTaskStatus.inProgress
                               ? Icons.check_rounded
@@ -159,17 +171,19 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                   if (task.status == FamilyTaskStatus.done)
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: () {
-                          Navigator.of(sheetContext).pop();
-                          state.updateFamilyTask(
-                            task.copyWith(
-                              status: FamilyTaskStatus.open,
-                              approvedByMemberId: null,
-                              approvedAt: null,
-                              completedAt: null,
-                            ),
-                          );
-                        },
+                        onPressed: state.canManageFamilyTasks
+                            ? () {
+                                Navigator.of(sheetContext).pop();
+                                state.updateFamilyTask(
+                                  task.copyWith(
+                                    status: FamilyTaskStatus.open,
+                                    approvedByMemberId: null,
+                                    approvedAt: null,
+                                    completedAt: null,
+                                  ),
+                                );
+                              }
+                            : null,
                         icon: const Icon(Icons.refresh_rounded),
                         label: const Text('Reopen task'),
                       ),
@@ -183,10 +197,12 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(sheetContext).pop();
-                      state.approveFamilyTask(task);
-                    },
+                    onPressed: state.canApprove
+                        ? () {
+                            Navigator.of(sheetContext).pop();
+                            state.approveFamilyTask(task);
+                          }
+                        : null,
                     icon: const Icon(Icons.thumb_up_rounded),
                     label: const Text('Approve reward'),
                   ),
@@ -213,10 +229,12 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
               ),
               const SizedBox(height: 8),
               TextButton.icon(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop();
-                  state.updateFamilyTask(task.copyWith(isArchived: true));
-                },
+                onPressed: state.canManageFamilyTasks
+                    ? () {
+                        Navigator.of(sheetContext).pop();
+                        state.updateFamilyTask(task.copyWith(isArchived: true));
+                      }
+                    : null,
                 icon: const Icon(Icons.archive_rounded),
                 label: const Text('Archive'),
               ),
@@ -505,11 +523,13 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Add task',
-        onPressed: () => _taskEditor(state),
-        child: const Icon(Icons.add_rounded),
-      ),
+      floatingActionButton: state.canManageFamilyTasks
+          ? FloatingActionButton(
+              tooltip: 'Add task',
+              onPressed: () => _taskEditor(state),
+              child: const Icon(Icons.add_rounded),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -573,11 +593,12 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 12),
-                            TextButton.icon(
-                              onPressed: () => _taskEditor(state),
-                              icon: const Icon(Icons.add_rounded),
-                              label: const Text('Add task'),
-                            ),
+                            if (state.canManageFamilyTasks)
+                              TextButton.icon(
+                                onPressed: () => _taskEditor(state),
+                                icon: const Icon(Icons.add_rounded),
+                                label: const Text('Add task'),
+                              ),
                           ],
                         ),
                       ),
@@ -603,8 +624,10 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                               children: [
                                 Checkbox(
                                   value: task.isDone,
-                                  onChanged: (_) =>
-                                      state.toggleFamilyTaskCompletion(task),
+                                  onChanged: state.canManageFamilyTasks
+                                      ? (_) =>
+                                          state.toggleFamilyTaskCompletion(task)
+                                      : null,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -672,12 +695,13 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                           Icons.chat_bubble_outline_rounded),
                                       tooltip: 'Discuss task',
                                     ),
-                                    IconButton(
-                                      onPressed: () =>
-                                          _taskEditor(state, task: task),
-                                      icon: const Icon(Icons.edit_outlined),
-                                      tooltip: 'Edit task',
-                                    ),
+                                    if (state.canManageFamilyTasks)
+                                      IconButton(
+                                        onPressed: () =>
+                                            _taskEditor(state, task: task),
+                                        icon: const Icon(Icons.edit_outlined),
+                                        tooltip: 'Edit task',
+                                      ),
                                   ],
                                 ),
                               ],

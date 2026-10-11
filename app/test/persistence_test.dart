@@ -74,6 +74,48 @@ void main() {
     expect(second.envelope('e7')!.limit.minor, buffer.limit.minor);
   });
 
+  test('immediate refresh cannot restore a deleted debt or change balance',
+      () async {
+    final state = AppState(db: db);
+    await state.ready();
+
+    state.addTx(
+      id: '11111111-1111-4111-8111-111111111111',
+      type: TxType.expense,
+      amount: const Money(2500, Currency.usd),
+      memberId: state.realUser.id,
+      method: Method.cash,
+      note: 'Debt payment',
+    );
+    state.createDebt(
+      name: 'Test debt',
+      direction: DebtDirection.iOwe,
+      principal: const Money(5000, Currency.usd),
+    );
+    final debt = state.familyDebts.singleWhere((d) => d.name == 'Test debt');
+    state.recordDebtRepayment(
+      debt,
+      const Money(2500, Currency.usd),
+      id: '22222222-2222-4222-8222-222222222222',
+    );
+    final balanceAfterPayment = state.poolCombined(Currency.usd);
+    expect(state.archiveDebt(debt), isTrue);
+
+    // Deliberately do not call flushWrites: refresh itself must serialize the
+    // pending transaction, repayment and archived debt writes.
+    await state.refresh();
+
+    expect(state.familyDebts.where((d) => d.id == debt.id), isEmpty);
+    expect(
+      state.poolCombined(Currency.usd).minor,
+      balanceAfterPayment.minor,
+    );
+    expect(
+      state.txs.where((tx) => tx.note == 'Debt payment'),
+      hasLength(1),
+    );
+  });
+
   test('expense, list item, chore, request and goal all survive a restart',
       () async {
     final first = AppState(db: db);

@@ -36,6 +36,10 @@ class _NavDest {
 class _AdultShellState extends State<AdultShell> {
   int _tab = 0;
   bool _tourOpen = false;
+  final _overviewTourKey = GlobalKey();
+  final _familyTourKey = GlobalKey();
+  final _budgetsTourKey = GlobalKey();
+  final _addTourKey = GlobalKey();
 
   @override
   void initState() {
@@ -43,30 +47,46 @@ class _AdultShellState extends State<AdultShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeProductTour());
   }
 
-  /// Three concise first-run explanations, persisted on this device.
+  /// Concise first-run explanations, persisted on this device. The route wait
+  /// prevents this tutorial from stacking over another startup presentation.
   Future<void> _maybeProductTour() async {
     final s = AppScope.of(context);
     final db = s.db;
     if (db == null || !s.canAuthorTransact || _tourOpen) return;
-    if (await db.kvGet('product_tour_v1_seen') == '1') return;
-    // Persist before presenting. If the app is killed while the sheet is
+    _tourOpen = true;
+    if (await db.kvGet('product_tour_v1_seen') == '1') {
+      _tourOpen = false;
+      return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+    while (mounted && ModalRoute.of(context)?.isCurrent != true) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
+    if (!mounted) return;
+    // Persist before presenting. If the app is killed while the tour is
     // open, the tour must still remain a true once-per-device experience.
     await db.kvSet('product_tour_v1_seen', '1');
     if (!mounted) return;
-    _tourOpen = true;
-    await showModalBottomSheet<void>(
+    await showGeneralDialog<void>(
       context: context,
-      isDismissible: false,
-      enableDrag: false,
-      useSafeArea: true,
-      backgroundColor: context.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (sheetContext) => _ProductTour(
+      barrierDismissible: false,
+      barrierLabel: AppLocalizations.of(context)!.tourTitle,
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (tourContext, _, __) => _ProductTour(
+        targets: [
+          _overviewTourKey,
+          _familyTourKey,
+          _budgetsTourKey,
+          _addTourKey,
+        ],
         onComplete: () async {
-          if (sheetContext.mounted) Navigator.pop(sheetContext);
+          if (tourContext.mounted) Navigator.pop(tourContext);
         },
+      ),
+      transitionBuilder: (_, animation, __, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
       ),
     );
     _tourOpen = false;
@@ -95,22 +115,27 @@ class _AdultShellState extends State<AdultShell> {
           constraints: BoxConstraints(maxWidth: _tab == 1 ? 980 : 620),
           child: IndexedStack(
             index: _tab,
-            children: const [
-              HomeScreen(),
-              BudgetsScreen(),
-              SavingsScreen(),
-              ListsScreen(),
+            children: [
+              HomeScreen(
+                tourOverviewKey: _overviewTourKey,
+                tourFamilyKey: _familyTourKey,
+              ),
+              const BudgetsScreen(),
+              const SavingsScreen(),
+              const ListsScreen(),
             ],
           ),
         ),
       ),
       floatingActionButton: s.canAuthorTransact
           ? FloatingActionButton(
+              key: _addTourKey,
               tooltip: AppLocalizations.of(context)!.addTransaction,
               onPressed: () => showQuickAddMenu(context),
               backgroundColor: context.accent,
               elevation: 4,
-              child: const Icon(Icons.add, size: 30, color: Colors.white),
+              child:
+                  const Icon(Icons.add_rounded, size: 26, color: Colors.white),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -137,7 +162,7 @@ class _AdultShellState extends State<AdultShell> {
                     child: Row(
                       children: [
                         _nav(destinations[0], 0),
-                        _nav(destinations[1], 1),
+                        _nav(destinations[1], 1, key: _budgetsTourKey),
                       ],
                     ),
                   ),
@@ -159,13 +184,14 @@ class _AdultShellState extends State<AdultShell> {
     );
   }
 
-  Widget _nav(_NavDest d, int idx) {
+  Widget _nav(_NavDest d, int idx, {Key? key}) {
     final selected = _tab == idx;
     // Extreme text scale: icons only - the row can never overflow.
     final huge = MediaQuery.textScalerOf(context).scale(11) >= 19;
     final color = selected ? context.primaryDark : context.ink;
     return Expanded(
       child: InkWell(
+        key: key,
         onTap: () {
           HapticFeedback.selectionClick();
           setState(() => _tab = idx);
@@ -214,8 +240,9 @@ class _AdultShellState extends State<AdultShell> {
 }
 
 class _ProductTour extends StatefulWidget {
-  const _ProductTour({required this.onComplete});
+  const _ProductTour({required this.targets, required this.onComplete});
 
+  final List<GlobalKey> targets;
   final Future<void> Function() onComplete;
 
   @override
@@ -237,103 +264,256 @@ class _ProductTourState extends State<_ProductTour> {
     final l = AppLocalizations.of(context)!;
     final pages = [
       (Icons.account_balance_wallet_outlined, l.tourPoolTitle, l.tourPoolBody),
+      (Icons.family_restroom_rounded, l.tourFamilyTitle, l.tourFamilyBody),
       (Icons.pie_chart_outline_rounded, l.tourPlanTitle, l.tourPlanBody),
       (Icons.add_circle_outline_rounded, l.tourAddTitle, l.tourAddBody),
     ];
     final page = pages[_page];
+    final media = MediaQuery.of(context);
+    final screen = media.size;
+    final targetContext = widget.targets[_page].currentContext;
+    final box = targetContext?.findRenderObject() as RenderBox?;
+    final rawRect = box == null
+        ? Rect.fromCenter(
+            center: Offset(screen.width / 2, screen.height / 2),
+            width: 56,
+            height: 56,
+          )
+        : box.localToGlobal(Offset.zero) & box.size;
+    final target = rawRect.inflate(8);
+    final showBelow = target.center.dy < screen.height * .48;
+    const horizontalPadding = 16.0;
+    final bubbleWidth =
+        (screen.width - horizontalPadding * 2).clamp(240.0, 380.0);
+    final bubbleLeft = (target.center.dx - bubbleWidth / 2).clamp(
+        horizontalPadding, screen.width - bubbleWidth - horizontalPadding);
+    final safeTop = media.padding.top + 8;
+    final safeBottom = media.padding.bottom + 8;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
         children: [
-          Container(
-            width: 42,
-            height: 4,
-            decoration: BoxDecoration(
-              color: context.hairline,
-              borderRadius: BorderRadius.circular(99),
-            ),
+          Positioned.fill(
+            child: CustomPaint(painter: _TourShadePainter(target)),
           ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l.tourTitle,
-                  style: TextStyle(
-                    color: context.ink,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
+          Positioned.fromRect(
+            rect: target,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: context.accent, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.accent.withValues(alpha: .35),
+                      blurRadius: 18,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
               ),
-              TextButton(
-                onPressed: _closing ? null : _finish,
-                child: Text(l.skip),
-              ),
-            ],
-          ),
-          const SizedBox(height: 26),
-          Icon(page.$1, size: 46, color: context.primary),
-          const SizedBox(height: 18),
-          Text(
-            page.$2,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: context.ink,
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            page.$3,
-            textAlign: TextAlign.center,
-            style:
-                TextStyle(color: context.inkSoft, fontSize: 14, height: 1.45),
-          ),
-          const SizedBox(height: 26),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < pages.length; i++)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: i == _page ? 22 : 7,
-                  height: 7,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: i == _page ? context.primary : context.hairline,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
+          Positioned(
+            left: bubbleLeft,
+            width: bubbleWidth,
+            top: showBelow ? target.bottom + 10 : null,
+            bottom: showBelow ? null : screen.height - target.top + 10,
+            child: SafeArea(
+              top: false,
+              bottom: false,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: showBelow
+                      ? screen.height - target.bottom - safeBottom - 18
+                      : target.top - safeTop - 18,
                 ),
-            ],
-          ),
-          const SizedBox(height: 22),
-          FilledButton(
-            onPressed: _closing
-                ? null
-                : () {
+                child: _TourBubble(
+                  icon: page.$1,
+                  title: page.$2,
+                  body: page.$3,
+                  page: _page,
+                  pageCount: pages.length,
+                  arrowOnTop: showBelow,
+                  arrowX: (target.center.dx - bubbleLeft)
+                      .clamp(28.0, bubbleWidth - 28.0),
+                  skipLabel: l.skip,
+                  nextLabel: _page == pages.length - 1 ? l.done : l.next,
+                  closing: _closing,
+                  onSkip: _finish,
+                  onNext: () {
                     if (_page == pages.length - 1) {
                       _finish();
                     } else {
                       setState(() => _page++);
                     }
                   },
-            style: FilledButton.styleFrom(
-              backgroundColor: context.primary,
-              foregroundColor: context.onSolid,
-              minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-            ),
-            child: Text(
-              _page == pages.length - 1 ? l.done : l.next,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _TourBubble extends StatelessWidget {
+  const _TourBubble({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.page,
+    required this.pageCount,
+    required this.arrowOnTop,
+    required this.arrowX,
+    required this.skipLabel,
+    required this.nextLabel,
+    required this.closing,
+    required this.onSkip,
+    required this.onNext,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final int page;
+  final int pageCount;
+  final bool arrowOnTop;
+  final double arrowX;
+  final String skipLabel;
+  final String nextLabel;
+  final bool closing;
+  final VoidCallback onSkip;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final arrow = CustomPaint(
+      size: const Size(24, 12),
+      painter: _TourArrowPainter(context.card, pointsUp: arrowOnTop),
+    );
+    return SingleChildScrollView(
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.only(
+              top: arrowOnTop ? 11 : 0,
+              bottom: arrowOnTop ? 0 : 11,
+            ),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+              decoration: BoxDecoration(
+                color: context.card,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 24,
+                      offset: Offset(0, 8)),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Icon(icon, size: 22, color: context.primary),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(title,
+                          style: TextStyle(
+                              color: context.ink,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800)),
+                    ),
+                    TextButton(
+                        onPressed: closing ? null : onSkip,
+                        child: Text(skipLabel)),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text(body,
+                      style: TextStyle(
+                          color: context.inkSoft, fontSize: 13.5, height: 1.4)),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    for (var i = 0; i < pageCount; i++)
+                      Container(
+                        width: i == page ? 18 : 6,
+                        height: 6,
+                        margin: const EdgeInsets.only(right: 5),
+                        decoration: BoxDecoration(
+                          color: i == page ? context.primary : context.hairline,
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    const Spacer(),
+                    FilledButton(
+                      onPressed: closing ? null : onNext,
+                      style: FilledButton.styleFrom(
+                          backgroundColor: context.primary,
+                          foregroundColor: context.onSolid),
+                      child: Text(nextLabel),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: arrowX - 12,
+            top: arrowOnTop ? 0 : null,
+            bottom: arrowOnTop ? null : 0,
+            child: arrow,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TourShadePainter extends CustomPainter {
+  const _TourShadePainter(this.hole);
+  final Rect hole;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(Offset.zero & size)
+      ..addRRect(RRect.fromRectAndRadius(hole, const Radius.circular(18)));
+    canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: .58));
+  }
+
+  @override
+  bool shouldRepaint(_TourShadePainter oldDelegate) => oldDelegate.hole != hole;
+}
+
+class _TourArrowPainter extends CustomPainter {
+  const _TourArrowPainter(this.color, {required this.pointsUp});
+  final Color color;
+  final bool pointsUp;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    if (pointsUp) {
+      path
+        ..moveTo(size.width / 2, 0)
+        ..lineTo(size.width, size.height)
+        ..lineTo(0, size.height);
+    } else {
+      path
+        ..moveTo(0, 0)
+        ..lineTo(size.width, 0)
+        ..lineTo(size.width / 2, size.height);
+    }
+    path.close();
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_TourArrowPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.pointsUp != pointsUp;
 }

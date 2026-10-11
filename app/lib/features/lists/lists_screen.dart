@@ -132,25 +132,33 @@ class _ListsScreenState extends State<ListsScreen> {
                             ),
                           ],
                           const SizedBox(height: 14),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              ChoiceChip(
-                                label: Text(AppLocalizations.of(context)!
-                                    .filterAll(s.items.length)),
-                                selected: _filter == null,
-                                onSelected: (_) =>
-                                    setState(() => _filter = null),
-                              ),
-                              for (final st in ItemState.values)
+                          SizedBox(
+                            height: 36,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
                                 ChoiceChip(
-                                  label: Text(
-                                      '${itemStateLabel(AppLocalizations.of(context)!, st)} (${count(st)})'),
-                                  selected: _filter == st,
+                                  visualDensity: VisualDensity.compact,
+                                  label: Text(AppLocalizations.of(context)!
+                                      .filterAll(s.items.length)),
+                                  selected: _filter == null,
                                   onSelected: (_) =>
-                                      setState(() => _filter = st),
+                                      setState(() => _filter = null),
                                 ),
-                            ],
+                                const SizedBox(width: 8),
+                                for (final st in ItemState.values) ...[
+                                  ChoiceChip(
+                                    visualDensity: VisualDensity.compact,
+                                    label: Text(
+                                        '${itemStateLabel(AppLocalizations.of(context)!, st)} (${count(st)})'),
+                                    selected: _filter == st,
+                                    onSelected: (_) =>
+                                        setState(() => _filter = st),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 14),
                           if (visible.isEmpty)
@@ -216,10 +224,11 @@ class _ListsScreenState extends State<ListsScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                     sliver: SliverToBoxAdapter(
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: context.card,
-                          borderRadius: kBRadiusM,
+                          border: Border(
+                            top: BorderSide(color: context.hairline),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,9 +343,9 @@ class _ListsScreenState extends State<ListsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.primary,
                 foregroundColor: context.onSolid,
-                minimumSize: const Size.fromHeight(54),
-                shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-                elevation: 4,
+                minimumSize: const Size.fromHeight(50),
+                shape: RoundedRectangleBorder(borderRadius: kBRadiusS),
+                elevation: 0,
               ),
               icon: _finishingShopping
                   ? const SizedBox(
@@ -637,7 +646,7 @@ class _ItemRow extends StatelessWidget {
             ((item.actual ?? item.est).times(item.qty)).text,
             style: TextStyle(
               fontSize: 13.5,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: done ? context.inkSoft : context.ink,
             ),
           ),

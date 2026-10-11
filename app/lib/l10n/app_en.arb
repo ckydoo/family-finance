@@ -1052,6 +1052,8 @@
   "tourTitle": "A quick tour",
   "tourPoolTitle": "Know what is available",
   "tourPoolBody": "Home shows your family pool, recent activity and the budgets that need attention.",
+  "tourFamilyTitle": "Manage your family",
+  "tourFamilyBody": "Tap your family name to invite people, manage members and roles, or switch families.",
   "tourPlanTitle": "Give every dollar a job",
   "tourPlanBody": "Use Budgets to plan spending, Savings for goals, and Shopping for the shared family list.",
   "tourAddTitle": "Add money in seconds",

@@ -2082,6 +2082,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Inicio muestra el fondo familiar, la actividad reciente y los presupuestos que requieren atención.';
 
   @override
+  String get tourFamilyTitle => 'Gestiona tu familia';
+
+  @override
+  String get tourFamilyBody =>
+      'Pulsa el nombre de la familia para invitar personas, gestionar miembros y roles, o cambiar de familia.';
+
+  @override
   String get tourPlanTitle => 'Dale un trabajo a cada cantidad';
 
   @override

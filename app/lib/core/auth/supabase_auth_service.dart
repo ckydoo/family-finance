@@ -349,7 +349,48 @@ class SupabaseAuthService implements AuthService {
   }
 
   @override
-  Future<String?> refreshAccessToken() async {
+  Future<String?> validAccessToken() async {
+    final get = _kvGet;
+    if (get == null) return null;
+    final access = await get('auth_access_token');
+    if (access != null && access.isNotEmpty) {
+      final exp = _jwtExpiry(access);
+      if (exp != null &&
+          exp.isAfter(DateTime.now().add(const Duration(seconds: 60)))) {
+        return access;
+      }
+    }
+    return refreshAccessToken();
+  }
+
+  /// `exp` claim of a JWT, or null when the token is not a decodable JWT.
+  static DateTime? _jwtExpiry(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      final exp = payload is Map ? payload['exp'] : null;
+      if (exp is! num) return null;
+      return DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// In-flight refresh shared by concurrent callers. Supabase rotates
+  /// refresh tokens, so parallel refreshes with the same token race each
+  /// other (and burn through GoTrue's token-refresh rate limit).
+  Future<String?>? _refreshInFlight;
+
+  @override
+  Future<String?> refreshAccessToken() {
+    return _refreshInFlight ??=
+        _doRefresh().whenComplete(() => _refreshInFlight = null);
+  }
+
+  Future<String?> _doRefresh() async {
     final get = _kvGet;
     if (get == null) return null;
     final refresh = await get('auth_refresh_token');
@@ -509,7 +550,10 @@ class SupabaseAuthService implements AuthService {
       );
     }
     if (raw.isEmpty) {
-      return ('Something went wrong ($r.statusCode). Try again.', null);
+      if (r.statusCode >= 500) {
+        return ('Our servers are temporarily busy. Please try again shortly.', null);
+      }
+      return ('Something went wrong. Please check your details and try again.', null);
     }
     return (raw, null);
   }

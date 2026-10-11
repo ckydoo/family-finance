@@ -20,6 +20,7 @@ import 'core/theme/app_theme.dart';
 import 'core/money/money.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/reset_password_screen.dart';
+import 'features/family_chat/family_chat_screen.dart';
 import 'features/kids/kids_mode.dart';
 import 'features/onboarding/family_setup_screen.dart';
 import 'features/shell/adult_shell.dart';
@@ -68,6 +69,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     _lastNotifyEnabled = _state.notifyEnabled;
     _auth.addListener(_onAuthChanged);
     _state.addListener(_onStateChanged);
+    FirebaseServices.onNotificationOpen = _openNotificationDestination;
     if (_auth.isLoggedIn) unawaited(_bindFirebaseUser());
 
     // #1 recovery + invite deep links, and the resume-your-reset banner.
@@ -90,7 +92,10 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     _state.immediateNotificationHook = (notification) {
       if (_state.notifyEnabled &&
           _state.notifyAllowed.contains(notification.category)) {
-        unawaited(Notifier.showNow(notification));
+        unawaited(Notifier.showNow(
+          notification,
+          payload: notification.key.startsWith('chat_') ? 'family_chat' : null,
+        ));
       }
     };
 
@@ -105,7 +110,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
           anonKey: key ?? '',
           // Auth credentials live in Keychain/encrypted storage, never in the
           // SQLite family ledger. The controller owns refresh and persistence.
-          tokenGet: _auth.refreshAccessToken,
+          tokenGet: _auth.validAccessToken,
         ),
         database: db.raw,
         persistence: Persistence(db),
@@ -209,7 +214,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       userId: userId,
       baseUrl: url,
       anonKey: key,
-      accessToken: _auth.refreshAccessToken,
+      accessToken: _auth.validAccessToken,
       notificationsEnabled: _state.notifyEnabled,
     );
   }
@@ -283,12 +288,26 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     if (state == AppLifecycleState.resumed && _configured && _auth.isLoggedIn) {
       _engine?.syncNow();
       _state.refreshPending();
+      unawaited(_bindFirebaseUser());
     }
+  }
+
+  void _openNotificationDestination(String destination) {
+    if (destination != 'family_chat') return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_auth.isLoggedIn || !_state.onboardingComplete) return;
+      final navigator = _navKey.currentState;
+      if (navigator == null) return;
+      navigator.push(MaterialPageRoute<void>(
+        builder: (_) => const FamilyChatScreen(),
+      ));
+    });
   }
 
   @override
   void dispose() {
     FirebaseServices.onFamilyUpdate = null;
+    FirebaseServices.onNotificationOpen = null;
     _linkSub?.cancel();
     _engine?.dispose();
     _auth.removeListener(_onAuthChanged);
@@ -435,6 +454,9 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 }
                 // First run starts at Authentication. After verifying once,
                 // launches go straight in via the restored session.
+                if (_auth.restoring && !_auth.isLoggedIn) {
+                  return const _Splash();
+                }
                 if (!_auth.isLoggedIn) {
                   return LoginScreen(auth: _auth);
                 }

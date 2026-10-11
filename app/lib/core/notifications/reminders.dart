@@ -232,17 +232,17 @@ class ReminderPlanner {
       }
     }
 
-    // 4. Savings circle turn (E4/J2) - Sunday 5pm while the round is open
-    //    (the tracker has no collection dates yet, so a weekly check-in).
+    // 4. Savings circle turn (E4/J2) - Mukando weekly reminder.
     if (config.allows(ReminderCategory.circle) &&
         circle != null &&
         circle.currentRound <= circle.totalRounds) {
+      final collectorName = memberNames[circle.nextCollectorId] ??
+          (circle.nextCollector.isNotEmpty ? circle.nextCollector : 'next up');
       out.add(Reminder(
         key: 'circle_weekly',
         category: ReminderCategory.circle,
         title:
-            '🔄 Savings circle - ${memberNames[circle.nextCollector] ?? 'next up'} '
-            'collects this round',
+            '🔄 Savings circle - $collectorName collects this round',
         body: 'Round ${circle.currentRound} of ${circle.totalRounds}. '
             'Mark contributions in Savings.',
         when: _nextSundayAt(now, 17),

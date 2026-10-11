@@ -2068,6 +2068,13 @@ class AppLocalizationsNd extends AppLocalizations {
       'Ikhaya litshengisa imali yomndeni, okwenziwe muva kanye lamabhajethi adinga ukunakwa.';
 
   @override
+  String get tourFamilyTitle => 'Phatha imuli yakho';
+
+  @override
+  String get tourFamilyBody =>
+      'Cindezela ibizo lemuli ukunxusa abantu, ukuphatha amalunga lezikhundla, kumbe ukutshintsha imuli.';
+
+  @override
   String get tourPlanTitle => 'Nika yonke imali umsebenzi';
 
   @override

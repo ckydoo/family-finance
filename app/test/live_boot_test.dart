@@ -26,6 +26,9 @@ class FakeAuthService implements AuthService {
   Future<String?> refreshAccessToken() async =>
       _session == null ? null : 'fake-access-token';
 
+  @override
+  Future<String?> validAccessToken() => refreshAccessToken();
+
   bool _valid(String email, String password) =>
       email.contains('@') && email.contains('.') && password.length >= 6;
 
