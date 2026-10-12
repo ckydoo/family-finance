@@ -47,6 +47,20 @@ class FakeAuthService implements AuthService {
       signIn(email, password);
 
   @override
+  Future<Uri> createGoogleOAuthUri() async =>
+      Uri.parse('https://auth.test/authorize?provider=google');
+
+  @override
+  Future<AuthResult> exchangeOAuthCode(String code) async {
+    if (code.isEmpty) {
+      return const AuthResult.failure('Missing code.', code: 'oauth_failed');
+    }
+    _session =
+        const AuthSession(userId: 'google-user-1', email: 'google@example.com');
+    return const AuthResult.success();
+  }
+
+  @override
   Future<AuthSession?> restoreSession() async => _session;
 
   @override

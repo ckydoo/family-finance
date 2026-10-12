@@ -67,8 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    final uri = await widget.auth.createGoogleSignInUri();
     final opened = await launchUrl(
-      widget.auth.googleSignInUri,
+      uri,
       mode: LaunchMode.externalApplication,
     );
     if (!mounted || opened) return;

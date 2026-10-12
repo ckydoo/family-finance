@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
@@ -107,10 +108,14 @@ class _AdultShellState extends State<AdultShell> {
     final l = AppLocalizations.of(context)!;
     final s = AppScope.of(context);
     final destinations = [
-      _NavDest(Icons.home_outlined, Icons.home_rounded, l.tabHome),
-      _NavDest(Icons.pie_chart_outline, Icons.pie_chart, l.tabBudgets),
-      _NavDest(Icons.savings_outlined, Icons.savings, l.tabSavings),
-      _NavDest(Icons.shopping_cart_outlined, Icons.shopping_cart, l.tabLists),
+      _NavDest(FontAwesomeIcons.house.data, FontAwesomeIcons.houseChimney.data,
+          l.tabHome),
+      _NavDest(FontAwesomeIcons.chartPie.data,
+          FontAwesomeIcons.chartSimple.data, l.tabBudgets),
+      _NavDest(FontAwesomeIcons.coins.data, FontAwesomeIcons.piggyBank.data,
+          l.tabSavings),
+      _NavDest(FontAwesomeIcons.listCheck.data,
+          FontAwesomeIcons.cartShopping.data, l.tabLists),
     ];
     final navTextScale = MediaQuery.textScalerOf(context).scale(11) / 11;
     final navHeight = (68 + ((navTextScale - 1).clamp(0, 1) * 18)).toDouble();
@@ -237,7 +242,7 @@ class _AdultShellState extends State<AdultShell> {
                   style: TextStyle(
                     fontSize: 11,
                     letterSpacing: 0.1,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     color: color,
                   ),
                 ),
@@ -436,7 +441,7 @@ class _TourBubble extends StatelessWidget {
                           style: TextStyle(
                               color: context.ink,
                               fontSize: 17,
-                              fontWeight: FontWeight.w800)),
+                              fontWeight: FontWeight.w700)),
                     ),
                     TextButton(
                         onPressed: closing ? null : onSkip,

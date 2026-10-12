@@ -360,7 +360,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   style: TextStyle(
                     fontSize: 11,
                     letterSpacing: 0.7,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: sheetContext.inkSoft,
                   ),
                 ),
@@ -371,7 +371,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             final hasLimit = state.effectiveLimit(envelope).minor > 0;
             return ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-              leading: Icon(iconForKey(envelope.emoji) ?? Icons.savings,
+              leading: Icon(iconForKey(envelope.emoji) ?? kFallbackSemanticIcon,
                   color: sheetContext.primaryDark),
               title: Text(envelope.name,
                   maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -599,7 +599,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       l.quickAddTitle,
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         color: context.ink,
                       ),
                     ),
@@ -619,7 +619,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 'What are you adding?',
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.ink,
                 ),
               ),
@@ -660,13 +660,13 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 inputFormatters: amountInputFormatters,
                 style: TextStyle(
                     fontSize: 32,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: context.ink),
                 decoration: InputDecoration(
                   prefixText: '${_cur.symbol} ',
                   prefixStyle: TextStyle(
                       fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.inkSoft),
                   filled: true,
                   fillColor: context.card,
@@ -769,7 +769,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   for (final m in members)
                     ChoiceChip(
                       label: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(iconForKey(m.emoji) ?? Icons.person,
+                        Icon(iconForKey(m.emoji) ?? kFallbackSemanticIcon,
                             size: 16, color: context.primaryDark),
                         const SizedBox(width: 8),
                         SizedBox(
@@ -900,7 +900,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     : Text(
                         _type == TxType.expense ? 'Add expense' : 'Add income',
                         style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w800),
+                            fontSize: 16, fontWeight: FontWeight.w700),
                       ),
               ),
             ),
@@ -964,7 +964,7 @@ class _TransactionTypeButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: selected ? selectedForeground : context.ink,
                     ),
                   ),
@@ -1012,7 +1012,7 @@ class _BudgetSelector extends StatelessWidget {
               Icon(
                 selected == null
                     ? Icons.account_balance_wallet_outlined
-                    : iconForKey(selected.emoji) ?? Icons.savings,
+                    : iconForKey(selected.emoji) ?? kFallbackSemanticIcon,
                 color: context.primaryDark,
               ),
               const SizedBox(width: 12),
@@ -1026,7 +1026,7 @@ class _BudgetSelector extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         color: context.ink,
                       ),
                     ),

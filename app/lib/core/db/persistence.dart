@@ -788,6 +788,10 @@ class Persistence {
         'media_url': m.mediaUrl,
         'media_type': m.mediaType,
         'sticker': m.sticker,
+        'reply_to_id': m.replyToId,
+        'reply_sender_name': m.replySenderName,
+        'reply_preview': m.replyPreview,
+        'edited_at_ms': m.editedAt?.millisecondsSinceEpoch,
         'deleted': m.deleted ? 1 : 0,
       };
 
@@ -1105,6 +1109,12 @@ class Persistence {
         mediaUrl: m['media_url'] as String?,
         mediaType: m['media_type'] as String?,
         sticker: m['sticker'] as String?,
+        replyToId: m['reply_to_id'] as String?,
+        replySenderName: m['reply_sender_name'] as String?,
+        replyPreview: m['reply_preview'] as String?,
+        editedAt: m['edited_at_ms'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(m['edited_at_ms'] as int),
         deleted: (m['deleted'] as int? ?? 0) == 1,
       );
 

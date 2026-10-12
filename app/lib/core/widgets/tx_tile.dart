@@ -28,7 +28,7 @@ class TxTile extends StatelessWidget {
     final env = s.envelope(tx.envelopeId);
     final icon = tx.type == TxType.income
         ? Icons.savings
-        : iconForKey(env?.emoji) ?? Icons.receipt_long;
+        : iconForKey(env?.emoji) ?? kFallbackSemanticIcon;
     final member = s.member(tx.memberId);
     final isIn = tx.type == TxType.income;
 
@@ -68,7 +68,9 @@ class TxTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      tx.note.isEmpty ? (env?.name ?? (isIn ? 'Income' : 'Expense')) : tx.note,
+                      tx.note.isEmpty
+                          ? (env?.name ?? (isIn ? 'Income' : 'Expense'))
+                          : tx.note,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -83,7 +85,9 @@ class TxTile extends StatelessWidget {
                         Flexible(
                           child: Text(
                             [
-                              if (member?.name != null && member!.name.isNotEmpty) member.name,
+                              if (member?.name != null &&
+                                  member!.name.isNotEmpty)
+                                member.name,
                               fmtWhen(tx.when),
                               methodLabel,
                               if (budgetLabel != null) budgetLabel,
@@ -126,7 +130,8 @@ class TxTile extends StatelessWidget {
     );
   }
 
-  void _showTransaction(BuildContext context, AppState state, {bool canManage = true}) {
+  void _showTransaction(BuildContext context, AppState state,
+      {bool canManage = true}) {
     final note = TextEditingController(text: tx.note);
     final amount =
         TextEditingController(text: (tx.amount.minor / 100).toStringAsFixed(2));
@@ -167,8 +172,8 @@ class TxTile extends StatelessWidget {
                   child: FilledButton(
                     onPressed: editing
                         ? () {
-                            final parsed =
-                                double.tryParse(amount.text.replaceAll(',', ''));
+                            final parsed = double.tryParse(
+                                amount.text.replaceAll(',', ''));
                             if (note.text.trim().isEmpty ||
                                 parsed == null ||
                                 parsed <= 0) {
@@ -178,7 +183,8 @@ class TxTile extends StatelessWidget {
                             }
                             state.updateTx(
                               tx,
-                              amount: Money.fromMajor(parsed, tx.amount.currency),
+                              amount:
+                                  Money.fromMajor(parsed, tx.amount.currency),
                               method: method,
                               note: note.text,
                               when: tx.when,
@@ -278,7 +284,8 @@ class TxTile extends StatelessWidget {
                       sheetContext,
                       'Description',
                       tx.note.isEmpty
-                          ? (env?.name ?? (tx.type == TxType.income ? 'Income' : 'Expense'))
+                          ? (env?.name ??
+                              (tx.type == TxType.income ? 'Income' : 'Expense'))
                           : tx.note,
                     ),
                     _detailRow(sheetContext, 'Amount', tx.amount.text),
@@ -286,7 +293,9 @@ class TxTile extends StatelessWidget {
                       _detailRow(
                         sheetContext,
                         'Display equivalent',
-                        tx.amount.inCurrency(state.displayCurrency, state.rate).text,
+                        tx.amount
+                            .inCurrency(state.displayCurrency, state.rate)
+                            .text,
                       ),
                     _detailRow(sheetContext, 'Type',
                         tx.type == TxType.income ? 'Income' : 'Expense'),

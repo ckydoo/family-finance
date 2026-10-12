@@ -79,7 +79,7 @@ class MhuriSetupErrorApp extends StatelessWidget {
                   'Mhuri - setup needed',
                   style: TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: Color(0xFFEAF4F0),
                   ),
                 ),

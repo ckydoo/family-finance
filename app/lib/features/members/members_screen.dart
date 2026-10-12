@@ -197,7 +197,7 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
                       child: CircleAvatar(
                         radius: 21,
                         backgroundColor: context.card,
-                        child: Icon(iconForKey(k) ?? Icons.person,
+                        child: Icon(iconForKey(k) ?? kFallbackSemanticIcon,
                             size: 20, color: context.ink),
                       ),
                     ),
@@ -350,7 +350,7 @@ class MembersScreen extends StatelessWidget {
                           style: TextStyle(
                             color: context.ink,
                             fontSize: 18,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -655,7 +655,7 @@ class MembersScreen extends StatelessWidget {
             Text(
               AppLocalizations.of(context)!.spaceSetup,
               style: TextStyle(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 fontSize: 15,
                 color: context.ink,
               ),
@@ -718,9 +718,9 @@ class MembersScreen extends StatelessWidget {
       SyncStatus.syncing => AppLocalizations.of(context)!.syncing,
       SyncStatus.offline => AppLocalizations.of(context)!.offlineRetry,
       SyncStatus.error => userFacingErrorMessage(
-            s.syncLastError,
-            fallback: AppLocalizations.of(context)!.syncProblem,
-          ),
+          s.syncLastError,
+          fallback: AppLocalizations.of(context)!.syncProblem,
+        ),
       SyncStatus.needsSignIn => AppLocalizations.of(context)!.signinExpired,
       _ => AppLocalizations.of(context)!.lastSync(lastText),
     };
@@ -744,7 +744,7 @@ class MembersScreen extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -759,7 +759,7 @@ class MembersScreen extends StatelessWidget {
                   s.inviteCode ?? '',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1,
                   ),
                 ),
@@ -1425,7 +1425,7 @@ class MembersScreen extends StatelessWidget {
     return ListTile(
       leading: MemberAvatar(
         backgroundColor: _roleBg(ctx, m.role),
-        icon: iconForKey(m.emoji) ?? Icons.person,
+        icon: iconForKey(m.emoji) ?? kFallbackSemanticIcon,
         imageUrl: m.avatarUrl,
       ),
       title: Text(
@@ -1445,7 +1445,7 @@ class MembersScreen extends StatelessWidget {
               l.youTag,
               style: TextStyle(
                 fontSize: 11.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: ctx.primary,
               ),
             )
@@ -1618,7 +1618,7 @@ class MembersScreen extends StatelessWidget {
                           child: Text(
                             c.short,
                             style: TextStyle(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: s.displayCurrency == c
                                   ? ctx.onSolid
                                   : ctx.ink,
@@ -2008,7 +2008,7 @@ class _MemberRow extends StatelessWidget {
                 child: m.avatarUrl != null
                     ? null
                     : Icon(
-                        iconForKey(m.emoji) ?? Icons.person,
+                        iconForKey(m.emoji) ?? kFallbackSemanticIcon,
                         size: 19,
                         color: context.ink,
                       ),

@@ -518,6 +518,35 @@ void main() {
       expect(request.state, RequestState.approved);
     });
 
+    test('Kids Mode preview sends a request attributed to the child', () {
+      final s = makeStateFor(role: Role.owner, id: 'm_parent');
+      const child = Member(
+        id: 'm_child_profile',
+        name: 'Tari',
+        emoji: 'child',
+        role: Role.kid,
+      );
+      s.members.add(child);
+
+      s.switchUser(child);
+      expect(s.isPreviewing, isTrue);
+      expect(s.authRole, Role.owner);
+      expect(
+        s.requestMoney(const Money(500, Currency.usd), 'School stationery'),
+        isTrue,
+      );
+
+      final request = s.requests.single;
+      expect(request.kidId, child.id);
+      expect(request.state, RequestState.pending);
+
+      s.exitPreview();
+      expect(s.canApprove, isTrue);
+      expect(s.requests.single.state, RequestState.pending);
+      s.approveRequest(request);
+      expect(request.state, RequestState.approved);
+    });
+
     test('10. Teen proposal posts exactly once only after parent approval', () {
       final s = makeStateFor(role: Role.teen, id: 'm_teen_actor');
       final teen = s.realUser;

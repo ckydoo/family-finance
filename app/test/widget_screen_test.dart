@@ -10,6 +10,7 @@ import 'package:mhuri_money/features/budgets/budgets_screen.dart';
 import 'package:mhuri_money/features/family_chat/family_chat_screen.dart';
 import 'package:mhuri_money/features/home/home_screen.dart';
 import 'package:mhuri_money/features/lists/lists_screen.dart';
+import 'package:mhuri_money/features/meeting/family_meeting_screen.dart';
 import 'package:mhuri_money/features/onboarding/family_setup_screen.dart';
 import 'package:mhuri_money/features/reports/reports_screen.dart';
 import 'package:mhuri_money/features/savings/savings_screen.dart';
@@ -94,6 +95,47 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
   });
 
+  testWidgets('Home shows only the two nearest dated open tasks',
+      (tester) async {
+    sizeWindow(tester);
+    final s = await seeded();
+    final now = DateTime.now();
+    s.familyTasks.addAll([
+      FamilyTask(
+        id: 'task-third',
+        title: 'Third nearest task',
+        createdAt: now,
+        dueDate: now.add(const Duration(days: 3)),
+      ),
+      FamilyTask(
+        id: 'task-undated',
+        title: 'Undated task',
+        createdAt: now,
+      ),
+      FamilyTask(
+        id: 'task-nearest',
+        title: 'Nearest task',
+        createdAt: now,
+        dueDate: now.add(const Duration(days: 1)),
+      ),
+      FamilyTask(
+        id: 'task-second',
+        title: 'Second nearest task',
+        createdAt: now,
+        dueDate: now.add(const Duration(days: 2)),
+      ),
+    ]);
+
+    await tester.pumpWidget(harness(s, const HomeScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tasks coming up'), findsOneWidget);
+    expect(find.text('Nearest task'), findsOneWidget);
+    expect(find.text('Second nearest task'), findsOneWidget);
+    expect(find.text('Third nearest task'), findsNothing);
+    expect(find.text('Undated task'), findsNothing);
+  });
+
   testWidgets('Family Chat task action opens Tasks even when none exist',
       (tester) async {
     sizeWindow(tester);
@@ -141,6 +183,109 @@ void main() {
 
     expect(find.text('Tasks & responsibilities'), findsOneWidget);
     expect(find.text('Start task'), findsOneWidget);
+  });
+
+  testWidgets('swiping a chat message creates a durable reply', (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    s.familyChatMessages.add(FamilyChatMessage(
+      id: 'original-message',
+      familyId: 'family',
+      senderId: 'dee',
+      senderName: 'Dee',
+      text: 'Can you collect the groceries?',
+      createdAt: DateTime(2026, 10, 12, 13, 21),
+    ));
+
+    await tester.pumpWidget(harness(s, const FamilyChatScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.text('Can you collect the groceries?'),
+      const Offset(220, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Cancel reply'), findsOneWidget);
+    expect(find.text('Dee'), findsAtLeastNWidgets(1));
+    await tester.enterText(find.byType(TextField), 'Yes, I can.');
+    await tester.tap(find.byIcon(Icons.send_rounded));
+    await tester.pumpAndSettle();
+
+    final reply = s.familyChatMessages.first;
+    expect(reply.text, 'Yes, I can.');
+    expect(reply.replyToId, 'original-message');
+    expect(reply.replySenderName, 'Dee');
+    expect(reply.replyPreview, 'Can you collect the groceries?');
+    expect(find.byTooltip('Cancel reply'), findsNothing);
+  });
+
+  testWidgets('long press edits and deletes an own text message',
+      (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    s.familyChatMessages.add(FamilyChatMessage(
+      id: 'own-text-message',
+      familyId: 'family',
+      senderId: s.user.id,
+      senderName: s.user.name,
+      text: 'Original message',
+      createdAt: DateTime(2026, 10, 12, 14),
+    ));
+
+    await tester.pumpWidget(harness(s, const FamilyChatScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.text('Original message'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit message'), findsOneWidget);
+    await tester.tap(find.text('Edit message'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).last, 'Edited message');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(s.familyChatMessages.single.text, 'Edited message');
+    expect(s.familyChatMessages.single.editedAt, isNotNull);
+    expect(find.text('Edited message'), findsOneWidget);
+    expect(find.text(' · Edited'), findsOneWidget);
+
+    await tester.longPress(find.text('Edited message'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete message'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete message?'), findsOneWidget);
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(s.familyChatMessages.single.deleted, isTrue);
+    expect(find.text('Edited message'), findsNothing);
+    expect(find.text('Message was deleted'), findsOneWidget);
+    expect(find.text('Edit message'), findsNothing);
+  });
+
+  testWidgets('long press does not offer edit for a media message',
+      (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    s.familyChatMessages.add(FamilyChatMessage(
+      id: 'own-photo-message',
+      familyId: 'family',
+      senderId: s.user.id,
+      senderName: s.user.name,
+      text: 'Family photo',
+      createdAt: DateTime(2026, 10, 12, 14),
+      mediaUrl: 'https://example.invalid/photo.jpg',
+      mediaType: 'image',
+    ));
+
+    await tester.pumpWidget(harness(s, const FamilyChatScreen()));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.text('Family photo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit message'), findsNothing);
+    expect(find.text('Delete message'), findsOneWidget);
   });
 
   testWidgets('approving a proposal closes its dialog without dead context',
@@ -386,6 +531,45 @@ void main() {
     expect(find.text('Export transactions (CSV)'), findsOneWidget);
   });
 
+  testWidgets('Family Meeting can decide a request and retain a commitment',
+      (tester) async {
+    sizeWindow(tester);
+    final s = await seeded();
+    s.members
+      ..add(s.user)
+      ..add(const Member(
+        id: 'meeting-child',
+        name: 'Tari',
+        emoji: 'child',
+        role: Role.kid,
+      ));
+    s.requests.add(KidRequest(
+      id: 'meeting-request',
+      kidId: 'meeting-child',
+      amount: Money.fromMajor(5, Currency.usd),
+      reason: 'School stationery',
+    ));
+
+    await tester.pumpWidget(harness(s, const FamilyMeetingScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Tari'), findsOneWidget);
+    await tester.tap(find.text('Approve'));
+    await tester.pumpAndSettle();
+    expect(s.requests.single.state, RequestState.approved);
+    expect(find.text('Approve'), findsNothing);
+
+    await tester.enterText(
+      find.byType(TextField),
+      'Plan school costs before payday',
+    );
+    await tester.tap(find.text('Save our note'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining(' · Plan school costs before payday'),
+        findsOneWidget);
+  });
+
   testWidgets('Settings renders notifications, quiet hours and month start',
       (tester) async {
     sizeWindow(tester);
@@ -419,6 +603,72 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Rice'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('shopping item can be added without a unit price',
+      (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    await tester.pumpWidget(harness(s, const ListsScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Add item'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Tomatoes');
+    await tester.tap(find.text('Add to list'));
+    await tester.pumpAndSettle();
+
+    expect(s.items.single.name, 'Tomatoes');
+    expect(s.items.single.est.minor, 0);
+    expect(find.textContaining('price not set'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Item actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit item'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(2), '2.50');
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(s.items.single.est.minor, 250);
+    expect(find.textContaining('est. ${s.items.single.est.text} each'),
+        findsOneWidget);
+  });
+
+  testWidgets('purchased shopping items can be reused together',
+      (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    s.addItem('Rice', 2, Money.fromMajor(3, Currency.usd));
+    s.addItem('Soap', 1, Money.fromMajor(2, Currency.usd));
+    for (final item in s.items) {
+      item
+        ..state = ItemState.done
+        ..checkedOut = true
+        ..actual = item.est;
+    }
+
+    await tester.pumpWidget(harness(s, const ListsScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Reuse purchased items'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rice'), findsWidgets);
+    expect(find.text('Soap'), findsWidgets);
+
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Soap'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add 1 to list'));
+    await tester.pumpAndSettle();
+
+    final rice = s.items.singleWhere((item) => item.name == 'Rice');
+    final soap = s.items.singleWhere((item) => item.name == 'Soap');
+    expect(rice.state, ItemState.tobuy);
+    expect(rice.checkedOut, isFalse);
+    expect(rice.actual, isNull);
+    expect(soap.state, ItemState.done);
+    expect(soap.checkedOut, isTrue);
+    expect(find.byTooltip('Reuse purchased items'), findsOneWidget);
   });
 
   testWidgets('Onboarding shows the first slide with the brand mark',

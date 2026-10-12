@@ -350,6 +350,10 @@ class FamilyChatMessage {
   final String? mediaUrl;
   final String? mediaType;
   final String? sticker;
+  final String? replyToId;
+  final String? replySenderName;
+  final String? replyPreview;
+  final DateTime? editedAt;
   final bool deleted;
 
   const FamilyChatMessage({
@@ -369,6 +373,10 @@ class FamilyChatMessage {
     this.mediaUrl,
     this.mediaType,
     this.sticker,
+    this.replyToId,
+    this.replySenderName,
+    this.replyPreview,
+    this.editedAt,
     this.deleted = false,
   });
 }

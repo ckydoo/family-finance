@@ -24,7 +24,8 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
     return;
   }
   final name = TextEditingController(
-      text: s.circle.name == 'Savings circle' ? 'Family Mukando' : s.circle.name);
+      text:
+          s.circle.name == 'Savings circle' ? 'Family Mukando' : s.circle.name);
   final amount = TextEditingController(
       text: s.circle.contribution.minor > 0
           ? s.circle.contribution.major.toStringAsFixed(2)
@@ -128,10 +129,12 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                         fillColor: context.card,
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                        DropdownMenuItem(
+                            value: 'weekly', child: Text('Weekly')),
                         DropdownMenuItem(
                             value: 'fortnightly', child: Text('Fortnightly')),
-                        DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                        DropdownMenuItem(
+                            value: 'monthly', child: Text('Monthly')),
                       ],
                       onChanged: (v) {
                         if (v != null) setSheetState(() => frequency = v);
@@ -222,8 +225,8 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                   final m = s.member(memberId);
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: context.card,
                       borderRadius: BorderRadius.circular(10),
@@ -251,7 +254,7 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                         const SizedBox(width: 10),
                         MemberAvatar(
                           backgroundColor: context.primarySoft,
-                          icon: iconForKey(m?.emoji) ?? Icons.person,
+                          icon: iconForKey(m?.emoji) ?? kFallbackSemanticIcon,
                           imageUrl: m?.avatarUrl,
                           radius: 14,
                         ),
@@ -305,16 +308,15 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                 }),
               ],
               // Add remaining members dropdown
-              if (eligibleMembers
-                  .any((m) => !orderedIds.contains(m.id))) ...[
+              if (eligibleMembers.any((m) => !orderedIds.contains(m.id))) ...[
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   decoration: InputDecoration(
                     hintText: '+ Add member to circle',
                     filled: true,
                     fillColor: context.card,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   items: eligibleMembers
                       .where((m) => !orderedIds.contains(m.id))
@@ -343,9 +345,7 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                     for (final id in orderedIds)
                       if (s.member(id) != null) s.member(id)!
                   ];
-                  if (val == null ||
-                      val <= 0 ||
-                      selectedParticipants.isEmpty) {
+                  if (val == null || val <= 0 || selectedParticipants.isEmpty) {
                     return;
                   }
                   s.configureMukando(
@@ -713,7 +713,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
                               color: context.primarySoft.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                  color: context.primary.withValues(alpha: 0.2)),
+                                  color:
+                                      context.primary.withValues(alpha: 0.2)),
                             ),
                             child: Row(
                               children: [
@@ -759,8 +760,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
                                   decoration: BoxDecoration(
                                     color: context.card,
                                     borderRadius: BorderRadius.circular(8),
-                                    border:
-                                        Border.all(color: context.hairline),
+                                    border: Border.all(color: context.hairline),
                                   ),
                                   child: Text(
                                     m.frequency.toUpperCase(),
@@ -784,9 +784,10 @@ class _SavingsScreenState extends State<SavingsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: DateTime.now().isAfter(m.currentDueDate)
-                                      ? context.expenseRed
-                                      : context.inkSoft,
+                                  color:
+                                      DateTime.now().isAfter(m.currentDueDate)
+                                          ? context.expenseRed
+                                          : context.inkSoft,
                                 ),
                               ),
                               Builder(builder: (ctx) {
@@ -864,7 +865,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
                                     MemberAvatar(
                                       backgroundColor: context.primarySoft,
                                       icon: iconForKey(mem?.emoji) ??
-                                          Icons.person,
+                                          kFallbackSemanticIcon,
                                       imageUrl: mem?.avatarUrl,
                                       radius: 14,
                                     ),
@@ -905,8 +906,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
                                           memberId == s.realUser.id)
                                         IconButton(
                                           tooltip: 'Undo payment',
-                                          icon: const Icon(Icons.undo,
-                                              size: 16),
+                                          icon:
+                                              const Icon(Icons.undo, size: 16),
                                           visualDensity: VisualDensity.compact,
                                           onPressed: () {
                                             s.unrecordMukandoPayment(memberId);
@@ -916,8 +917,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
                                       if (s.canAdmin ||
                                           memberId == s.realUser.id)
                                         TextButton(
-                                          onPressed: () => s
-                                              .recordMukandoPayment(memberId),
+                                          onPressed: () =>
+                                              s.recordMukandoPayment(memberId),
                                           style: TextButton.styleFrom(
                                             visualDensity:
                                                 VisualDensity.compact,
@@ -1843,7 +1844,7 @@ class _DebtDetailAmount extends StatelessWidget {
           children: [
             Text(label, style: TextStyle(fontSize: 11, color: context.inkSoft)),
             const SizedBox(height: 2),
-            Text(amount, style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(amount, style: const TextStyle(fontWeight: FontWeight.w700)),
           ],
         ),
       );
@@ -1883,7 +1884,7 @@ class GoalCard extends StatelessWidget {
             stroke: 5,
             color: ringColor,
             child: Icon(
-              iconForKey(goal.emoji) ?? Icons.flag_outlined,
+              iconForKey(goal.emoji) ?? kFallbackSemanticIcon,
               size: 18,
               color: context.primaryDark,
             ),
@@ -2098,7 +2099,7 @@ class GoalCard extends StatelessWidget {
                     }
                   },
                   style: const TextStyle(
-                      fontSize: 26, fontWeight: FontWeight.w800),
+                      fontSize: 26, fontWeight: FontWeight.w700),
                   decoration: InputDecoration(
                     prefixText: '${cur.symbol} ',
                     filled: true,

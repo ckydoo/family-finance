@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/money/money.dart';
 import 'reminders_sheet.dart';
@@ -11,6 +12,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/error_messages.dart';
 import '../../core/widgets/motion.dart';
+import '../../core/widgets/ring_progress.dart';
 import '../../core/widgets/tx_tile.dart';
 import '../../core/widgets/ui.dart';
 import '../activity/activity_screen.dart';
@@ -182,6 +184,22 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
     }
   }
 
+  Future<void> _signOut() async {
+    final auth = widget.state.auth;
+    if (auth == null || auth.busy || _switching) return;
+    final confirmed = await confirmDialog(
+      context,
+      title: 'Sign out?',
+      body:
+          'Are you sure you want to sign out? You can sign in again to return to your family space.',
+      confirmLabel: AppLocalizations.of(context)!.signOut,
+      danger: true,
+    );
+    if (!confirmed || !mounted) return;
+    Navigator.pop(context);
+    await auth.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeId = widget.state.sync?.spaceId;
@@ -203,7 +221,7 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                       style: TextStyle(
                         color: context.primary,
                         fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 1.25,
                       ),
                     ),
@@ -212,7 +230,7 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                         style: Theme.of(context)
                             .textTheme
                             .headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w800)),
+                            ?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 5),
                     Text('Choose the family space you want to use.',
                         style: TextStyle(
@@ -303,7 +321,7 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                           fontSize: 15,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w700,
                                           color: context.ink)),
                                   const SizedBox(height: 2),
                                   Text(
@@ -331,7 +349,7 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                                     Text('Current',
                                         style: TextStyle(
                                             fontSize: 10.5,
-                                            fontWeight: FontWeight.w800,
+                                            fontWeight: FontWeight.w700,
                                             color: context.onSolid)),
                                   ],
                                 ),
@@ -352,7 +370,7 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
           Text('ADD A FAMILY',
               style: TextStyle(
                   fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
                   color: context.inkSoft)),
           const SizedBox(height: 9),
@@ -389,6 +407,20 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                     ));
                   },
           ),
+          if (widget.state.auth?.isLoggedIn ?? false)
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              minTileHeight: 50,
+              leading: Icon(Icons.logout_rounded, color: context.danger),
+              title: Text(
+                AppLocalizations.of(context)!.signOut,
+                style: TextStyle(
+                  color: context.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: widget.state.auth!.busy || _switching ? null : _signOut,
+            ),
         ],
       ),
     );
@@ -486,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               AppLocalizations.of(context)!.previewExit,
                               style: TextStyle(
                                   fontSize: 12.5,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                   color: context.ink),
                             ),
                           ),
@@ -511,7 +543,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 key: const ValueKey('home_signed_in_avatar'),
                                 radius: 18,
                                 backgroundColor: context.primarySoft,
-                                icon: iconForKey(u.emoji) ?? Icons.person,
+                                icon: iconForKey(u.emoji) ??
+                                    kFallbackSemanticIcon,
                                 imageUrl: u.avatarUrl,
                               ),
                               const SizedBox(width: 10),
@@ -524,9 +557,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontSize: 17,
+                                        fontSize: 16.5,
                                         height: 1.15,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w500,
                                         color: context.ink,
                                         letterSpacing: -0.2,
                                       ),
@@ -541,7 +574,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontSize: 12,
-                                              fontWeight: FontWeight.w500,
+                                              fontWeight: FontWeight.w400,
                                               color: context.inkSoft,
                                             ),
                                           ),
@@ -562,52 +595,42 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Keep the identity copy visually separate from the action
                     // cluster. Long member/space names stay inside the Expanded
                     // area above and ellipsize before reaching this gutter.
-                    const SizedBox(width: 8),
-                    // Quick Chat Icon
-                    IconButton(
+                    SizedBox(
+                      width: 8,
+                      height: 26,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          width: 1,
+                          height: 18,
+                          color: context.hairline.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ),
+                    _PremiumHeaderAction(
                       tooltip: 'Family chat',
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => Navigator.of(context).push(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      badgeCount: s.unreadChatCount,
+                      onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const FamilyChatScreen()),
                       ),
-                      icon: Badge(
-                        isLabelVisible: s.unreadChatCount > 0,
-                        label: s.unreadChatCount > 0
-                            ? Text(s.unreadChatCount > 99
-                                ? '99+'
-                                : '${s.unreadChatCount}')
-                            : null,
-                        child: Icon(Icons.chat_bubble_outline_rounded,
-                            size: 22, color: context.ink),
-                      ),
                     ),
-                    // Bell / Notifications
-                    IconButton(
+                    const SizedBox(width: 6),
+                    _PremiumHeaderAction(
                       tooltip: AppLocalizations.of(context)!.remindersTitle,
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => showRemindersSheet(context),
-                      icon: Badge(
-                        isLabelVisible: s.unreadNotificationCount > 0,
-                        label: s.unreadNotificationCount > 0
-                            ? Text(s.unreadNotificationCount > 99
-                                ? '99+'
-                                : '${s.unreadNotificationCount}')
-                            : null,
-                        child: Icon(Icons.notifications_none,
-                            size: 22, color: context.ink),
-                      ),
+                      icon: Icons.notifications_none,
+                      badgeCount: s.unreadNotificationCount,
+                      onTap: () => showRemindersSheet(context),
                     ),
-                    // Settings
-                    IconButton(
+                    const SizedBox(width: 6),
+                    _PremiumHeaderAction(
                       tooltip: AppLocalizations.of(context)!.settingsTitle,
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => Navigator.of(context).push(
+                      icon: Icons.settings_outlined,
+                      onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const SettingsScreen()),
                       ),
-                      icon: Icon(Icons.settings_outlined,
-                          size: 22, color: context.ink),
                     ),
                   ],
                 ),
@@ -650,7 +673,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 AppLocalizations.of(context)!.setupBannerCta,
                                 style: TextStyle(
                                     fontSize: 12.5,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w700,
                                     color: context.primary),
                               ),
                             ],
@@ -685,22 +708,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   // ── Today Section (Family Tasks due today/overdue) ──────────
                   Builder(
                     builder: (ctx) {
-                      final now = DateTime.now();
-                      final todayTasks = s.familyTasks
+                      final dueTasks = s.familyTasks
                           .where((t) =>
-                              !t.isArchived &&
-                              !t.isDone &&
-                              (t.dueDate == null ||
-                                  t.dueDate!.isBefore(DateTime(
-                                      now.year, now.month, now.day + 1))))
-                          .take(3)
-                          .toList();
-                      if (todayTasks.isEmpty) return const SizedBox.shrink();
+                              !t.isArchived && !t.isDone && t.dueDate != null)
+                          .toList()
+                        ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+                      final homeTasks = dueTasks.take(2).toList();
+                      if (homeTasks.isEmpty) return const SizedBox.shrink();
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SectionLabel(
-                            title: 'Today\'s tasks',
+                            title: 'Tasks coming up',
                             actionLabel: 'See all',
                             onAction: () => Navigator.of(context).push(
                               MaterialPageRoute(
@@ -708,10 +727,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             padding: const EdgeInsets.only(top: 14, bottom: 6),
                           ),
-                          for (int i = 0; i < todayTasks.length; i++)
+                          for (int i = 0; i < homeTasks.length; i++)
                             _HomeTaskRow(
-                              task: todayTasks[i],
-                              isLast: i == todayTasks.length - 1,
+                              task: homeTasks[i],
+                              isLast: i == homeTasks.length - 1,
                             ),
                           const SizedBox(height: 8),
                         ],
@@ -775,6 +794,93 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+class _PremiumHeaderAction extends StatelessWidget {
+  const _PremiumHeaderAction({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    this.badgeCount = 0,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [context.card, context.bg],
+              ),
+              border: Border.all(color: context.hairline),
+              boxShadow: [
+                BoxShadow(
+                  color: context.shadowColor.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  blurRadius: 1,
+                  offset: const Offset(-1, -1),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                splashColor: context.primary.withValues(alpha: 0.12),
+                child: Center(
+                  child: Icon(icon, size: 19, color: context.ink),
+                ),
+              ),
+            ),
+          ),
+          if (badgeCount > 0)
+            Positioned(
+              right: -3,
+              top: -3,
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: context.accent,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: context.bg, width: 1.5),
+                ),
+                child: Text(
+                  badgeCount > 99 ? '99+' : '$badgeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8.5,
+                    height: 1,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Plain-language monthly overview ─────────────────────────────────────────
 
 class _MonthlySummary extends StatelessWidget {
@@ -794,183 +900,281 @@ class _MonthlySummary extends StatelessWidget {
 
     String value(Money amount) => masked ? '•••••' : amount.text;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 8),
-          child: Text(
-            'This month',
-            style: TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
-              color: context.ink,
-              letterSpacing: -0.2,
-            ),
-          ),
-        ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: _SummaryStat(
-                label: 'Income',
-                value: value(income),
-                color: context.incomeGreen,
-              ),
-            ),
-            Container(
-              height: 28,
-              width: 1,
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              color: context.hairline.withValues(alpha: 0.7),
-            ),
-            Expanded(
-              child: _SummaryStat(
-                label: 'Spent',
-                value: value(spent),
-                color: context.expenseRed,
-              ),
-            ),
-            Container(
-              height: 28,
-              width: 1,
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              color: context.hairline.withValues(alpha: 0.7),
-            ),
-            Expanded(
-              child: _SummaryStat(
-                label: 'Remaining',
-                value: value(left),
-                color: left.minor < 0 ? context.expenseRed : context.ink,
-              ),
-            ),
-          ],
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cardWidth =
+              ((constraints.maxWidth - 16) / 3).clamp(92.0, 180.0);
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(children: [
+              _SummaryStat(
+                  width: cardWidth,
+                  label: 'Income',
+                  value: value(income),
+                  icon: Icons.arrow_upward_rounded,
+                  color: context.incomeGreen),
+              const SizedBox(width: 8),
+              _SummaryStat(
+                  width: cardWidth,
+                  label: 'Spent',
+                  value: value(spent),
+                  icon: Icons.arrow_downward_rounded,
+                  color: context.expenseRed),
+              const SizedBox(width: 8),
+              _SummaryStat(
+                  width: cardWidth,
+                  label: 'Remaining',
+                  value: value(left),
+                  icon: Icons.savings_outlined,
+                  color: left.minor < 0 ? context.expenseRed : context.primary),
+            ]),
+          );
+        },
+      ),
     );
   }
 }
 
-class _NeedsAttention extends StatelessWidget {
+class _NeedsAttention extends StatefulWidget {
   const _NeedsAttention();
+
+  @override
+  State<_NeedsAttention> createState() => _NeedsAttentionState();
+}
+
+class _NeedsAttentionState extends State<_NeedsAttention> {
+  final Set<String> _dismissedKeys = {};
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final budgets = s.envelopes.where((e) => !e.isPersonal).toList();
-    final over = budgets.where((e) => s.remainingOn(e).minor < 0).toList();
-    final close = budgets.where((e) => s.paceOf(e) == Pace.watch).toList();
-    String? warning;
-    VoidCallback? onTap;
+    final issues = [
+      for (final budget in budgets)
+        if (s.paceOf(budget) == Pace.over || s.paceOf(budget) == Pace.watch)
+          (budget, s.paceOf(budget)),
+    ]..sort((a, b) {
+        if (a.$2 == b.$2) return 0;
+        return a.$2 == Pace.over ? -1 : 1;
+      });
+    final activeKeys = issues.map((issue) => _issueKey(issue.$1, issue.$2));
+    _dismissedKeys.removeWhere((key) => !activeKeys.contains(key));
+    final visibleIssues = issues
+        .where(
+            (issue) => !_dismissedKeys.contains(_issueKey(issue.$1, issue.$2)))
+        .toList();
+    if (visibleIssues.isEmpty) return const SizedBox.shrink();
 
-    if (over.isNotEmpty) {
-      final b = over.first;
-      warning = '${b.name} is over budget';
-      onTap = () => showEnvelopeDetailSheet(context, b);
-    } else if (close.isNotEmpty) {
-      final b = close.first;
-      warning = '${b.name} is close to its limit';
-      onTap = () => showEnvelopeDetailSheet(context, b);
-    }
+    final message = visibleIssues.length == 1
+        ? _attentionMessage(visibleIssues.single.$1, visibleIssues.single.$2)
+        : '${visibleIssues.length}+ budgets need attention';
+    final currentIssue = visibleIssues.first;
+    final alertColor = context.warningSoft;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
-      child: warning == null
-          ? const SizedBox.shrink()
-          : Padding(
-              padding: const EdgeInsets.only(top: 14),
-              child: Material(
-                color: context.warningSoft,
-                borderRadius: kBRadiusM,
-                child: InkWell(
-                  onTap: onTap,
-                  borderRadius: kBRadiusM,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 11),
-                    child: Row(
-                      children: [
-                        Icon(Icons.warning_amber_rounded,
-                            size: 18, color: context.expenseRed),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Needs attention',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.inkSoft,
-                                ),
-                              ),
-                              Text(
-                                warning,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.ink,
-                                ),
-                              ),
-                            ],
+      child: Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Dismissible(
+          key: ValueKey(
+              'needs-attention-${_issueKey(currentIssue.$1, currentIssue.$2)}'),
+          direction: DismissDirection.endToStart,
+          onDismissed: (_) => setState(() {
+            _dismissedKeys.add(_issueKey(currentIssue.$1, currentIssue.$2));
+          }),
+          background: _dismissBackground(context),
+          child: Material(
+            color: alertColor,
+            borderRadius: kBRadiusM,
+            child: InkWell(
+              onTap: () => _openAttentionIssues(context, visibleIssues),
+              borderRadius: kBRadiusM,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded,
+                        size: 18, color: context.expenseRed),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Needs attention',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: context.inkSoft,
+                            ),
                           ),
-                        ),
-                        if (onTap != null)
-                          Icon(Icons.chevron_right,
-                              size: 18, color: context.inkSoft),
-                      ],
+                          Text(
+                            message,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: context.ink,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    Text(
+                      'Review',
+                      style: TextStyle(
+                        color: context.primaryDark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _issueKey(Envelope envelope, Pace pace) =>
+      '${envelope.id}:${pace.name}';
+
+  String _attentionMessage(Envelope envelope, Pace pace) => switch (pace) {
+        Pace.over => '${envelope.name} is over budget',
+        Pace.watch => '${envelope.name} may exceed its budget this cycle',
+        Pace.onTrack || Pace.reached => '',
+      };
+
+  void _openAttentionIssues(
+    BuildContext context,
+    List<(Envelope, Pace)> issues,
+  ) {
+    if (issues.length == 1) {
+      showEnvelopeDetailSheet(context, issues.single.$1);
+      return;
+    }
+
+    showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.75,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Budgets to review',
+                style: TextStyle(
+                  color: context.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView(
+                  children: [
+                    for (final (envelope, pace) in issues)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(envelope.name),
+                        subtitle: Text(_attentionMessage(envelope, pace)),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          showEnvelopeDetailSheet(context, envelope);
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
+Widget _dismissBackground(BuildContext context) => Container(
+      alignment: AlignmentDirectional.centerEnd,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: context.inkSoft,
+        borderRadius: kBRadiusM,
+      ),
+      child: Icon(Icons.visibility_off_outlined, color: context.onSolid),
+    );
+
 class _SummaryStat extends StatelessWidget {
   const _SummaryStat({
+    required this.width,
     required this.label,
     required this.value,
+    required this.icon,
     required this.color,
   });
 
+  final double width;
   final String label;
   final String value;
+  final IconData icon;
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              value,
+  Widget build(BuildContext context) {
+    final compact = width < 112;
+    return Container(
+      width: width,
+      height: 104,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 9 : 11,
+        vertical: 9,
+      ),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: kBRadiusL,
+        border: Border.all(color: context.hairline.withValues(alpha: 0.7)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, size: compact ? 19 : 21, color: color),
+        SizedBox(height: compact ? 5 : 6),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: compact ? 10.5 : 11.5,
+            fontWeight: FontWeight.w500,
+            color: context.inkSoft,
+          ),
+        ),
+        const SizedBox(height: 1),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(value,
               style: TextStyle(
-                color: color,
-                fontSize: 15.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              color: context.inkSoft,
-            ),
-          ),
-        ],
-      );
+                  color: context.ink,
+                  fontSize: compact ? 13.5 : 15,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: compact ? -0.35 : -0.2)),
+        ),
+      ]),
+    );
+  }
 }
 
 class _FirstStepsCard extends StatelessWidget {
@@ -1006,7 +1210,7 @@ class _FirstStepsCard extends StatelessWidget {
                       style: TextStyle(
                         color: context.ink,
                         fontSize: 19,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1072,7 +1276,7 @@ class _FirstStepsCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       letterSpacing: 1.1,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.inkSoft,
                     ),
                   ),
@@ -1096,7 +1300,7 @@ class _FirstStepsCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(iconForKey(b.emoji) ?? Icons.pie_chart_outline,
+                    Icon(iconForKey(b.emoji) ?? kFallbackSemanticIcon,
                         size: 18, color: context.primaryDark),
                     const SizedBox(width: 10),
                     Expanded(
@@ -1206,7 +1410,7 @@ class _FirstStepsCard extends StatelessWidget {
                 number,
                 style: TextStyle(
                   color: context.primaryDark,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
               ),
@@ -1294,6 +1498,8 @@ class _HomeBudgets extends StatelessWidget {
 
         return aRem.compareTo(bRem);
       });
+    final allUnconfigured =
+        sorted.every((budget) => s.effectiveLimit(budget).minor <= 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1304,20 +1510,23 @@ class _HomeBudgets extends StatelessWidget {
           onAction: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const BudgetsScreen()),
           ),
-          padding: const EdgeInsets.only(top: 18, bottom: 8),
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
         ),
         SizedBox(
-          height: 112,
+          height: allUnconfigured ? 132 : 160,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: sorted.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, index) => SizedBox(
-              width: (MediaQuery.sizeOf(context).width * 0.72)
-                  .clamp(240.0, 300.0)
+              width: (MediaQuery.sizeOf(context).width * 0.38)
+                  .clamp(136.0, 172.0)
                   .toDouble(),
-              child: _HomeBudgetCard(budget: sorted[index]),
+              child: _HomeBudgetCard(
+                budget: sorted[index],
+                compactEmpty: allUnconfigured,
+              ),
             ),
           ),
         ),
@@ -1328,9 +1537,13 @@ class _HomeBudgets extends StatelessWidget {
 }
 
 class _HomeBudgetCard extends StatelessWidget {
-  const _HomeBudgetCard({required this.budget});
+  const _HomeBudgetCard({
+    required this.budget,
+    required this.compactEmpty,
+  });
 
   final Envelope budget;
+  final bool compactEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -1355,7 +1568,7 @@ class _HomeBudgetCard extends StatelessWidget {
         },
         borderRadius: kBRadiusM,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: EdgeInsets.all(compactEmpty ? 10 : 12),
           decoration: BoxDecoration(
             borderRadius: kBRadiusM,
             border: Border.all(
@@ -1367,95 +1580,71 @@ class _HomeBudgetCard extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              Center(
+                child: RingProgress(
+                  value: ratio,
+                  size: compactEmpty ? 44 : 58,
+                  stroke: compactEmpty ? 5 : 6,
+                  color: over
+                      ? context.expenseRed
+                      : _paceColor(context, s.paceOf(budget)),
+                  child: Text(
+                    limit.minor <= 0
+                        ? '—'
+                        : '${(ratio * 100).clamp(0, 999).round()}%',
+                    style: TextStyle(
+                      color: over ? context.expenseRed : context.ink,
+                      fontSize: compactEmpty ? 12.5 : 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: compactEmpty ? 7 : 9),
               Row(
                 children: [
                   Icon(
-                    iconForKey(budget.emoji) ?? Icons.pie_chart_outline_rounded,
-                    size: 16,
+                    iconForKey(budget.emoji) ?? kFallbackSemanticIcon,
+                    size: 18,
                     color: over ? context.expenseRed : context.primaryDark,
                   ),
-                  const SizedBox(width: 7),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       budget.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: context.ink,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      hidden
-                          ? '•••••'
-                          : over
-                              ? '${Money(-remaining.minor, remaining.currency).text} over'
-                              : limit.minor <= 0
-                                  ? 'No limit'
-                                  : '${remaining.text} left',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: over ? context.expenseRed : context.ink,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          color: context.ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              MhuriProgress(
-                progress: ratio,
-                height: 4,
-                color: over
-                    ? context.expenseRed
-                    : _paceColor(context, s.paceOf(budget)),
+              SizedBox(height: compactEmpty ? 5 : 8),
+              Text(
+                limit.minor <= 0
+                    ? 'Tap to set a limit'
+                    : hidden
+                        ? '••••• of •••••'
+                        : '${spent.text} / ${limit.text}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: context.inkSoft, fontSize: 11),
               ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      hidden ? '•••••' : '${spent.text} spent',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: context.inkSoft,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      limit.minor <= 0
-                          ? 'Tap to set'
-                          : hidden
-                              ? 'of •••••'
-                              : 'of ${limit.text}',
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: TextStyle(
-                        color: limit.minor <= 0
-                            ? context.primary
-                            : context.inkSoft,
-                        fontSize: 11,
-                        fontWeight: limit.minor <= 0
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              if (!compactEmpty) ...[
+                const Spacer(),
+                MhuriProgress(
+                  progress: ratio,
+                  height: 5,
+                  color: over
+                      ? context.expenseRed
+                      : _paceColor(context, s.paceOf(budget)),
+                ),
+              ],
             ],
           ),
         ),
@@ -1464,16 +1653,62 @@ class _HomeBudgetCard extends StatelessWidget {
   }
 }
 
-class _ComingUp extends StatelessWidget {
+class _ComingUp extends StatefulWidget {
   const _ComingUp();
+
+  @override
+  State<_ComingUp> createState() => _ComingUpState();
+}
+
+class _ComingUpState extends State<_ComingUp> {
+  final Set<String> _dismissedIds = {};
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final upcoming = s.recurring.where((r) => r.active).toList()
+    final upcoming = s.recurring
+        .where((r) => r.active && !_dismissedIds.contains(r.id))
+        .toList()
       ..sort((a, b) => a.nextDue.compareTo(b.nextDue));
     if (upcoming.isEmpty) return const SizedBox.shrink();
     final rule = upcoming.first;
+    final hiddenCount = upcoming.length - 1;
+    return Padding(
+      padding: const EdgeInsets.only(top: 14, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle(context, 'Coming up'),
+          const SizedBox(height: 8),
+          Dismissible(
+            key: ValueKey('coming-up-${rule.id}'),
+            direction: DismissDirection.endToStart,
+            onDismissed: (_) => setState(() => _dismissedIds.add(rule.id)),
+            background: _dismissBackground(context),
+            child: _ComingUpCard(rule: rule),
+          ),
+          if (hiddenCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 1, bottom: 4),
+              child: Text(
+                '$hiddenCount more coming up',
+                style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ComingUpCard extends StatelessWidget {
+  const _ComingUpCard({required this.rule});
+
+  final RecurringRule rule;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
     final days = _daysUntil(rule.nextDue);
     final actionable = days <= 3;
     final due = days < 0
@@ -1481,71 +1716,59 @@ class _ComingUp extends StatelessWidget {
         : days == 0
             ? 'due today'
             : 'due in $days ${days == 1 ? 'day' : 'days'}';
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: days < 0 ? context.dangerSoft : context.card,
+        borderRadius: kBRadiusM,
+      ),
+      child: Row(
         children: [
-          _sectionTitle(context, 'Coming up'),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            decoration: BoxDecoration(
-              color: days < 0 ? context.dangerSoft : context.card,
-              borderRadius: kBRadiusM,
-            ),
-            child: Row(
+          Icon(Icons.event_outlined, color: context.primary, size: 21),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.event_outlined, color: context.primary, size: 21),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(rule.name,
-                          style: TextStyle(
-                              color: context.ink,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13.5)),
-                      Text(
-                        '${s.hideAmounts ? '•••••' : rule.amount.text} · $due',
-                        style:
-                            TextStyle(color: context.inkSoft, fontSize: 11.5),
-                      ),
-                    ],
-                  ),
+                Text(rule.name,
+                    style: TextStyle(
+                        color: context.ink,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5)),
+                Text(
+                  '${s.hideAmounts ? '•••••' : rule.amount.text} · $due',
+                  style: TextStyle(color: context.inkSoft, fontSize: 11.5),
                 ),
-                if (actionable) ...[
-                  const SizedBox(width: 10),
-                  FilledButton(
-                    onPressed: () {
-                      s.postRecurring(rule);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!
-                                .postedSnack(rule.name),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: context.primaryDark,
-                      foregroundColor: context.onSolid,
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      minimumSize: const Size(0, 42),
-                      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.post,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
+          if (actionable) ...[
+            const SizedBox(width: 10),
+            FilledButton(
+              onPressed: () {
+                s.postRecurring(rule);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context)!.postedSnack(rule.name),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: context.primaryDark,
+                foregroundColor: context.onSolid,
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                minimumSize: const Size(0, 42),
+                shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.post,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1619,7 +1842,8 @@ class _HomeTaskRow extends StatelessWidget {
                         Text(
                           [
                             if (assignee != null) assignee.name,
-                            if (task.dueDate != null) 'Due today',
+                            if (task.dueDate != null)
+                              _homeTaskDueLabel(task.dueDate!),
                           ].join(' · '),
                           style: TextStyle(
                             fontSize: 11.5,
@@ -1672,12 +1896,20 @@ int _daysUntil(DateTime date) {
       .inDays;
 }
 
+String _homeTaskDueLabel(DateTime date) {
+  final days = _daysUntil(date);
+  if (days < 0) return '${-days} ${days == -1 ? 'day' : 'days'} overdue';
+  if (days == 0) return 'Due today';
+  if (days == 1) return 'Due tomorrow';
+  return 'Due ${DateFormat('MMM d').format(date.toLocal())}';
+}
+
 Widget _sectionTitle(BuildContext context, String text) => Text(
       text,
       style: TextStyle(
         color: context.ink,
         fontSize: 16,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
       ),
     );
 
@@ -1704,102 +1936,143 @@ class _PoolCard extends StatelessWidget {
         splashColor: Colors.white24,
         highlightColor: Colors.white10,
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
           decoration: BoxDecoration(
-            color: context.primaryDark,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [context.primaryDark, context.primary],
+            ),
             borderRadius: kBRadiusL,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            boxShadow: [
+              BoxShadow(
+                color: context.primaryDark.withValues(alpha: 0.18),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          child: Column(
+          child: Stack(
             children: [
-              Row(
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: _BalanceCardPainter()),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.availableToSpendLabel,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          AppLocalizations.of(context)!.availableToSpendLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: s.hideAmounts
-                        ? AppLocalizations.of(context)!.showAmountsTip
-                        : AppLocalizations.of(context)!.hideAmountsTip,
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      s.setHideAmounts(!s.hideAmounts);
-                    },
-                    icon: Icon(
-                      s.hideAmounts ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.white70,
-                      size: 19,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Simplified hero balance
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: s.hideAmounts
-                    ? Text(
-                        '•••••',
-                        style: MhuriType.display.copyWith(color: Colors.white),
-                      )
-                    : CountUpText(
-                        amount: primary,
-                        style: MhuriType.display.copyWith(color: Colors.white),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: IconButton(
+                          tooltip: s.hideAmounts
+                              ? AppLocalizations.of(context)!.showAmountsTip
+                              : AppLocalizations.of(context)!.hideAmountsTip,
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            s.setHideAmounts(!s.hideAmounts);
+                          },
+                          icon: Icon(
+                            s.hideAmounts
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.white70,
+                            size: 18,
+                          ),
+                        ),
                       ),
-              ),
-              if (hasDual && secondary != null) ...[
-                const SizedBox(height: 4),
-                Semantics(
-                  button: true,
-                  label: AppLocalizations.of(context)!.swapCurrency,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      s.toggleDisplayCurrency();
-                    },
-                    borderRadius: kBRadiusXS,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Text(
-                        s.hideAmounts ? '≈ •••••' : '≈ ${secondary.text}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      const Spacer(),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Simplified hero balance
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: s.hideAmounts
+                        ? Text(
+                            '•••••',
+                            style: MhuriType.display.copyWith(
+                              color: Colors.white,
+                              fontSize: 31,
+                              letterSpacing: -0.8,
+                            ),
+                          )
+                        : CountUpText(
+                            amount: primary,
+                            style: MhuriType.display.copyWith(
+                              color: Colors.white,
+                              fontSize: 31,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                  ),
+                  if (hasDual && secondary != null) ...[
+                    const SizedBox(height: 4),
+                    Semantics(
+                      button: true,
+                      label: AppLocalizations.of(context)!.swapCurrency,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          s.toggleDisplayCurrency();
+                        },
+                        borderRadius: kBRadiusXS,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text(
+                            s.hideAmounts ? '≈ •••••' : '≈ ${secondary.text}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
-              // View details affordance
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: Text(
-                      AppLocalizations.of(context)!.viewDetails,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
+                  ],
+                  const SizedBox(height: 24),
+                  // View details affordance
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          AppLocalizations.of(context)!.viewDetails,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_forward_rounded,
+                          size: 14, color: Colors.white70),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward_rounded,
-                      size: 14, color: Colors.white70),
                 ],
               ),
             ],
@@ -1810,9 +2083,69 @@ class _PoolCard extends StatelessWidget {
   }
 }
 
+class _BalanceCardPainter extends CustomPainter {
+  const _BalanceCardPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final glow = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFE5B94B).withValues(alpha: 0.28),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(
+        center: Offset(size.width * 0.92, size.height * 0.16),
+        radius: size.width * 0.34,
+      ));
+    canvas.drawCircle(
+      Offset(size.width * 0.92, size.height * 0.16),
+      size.width * 0.34,
+      glow,
+    );
+
+    final line = Paint()
+      ..color = Colors.white.withValues(alpha: 0.16)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1;
+    final accent = Paint()
+      ..color = const Color(0xFFE5B94B).withValues(alpha: 0.72)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3;
+
+    final wave = Path()
+      ..moveTo(size.width * 0.47, size.height)
+      ..cubicTo(
+        size.width * 0.65,
+        size.height * 0.92,
+        size.width * 0.68,
+        size.height * 0.36,
+        size.width,
+        size.height * 0.39,
+      );
+    canvas.drawPath(wave, line);
+
+    final goldWave = Path()
+      ..moveTo(size.width * 0.66, size.height)
+      ..cubicTo(
+        size.width * 0.79,
+        size.height * 0.79,
+        size.width * 0.82,
+        size.height * 0.48,
+        size.width,
+        size.height * 0.58,
+      );
+    canvas.drawPath(goldWave, accent);
+  }
+
+  @override
+  bool shouldRepaint(_BalanceCardPainter oldDelegate) => false;
+}
+
 Color _paceColor(BuildContext context, Pace p) => switch (p) {
       Pace.onTrack => context.primary,
       Pace.watch => context.accent,
+      Pace.reached => context.accent,
       Pace.over => context.danger,
     };
 
@@ -2099,7 +2432,7 @@ class SmartCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     fontSize: 13.5,
                     color: context.ink,
                   ),

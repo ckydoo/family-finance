@@ -605,8 +605,10 @@ class PageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: TextStyle(
-            fontSize: 24, fontWeight: FontWeight.w700, color: context.ink),
+        style: MhuriType.titleL.copyWith(
+          fontSize: 24,
+          color: context.ink,
+        ),
       );
 }
 
@@ -670,10 +672,7 @@ class SheetHeader extends StatelessWidget {
         children: [
           Expanded(
             child: Text(title,
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: context.ink)),
+                style: MhuriType.titleL.copyWith(color: context.ink)),
           ),
           IconButton(
             tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
@@ -769,7 +768,7 @@ class StatusBanner extends StatelessWidget {
               child: Text(
                 actionLabel!,
                 style: const TextStyle(
-                    fontWeight: FontWeight.w800, fontSize: 12.5),
+                    fontWeight: FontWeight.w700, fontSize: 12.5),
               ),
             ),
           ],
@@ -832,7 +831,7 @@ class MoneyCard extends StatelessWidget {
                     amount,
                     style: TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.ink,
                     ),
                   ),
@@ -927,7 +926,7 @@ class MhuriSheetShell extends StatelessWidget {
                             title,
                             style: TextStyle(
                               fontSize: 19,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: context.ink,
                             ),
                           ),

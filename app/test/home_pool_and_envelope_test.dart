@@ -137,7 +137,229 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Groceries is close to its limit'), findsOneWidget);
+    expect(
+      find.text('Groceries may exceed its budget this cycle'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('home does not flag a budget that is exactly at its limit',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final now = DateTime(2026, 10, 11);
+    final state = AppState(clock: () => now);
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Groceries',
+      limit: Money.fromMajor(100, Currency.usd),
+    );
+    state.addTx(
+      type: TxType.expense,
+      amount: Money.fromMajor(100, Currency.usd),
+      memberId: state.user.id,
+      method: Method.bankCard,
+      note: 'Groceries',
+      envelopeId: state.envelopes.single.id,
+      when: now,
+    );
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HomeScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs attention'), findsNothing);
+    expect(find.text('Groceries is close to its limit'), findsNothing);
+  });
+
+  testWidgets('home budget alert can be dismissed by swiping', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final now = DateTime(2026, 10, 11);
+    final state = AppState(clock: () => now);
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Groceries',
+      limit: Money.fromMajor(100, Currency.usd),
+    );
+    state.addTx(
+      type: TxType.expense,
+      amount: Money.fromMajor(120, Currency.usd),
+      memberId: state.user.id,
+      method: Method.bankCard,
+      note: 'Groceries',
+      envelopeId: state.envelopes.single.id,
+      when: now,
+    );
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HomeScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Groceries is over budget'), findsOneWidget);
+    await tester.drag(
+        find.text('Groceries is over budget'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs attention'), findsNothing);
+  });
+
+  testWidgets('home shows one budget alert with a count for other issues',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final now = DateTime(2026, 10, 11);
+    final state = AppState(clock: () => now);
+    state.members.add(state.user);
+    for (final name in ['Groceries', 'Transport', 'School']) {
+      state.addEnvelope(
+        name: name,
+        limit: Money.fromMajor(100, Currency.usd),
+      );
+      state.addTx(
+        type: TxType.expense,
+        amount: Money.fromMajor(120, Currency.usd),
+        memberId: state.user.id,
+        method: Method.bankCard,
+        note: name,
+        envelopeId: state.envelopes.last.id,
+        when: now,
+      );
+    }
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HomeScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('3+ budgets need attention'), findsOneWidget);
+    expect(find.text('Groceries is over budget'), findsNothing);
+    expect(find.text('Transport is over budget'), findsNothing);
+    expect(find.text('School is over budget'), findsNothing);
+
+    await tester.drag(
+        find.text('3+ budgets need attention'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2+ budgets need attention'), findsOneWidget);
+  });
+
+  testWidgets('home shows only the nearest upcoming recurring item',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final state = AppState();
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Household',
+      limit: Money.fromMajor(100, Currency.usd),
+    );
+    final today = DateTime.now();
+    for (var i = 0; i < 3; i++) {
+      state.addRecurring(
+        name: 'Bill ${i + 1}',
+        emoji: 'bill',
+        amount: Money.fromMajor(20, Currency.usd),
+        memberId: state.user.id,
+        method: Method.bankTransfer,
+        frequency: Frequency.monthly,
+        nextDue: today.add(Duration(days: i + 1)),
+      );
+    }
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HomeScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bill 1'), findsOneWidget);
+    expect(find.text('Bill 2'), findsNothing);
+    expect(find.text('Bill 3'), findsNothing);
+    expect(find.text('2 more coming up'), findsOneWidget);
+  });
+
+  testWidgets('upcoming recurring item can be dismissed by swiping',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final state = AppState();
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Household',
+      limit: Money.fromMajor(100, Currency.usd),
+    );
+    state.addRecurring(
+      name: 'Internet',
+      emoji: 'wifi',
+      amount: Money.fromMajor(20, Currency.usd),
+      memberId: state.user.id,
+      method: Method.bankTransfer,
+      frequency: Frequency.monthly,
+      nextDue: DateTime.now().add(const Duration(days: 5)),
+    );
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HomeScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Internet'), findsOneWidget);
+    await tester.drag(find.text('Internet'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Internet'), findsNothing);
   });
 
   testWidgets('home envelope card opens its details', (tester) async {

@@ -210,7 +210,7 @@ class _InviteScreenState extends State<InviteScreen> {
                 children: [
                   Text(l.inviteNew,
                       style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w800)),
+                          fontSize: 14, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
@@ -263,7 +263,7 @@ class _InviteScreenState extends State<InviteScreen> {
                   children: [
                     Text(l.inviteCreated,
                         style: const TextStyle(
-                            fontSize: 13.5, fontWeight: FontWeight.w800)),
+                            fontSize: 13.5, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 10),
                     QrImageView(
                       data: 'mhuri://join?c=$_newCode',
@@ -274,7 +274,7 @@ class _InviteScreenState extends State<InviteScreen> {
                     SelectableText(_newCode!,
                         style: const TextStyle(
                             fontSize: 22,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: 2)),
                     const SizedBox(height: 6),
                     Text(l.inviteScanHint,
@@ -323,7 +323,7 @@ class _InviteScreenState extends State<InviteScreen> {
                 children: [
                   Text(l.memberAccountTitle,
                       style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w800)),
+                          fontSize: 14, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
                   Text(l.memberAccountSubtitle,
                       style: TextStyle(fontSize: 12.5, color: context.inkSoft)),
@@ -362,7 +362,7 @@ class _InviteScreenState extends State<InviteScreen> {
             Text(l.invitePending,
                 style: TextStyle(
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: context.inkSoft)),
             const SizedBox(height: 6),
             if (_invites == null)
@@ -401,7 +401,7 @@ class _InviteScreenState extends State<InviteScreen> {
               Text(l.inviteHistory,
                   style: TextStyle(
                       fontSize: 12.5,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.inkSoft)),
               const SizedBox(height: 6),
               for (final inv in done)

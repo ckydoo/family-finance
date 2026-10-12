@@ -136,6 +136,24 @@ void main() {
       expect(c.isLoggedIn, isFalse);
       expect(c.lastError, isNull);
     });
+
+    test('startup restore cannot overwrite a completed OAuth callback',
+        () async {
+      final remote = Completer<AuthSession?>();
+      final service = _DelayedRestoreAuthService(remote);
+      final c = AuthController(env: testEnv(), service: service);
+
+      final restoring = c.restore();
+      await Future<void>.delayed(Duration.zero);
+      await c.createGoogleSignInUri();
+      expect(await c.exchangeOAuthCode('callback-code'), isTrue);
+      expect(c.session?.userId, 'google-user-1');
+
+      remote.complete(null);
+      await restoring;
+      expect(c.session?.userId, 'google-user-1');
+      expect(c.isLoggedIn, isTrue);
+    });
   });
 
   group('SupabaseAuthService (GoTrue REST, offline via FakeClient)', () {
@@ -199,6 +217,45 @@ void main() {
       expect(kv['auth_user_id'], 'google-7');
       expect(kv['auth_email'], 'person@gmail.com');
       expect(kv['auth_refresh_token'], 'oauth-refresh');
+    });
+
+    test('Google OAuth uses PKCE and exchanges its callback code', () async {
+      final uri = await service.createGoogleOAuthUri();
+
+      expect(uri.path, '/auth/v1/authorize');
+      expect(uri.queryParameters['provider'], 'google');
+      expect(uri.queryParameters['redirect_to'], 'mhuri://auth-callback');
+      expect(uri.queryParameters['code_challenge_method'], 's256');
+      expect(uri.queryParameters['code_challenge'], isNotEmpty);
+      expect(kv['oauth_pkce_verifier'], isNotEmpty);
+
+      client.responses.add(MapEntry(
+          200,
+          jsonEncode({
+            'access_token': 'pkce-access',
+            'refresh_token': 'pkce-refresh',
+            'user': {'id': 'google-pkce', 'email': 'person@gmail.com'},
+          })));
+
+      final result = await service.exchangeOAuthCode('callback-code');
+
+      expect(result.ok, isTrue);
+      expect(client.sent.single.url.query, 'grant_type=pkce');
+      final body =
+          jsonDecode(_reqOf(client.sent.single).body) as Map<String, dynamic>;
+      expect(body['auth_code'], 'callback-code');
+      expect(body['code_verifier'], isNotEmpty);
+      expect(kv['auth_user_id'], 'google-pkce');
+      expect(kv['auth_refresh_token'], 'pkce-refresh');
+      expect(kv['oauth_pkce_verifier'], isEmpty);
+    });
+
+    test('OAuth code without its verifier fails clearly', () async {
+      final result = await service.exchangeOAuthCode('callback-code');
+
+      expect(result.ok, isFalse);
+      expect(result.code, 'oauth_expired');
+      expect(client.sent, isEmpty);
     });
 
     test('OAuth adoption rejects a token this project does not accept',

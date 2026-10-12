@@ -353,7 +353,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: Text(
                           '${(envelopeHealth * 100).round()}%',
                           style: TextStyle(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             fontSize: 15,
                             color: context.ink,
                           ),
@@ -367,7 +367,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             Text(
                               tStr(context, 'envelopeHealth'),
                               style: TextStyle(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 15,
                                 color: context.ink,
                               ),
@@ -408,7 +408,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             child: Text(
                               tStr(context, 'cashLeak'),
                               style: TextStyle(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 15,
                                 color: context.ink,
                               ),
@@ -461,7 +461,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       Text(
                         AppLocalizations.of(context)!.whereMoneyWent,
                         style: TextStyle(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           fontSize: 15,
                           color: context.ink,
                         ),
@@ -521,7 +521,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   icon: const Icon(Icons.groups),
                   label: Text(
                     AppLocalizations.of(context)!.meetingCta,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -586,7 +586,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 value,
                 style: TextStyle(
                   fontSize: 16.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
@@ -676,13 +676,13 @@ class _ComparisonMetric extends StatelessWidget {
           Text(value,
               style: TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.ink)),
           const SizedBox(height: 3),
           Text(change,
               style: TextStyle(
                   fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: positive ? context.incomeGreen : context.expenseRed)),
         ],
       );
@@ -718,7 +718,7 @@ class _PlanVsActualCard extends StatelessWidget {
         Row(children: [
           Expanded(child: Text('Planned ${planned.text}')),
           Text('Actual ${spent.text}',
-              style: const TextStyle(fontWeight: FontWeight.w800)),
+              style: const TextStyle(fontWeight: FontWeight.w700)),
         ]),
         const SizedBox(height: 10),
         ClipRRect(
@@ -807,7 +807,7 @@ class _MonthEndSummaryCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(resultText,
             style: TextStyle(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: positive ? context.incomeGreen : context.expenseRed)),
         const SizedBox(height: 7),
         Text('The family saved ${saved.text} during this cycle.'),
@@ -928,7 +928,7 @@ class _SummaryLine extends StatelessWidget {
               child: Text(label, style: TextStyle(color: context.inkSoft))),
           Text(value,
               style: TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: danger ? context.expenseRed : context.ink)),
         ]),
       );
@@ -956,7 +956,7 @@ class _ReportCard extends StatelessWidget {
               child: Text(title,
                   style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.ink)),
             ),
           ]),
@@ -1069,7 +1069,7 @@ class _WhereItWentState extends State<_WhereItWent> {
                       '$selShare%',
                       style: TextStyle(
                         fontSize: 19,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         color: context.ink,
                       ),
                     ),
@@ -1105,7 +1105,7 @@ class _WhereItWentState extends State<_WhereItWent> {
                                 style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: i == _sel
-                                      ? FontWeight.w800
+                                      ? FontWeight.w700
                                       : FontWeight.w600,
                                   color: context.ink,
                                 ),
@@ -1170,7 +1170,7 @@ class _TrendCard extends StatelessWidget {
         Text(
           AppLocalizations.of(context)!.sixMonthNet,
           style: TextStyle(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             fontSize: 14,
             color: context.ink,
           ),
@@ -1257,7 +1257,7 @@ class _ShoppingTrackingCard extends StatelessWidget {
                 child: Text(
                   'Shopping & Lists Tracking',
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     fontSize: 15,
                     color: context.ink,
                   ),
@@ -1309,7 +1309,7 @@ class _ShoppingTrackingCard extends StatelessWidget {
                           shoppingSpent.text,
                           style: TextStyle(
                             fontSize: 16.5,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: context.ink,
                           ),
                         ),
@@ -1350,7 +1350,7 @@ class _ShoppingTrackingCard extends StatelessWidget {
                           estNeeded.text,
                           style: TextStyle(
                             fontSize: 16.5,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: context.primary,
                           ),
                         ),
@@ -1535,7 +1535,7 @@ class _MemberSpendingCard extends StatelessWidget {
                 child: Text(
                   'Who spent what',
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     fontSize: 15,
                     color: context.ink,
                   ),
@@ -1583,7 +1583,7 @@ class _MemberSpendingCard extends StatelessWidget {
                             backgroundColor:
                                 _memberRoleColor(context, member.role),
                             icon: iconForKey(member.emoji) ??
-                                Icons.person_rounded,
+                                kFallbackSemanticIcon,
                             imageUrl: member.avatarUrl,
                           ),
                           const SizedBox(width: 10),
@@ -1640,7 +1640,7 @@ class _MemberSpendingCard extends StatelessWidget {
                               Text(
                                 Money(memberSpend, displayCurrency).text,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 13.5,
                                   color: memberSpend > 0
                                       ? context.ink
@@ -1732,7 +1732,7 @@ class _CycleTransactionsCardState extends State<_CycleTransactionsCard> {
                 child: Text(
                   'Cycle transactions (${sorted.length})',
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     fontSize: 15,
                     color: context.ink,
                   ),

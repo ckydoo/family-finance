@@ -7,28 +7,96 @@ import 'dart:convert';
 const String kRecoveryRedirect = 'mhuri://reset-callback';
 const String kOAuthRedirect = 'mhuri://auth-callback';
 
-/// Tokens returned by Supabase after a successful social sign-in.
-({String accessToken, String refreshToken})? parseOAuthLink(String url) {
-  if (url.isEmpty) return null;
+enum OAuthCallbackKind { tokens, code, error, none }
+
+class OAuthCallback {
+  final OAuthCallbackKind kind;
+  final String? accessToken;
+  final String? refreshToken;
+  final String? code;
+  final String? error;
+
+  const OAuthCallback._(
+    this.kind, {
+    this.accessToken,
+    this.refreshToken,
+    this.code,
+    this.error,
+  });
+
+  const OAuthCallback.none() : this._(OAuthCallbackKind.none);
+}
+
+/// Parses both supported Supabase mobile OAuth returns: modern PKCE
+/// `?code=...` callbacks and legacy implicit-flow token fragments. Provider
+/// errors are retained so the login screen can explain the failure.
+OAuthCallback parseOAuthCallback(String url) {
+  if (url.isEmpty) return const OAuthCallback.none();
   final Uri uri;
   try {
     uri = Uri.parse(url);
   } on FormatException {
-    return null;
+    return const OAuthCallback.none();
   }
   if (uri.scheme.toLowerCase() != 'mhuri' ||
       uri.host.toLowerCase() != 'auth-callback') {
-    return null;
+    return const OAuthCallback.none();
   }
-  final params = uri.fragment.isEmpty
-      ? uri.queryParameters
+  final fragment = uri.fragment.isEmpty
+      ? const <String, String>{}
       : Uri.splitQueryString(uri.fragment);
+  final params = {...uri.queryParameters, ...fragment};
+  final error = params['error_description'] ?? params['error'];
+  if (error != null && error.isNotEmpty) {
+    return OAuthCallback._(OAuthCallbackKind.error, error: error);
+  }
+  final code = params['code'];
+  if (code != null && code.isNotEmpty) {
+    return OAuthCallback._(OAuthCallbackKind.code, code: code);
+  }
   final access = params['access_token'];
   final refresh = params['refresh_token'];
-  if (access == null || access.isEmpty || refresh == null || refresh.isEmpty) {
+  if (access != null &&
+      access.isNotEmpty &&
+      refresh != null &&
+      refresh.isNotEmpty) {
+    return OAuthCallback._(
+      OAuthCallbackKind.tokens,
+      accessToken: access,
+      refreshToken: refresh,
+    );
+  }
+  return const OAuthCallback.none();
+}
+
+/// Android can also forward an OAuth failure through Flutter's route channel
+/// as `/?error=...` after the custom-scheme intent has opened the activity.
+/// This is not a trusted token callback, so only extract provider errors; token
+/// and code handling remains restricted to [parseOAuthCallback].
+String? parseOAuthRouteError(String routeName) {
+  if (routeName.isEmpty || !routeName.startsWith('/?')) return null;
+  final Uri uri;
+  try {
+    uri = Uri.parse(routeName);
+  } on FormatException {
     return null;
   }
-  return (accessToken: access, refreshToken: refresh);
+  final fragment = uri.fragment.isEmpty
+      ? const <String, String>{}
+      : Uri.splitQueryString(uri.fragment);
+  final params = {...uri.queryParameters, ...fragment};
+  final error = params['error_description'] ?? params['error'];
+  return error == null || error.trim().isEmpty ? null : error.trim();
+}
+
+/// Tokens returned by Supabase after a successful social sign-in.
+({String accessToken, String refreshToken})? parseOAuthLink(String url) {
+  final callback = parseOAuthCallback(url);
+  if (callback.kind != OAuthCallbackKind.tokens) return null;
+  return (
+    accessToken: callback.accessToken!,
+    refreshToken: callback.refreshToken!,
+  );
 }
 
 /// What a clicked password-reset link turned out to be.

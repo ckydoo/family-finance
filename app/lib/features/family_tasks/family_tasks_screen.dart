@@ -77,7 +77,7 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                       task.title,
                       style: const TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -743,7 +743,7 @@ class _TaskTabLabel extends StatelessWidget {
                 count > 99 ? '99+' : '$count',
                 style: TextStyle(
                   fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.primaryDark,
                 ),
               ),

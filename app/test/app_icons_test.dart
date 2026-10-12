@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:mhuri_money/core/widgets/app_icons.dart';
 
 /// M8 polish - icon coverage: every semantic icon KEY used by the seed data
 /// (envelopes, goals, accounts, members, recurring) must resolve to a
-/// Material icon, so the UI never falls back to the neutral label icon.
+/// premium icon, so known data never falls back to the neutral semantic icon.
 void main() {
-  test('every seed icon key maps to a Material icon', () {
+  test('every seed icon key maps to a premium icon', () {
     const seedKeys = [
       // members
       'man', 'woman', 'boy', 'baby', 'student', 'grandma',
@@ -21,14 +21,18 @@ void main() {
       // defaults used by persistence/sync/sheets
       'money', 'receipt', 'autorenew', 'goal', 'person',
     ];
-    final missing = [for (final k in seedKeys) if (iconForKey(k) == null) k];
+    final missing = [
+      for (final k in seedKeys)
+        if (iconForKey(k) == null) k
+    ];
     expect(missing, isEmpty, reason: 'unmapped icon keys: $missing');
   });
 
   test('unknown keys resolve to null → callers draw the neutral icon', () {
     expect(iconForKey('unicorn'), isNull);
     expect(iconForKey(null), isNull);
-    expect(iconForKey('cart'), Icons.shopping_cart);
-    expect(iconForKey('school'), Icons.school);
+    expect(kFallbackSemanticIcon, FontAwesomeIcons.tag.data);
+    expect(iconForKey('cart'), FontAwesomeIcons.cartShopping.data);
+    expect(iconForKey('school'), FontAwesomeIcons.graduationCap.data);
   });
 }

@@ -156,7 +156,7 @@ class KidsMode extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                           Icon(
-                            iconForKey(kid.emoji) ?? Icons.child_care,
+                            iconForKey(kid.emoji) ?? kFallbackSemanticIcon,
                             size: 34,
                             color: kKidInk,
                           ),
@@ -510,12 +510,17 @@ class KidsMode extends StatelessWidget {
                         AppLocalizations.of(context)!.enterAmountFirst);
                     return;
                   }
-                  s.requestMoney(
+                  final sent = s.requestMoney(
                     Money.fromMajor(v, cur),
                     reason.text.trim().isEmpty
                         ? AppLocalizations.of(context)!.kidsDefaultReason
                         : reason.text.trim(),
                   );
+                  if (!sent) {
+                    setSheet(() => askError =
+                        'This child profile cannot send a request right now.');
+                    return;
+                  }
                   Navigator.pop(sheetCtx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

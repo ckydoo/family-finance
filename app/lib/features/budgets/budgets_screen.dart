@@ -373,7 +373,7 @@ class _CyclePlanCard extends StatelessWidget {
               child: Text('This month\'s plan',
                   style: TextStyle(
                       fontSize: 19,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
@@ -515,7 +515,7 @@ class _PlanMetric extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: Colors.white)),
         ],
       );
@@ -795,7 +795,7 @@ class _EnvelopeCard extends StatelessWidget {
               width: 38,
               height: 38,
               child: Icon(
-                iconForKey(e.emoji) ?? Icons.savings_outlined,
+                iconForKey(e.emoji) ?? kFallbackSemanticIcon,
                 size: 20,
                 color: context.primaryDark,
               ),
@@ -989,6 +989,11 @@ class _PaceChip extends StatelessWidget {
           context.warningSoft,
           context.ink,
         ),
+      Pace.reached => (
+          'Limit reached',
+          context.warningSoft,
+          context.ink,
+        ),
       Pace.over => (
           AppLocalizations.of(context)!.overBudgetLabel,
           context.dangerSoft,
@@ -1093,7 +1098,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             Row(
               children: [
                 Icon(
-                  iconForKey(e.emoji) ?? Icons.savings,
+                  iconForKey(e.emoji) ?? kFallbackSemanticIcon,
                   size: 28,
                   color: context.primaryDark,
                 ),
@@ -1103,7 +1108,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                     e.name,
                     style: TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.ink,
                     ),
                   ),
@@ -1195,7 +1200,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             Text(
               AppLocalizations.of(context)!.moveMoney,
               style: TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   fontSize: 15,
                   color: context.ink),
             ),
@@ -1222,7 +1227,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                           child: Row(
                             children: [
                               Icon(
-                                iconForKey(x.emoji) ?? Icons.savings,
+                                iconForKey(x.emoji) ?? kFallbackSemanticIcon,
                                 size: 16,
                                 color: context.primaryDark,
                               ),
@@ -1270,7 +1275,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                           child: Row(
                             children: [
                               Icon(
-                                iconForKey(x.emoji) ?? Icons.savings,
+                                iconForKey(x.emoji) ?? kFallbackSemanticIcon,
                                 size: 16,
                                 color: context.primaryDark,
                               ),
@@ -1388,7 +1393,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
             Text(
               AppLocalizations.of(context)!.recentInEnv,
               style: TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   fontSize: 15,
                   color: context.ink),
             ),
@@ -1447,7 +1452,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                   child: Text(
                     value,
                     style: TextStyle(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       fontSize: 13.5,
                       color: danger ? context.expenseRed : context.ink,
                     ),
@@ -1575,5 +1580,6 @@ Future<void> showEditEnvelopeSheet(
 Color _paceColor(BuildContext context, Pace p) => switch (p) {
       Pace.onTrack => context.primary,
       Pace.watch => context.accent,
+      Pace.reached => context.accent,
       Pace.over => context.danger,
     };

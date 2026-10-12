@@ -332,10 +332,22 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
   }
 
   Future<void> _onRecoveryLink(Uri uri) async {
-    final oauth = parseOAuthLink(uri.toString());
-    if (oauth != null) {
-      await _auth.adoptOAuthSession(oauth.accessToken, oauth.refreshToken);
-      return;
+    final oauth = parseOAuthCallback(uri.toString());
+    switch (oauth.kind) {
+      case OAuthCallbackKind.tokens:
+        await _auth.adoptOAuthSession(
+          oauth.accessToken!,
+          oauth.refreshToken!,
+        );
+        return;
+      case OAuthCallbackKind.code:
+        await _auth.exchangeOAuthCode(oauth.code!);
+        return;
+      case OAuthCallbackKind.error:
+        _auth.reportOAuthError(oauth.error!);
+        return;
+      case OAuthCallbackKind.none:
+        break;
     }
 
     // Join links (QR / WhatsApp share): mhuri://join?c=MHRI-XXXXXX
@@ -435,6 +447,22 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 _state.localeCode.isEmpty ? null : Locale(_state.localeCode),
             localizationsDelegates: mhuriLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            // Android may deliver a failed OAuth callback twice: once through
+            // app_links and once as a Flutter route such as `/?error=...`.
+            // Consume the route form so WidgetsApp does not try to navigate to
+            // it as an application screen and throw an unknown-route error.
+            onGenerateRoute: (settings) {
+              final error = parseOAuthRouteError(settings.name ?? '');
+              if (error == null) return null;
+              return PageRouteBuilder<void>(
+                settings: settings,
+                transitionDuration: Duration.zero,
+                reverseTransitionDuration: Duration.zero,
+                pageBuilder: (_, __, ___) => _OAuthRouteSink(
+                  onReceived: () => _auth.reportOAuthError(error),
+                ),
+              );
+            },
             // Elder mode (J6): scale every screen's text.
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
@@ -491,6 +519,32 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       ),
     );
   }
+}
+
+class _OAuthRouteSink extends StatefulWidget {
+  const _OAuthRouteSink({required this.onReceived});
+
+  final VoidCallback onReceived;
+
+  @override
+  State<_OAuthRouteSink> createState() => _OAuthRouteSinkState();
+}
+
+class _OAuthRouteSinkState extends State<_OAuthRouteSink> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onReceived();
+      if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+        color: context.bg,
+        child: const Center(child: CircularProgressIndicator()),
+      );
 }
 
 /// Minimal branded splash while the local database hydrates.
@@ -558,7 +612,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
               'Mhuri',
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 letterSpacing: -0.4,
                 color: context.ink,
               ),

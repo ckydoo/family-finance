@@ -10,48 +10,55 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../theme/app_theme.dart';
 
-/// Semantic icon keys → Material icons.
-const Map<String, IconData> kKeyIcons = {
+/// Semantic icon keys → the app's premium icon family.
+final Map<String, IconData> kKeyIcons = {
   // members
-  'man': Icons.man,
-  'woman': Icons.woman,
-  'boy': Icons.child_care,
-  'baby': Icons.child_friendly,
-  'student': Icons.school,
-  'grandma': Icons.elderly,
-  'person': Icons.person,
+  'man': FontAwesomeIcons.person.data,
+  'woman': FontAwesomeIcons.personDress.data,
+  'boy': FontAwesomeIcons.child.data,
+  'baby': FontAwesomeIcons.babyCarriage.data,
+  'student': FontAwesomeIcons.graduationCap.data,
+  'grandma': FontAwesomeIcons.personCane.data,
+  'person': FontAwesomeIcons.user.data,
   // accounts
-  'bank': Icons.account_balance,
-  'cash': Icons.payments,
-  'wallet': Icons.phone_android,
+  'bank': FontAwesomeIcons.buildingColumns.data,
+  'cash': FontAwesomeIcons.moneyBillWave.data,
+  'wallet': FontAwesomeIcons.wallet.data,
   // envelopes & recurring
-  'cart': Icons.shopping_cart,
-  'school': Icons.school,
-  'fuel': Icons.local_gas_station,
-  'power': Icons.bolt,
-  'airtime': Icons.smartphone,
-  'stars': Icons.star,
-  'lifebuoy': Icons.support,
-  'giving': Icons.volunteer_activism,
-  'home': Icons.home,
-  'lightbulb': Icons.lightbulb,
-  'health': Icons.medication,
-  'car': Icons.directions_car,
-  'water': Icons.water_drop,
+  'cart': FontAwesomeIcons.cartShopping.data,
+  'school': FontAwesomeIcons.graduationCap.data,
+  'fuel': FontAwesomeIcons.gasPump.data,
+  'power': FontAwesomeIcons.bolt.data,
+  'airtime': FontAwesomeIcons.mobileScreen.data,
+  'stars': FontAwesomeIcons.star.data,
+  'lifebuoy': FontAwesomeIcons.lifeRing.data,
+  'giving': FontAwesomeIcons.handHoldingHeart.data,
+  'home': FontAwesomeIcons.houseChimney.data,
+  'lightbulb': FontAwesomeIcons.lightbulb.data,
+  'health': FontAwesomeIcons.heartPulse.data,
+  'car': FontAwesomeIcons.car.data,
+  'water': FontAwesomeIcons.droplet.data,
   // goals
-  'beach': Icons.beach_access,
-  'bike': Icons.directions_bike,
-  'laptop': Icons.laptop_mac,
-  'goal': Icons.track_changes,
+  'beach': FontAwesomeIcons.umbrellaBeach.data,
+  'bike': FontAwesomeIcons.bicycle.data,
+  'laptop': FontAwesomeIcons.laptop.data,
+  'goal': FontAwesomeIcons.bullseye.data,
   // fallbacks & misc
-  'money': Icons.savings,
-  'receipt': Icons.receipt_long,
-  'autorenew': Icons.autorenew,
-  'mail': Icons.mail_outline,
+  'money': FontAwesomeIcons.piggyBank.data,
+  'receipt': FontAwesomeIcons.receipt.data,
+  'autorenew': FontAwesomeIcons.arrowsRotate.data,
+  'mail': FontAwesomeIcons.envelope.data,
 };
+
+/// One neutral fallback for unknown or remotely supplied semantic keys.
+///
+/// Keep this separate from action icons: semantic entities use the premium
+/// family, while controls such as back, close and search remain Material.
+final IconData kFallbackSemanticIcon = FontAwesomeIcons.tag.data;
 
 /// Looks up an icon for a data emoji key (null → caller draws the fallback).
 IconData? iconForKey(String? key) => key == null ? null : kKeyIcons[key];
@@ -92,7 +99,7 @@ class AppIconBadge extends StatelessWidget {
                 color: fg ?? context.primaryDark,
               )
             : Icon(
-                Icons.label_outline,
+                kFallbackSemanticIcon,
                 size: iconSize ?? size * 0.46,
                 color: fg ?? context.primaryDark,
               ),

@@ -41,7 +41,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
       appBar: AppBar(
         title: const Text(
           'How Mhuri Works',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -141,7 +141,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
       selectedColor: context.primarySoft,
       labelStyle: TextStyle(
         fontSize: 12.5,
-        fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
         color: selected ? context.primary : context.inkSoft,
       ),
       side: BorderSide(
@@ -172,7 +172,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
               guide.title,
               style: TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: context.ink,
               ),
             ),
@@ -204,7 +204,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
                           '${i + 1}',
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: context.primary,
                           ),
                         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -20,10 +21,14 @@ class FamilyChatScreen extends StatefulWidget {
   State<FamilyChatScreen> createState() => _FamilyChatScreenState();
 }
 
+enum _ChatMessageAction { edit, delete }
+
 class _FamilyChatScreenState extends State<FamilyChatScreen> {
   final _controller = TextEditingController();
+  final _composerFocus = FocusNode();
   final _scroll = ScrollController();
   FamilyTask? _pendingTask;
+  FamilyChatMessage? _replyingTo;
   bool _searching = false;
   bool _showExpressionTray = false;
   bool _uploadingMedia = false;
@@ -43,6 +48,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _composerFocus.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -74,6 +80,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     String? sticker,
   }) {
     final task = _pendingTask;
+    final reply = _replyingTo;
     return FamilyChatMessage(
       id: newUuid(),
       familyId: state.sync?.spaceId ?? state.space.name,
@@ -96,7 +103,152 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       mediaUrl: mediaUrl,
       mediaType: mediaType,
       sticker: sticker,
+      replyToId: reply?.id,
+      replySenderName: reply?.senderName ??
+          (reply == null ? null : state.member(reply.senderId)?.name),
+      replyPreview: reply == null ? null : _replyPreview(reply),
     );
+  }
+
+  String _replyPreview(FamilyChatMessage message) {
+    final text = message.text.trim();
+    if (text.isNotEmpty) return text;
+    if (message.sticker?.isNotEmpty == true) return message.sticker!;
+    if (message.mediaType == 'image') return 'Photo';
+    if (message.referenceTitle?.isNotEmpty == true) {
+      return message.referenceTitle!;
+    }
+    return 'Message';
+  }
+
+  void _startReply(FamilyChatMessage message) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _replyingTo = message;
+      _showExpressionTray = false;
+    });
+    _composerFocus.requestFocus();
+  }
+
+  FamilyChatMessage _updatedMessage(
+    FamilyChatMessage message, {
+    String? text,
+    bool? deleted,
+    DateTime? editedAt,
+  }) =>
+      FamilyChatMessage(
+        id: message.id,
+        familyId: message.familyId,
+        senderId: message.senderId,
+        text: text ?? message.text,
+        createdAt: message.createdAt,
+        isSystem: message.isSystem,
+        senderName: message.senderName,
+        senderAvatar: message.senderAvatar,
+        status: message.status,
+        referenceType: message.referenceType,
+        referenceId: message.referenceId,
+        referenceTitle: message.referenceTitle,
+        referenceMeta: message.referenceMeta,
+        mediaUrl: message.mediaUrl,
+        mediaType: message.mediaType,
+        sticker: message.sticker,
+        replyToId: message.replyToId,
+        replySenderName: message.replySenderName,
+        replyPreview: message.replyPreview,
+        editedAt: editedAt ?? message.editedAt,
+        deleted: deleted ?? message.deleted,
+      );
+
+  Future<void> _showMessageActions(
+    AppState state,
+    FamilyChatMessage message,
+  ) async {
+    if (message.isSystem || message.senderId != state.user.id) return;
+    final canEdit = message.mediaUrl == null && message.sticker == null;
+    final action = await showMhuriSheet<_ChatMessageAction>(
+      context: context,
+      builder: (sheetContext) => MhuriSheetShell(
+        title: 'Message options',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (canEdit)
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Edit message'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _ChatMessageAction.edit),
+              ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: context.danger),
+              title: Text(
+                'Delete message',
+                style: TextStyle(color: context.danger),
+              ),
+              onTap: () =>
+                  Navigator.pop(sheetContext, _ChatMessageAction.delete),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == _ChatMessageAction.delete) {
+      final confirmed = await confirmDialog(
+        context,
+        title: 'Delete message?',
+        body: 'This message will be removed from the family chat.',
+        confirmLabel: 'Delete',
+        danger: true,
+      );
+      if (!confirmed || !mounted) return;
+      state.addChatMessage(_updatedMessage(message, deleted: true));
+      if (_replyingTo?.id == message.id) {
+        setState(() => _replyingTo = null);
+      }
+      return;
+    }
+
+    var draft = message.text;
+    final edited = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit message'),
+        content: TextFormField(
+          initialValue: message.text,
+          autofocus: true,
+          minLines: 1,
+          maxLines: 5,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(labelText: 'Message'),
+          onChanged: (value) => draft = value,
+          onFieldSubmitted: (value) =>
+              Navigator.pop(dialogContext, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, draft.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (edited == null ||
+        edited.isEmpty ||
+        edited == message.text ||
+        !mounted) {
+      return;
+    }
+    state.addChatMessage(_updatedMessage(
+      message,
+      text: edited,
+      editedAt: DateTime.now(),
+    ));
   }
 
   void _send(AppState state) {
@@ -110,6 +262,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     _controller.clear();
     setState(() {
       _pendingTask = null;
+      _replyingTo = null;
       _showExpressionTray = false;
     });
     _scrollToLatest();
@@ -119,6 +272,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     state.addChatMessage(_message(state, text: '', sticker: sticker));
     setState(() {
       _pendingTask = null;
+      _replyingTo = null;
       _showExpressionTray = false;
     });
     _scrollToLatest();
@@ -215,6 +369,10 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
         referenceMeta: message.referenceMeta,
         mediaUrl: message.mediaUrl,
         mediaType: message.mediaType,
+        replyToId: message.replyToId,
+        replySenderName: message.replySenderName,
+        replyPreview: message.replyPreview,
+        editedAt: message.editedAt,
       ));
       _controller.clear();
       setState(() => _pendingTask = null);
@@ -224,7 +382,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(userFacingErrorMessage(
             error,
-            fallback: 'Could not upload photo. Please check your connection and try again.',
+            fallback:
+                'Could not upload photo. Please check your connection and try again.',
           )),
         ));
       }
@@ -274,13 +433,14 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     final query = _query.trim().toLowerCase();
     final matching = state.familyChatMessages
         .where((message) =>
-            !message.deleted &&
-            (query.isEmpty ||
-                message.text.toLowerCase().contains(query) ||
-                (message.sticker?.contains(query) ?? false) ||
-                (message.senderName?.toLowerCase().contains(query) ?? false) ||
-                (message.referenceTitle?.toLowerCase().contains(query) ??
-                    false)))
+            query.isEmpty ||
+            (!message.deleted &&
+                (message.text.toLowerCase().contains(query) ||
+                    (message.sticker?.contains(query) ?? false) ||
+                    (message.senderName?.toLowerCase().contains(query) ??
+                        false) ||
+                    (message.referenceTitle?.toLowerCase().contains(query) ??
+                        false))))
         .toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final hasEarlier = matching.length > _visibleCount;
@@ -385,133 +545,93 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                             ],
                           );
                         }
-                        final sender =
-                            state.member(message.senderId) ?? state.user;
-                        final isMine = sender.id == state.user.id;
+                        final sender = state.member(message.senderId);
+                        final isMine = message.senderId == state.user.id;
+                        final senderName = message.senderName ??
+                            sender?.name ??
+                            'Family member';
+                        if (message.deleted) {
+                          return Column(
+                            children: [
+                              if (showDay) _ChatDayLabel(dayLabel),
+                              _DeletedChatMessage(
+                                isMine: isMine,
+                                senderName: senderName,
+                                createdAt: message.createdAt,
+                              ),
+                            ],
+                          );
+                        }
                         return Column(
                           children: [
                             if (showDay) _ChatDayLabel(dayLabel),
-                            Align(
-                              alignment: isMine
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              child: Container(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 320),
-                                margin: const EdgeInsets.only(bottom: 10),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color:
-                                      isMine ? context.primary : context.card,
-                                  borderRadius:
-                                      BorderRadius.circular(14).copyWith(
-                                    bottomLeft:
-                                        Radius.circular(isMine ? 14 : 5),
-                                    bottomRight:
-                                        Radius.circular(isMine ? 5 : 14),
-                                  ),
-                                  border: Border.all(
-                                    color: isMine
-                                        ? context.primary
-                                        : context.hairline,
+                            GestureDetector(
+                              onLongPress: isMine
+                                  ? () => _showMessageActions(state, message)
+                                  : null,
+                              child: Dismissible(
+                                key: ValueKey('reply-${message.id}'),
+                                direction: DismissDirection.startToEnd,
+                                dismissThresholds: const {
+                                  DismissDirection.startToEnd: 0.18,
+                                },
+                                confirmDismiss: (_) async {
+                                  _startReply(message);
+                                  return false;
+                                },
+                                background: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 12),
+                                    child: Icon(
+                                      Icons.reply_rounded,
+                                      color: context.primary,
+                                    ),
                                   ),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (!isMine)
-                                      Text(
-                                        sender.name,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: context.inkSoft,
-                                        ),
+                                child: Align(
+                                  alignment: isMine
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                                  child: Container(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 320),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: isMine
+                                          ? context.primary
+                                          : context.card,
+                                      borderRadius:
+                                          BorderRadius.circular(14).copyWith(
+                                        bottomLeft:
+                                            Radius.circular(isMine ? 14 : 5),
+                                        bottomRight:
+                                            Radius.circular(isMine ? 5 : 14),
                                       ),
-                                    const SizedBox(height: 4),
-                                    if (message.mediaUrl != null) ...[
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child:
-                                            FutureBuilder<Map<String, String>>(
-                                          future: _mediaHeaders(state),
-                                          builder: (context, snapshot) {
-                                            if (snapshot.hasError) {
-                                              return _ChatImageError(
-                                                  isMine: isMine);
-                                            }
-                                            if (!snapshot.hasData) {
-                                              return const SizedBox(
-                                                width: 240,
-                                                height: 160,
-                                                child: Center(
-                                                    child:
-                                                        CircularProgressIndicator()),
-                                              );
-                                            }
-                                            return Image.network(
-                                              _privateMediaUrl(
-                                                  message.mediaUrl!),
-                                              headers: snapshot.data,
-                                              width: 240,
-                                              height: 220,
-                                              fit: BoxFit.cover,
-                                              loadingBuilder:
-                                                  (context, child, progress) =>
-                                                      progress == null
-                                                          ? child
-                                                          : const SizedBox(
-                                                              width: 240,
-                                                              height: 160,
-                                                              child: Center(
-                                                                  child:
-                                                                      CircularProgressIndicator()),
-                                                            ),
-                                              errorBuilder: (_, __, ___) =>
-                                                  _ChatImageError(
-                                                      isMine: isMine),
-                                            );
-                                          },
-                                        ),
+                                      border: Border.all(
+                                        color: isMine
+                                            ? context.primary
+                                            : context.hairline,
                                       ),
-                                      if (message.text.isNotEmpty)
-                                        const SizedBox(height: 8),
-                                    ],
-                                    if (message.sticker != null)
-                                      Semantics(
-                                        label: 'Sticker ${message.sticker}',
-                                        child: Text(message.sticker!,
-                                            style:
-                                                const TextStyle(fontSize: 54)),
-                                      ),
-                                    if (message.text.isNotEmpty)
-                                      Text(
-                                        message.text,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isMine
-                                              ? context.onSolid
-                                              : context.ink,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    if (message.referenceType != null &&
-                                        message.referenceTitle != null) ...[
-                                      const SizedBox(height: 8),
-                                      Semantics(
-                                        button: message.referenceType ==
-                                            ChatReferenceType.task,
-                                        label:
-                                            'Open task ${message.referenceTitle}',
-                                        child: InkWell(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          onTap: message.referenceType ==
-                                                  ChatReferenceType.task
-                                              ? () => _openReferencedTask(
-                                                  state, message)
-                                              : null,
-                                          child: Container(
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (!isMine)
+                                          Text(
+                                            senderName,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: context.inkSoft,
+                                            ),
+                                          ),
+                                        const SizedBox(height: 4),
+                                        if (message.replyToId != null) ...[
+                                          Container(
+                                            width: double.infinity,
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 10,
                                               vertical: 8,
@@ -522,113 +642,273 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                                       .withValues(alpha: 0.14)
                                                   : context.primarySoft,
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  BorderRadius.circular(10),
                                             ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
-                                                Icon(
-                                                  Icons.task_rounded,
-                                                  size: 14,
-                                                  color: isMine
-                                                      ? context.onSolid
-                                                      : context.primary,
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Flexible(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        message.referenceTitle!,
-                                                        style: TextStyle(
-                                                          fontSize: 11.5,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          color: isMine
-                                                              ? context.onSolid
-                                                              : context.ink,
-                                                        ),
-                                                      ),
-                                                      if (message.referenceMeta !=
-                                                              null &&
-                                                          message.referenceMeta!
-                                                              .isNotEmpty)
-                                                        Text(
-                                                          message
-                                                              .referenceMeta!,
-                                                          style: TextStyle(
-                                                            fontSize: 10.5,
-                                                            color: isMine
-                                                                ? context
-                                                                    .onSolid
-                                                                    .withValues(
-                                                                        alpha:
-                                                                            0.8)
-                                                                : context
-                                                                    .inkSoft,
-                                                          ),
-                                                        ),
-                                                    ],
+                                                Text(
+                                                  message.replySenderName ??
+                                                      'Family member',
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: isMine
+                                                        ? context.onSolid
+                                                        : context.primary,
                                                   ),
                                                 ),
-                                                if (message.referenceType ==
-                                                    ChatReferenceType.task) ...[
-                                                  const SizedBox(width: 6),
-                                                  Icon(
-                                                      Icons
-                                                          .chevron_right_rounded,
-                                                      size: 16,
-                                                      color: isMine
-                                                          ? context.onSolid
-                                                          : context.primary),
-                                                ],
+                                                Text(
+                                                  message.replyPreview ??
+                                                      'Message',
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: isMine
+                                                        ? context.onSolid
+                                                            .withValues(
+                                                                alpha: 0.8)
+                                                        : context.inkSoft,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          DateFormat('MMM d, h:mm a').format(
-                                              message.createdAt.toLocal()),
-                                          style: TextStyle(
-                                            fontSize: 10.5,
-                                            color: isMine
-                                                ? context.onSolid
-                                                    .withValues(alpha: 0.75)
-                                                : context.inkSoft,
+                                          const SizedBox(height: 8),
+                                        ],
+                                        if (message.mediaUrl != null) ...[
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            child: FutureBuilder<
+                                                Map<String, String>>(
+                                              future: _mediaHeaders(state),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.hasError) {
+                                                  return _ChatImageError(
+                                                      isMine: isMine);
+                                                }
+                                                if (!snapshot.hasData) {
+                                                  return const SizedBox(
+                                                    width: 240,
+                                                    height: 160,
+                                                    child: Center(
+                                                        child:
+                                                            CircularProgressIndicator()),
+                                                  );
+                                                }
+                                                return Image.network(
+                                                  _privateMediaUrl(
+                                                      message.mediaUrl!),
+                                                  headers: snapshot.data,
+                                                  width: 240,
+                                                  height: 220,
+                                                  fit: BoxFit.cover,
+                                                  loadingBuilder: (context,
+                                                          child, progress) =>
+                                                      progress == null
+                                                          ? child
+                                                          : const SizedBox(
+                                                              width: 240,
+                                                              height: 160,
+                                                              child: Center(
+                                                                  child:
+                                                                      CircularProgressIndicator()),
+                                                            ),
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _ChatImageError(
+                                                          isMine: isMine),
+                                                );
+                                              },
+                                            ),
                                           ),
-                                        ),
-                                        if (isMine && !message.isSystem) ...[
-                                          const SizedBox(width: 4),
-                                          Icon(
-                                            switch (message.status) {
-                                              ChatMessageStatus.pending =>
-                                                Icons.schedule_rounded,
-                                              ChatMessageStatus.sent =>
-                                                Icons.check_rounded,
-                                              ChatMessageStatus.delivered ||
-                                              ChatMessageStatus.read =>
-                                                Icons.done_all_rounded,
-                                            },
-                                            size: 14,
-                                            color: message.status ==
-                                                    ChatMessageStatus.read
-                                                ? Colors.lightBlueAccent
-                                                : context.onSolid
-                                                    .withValues(alpha: 0.75),
+                                          if (message.text.isNotEmpty)
+                                            const SizedBox(height: 8),
+                                        ],
+                                        if (message.sticker != null)
+                                          Semantics(
+                                            label: 'Sticker ${message.sticker}',
+                                            child: Text(message.sticker!,
+                                                style: const TextStyle(
+                                                    fontSize: 54)),
+                                          ),
+                                        if (message.text.isNotEmpty)
+                                          Text(
+                                            message.text,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: isMine
+                                                  ? context.onSolid
+                                                  : context.ink,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        if (message.referenceType != null &&
+                                            message.referenceTitle != null) ...[
+                                          const SizedBox(height: 8),
+                                          Semantics(
+                                            button: message.referenceType ==
+                                                ChatReferenceType.task,
+                                            label:
+                                                'Open task ${message.referenceTitle}',
+                                            child: InkWell(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              onTap: message.referenceType ==
+                                                      ChatReferenceType.task
+                                                  ? () => _openReferencedTask(
+                                                      state, message)
+                                                  : null,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: isMine
+                                                      ? context.onSolid
+                                                          .withValues(
+                                                              alpha: 0.14)
+                                                      : context.primarySoft,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.task_rounded,
+                                                      size: 14,
+                                                      color: isMine
+                                                          ? context.onSolid
+                                                          : context.primary,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Flexible(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            message
+                                                                .referenceTitle!,
+                                                            style: TextStyle(
+                                                              fontSize: 11.5,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              color: isMine
+                                                                  ? context
+                                                                      .onSolid
+                                                                  : context.ink,
+                                                            ),
+                                                          ),
+                                                          if (message.referenceMeta !=
+                                                                  null &&
+                                                              message
+                                                                  .referenceMeta!
+                                                                  .isNotEmpty)
+                                                            Text(
+                                                              message
+                                                                  .referenceMeta!,
+                                                              style: TextStyle(
+                                                                fontSize: 10.5,
+                                                                color: isMine
+                                                                    ? context
+                                                                        .onSolid
+                                                                        .withValues(
+                                                                            alpha:
+                                                                                0.8)
+                                                                    : context
+                                                                        .inkSoft,
+                                                              ),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    if (message.referenceType ==
+                                                        ChatReferenceType
+                                                            .task) ...[
+                                                      const SizedBox(width: 6),
+                                                      Icon(
+                                                          Icons
+                                                              .chevron_right_rounded,
+                                                          size: 16,
+                                                          color: isMine
+                                                              ? context.onSolid
+                                                              : context
+                                                                  .primary),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           ),
                                         ],
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              DateFormat('MMM d, h:mm a')
+                                                  .format(message.createdAt
+                                                      .toLocal()),
+                                              style: TextStyle(
+                                                fontSize: 10.5,
+                                                color: isMine
+                                                    ? context.onSolid
+                                                        .withValues(alpha: 0.75)
+                                                    : context.inkSoft,
+                                              ),
+                                            ),
+                                            if (message.editedAt != null)
+                                              Text(
+                                                ' · Edited',
+                                                style: TextStyle(
+                                                  fontSize: 10.5,
+                                                  color: isMine
+                                                      ? context.onSolid
+                                                          .withValues(
+                                                              alpha: 0.75)
+                                                      : context.inkSoft,
+                                                ),
+                                              ),
+                                            if (isMine &&
+                                                !message.isSystem) ...[
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                switch (message.status) {
+                                                  ChatMessageStatus.pending =>
+                                                    Icons.schedule_rounded,
+                                                  ChatMessageStatus.sent =>
+                                                    Icons.check_rounded,
+                                                  ChatMessageStatus.delivered ||
+                                                  ChatMessageStatus.read =>
+                                                    Icons.done_all_rounded,
+                                                },
+                                                size: 14,
+                                                color: message.status ==
+                                                        ChatMessageStatus.read
+                                                    ? Colors.lightBlueAccent
+                                                    : context.onSolid
+                                                        .withValues(
+                                                            alpha: 0.75),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -648,6 +928,57 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (_replyingTo != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                        decoration: BoxDecoration(
+                          color: context.primarySoft,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.reply_rounded, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _replyingTo!.senderName ??
+                                        state
+                                            .member(_replyingTo!.senderId)
+                                            ?.name ??
+                                        'Family member',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    _replyPreview(_replyingTo!),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: context.inkSoft,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Cancel reply',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () =>
+                                  setState(() => _replyingTo = null),
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (_pendingTask != null)
                       Align(
                         alignment: Alignment.centerLeft,
@@ -680,6 +1011,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                         Expanded(
                           child: TextField(
                             controller: _controller,
+                            focusNode: _composerFocus,
                             minLines: 1,
                             maxLines: 4,
                             textCapitalization: TextCapitalization.sentences,
@@ -736,6 +1068,69 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       ),
     );
   }
+}
+
+class _DeletedChatMessage extends StatelessWidget {
+  const _DeletedChatMessage({
+    required this.isMine,
+    required this.senderName,
+    required this.createdAt,
+  });
+
+  final bool isMine;
+  final String senderName;
+  final DateTime createdAt;
+
+  @override
+  Widget build(BuildContext context) => Align(
+        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 320),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: context.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.hairline),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isMine) ...[
+                Text(
+                  senderName,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: context.inkSoft,
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.block_rounded, size: 15, color: context.inkFaint),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Message was deleted',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      color: context.inkSoft,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Text(
+                DateFormat('MMM d, h:mm a').format(createdAt.toLocal()),
+                style: TextStyle(fontSize: 10.5, color: context.inkFaint),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _ChatImageError extends StatelessWidget {

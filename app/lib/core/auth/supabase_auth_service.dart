@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
 import 'auth_service.dart';
@@ -54,6 +56,8 @@ class SupabaseAuthService implements AuthService {
   /// spinner forever. The generic catch at each call site already maps
   /// thrown errors to the typed network failure.
   static const Duration _timeout = Duration(seconds: 20);
+  static const String _oauthVerifierKey = 'oauth_pkce_verifier';
+  static const String _oauthRedirect = 'mhuri://auth-callback';
 
   Future<http.Response> _post(Uri url,
       {Map<String, String>? headers, Object? body}) async {
@@ -98,6 +102,56 @@ class SupabaseAuthService implements AuthService {
       'Could not contact the Mhuri server. Try again.',
       code: 'network',
     );
+  }
+
+  @override
+  Future<Uri> createGoogleOAuthUri() async {
+    final random = Random.secure();
+    final bytes = List<int>.generate(48, (_) => random.nextInt(256));
+    final verifier = base64UrlEncode(bytes).replaceAll('=', '');
+    final challenge =
+        base64UrlEncode(sha256.convert(utf8.encode(verifier)).bytes)
+            .replaceAll('=', '');
+    await _kvSet?.call(_oauthVerifierKey, verifier);
+    return Uri.parse('$_base/auth/v1/authorize').replace(queryParameters: {
+      'provider': 'google',
+      'redirect_to': _oauthRedirect,
+      'code_challenge': challenge,
+      'code_challenge_method': 's256',
+    });
+  }
+
+  @override
+  Future<AuthResult> exchangeOAuthCode(String code) async {
+    final verifier = await _kvGet?.call(_oauthVerifierKey);
+    if (code.isEmpty || verifier == null || verifier.isEmpty) {
+      return const AuthResult.failure(
+        'Google sign-in expired. Please start again.',
+        code: 'oauth_expired',
+      );
+    }
+    try {
+      final response = await _post(
+        Uri.parse('$_base/auth/v1/token?grant_type=pkce'),
+        headers: _headers,
+        body: jsonEncode({'auth_code': code, 'code_verifier': verifier}),
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final error = _errorInfo(response);
+        return AuthResult.failure(error.$1, code: 'oauth_failed');
+      }
+      final session = await _sessionFrom(response.body);
+      if (session == null) {
+        return const AuthResult.failure(
+          'Google sign-in could not be completed. Please try again.',
+          code: 'oauth_failed',
+        );
+      }
+      await _kvSet?.call(_oauthVerifierKey, '');
+      return const AuthResult.success();
+    } catch (error) {
+      return _connectionFailure(error);
+    }
   }
 
   @override

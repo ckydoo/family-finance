@@ -166,15 +166,15 @@ class FirebaseServices {
     try {
       final response = await http
           .post(
-            Uri.parse('$base/rest/v1/push_device?on_conflict=token'),
+            Uri.parse('$base/rest/v1/rpc/register_push_device'),
             headers: {
               'apikey': key,
               'Authorization': 'Bearer $access',
               'Content-Type': 'application/json',
-              'Prefer': 'resolution=merge-duplicates,return=minimal',
+              'Prefer': 'return=minimal',
             },
-            body: '{"token":"${_jsonEscape(token)}",'
-                '"platform":"${Platform.isIOS ? 'ios' : 'android'}"}',
+            body: '{"p_token":"${_jsonEscape(token)}",'
+                '"p_platform":"${Platform.isIOS ? 'ios' : 'android'}"}',
           )
           .timeout(const Duration(seconds: 20));
       if (response.statusCode < 200 || response.statusCode >= 300) {

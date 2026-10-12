@@ -6,6 +6,8 @@ import '../../core/theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/widgets/ring_progress.dart';
+import '../budgets/budgets_screen.dart';
+import '../savings/savings_screen.dart';
 
 /// Family Meeting (spec I4) - a guided 15-minute monthly agenda the couple
 /// walks through together. The note they agree on is saved on-device.
@@ -19,6 +21,18 @@ class FamilyMeetingScreen extends StatefulWidget {
 class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
   final _note = TextEditingController();
   bool _saved = false;
+  List<({String date, String note})> _notes = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadNotes());
+  }
+
+  Future<void> _loadNotes() async {
+    final notes = await AppScope.of(context).meetingNotes();
+    if (mounted) setState(() => _notes = notes);
+  }
 
   @override
   void dispose() {
@@ -26,11 +40,17 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
     super.dispose();
   }
 
-  void _saveNote(AppState s) {
+  Future<void> _saveNote(AppState s) async {
     final stamp = DateTime.now().toIso8601String().substring(0, 10);
     // kv persist via the state's store (fire-and-forget).
     s.saveLocalNote('meeting_note_$stamp', _note.text.trim());
-    setState(() => _saved = true);
+    final notes = await s.meetingNotes();
+    if (mounted) {
+      setState(() {
+        _saved = true;
+        _notes = notes;
+      });
+    }
   }
 
   @override
@@ -69,34 +89,71 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
               _step(
                 n: 2,
                 title: l.mEnvelopeHealth,
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    RingProgress(
-                      value: s.envelopeHealth,
-                      size: 60,
-                      stroke: 8,
-                      color: s.envelopeHealth >= 0.7
-                          ? context.primary
-                          : context.accent,
-                      child: Text(
-                        '${(s.envelopeHealth * 100).round()}%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: context.ink,
+                    Row(children: [
+                      RingProgress(
+                        value: s.envelopeHealth,
+                        size: 60,
+                        stroke: 8,
+                        color: s.envelopeHealth >= 0.7
+                            ? context.primary
+                            : context.accent,
+                        child: Text(
+                          '${(s.envelopeHealth * 100).round()}%',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: context.ink,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        l.mReachedTalk,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.inkSoft,
-                          height: 1.4,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          l.mReachedTalk,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.inkSoft,
+                            height: 1.4,
+                          ),
                         ),
                       ),
+                    ]),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const BudgetsScreen(standalone: true),
+                            ),
+                          ),
+                          icon: const Icon(Icons.tune, size: 17),
+                          label: const Text('Review budgets'),
+                        ),
+                        if (s.currentBudgetPlan == null &&
+                            s.previousBudgetPlan != null &&
+                            s.canEditBudgets)
+                          FilledButton.icon(
+                            onPressed: () {
+                              s.useLastMonthPlan();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Last month’s plan is ready to review.'),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.content_copy_outlined,
+                                size: 17),
+                            label: const Text('Use last month'),
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -108,6 +165,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                 n: 3,
                 title: l.mGoals,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (final g in s.goals.take(4))
                       Padding(
@@ -115,7 +173,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                         child: Row(
                           children: [
                             Icon(
-                              iconForKey(g.emoji) ?? Icons.track_changes,
+                              iconForKey(g.emoji) ?? kFallbackSemanticIcon,
                               size: 17,
                               color: context.primaryDark,
                             ),
@@ -142,6 +200,18 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                           ],
                         ),
                       ),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SavingsScreen(
+                            standalone: true,
+                            initialSection: SavingsSection.goals,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.track_changes, size: 17),
+                      label: const Text('Review goals'),
+                    ),
                   ],
                 ),
               ),
@@ -150,19 +220,32 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
               _step(
                 n: 4,
                 title: l.mChores,
-                child: Text(
-                  l.mChoresLine(
-                    s.stars,
-                    s.requests
-                        .where((r) => r.state == RequestState.pending)
-                        .length,
-                    s.proposals
-                        .where((p) => p.state == RequestState.pending)
-                        .length,
-                  ),
-                  style: TextStyle(fontSize: 12.5, color: context.inkSoft),
-                ),
+                child: _familyDecisions(context, s, l),
               ),
+              if (_notes.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _step(
+                  n: 6,
+                  title: 'Previous commitments',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final note in _notes.take(4))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '${note.date} · ${note.note}',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: context.inkSoft,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               // ── Step 5 - one improvement ─────────────────────────────
               _step(
@@ -190,7 +273,8 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: context.primary,
                             foregroundColor: context.onSolid,
-                            shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                            shape:
+                                RoundedRectangleBorder(borderRadius: kBRadiusM),
                           ),
                           icon: const Icon(Icons.check, size: 18),
                           label: Text(l.meetingSaveNote),
@@ -222,7 +306,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                 ),
                 child: Text(
                   l.meetingDone,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ];
@@ -269,7 +353,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                   child: Text(
                     '$n',
                     style: TextStyle(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.primary,
                       fontSize: 13,
                     ),
@@ -280,7 +364,7 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                   title,
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: context.ink,
                   ),
                 ),
@@ -304,11 +388,85 @@ class _FamilyMeetingScreenState extends State<FamilyMeetingScreen> {
                 value,
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
             ),
+          ],
+        ),
+      );
+
+  Widget _familyDecisions(
+    BuildContext context,
+    AppState s,
+    AppLocalizations l,
+  ) {
+    final requests =
+        s.requests.where((r) => r.state == RequestState.pending).toList();
+    final proposals =
+        s.proposals.where((p) => p.state == RequestState.pending).toList();
+    if (requests.isEmpty && proposals.isEmpty) {
+      return Text(
+        l.mChoresLine(s.stars, 0, 0),
+        style: TextStyle(fontSize: 12.5, color: context.inkSoft),
+      );
+    }
+    return Column(
+      children: [
+        for (final request in requests)
+          _decisionRow(
+            title:
+                '${s.member(request.kidId)?.name ?? 'Child'} · ${request.amount.text}',
+            subtitle: request.reason,
+            onDecline: s.canApprove
+                ? () => setState(() => s.declineRequest(request))
+                : null,
+            onApprove: s.canApprove
+                ? () => setState(() => s.approveRequest(request))
+                : null,
+          ),
+        for (final proposal in proposals)
+          _decisionRow(
+            title:
+                '${s.member(proposal.teenId)?.name ?? 'Teen'} · ${proposal.amount.text}',
+            subtitle: proposal.reason,
+            onDecline: s.canApprove
+                ? () => setState(() => s.declineProposal(proposal))
+                : null,
+            onApprove: s.canApprove
+                ? () => setState(() => s.approveProposal(proposal))
+                : null,
+          ),
+      ],
+    );
+  }
+
+  Widget _decisionRow({
+    required String title,
+    required String subtitle,
+    required VoidCallback? onDecline,
+    required VoidCallback? onApprove,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, color: context.ink)),
+                  Text(subtitle,
+                      style: TextStyle(fontSize: 12, color: context.inkSoft)),
+                ],
+              ),
+            ),
+            TextButton(onPressed: onDecline, child: const Text('Decline')),
+            FilledButton(onPressed: onApprove, child: const Text('Approve')),
           ],
         ),
       );

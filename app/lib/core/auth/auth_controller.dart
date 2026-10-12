@@ -33,6 +33,7 @@ class AuthController extends ChangeNotifier {
   bool _needsConfirmation = false;
   bool _busy = false;
   bool _restoring = false;
+  int _sessionMutation = 0;
 
   AuthSession? get session => _session;
   bool get isLoggedIn => _session != null;
@@ -48,16 +49,17 @@ class AuthController extends ChangeNotifier {
   bool get busy => _busy;
   bool get restoring => _restoring;
 
-  /// Supabase's hosted OAuth entry point. The provider redirects back to the
-  /// custom scheme registered by the Android and iOS runners.
-  Uri get googleSignInUri => Uri.parse('${env.supabaseUrl}/auth/v1/authorize')
-          .replace(queryParameters: const {
-        'provider': 'google',
-        'redirect_to': 'mhuri://auth-callback',
-      });
+  /// Creates Supabase's Google OAuth URL and persists its PKCE verifier before
+  /// Chrome opens. Incrementing the mutation prevents an older startup
+  /// restore from overwriting the callback session.
+  Future<Uri> createGoogleSignInUri() {
+    _sessionMutation++;
+    return _service.createGoogleOAuthUri();
+  }
 
   /// Called once at startup: restores the stored session or null (login).
   Future<void> restore() async {
+    final restoreMutation = _sessionMutation;
     _restoring = true;
     notifyListeners();
     try {
@@ -79,7 +81,8 @@ class AuthController extends ChangeNotifier {
         }
       }
 
-      _session = await _service.restoreSession();
+      final restored = await _service.restoreSession();
+      if (_sessionMutation == restoreMutation) _session = restored;
     } finally {
       _restoring = false;
       notifyListeners();
@@ -170,6 +173,7 @@ class AuthController extends ChangeNotifier {
 
   Future<bool> adoptOAuthSession(
       String accessToken, String refreshToken) async {
+    _sessionMutation++;
     _lastError = null;
     _lastErrorCode = null;
     _busy = true;
@@ -184,6 +188,33 @@ class AuthController extends ChangeNotifier {
     }
     notifyListeners();
     return ok;
+  }
+
+  Future<bool> exchangeOAuthCode(String code) async {
+    _sessionMutation++;
+    _lastError = null;
+    _lastErrorCode = null;
+    _busy = true;
+    notifyListeners();
+    final result = await _service.exchangeOAuthCode(code);
+    _busy = false;
+    if (result.ok && _service.session != null) {
+      _session = _service.session;
+    } else {
+      _lastError = result.error ??
+          'Google sign-in could not be completed. Please try again.';
+      _lastErrorCode = result.code ?? 'oauth_failed';
+    }
+    notifyListeners();
+    return result.ok && _session != null;
+  }
+
+  void reportOAuthError(String message) {
+    _sessionMutation++;
+    _lastError = message;
+    _lastErrorCode = 'oauth_failed';
+    _busy = false;
+    notifyListeners();
   }
 
   /// Fresh access token for the sync layer (null when unrenewable).

@@ -34,7 +34,7 @@ class _LegalScreenState extends State<LegalScreen> {
       appBar: AppBar(
         title: const Text(
           'Legal & Compliance',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         actions: [
           IconButton(
@@ -104,7 +104,7 @@ class _LegalScreenState extends State<LegalScreen> {
       selectedColor: context.primarySoft,
       labelStyle: TextStyle(
         fontSize: 13,
-        fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
         color: selected ? context.primary : context.inkSoft,
       ),
       side: BorderSide(
@@ -251,7 +251,7 @@ class _LegalScreenState extends State<LegalScreen> {
                       'Important Regulatory Notice',
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         color: Colors.amber.shade900,
                       ),
                     ),
@@ -378,7 +378,7 @@ class _LegalScreenState extends State<LegalScreen> {
                 title,
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   color: context.ink,
                 ),
               ),
@@ -400,7 +400,7 @@ class _LegalScreenState extends State<LegalScreen> {
         text,
         style: TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           color: context.ink,
         ),
       ),
@@ -419,7 +419,7 @@ class _LegalScreenState extends State<LegalScreen> {
               title,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: context.ink,
               ),
             ),
@@ -487,7 +487,7 @@ class _LegalScreenState extends State<LegalScreen> {
                 'Questions or Data Requests?',
                 style: TextStyle(
                   fontSize: 13.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.ink,
                 ),
               ),

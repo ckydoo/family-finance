@@ -27,7 +27,7 @@ class AppScope extends InheritedNotifier<AppState> {
       context.dependOnInheritedWidgetOfExactType<AppScope>()!.notifier!;
 }
 
-enum Pace { onTrack, watch, over }
+enum Pace { onTrack, watch, reached, over }
 
 /// Single source of truth. M1: every mutation writes through to the local
 /// SQLite database (fire-and-forget, errors never crash the app); on startup
@@ -101,6 +101,7 @@ class AppState extends ChangeNotifier {
   Persistence? _store;
   Future<void>? _hydrationFuture;
   final List<Future<void>> _writes = <Future<void>>[];
+  final Map<String, String> _localNotes = {};
 
   /// Device-local family identity. Adopted/renamed by FamilySetup and
   /// hydrated from kv (members_v1 / space_name) - never fixtures.
@@ -921,8 +922,36 @@ class AppState extends ChangeNotifier {
   /// Small local note storage (Family Meeting notes, etc.) - kv-backed,
   /// fire-and-forget, device-local.
   void saveLocalNote(String key, String value) {
+    _localNotes[key] = value;
     _persistKv(key, value);
     notifyListeners();
+  }
+
+  Future<List<({String date, String note})>> meetingNotes() async {
+    final notes = <String, String>{..._localNotes};
+    final database = db;
+    if (database != null) {
+      final rows = await database.raw.query(
+        'kv',
+        columns: ['k', 'v'],
+        where: 'k LIKE ?',
+        whereArgs: ['meeting_note_%'],
+        orderBy: 'k DESC',
+      );
+      for (final row in rows) {
+        final key = row['k'] as String;
+        notes[key] = row['v'] as String? ?? '';
+      }
+    }
+    final entries = notes.entries
+        .where((entry) => entry.value.trim().isNotEmpty)
+        .map((entry) => (
+              date: entry.key.substring('meeting_note_'.length),
+              note: entry.value,
+            ))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    return entries;
   }
 
   /// Payday-aligned cycles (B5) - e.g. 25 for salary-cycle budgeting.
@@ -1148,6 +1177,10 @@ class AppState extends ChangeNotifier {
       mediaUrl: message.mediaUrl,
       mediaType: message.mediaType,
       sticker: message.sticker,
+      replyToId: message.replyToId,
+      replySenderName: message.replySenderName,
+      replyPreview: message.replyPreview,
+      editedAt: message.editedAt,
       deleted: message.deleted,
     );
     final existingIndex =
@@ -1192,6 +1225,10 @@ class AppState extends ChangeNotifier {
         mediaUrl: message.mediaUrl,
         mediaType: message.mediaType,
         sticker: message.sticker,
+        replyToId: message.replyToId,
+        replySenderName: message.replySenderName,
+        replyPreview: message.replyPreview,
+        editedAt: message.editedAt,
         deleted: message.deleted,
       );
       familyChatMessages[i] = sent;
@@ -2776,6 +2813,7 @@ class AppState extends ChangeNotifier {
     if (lim <= 0) return Pace.onTrack;
     final sp = spentOn(e).minor;
     if (sp > lim) return Pace.over;
+    if (sp == lim) return Pace.reached;
     if (sp > timeRatio * 1.15 * lim) return Pace.watch;
     return Pace.onTrack;
   }
@@ -3719,13 +3757,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void requestMoney(Money amount, String reason) {
-    if (authRole != Role.kid || amount.minor <= 0 || reason.trim().isEmpty) {
-      return;
+  bool requestMoney(Money amount, String reason) {
+    final actor = authRole == Role.kid
+        ? realUser
+        : (isPreviewing && _user.role == Role.kid && canApprove ? _user : null);
+    if (actor == null || amount.minor <= 0 || reason.trim().isEmpty) {
+      return false;
     }
     final r = KidRequest(
       id: _seq('r'),
-      kidId: _user.id,
+      kidId: actor.id,
       amount: amount,
       reason: reason.trim(),
     );
@@ -3734,6 +3775,7 @@ class AppState extends ChangeNotifier {
     _queue('kid_request', r);
     pendingOps++;
     notifyListeners();
+    return true;
   }
 
   /// Approved money lands in the kid's jar (G5 → G2).

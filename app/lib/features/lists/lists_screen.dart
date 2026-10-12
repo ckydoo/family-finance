@@ -66,6 +66,9 @@ class _ListsScreenState extends State<ListsScreen> {
           !i.checkedOut &&
           (i.state == ItemState.done || i.state == ItemState.incart),
     );
+    final hasPurchasedItems = s.items.any(
+      (i) => i.checkedOut && i.state == ItemState.done,
+    );
 
     int count(ItemState st) => s.items.where((i) => i.state == st).length;
 
@@ -106,6 +109,16 @@ class _ListsScreenState extends State<ListsScreen> {
                                   color: context.ink,
                                 ),
                               ),
+                              if (hasPurchasedItems)
+                                IconButton(
+                                  tooltip: 'Reuse purchased items',
+                                  onPressed: () =>
+                                      _reusePurchasedSheet(context, s),
+                                  icon: Icon(
+                                    Icons.replay_rounded,
+                                    color: context.primary,
+                                  ),
+                                ),
                               IconButton(
                                 tooltip: AppLocalizations.of(context)!.addItem,
                                 onPressed: () => _addSheet(context),
@@ -180,7 +193,7 @@ class _ListsScreenState extends State<ListsScreen> {
                                         : 'Nothing in this view',
                                     style: TextStyle(
                                       color: context.ink,
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: FontWeight.w700,
                                       fontSize: 15,
                                     ),
                                   ),
@@ -246,7 +259,7 @@ class _ListsScreenState extends State<ListsScreen> {
                                 estPrimary.text,
                                 style: TextStyle(
                                   fontSize: 19,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                   color: context.ink,
                                 ),
                               ),
@@ -445,7 +458,7 @@ class _ListsScreenState extends State<ListsScreen> {
                       },
                       decoration: InputDecoration(
                         labelText:
-                            AppLocalizations.of(context)!.estPrice(cur.symbol),
+                            '${AppLocalizations.of(context)!.estPrice(cur.symbol)} (optional)',
                         filled: true,
                         fillColor: context.card,
                         border: const OutlineInputBorder(
@@ -496,7 +509,10 @@ class _ListsScreenState extends State<ListsScreen> {
                 onPressed: () {
                   final n = name.text.trim();
                   final q = int.tryParse(qty.text) ?? 1;
-                  final p = double.tryParse(price.text.replaceAll(',', ''));
+                  final priceText = price.text.trim();
+                  final p = priceText.isEmpty
+                      ? 0.0
+                      : double.tryParse(priceText.replaceAll(',', ''));
                   if (n.isEmpty) {
                     setSheet(() => itemError = l.listNameLabel);
                     return;
@@ -505,7 +521,7 @@ class _ListsScreenState extends State<ListsScreen> {
                     setSheet(() => itemError = l.listQtyLabel);
                     return;
                   }
-                  if (p == null || p <= 0) {
+                  if (p == null || p < 0) {
                     setSheet(() => itemError =
                         AppLocalizations.of(context)!.enterAmountFirst);
                     return;
@@ -515,6 +531,72 @@ class _ListsScreenState extends State<ListsScreen> {
                   Navigator.pop(sheetCtx);
                 },
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _reusePurchasedSheet(BuildContext context, AppState state) {
+    final purchased = state.items
+        .where((item) => item.checkedOut && item.state == ItemState.done)
+        .toList();
+    final selected = purchased.map((item) => item.id).toSet();
+
+    showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) => MhuriSheetShell(
+          title: 'Reuse purchased items',
+          footer: PrimaryButton(
+            label: selected.isEmpty
+                ? 'Select items'
+                : 'Add ${selected.length} to list',
+            onPressed: selected.isEmpty
+                ? null
+                : () {
+                    for (final item in purchased) {
+                      if (selected.contains(item.id)) state.advanceItem(item);
+                    }
+                    final count = selected.length;
+                    final messenger = ScaffoldMessenger.of(context);
+                    Navigator.pop(sheetContext);
+                    messenger.showSnackBar(SnackBar(
+                      content: Text(
+                        '$count purchased ${count == 1 ? 'item is' : 'items are'} back on the list.',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ));
+                  },
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Choose what you need to buy again. Prices and quantities will be kept.',
+                style: TextStyle(color: context.inkSoft, height: 1.4),
+              ),
+              const SizedBox(height: 12),
+              for (final item in purchased)
+                CheckboxListTile(
+                  value: selected.contains(item.id),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  activeColor: context.primary,
+                  title: Text(item.name),
+                  subtitle: Text(
+                    'Qty ${item.qty}${item.est.minor > 0 ? ' · ${item.est.text} each' : ' · price not set'}',
+                  ),
+                  onChanged: (checked) => setSheet(() {
+                    if (checked ?? false) {
+                      selected.add(item.id);
+                    } else {
+                      selected.remove(item.id);
+                    }
+                  }),
+                ),
             ],
           ),
         ),
@@ -630,7 +712,7 @@ class _ItemRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Qty ${item.qty} · est. ${item.est.text} each'
+                  'Qty ${item.qty} · ${item.est.minor == 0 ? 'price not set' : 'est. ${item.est.text} each'}'
                   '${item.actual == null ? '' : ' · actual ${item.actual!.text}'}\n'
                   '${assignedTo == null ? 'Added by ${addedBy?.name ?? 'family'}' : 'Assigned to ${assignedTo.name}'}'
                   '${item.checkedOut ? ' · Bought by ${purchasedBy?.name ?? 'family'}' : ''}',
@@ -643,7 +725,9 @@ class _ItemRow extends StatelessWidget {
             ),
           ),
           Text(
-            ((item.actual ?? item.est).times(item.qty)).text,
+            item.actual == null && item.est.minor == 0
+                ? '—'
+                : ((item.actual ?? item.est).times(item.qty)).text,
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.w600,
@@ -687,8 +771,10 @@ class _ItemRow extends StatelessWidget {
   void _editSheet(BuildContext context, AppState state) {
     final name = TextEditingController(text: item.name);
     final qty = TextEditingController(text: '${item.qty}');
-    final price =
-        TextEditingController(text: (item.est.minor / 100).toStringAsFixed(2));
+    final price = TextEditingController(
+        text: item.est.minor == 0
+            ? ''
+            : (item.est.minor / 100).toStringAsFixed(2));
     final actual = TextEditingController(
         text: item.actual == null
             ? ''
@@ -704,7 +790,10 @@ class _ItemRow extends StatelessWidget {
             label: 'Save changes',
             onPressed: () {
               final q = int.tryParse(qty.text);
-              final p = double.tryParse(price.text.replaceAll(',', ''));
+              final priceText = price.text.trim();
+              final p = priceText.isEmpty
+                  ? 0.0
+                  : double.tryParse(priceText.replaceAll(',', ''));
               final paid = actual.text.trim().isEmpty
                   ? null
                   : double.tryParse(actual.text.replaceAll(',', ''));
@@ -759,7 +848,7 @@ class _ItemRow extends StatelessWidget {
                         inputFormatters: amountInputFormatters,
                         decoration: InputDecoration(
                             labelText:
-                                'Estimated price (${item.est.currency.symbol})'))),
+                                'Estimated price (${item.est.currency.symbol}) (optional)'))),
               ]),
               const SizedBox(height: 12),
               TextField(

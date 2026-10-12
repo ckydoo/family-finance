@@ -68,7 +68,7 @@ class TeenZone extends StatelessWidget {
                         foregroundColor: context.ink,
                         textStyle: const TextStyle(
                           fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -98,7 +98,7 @@ class TeenZone extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 25,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
                         ),
@@ -151,7 +151,7 @@ class TeenZone extends StatelessWidget {
                     size: 62,
                     color: context.primary,
                     child: Icon(
-                      iconForKey(jar?.emoji) ?? Icons.track_changes,
+                      iconForKey(jar?.emoji) ?? kFallbackSemanticIcon,
                       size: 24,
                       color: Colors.white,
                     ),
@@ -225,7 +225,7 @@ class TeenZone extends StatelessWidget {
                         Text(
                           tStr(context, 'savingsMatch'),
                           style: TextStyle(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             fontSize: 13.5,
                             color: context.ink,
                           ),
@@ -241,7 +241,7 @@ class TeenZone extends StatelessWidget {
                   Text(
                     '+${s.teenMatchTotal.text}',
                     style: TextStyle(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.primary,
                       fontSize: 15,
                     ),
@@ -268,7 +268,7 @@ class TeenZone extends StatelessWidget {
                           tStr(context, 'earnings'),
                           style: TextStyle(
                             fontSize: 15,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: context.ink,
                           ),
                         ),
@@ -353,7 +353,7 @@ class TeenZone extends StatelessWidget {
                     tStr(context, 'myProposals'),
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.ink,
                     ),
                   ),
@@ -401,7 +401,7 @@ class TeenZone extends StatelessWidget {
                     tStr(context, 'plan'),
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.ink,
                     ),
                   ),
@@ -471,7 +471,7 @@ class TeenZone extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -554,7 +554,7 @@ class TeenZone extends StatelessWidget {
                 },
                 style: TextStyle(
                   fontSize: 28,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.ink,
                 ),
                 decoration: InputDecoration(
@@ -666,7 +666,7 @@ class TeenZone extends StatelessWidget {
                 },
                 style: TextStyle(
                   fontSize: 26,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.ink,
                 ),
                 decoration: InputDecoration(
@@ -766,7 +766,7 @@ class TeenZone extends StatelessWidget {
                 },
                 style: TextStyle(
                   fontSize: 28,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: context.ink,
                 ),
                 decoration: InputDecoration(
@@ -823,7 +823,7 @@ class TeenZone extends StatelessWidget {
                   for (final e in s.envelopes.where((e) => !e.isPersonal))
                     ChoiceChip(
                       label: Row(children: [
-                        Icon(iconForKey(e.emoji) ?? Icons.savings,
+                        Icon(iconForKey(e.emoji) ?? kFallbackSemanticIcon,
                             size: 16, color: context.primaryDark),
                         const SizedBox(width: 8),
                         Text(e.name),
@@ -870,7 +870,7 @@ class _TeenFamilyTasks extends StatelessWidget {
                   'Family tasks',
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: context.ink,
                   ),
                 ),
@@ -958,7 +958,7 @@ class _SingleEarningRow extends StatelessWidget {
             style: TextStyle(
               color: context.primary,
               fontSize: 13,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1117,7 +1117,7 @@ class _PeekCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(iconForKey(e.emoji) ?? Icons.savings,
+              Icon(iconForKey(e.emoji) ?? kFallbackSemanticIcon,
                   size: 21, color: context.primaryDark),
               const SizedBox(width: 8),
               Expanded(

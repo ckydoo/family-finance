@@ -163,6 +163,10 @@ void main() {
       mediaUrl: 'https://cdn.example.test/family/photo.jpg',
       mediaType: 'image',
       sticker: '🎉',
+      replyToId: 'chat-original',
+      replySenderName: 'Tariro',
+      replyPreview: 'Can you check the food budget?',
+      editedAt: DateTime.utc(2026, 10, 7, 19),
     );
 
     final json = adapter.encode(
@@ -176,6 +180,8 @@ void main() {
     expect(json['reference_type'], 'expense');
     expect(json['media_type'], 'image');
     expect(json['sticker'], '🎉');
+    expect(json['reply_to_id'], 'chat-original');
+    expect(json['edited_at'], '2026-10-07T19:00:00.000Z');
 
     final roundTripped = adapter.decode(json) as FamilyChatMessage;
     expect(roundTripped.familyId, 'space-42');
@@ -183,6 +189,10 @@ void main() {
     expect(roundTripped.referenceType, ChatReferenceType.expense);
     expect(roundTripped.mediaUrl, 'https://cdn.example.test/family/photo.jpg');
     expect(roundTripped.sticker, '🎉');
+    expect(roundTripped.replyToId, 'chat-original');
+    expect(roundTripped.replySenderName, 'Tariro');
+    expect(roundTripped.replyPreview, 'Can you check the food budget?');
+    expect(roundTripped.editedAt, DateTime.utc(2026, 10, 7, 19));
   });
 }
 

@@ -140,7 +140,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 19,
+        version: 21,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -433,6 +433,10 @@ class AppDatabase {
       media_url TEXT,
       media_type TEXT,
       sticker TEXT,
+      reply_to_id TEXT,
+      reply_sender_name TEXT,
+      reply_preview TEXT,
+      edited_at_ms INTEGER,
       deleted INTEGER NOT NULL DEFAULT 0
     )
     ''',
@@ -722,6 +726,23 @@ class AppDatabase {
           await d.execute(sql);
         } catch (_) {}
       }
+    }
+    if (oldVersion < 20) {
+      for (final sql in const [
+        'ALTER TABLE family_chat_message ADD COLUMN reply_to_id TEXT',
+        'ALTER TABLE family_chat_message ADD COLUMN reply_sender_name TEXT',
+        'ALTER TABLE family_chat_message ADD COLUMN reply_preview TEXT',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {}
+      }
+    }
+    if (oldVersion < 21) {
+      try {
+        await d.execute(
+            'ALTER TABLE family_chat_message ADD COLUMN edited_at_ms INTEGER');
+      } catch (_) {}
     }
     await createSchema(d); // shopping_list & others are CREATE IF NOT EXISTS
   }

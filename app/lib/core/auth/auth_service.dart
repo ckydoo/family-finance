@@ -50,6 +50,14 @@ abstract class AuthService {
 
   Future<AuthResult> signUp(String email, String password);
 
+  /// Starts a Google OAuth PKCE flow and returns the provider URL to open.
+  /// The verifier is persisted before this returns so a cold-start callback
+  /// can safely exchange the short-lived authorization code.
+  Future<Uri> createGoogleOAuthUri();
+
+  /// Exchanges the `?code=...` returned by the OAuth PKCE callback.
+  Future<AuthResult> exchangeOAuthCode(String code);
+
   /// Adopts the access and refresh tokens returned by a social OAuth
   /// provider redirect (for example Google via Supabase Auth).
   Future<bool> adoptOAuthSession(String accessToken, String refreshToken);

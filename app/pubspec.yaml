@@ -6,7 +6,7 @@ description: >-
   shopping lists, Teen Zone and a sealed Kids Mode. Local persistence via
   sqflite; optional Supabase sync.
 publish_to: "none"
-version: 0.2.0+8
+version: 0.2.0+1o
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

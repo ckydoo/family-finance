@@ -63,7 +63,7 @@ class SyncScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(statusLabel,
                           style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w800)),
+                              fontSize: 15, fontWeight: FontWeight.w700)),
                       const Spacer(),
                       TextButton(
                         onPressed: () => s.syncNow(force: true),
@@ -108,7 +108,7 @@ class SyncScreen extends StatelessWidget {
                       Text('Changes need review',
                           style: TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: Colors.amber.shade900)),
                       const SizedBox(height: 5),
                       Text(
@@ -177,7 +177,7 @@ class SyncScreen extends StatelessWidget {
                             child: Text(l.syncProblemsTitle,
                                 style: TextStyle(
                                     fontSize: 13.5,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w700,
                                     color: Colors.orange.shade900)),
                           ),
                           TextButton.icon(
@@ -253,7 +253,7 @@ class SyncScreen extends StatelessWidget {
                 children: [
                   Text(l.syncWhereTitle,
                       style: const TextStyle(
-                          fontSize: 13.5, fontWeight: FontWeight.w800)),
+                          fontSize: 13.5, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 6),
                   Row(
                     children: [

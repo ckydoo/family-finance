@@ -36,7 +36,7 @@ class RecurringRow extends StatelessWidget {
             width: 40,
             height: 40,
             child: Icon(
-              iconForKey(rule.emoji) ?? Icons.autorenew,
+              iconForKey(rule.emoji) ?? kFallbackSemanticIcon,
               size: 19,
               color: context.primaryDark,
             ),
@@ -220,7 +220,7 @@ class _BillStatusPill extends StatelessWidget {
         ),
         child: Text(label,
             style: TextStyle(
-                color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
+                color: color, fontSize: 10.5, fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -380,7 +380,7 @@ Future<void> showAddRecurringSheet(BuildContext context) {
               },
               style: TextStyle(
                 fontSize: 26,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: context.ink,
               ),
               decoration: InputDecoration(
@@ -432,7 +432,7 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                   DropdownMenuItem<String?>(
                       value: e.id,
                       child: Row(children: [
-                        Icon(iconForKey(e.emoji) ?? Icons.savings,
+                        Icon(iconForKey(e.emoji) ?? kFallbackSemanticIcon,
                             size: 16, color: context.primaryDark),
                         const SizedBox(width: 8),
                         Expanded(
@@ -467,8 +467,11 @@ Future<void> showAddRecurringSheet(BuildContext context) {
                           DropdownMenuItem<String>(
                               value: m.id,
                               child: Row(children: [
-                                Icon(iconForKey(m.emoji) ?? Icons.person,
-                                    size: 16, color: context.primaryDark),
+                                Icon(
+                                    iconForKey(m.emoji) ??
+                                        kFallbackSemanticIcon,
+                                    size: 16,
+                                    color: context.primaryDark),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(m.name,

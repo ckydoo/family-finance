@@ -45,7 +45,7 @@ class SettingsScreen extends StatelessWidget {
                       s.user.name,
                       style: TextStyle(
                         fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         color: context.ink,
                       ),
                     ),
@@ -132,7 +132,7 @@ class SettingsScreen extends StatelessWidget {
                     AppLocalizations.of(context)!.remindersOnDevice,
                     style: TextStyle(
                       fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.ink,
                     ),
                   ),
@@ -232,7 +232,7 @@ class SettingsScreen extends StatelessWidget {
                     AppLocalizations.of(context)!.mukandoOn,
                     style: TextStyle(
                       fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: context.ink,
                     ),
                   ),
@@ -252,7 +252,7 @@ class SettingsScreen extends StatelessWidget {
                     'Day ${s.monthStartDay}',
                     style: TextStyle(
                       color: context.primary,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   onTap: () => _editPayday(context, s),

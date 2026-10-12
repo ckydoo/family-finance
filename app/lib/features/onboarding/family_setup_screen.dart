@@ -934,7 +934,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           runSpacing: 8,
           children: _allTemplates.map((template) {
             final isSelected = _selectedTemplateKeys.contains(template.key);
-            final icon = iconForKey(template.iconKey) ?? Icons.category;
+            final icon = iconForKey(template.iconKey) ?? kFallbackSemanticIcon;
             return FilterChip(
               avatar: Icon(
                 icon,
@@ -1066,7 +1066,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                       .where((t) => _selectedTemplateKeys.contains(t.key))
                       .map((t) => Chip(
                             avatar: Icon(
-                                iconForKey(t.iconKey) ?? Icons.category,
+                                iconForKey(t.iconKey) ?? kFallbackSemanticIcon,
                                 size: 14),
                             label: Text(t.name,
                                 style: const TextStyle(fontSize: 12)),

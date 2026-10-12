@@ -29,6 +29,28 @@ void main() {
               'https://evil.example/#access_token=a&refresh_token=r'),
           isNull);
     });
+
+    test('recognises PKCE codes and provider errors', () {
+      final code = parseOAuthCallback('mhuri://auth-callback?code=code-123');
+      expect(code.kind, OAuthCallbackKind.code);
+      expect(code.code, 'code-123');
+
+      final error = parseOAuthCallback(
+          'mhuri://auth-callback?error=access_denied&error_description=Cancelled');
+      expect(error.kind, OAuthCallbackKind.error);
+      expect(error.error, 'Cancelled');
+    });
+
+    test('recognises Android route-channel OAuth errors without accepting tokens',
+        () {
+      expect(
+        parseOAuthRouteError(
+            '/?error=server_error&error_description=User+not+found#sb='),
+        'User not found',
+      );
+      expect(parseOAuthRouteError('/?code=secret-code'), isNull);
+      expect(parseOAuthRouteError('/home'), isNull);
+    });
   });
 
   group('parseRecoveryLink', () {
