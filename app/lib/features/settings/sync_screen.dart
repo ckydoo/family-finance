@@ -24,7 +24,11 @@ class SyncScreen extends StatelessWidget {
     final status = s.syncStatus;
     final last = s.lastSyncAt;
     final error = s.syncLastError;
-    final host = s.syncHost;
+    final cloudIsLive = s.syncHost != null &&
+        status != SyncStatus.offline &&
+        status != SyncStatus.error &&
+        status != SyncStatus.needsSignIn &&
+        status != SyncStatus.needsSetup;
 
     final (statusLabel, statusColor) = switch (status) {
       SyncStatus.syncing => (l.syncStateSyncing, Colors.blue),
@@ -251,11 +255,28 @@ class SyncScreen extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 13.5, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 6),
-                  Text(
-                    host == null
-                        ? l.syncNotConnected
-                        : '${l.syncConnectedTo} $host',
-                    style: TextStyle(fontSize: 13, color: context.inkSoft),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: cloudIsLive ? Colors.green : Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        cloudIsLive ? l.syncServiceLive : l.syncServiceDown,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: cloudIsLive
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   Text(

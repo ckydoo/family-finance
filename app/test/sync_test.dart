@@ -1020,6 +1020,7 @@ void main() {
     });
 
     test('six-character invite uses secure single-use join RPC', () async {
+      kv['auth_user_id'] = 'preferred-user';
       server.handler = (request) async {
         final path = request.url.path;
         if (path == '/rest/v1/rpc/join_invite') {
@@ -1034,10 +1035,20 @@ void main() {
           ]);
         }
         if (request.method == 'GET') return _json([]);
+        if (request.method == 'PATCH' && path == '/rest/v1/user_profile') {
+          final body = jsonDecode((request as http.Request).body)
+              as Map<String, dynamic>;
+          expect(request.url.query, contains('id=eq.preferred-user'));
+          expect(body['name'], 'Tariro');
+          return _json(null, 204);
+        }
         return _json(null, 201);
       };
 
-      final ok = await engine.joinSpace(' mhri-abc123 ');
+      final ok = await engine.joinSpace(
+        ' mhri-abc123 ',
+        preferredName: 'Tariro',
+      );
 
       expect(ok, isTrue);
       expect(kv['space_id'], 'sp_secure');

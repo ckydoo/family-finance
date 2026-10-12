@@ -62,15 +62,15 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String safeToSpend(Object amount) {
-    return 'Mari yakasununguka nhasi: $amount';
+    return 'Mari yasara mushure mezvakachengetwa: $amount';
   }
 
   @override
-  String get flexibleSpendTitle => 'Mari yakasununguka nhasi';
+  String get flexibleSpendTitle => 'Mari yasara mushure mezvakachengetwa';
 
   @override
   String get flexibleSpendExplanation =>
-      'Mari yaungashandisa nhasi mushure mekuchengetedza savings nemari yakachengeterwa maenvelope.';
+      'Mari isina kuchengeterwa savings kana mabhajeti ako.';
 
   @override
   String get reservedForEnvelopes => 'Yakachengeterwa maenvelope';
@@ -1610,6 +1610,12 @@ class AppLocalizationsSn extends AppLocalizations {
   @override
   String get syncNotConnected =>
       'Foni ino chete - cloud yemhuri haisati yakabatanidzwa.';
+
+  @override
+  String get syncServiceLive => 'Iri kushanda';
+
+  @override
+  String get syncServiceDown => 'Haisi kushanda';
 
   @override
   String get syncBackupNote =>

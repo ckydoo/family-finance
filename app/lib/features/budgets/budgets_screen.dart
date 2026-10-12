@@ -295,7 +295,11 @@ class _RegularPaymentsScreen extends StatelessWidget {
           IconButton(
             tooltip: l.addRecurringTip,
             onPressed: () => showAddRecurringSheet(context),
-            icon: const Icon(Icons.add_rounded),
+            icon: Icon(
+              Icons.add_circle_rounded,
+              color: context.primary,
+              size: 30,
+            ),
           ),
         ],
       ),

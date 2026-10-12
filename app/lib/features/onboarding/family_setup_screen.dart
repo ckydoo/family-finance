@@ -63,6 +63,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   final _familyName = TextEditingController();
   final _joinCode = TextEditingController();
   final _customCategoryController = TextEditingController();
+  final _paydayController = TextEditingController();
 
   Currency _currency = Currency.usd;
   Currency? _secondaryCurrency;
@@ -89,6 +90,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     _currency = widget.state.primaryCurrency;
     _secondaryCurrency = widget.state.secondaryCurrency;
     _monthStartDay = widget.state.monthStartDay;
+    _paydayController.text = '$_monthStartDay';
 
     // Resumable setup: if family already created, resume at the exact stage.
     final stage = widget.state.onboardingStage;
@@ -160,6 +162,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     _familyName.dispose();
     _joinCode.dispose();
     _customCategoryController.dispose();
+    _paydayController.dispose();
     super.dispose();
   }
 
@@ -281,6 +284,12 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
 
   Future<void> _handleSaveCurrencies() async {
     if (_busy) return;
+    final payday = int.tryParse(_paydayController.text.trim());
+    if (payday == null || payday < 1 || payday > 31) {
+      setState(() => _error = 'Enter a payday from 1 to 31.');
+      return;
+    }
+    _monthStartDay = payday;
     setState(() {
       _busy = true;
       _error = null;
@@ -477,7 +486,8 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       _error = null;
     });
 
-    final ok = await widget.state.sync?.joinSpace(code) ?? false;
+    final ok =
+        await widget.state.sync?.joinSpace(code, preferredName: name) ?? false;
     if (!mounted) return;
     if (ok) {
       widget.state.setMyName(name);
@@ -861,16 +871,24 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           style: TextStyle(fontSize: 12, color: context.inkSoft),
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          children: [1, 15, 25].map((day) {
-            final isSelected = _monthStartDay == day;
-            return ChoiceChip(
-              label: Text(day == 1 ? '1st (Calendar)' : '${day}th'),
-              selected: isSelected,
-              onSelected: (_) => setState(() => _monthStartDay = day),
-            );
-          }).toList(),
+        TextFormField(
+          controller: _paydayController,
+          keyboardType: TextInputType.number,
+          inputFormatters: integerInputFormatters,
+          decoration: InputDecoration(
+            labelText: 'Payday (day of month)',
+            hintText: 'For example, 20 or 31',
+            helperText: 'Enter a number from 1 to 31.',
+            filled: true,
+            fillColor: context.card,
+            border: OutlineInputBorder(
+              borderRadius: kBRadiusM,
+              borderSide: BorderSide.none,
+            ),
+          ),
+          onChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+          },
         ),
         if (_error != null) _errorBox(),
       ],

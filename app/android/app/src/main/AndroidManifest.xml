@@ -45,13 +45,21 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Password recovery: mhuri://reset-callback (must be allow-
-                 listed in Supabase Auth → URL Configuration). -->
+            <!-- Supabase OAuth callback. Keep the host explicit so Android
+                 routes the Play-installed release back to this activity. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="mhuri"/>
+                <data android:scheme="mhuri" android:host="auth-callback"/>
+            </intent-filter>
+            <!-- Password recovery and family invitation callbacks. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="mhuri" android:host="reset-callback"/>
+                <data android:scheme="mhuri" android:host="join"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

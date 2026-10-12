@@ -243,22 +243,19 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 _header(context, Icons.calendar_month_outlined,
                     AppLocalizations.of(context)!.monthCycle),
-                _adaptiveDropdownTile(
-                  context,
-                  title: AppLocalizations.of(context)!.monthStartsOn,
-                  subtitle: AppLocalizations.of(context)!.paydayAlign,
-                  dropdown: DropdownButton<int>(
-                    isExpanded: true,
-                    value: s.monthStartDay,
-                    underline: const SizedBox.shrink(),
-                    items: [
-                      for (var d = 1; d <= 28; d++)
-                        DropdownMenuItem(value: d, child: Text('Day $d')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) s.setMonthStartDay(v);
-                    },
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.payments_outlined, size: 20),
+                  title: Text(AppLocalizations.of(context)!.monthStartsOn),
+                  subtitle: Text(AppLocalizations.of(context)!.paydayAlign),
+                  trailing: Text(
+                    'Day ${s.monthStartDay}',
+                    style: TextStyle(
+                      color: context.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
+                  onTap: () => _editPayday(context, s),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -489,6 +486,51 @@ class SettingsScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _editPayday(BuildContext context, AppState state) async {
+    final controller = TextEditingController(text: '${state.monthStartDay}');
+    final formKey = GlobalKey<FormState>();
+    final day = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Payday'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: integerInputFormatters,
+            decoration: const InputDecoration(
+              labelText: 'Day of month',
+              hintText: '1 to 31',
+            ),
+            validator: (value) {
+              final parsed = int.tryParse(value?.trim() ?? '');
+              return parsed == null || parsed < 1 || parsed > 31
+                  ? 'Enter a day from 1 to 31.'
+                  : null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() != true) return;
+              Navigator.pop(dialogContext, int.parse(controller.text.trim()));
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (day != null) state.setMonthStartDay(day);
   }
 
   static void _showMessage(BuildContext context, String message) {

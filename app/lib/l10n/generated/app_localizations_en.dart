@@ -62,15 +62,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String safeToSpend(Object amount) {
-    return 'Available today: $amount';
+    return 'Free after commitments: $amount';
   }
 
   @override
-  String get flexibleSpendTitle => 'Available today';
+  String get flexibleSpendTitle => 'Free after commitments';
 
   @override
   String get flexibleSpendExplanation =>
-      'What remains today after protecting savings and money reserved in your budgets.';
+      'Money not currently reserved for savings or your budgets.';
 
   @override
   String get reservedForEnvelopes => 'Reserved for budgets';
@@ -1603,6 +1603,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncNotConnected =>
       'This device only - no family cloud connected yet.';
+
+  @override
+  String get syncServiceLive => 'Live';
+
+  @override
+  String get syncServiceDown => 'Down';
 
   @override
   String get syncBackupNote =>

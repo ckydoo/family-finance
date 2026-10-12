@@ -5,7 +5,7 @@ CREATE TABLE public.family_space (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
   household_type text NOT NULL DEFAULT 'couple_kids'::text CHECK (household_type = ANY (ARRAY['couple_kids'::text, 'single_parent'::text, 'extended'::text, 'blended'::text, 'partners'::text, 'solo'::text, 'other'::text])),
-  month_start_day integer NOT NULL DEFAULT 1 CHECK (month_start_day >= 1 AND month_start_day <= 28),
+  month_start_day integer NOT NULL DEFAULT 1 CHECK (month_start_day >= 1 AND month_start_day <= 31),
   base_currency text NOT NULL DEFAULT 'USD'::text CHECK (base_currency = ANY (ARRAY['USD'::text, 'EUR'::text, 'GBP'::text, 'ZAR'::text, 'CAD'::text, 'AUD'::text, 'KES'::text, 'NGN'::text, 'INR'::text, 'ZWG'::text])),
   rate_profile text NOT NULL DEFAULT 'rbz'::text CHECK (rate_profile = ANY (ARRAY['rbz'::text, 'market'::text])),
   settings jsonb NOT NULL DEFAULT '{}'::jsonb,

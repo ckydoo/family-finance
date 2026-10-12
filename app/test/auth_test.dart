@@ -210,6 +210,21 @@ void main() {
       expect(kv.containsKey('auth_access_token'), isFalse);
     });
 
+    test('OAuth adoption retries a transient browser-to-app network failure',
+        () async {
+      client.responses
+        ..clear()
+        ..add(const MapEntry(503, '{"message":"temporarily unavailable"}'))
+        ..add(const MapEntry(
+            200, '{"id":"google-8","email":"tester@gmail.com"}'));
+
+      expect(await service.adoptOAuthSession('oauth-access', 'oauth-refresh'),
+          isTrue);
+      expect(client.sent, hasLength(2));
+      expect(kv['auth_user_id'], 'google-8');
+      expect(kv['auth_refresh_token'], 'oauth-refresh');
+    });
+
     test('signIn surfaces the server message on bad credentials', () async {
       client.responses
         ..clear()

@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
         'already_registered' => l.authErrAlreadyRegistered,
         'rate_limited' => l.authErrRateLimited,
         'network' => _error ?? l.authErrNetwork,
-        _ => _error ?? '',
+        _ => _error ?? widget.auth.lastError ?? '',
       };
 
   bool get _validEmail => RegExp(r'^\S+@\S+\.\S+').hasMatch(_email.text.trim());
@@ -267,7 +267,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 20),
-                                      if (_error != null) ...[
+                                      if (_error != null ||
+                                          widget.auth.lastError != null) ...[
                                         _AuthNotice(
                                           icon: Icons.error_outline_rounded,
                                           text: _mappedError(l),
@@ -479,7 +480,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         )
                                       else
                                         const SizedBox(height: 14),
-                                      if (_error != null) ...[
+                                      if (_error != null ||
+                                          widget.auth.lastError != null) ...[
                                         _AuthNotice(
                                           icon: Icons.error_outline_rounded,
                                           text: _mappedError(l),

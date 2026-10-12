@@ -77,8 +77,8 @@ class Outbox {
         whereArgs: [rowId],
       );
 
-  /// Held-back ops ([minAttempts] failed pushes or more) - surfaced in
-  /// Sync & data with per-item retry/discard; never dropped silently.
+  /// Repeatedly failing ops ([minAttempts] attempts or more), surfaced in
+  /// Sync & data for visibility. They remain eligible for automatic retries.
   Future<List<OutboxOp>> parked(int minAttempts) async {
     final rows = await db.query(
       'outbox',

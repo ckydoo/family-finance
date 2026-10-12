@@ -58,6 +58,16 @@ class _AdultShellState extends State<AdultShell> {
       _tourOpen = false;
       return;
     }
+    // A brand-new household already has the guided Home card with the same
+    // income, budget, and spending prompts. Its overview key also wraps that
+    // tall card, so opening the coach marks here would spotlight almost the
+    // whole screen and stack two onboarding experiences on top of each other.
+    // Treat the guided Home experience as the first-run tour for this device.
+    if (s.isGuidedHomeActive) {
+      await db.kvSet('product_tour_v1_seen', '1');
+      _tourOpen = false;
+      return;
+    }
     await Future<void>.delayed(const Duration(milliseconds: 650));
     while (mounted && ModalRoute.of(context)?.isCurrent != true) {
       await Future<void>.delayed(const Duration(milliseconds: 250));

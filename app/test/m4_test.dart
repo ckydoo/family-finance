@@ -30,6 +30,17 @@ void main() {
       );
     });
 
+    test('day 31 clamps to each month end without rolling forward', () {
+      final s = AppState();
+      s.setMonthStartDay(31);
+
+      expect(s.monthStartDay, 31);
+      expect(s.cycleStartFor(DateTime(2026, 2, 28)), DateTime(2026, 2, 28));
+      expect(s.nextCycleStartFor(DateTime(2026, 2, 28)), DateTime(2026, 3, 31));
+      expect(s.cycleStartFor(DateTime(2026, 4, 29)), DateTime(2026, 3, 31));
+      expect(s.cycleStartFor(DateTime(2026, 4, 30)), DateTime(2026, 4, 30));
+    });
+
     test('day 1 cycle is the calendar month', () {
       final s = AppState();
       s.setMonthStartDay(1);
@@ -43,9 +54,11 @@ void main() {
     test('setMonthStartDay rejects out-of-range values', () {
       final s = AppState();
       s.setMonthStartDay(31);
-      expect(s.monthStartDay, 1);
+      expect(s.monthStartDay, 31);
+      s.setMonthStartDay(32);
+      expect(s.monthStartDay, 31);
       s.setMonthStartDay(0);
-      expect(s.monthStartDay, 1);
+      expect(s.monthStartDay, 31);
       s.setMonthStartDay(15);
       expect(s.monthStartDay, 15);
     });

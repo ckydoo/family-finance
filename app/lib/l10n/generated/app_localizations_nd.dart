@@ -62,15 +62,15 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String safeToSpend(Object amount) {
-    return 'Imali ekhululekileyo namhlanje: $amount';
+    return 'Imali eseleyo ngemva kwezibopho: $amount';
   }
 
   @override
-  String get flexibleSpendTitle => 'Imali ekhululekileyo namhlanje';
+  String get flexibleSpendTitle => 'Imali eseleyo ngemva kwezibopho';
 
   @override
   String get flexibleSpendExplanation =>
-      'Imali ongayisebenzisa namhlanje ngemva kokuvikela imali egciniweyo lebekelwe izikhwama.';
+      'Imali engakabekelwa ukonga kumbe amabhajethi akho.';
 
   @override
   String get reservedForEnvelopes => 'Ebekelwe izikhwama';
@@ -1609,6 +1609,12 @@ class AppLocalizationsNd extends AppLocalizations {
   @override
   String get syncNotConnected =>
       'Le lfona kuphela - ifu yomndeni ayikaxhumekile.';
+
+  @override
+  String get syncServiceLive => 'Iyasebenza';
+
+  @override
+  String get syncServiceDown => 'Ayisebenzi';
 
   @override
   String get syncBackupNote =>

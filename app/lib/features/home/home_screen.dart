@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -863,9 +861,6 @@ class _NeedsAttention extends StatelessWidget {
     final budgets = s.envelopes.where((e) => !e.isPersonal).toList();
     final over = budgets.where((e) => s.remainingOn(e).minor < 0).toList();
     final close = budgets.where((e) => s.paceOf(e) == Pace.watch).toList();
-    final upcoming = s.recurring.where((r) => r.active).toList()
-      ..sort((a, b) => a.nextDue.compareTo(b.nextDue));
-
     String? warning;
     VoidCallback? onTap;
 
@@ -877,14 +872,6 @@ class _NeedsAttention extends StatelessWidget {
       final b = close.first;
       warning = '${b.name} is close to its limit';
       onTap = () => showEnvelopeDetailSheet(context, b);
-    } else if (upcoming.isNotEmpty) {
-      final r = upcoming.first;
-      final days = _daysUntil(r.nextDue);
-      if (days <= 0) {
-        warning = '${r.name} is due now';
-      } else if (days <= 2) {
-        warning = '${r.name} is due in $days ${days == 1 ? 'day' : 'days'}';
-      }
     }
 
     return AnimatedSize(
@@ -1007,7 +994,8 @@ class _FirstStepsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome, size: 22, color: context.primaryDark),
+              Icon(Icons.family_restroom_rounded,
+                  size: 22, color: context.primaryDark),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1487,6 +1475,7 @@ class _ComingUp extends StatelessWidget {
     if (upcoming.isEmpty) return const SizedBox.shrink();
     final rule = upcoming.first;
     final days = _daysUntil(rule.nextDue);
+    final actionable = days <= 3;
     final due = days < 0
         ? '${-days} ${days == -1 ? 'day' : 'days'} overdue'
         : days == 0
@@ -1502,7 +1491,7 @@ class _ComingUp extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: context.card,
+              color: days < 0 ? context.dangerSoft : context.card,
               borderRadius: kBRadiusM,
             ),
             child: Row(
@@ -1526,6 +1515,34 @@ class _ComingUp extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (actionable) ...[
+                  const SizedBox(width: 10),
+                  FilledButton(
+                    onPressed: () {
+                      s.postRecurring(rule);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context)!
+                                .postedSnack(rule.name),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.primaryDark,
+                      foregroundColor: context.onSolid,
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      minimumSize: const Size(0, 42),
+                      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.post,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1763,35 +1780,6 @@ class _PoolCard extends StatelessWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 10),
-              // Available today as clean, quiet supporting line
-              InkWell(
-                onTap: () => _showFlexibleSpendBreakdown(context, s),
-                borderRadius: kBRadiusXS,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          '${s.hideAmounts ? '•••••' : s.safeToSpend.text} Available today',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.info_outline,
-                          color: Colors.white60, size: 14),
-                    ],
-                  ),
-                ),
-              ),
               const SizedBox(height: 14),
               // View details affordance
               Row(
@@ -1821,89 +1809,6 @@ class _PoolCard extends StatelessWidget {
     );
   }
 }
-
-void _showFlexibleSpendBreakdown(BuildContext context, AppState s) {
-  final l = AppLocalizations.of(context)!;
-  final cur = s.displayCurrency;
-  final available = s.availableToSpend(cur);
-  final reserved = s.reservedForEnvelopes.inCurrency(cur, s.rate);
-  final free = Money(
-    math.max(0, available.minor - reserved.minor),
-    cur,
-  );
-
-  showMhuriSheet<void>(
-    context: context,
-    builder: (sheetContext) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SheetHeader(
-            l.flexibleSpendTitle,
-            onClose: () => Navigator.pop(sheetContext),
-          ),
-          Text(
-            l.flexibleSpendExplanation,
-            style: TextStyle(color: sheetContext.inkSoft, height: 1.4),
-          ),
-          const SizedBox(height: 18),
-          _breakdownRow(sheetContext, l.availableToSpendLabel, available.text),
-          _breakdownRow(
-            sheetContext,
-            l.reservedForEnvelopes,
-            '-${reserved.text}',
-          ),
-          const Divider(height: 24),
-          _breakdownRow(
-            sheetContext,
-            l.freeAfterCommitments,
-            free.text,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l.daysRemaining(s.daysLeftInCycle),
-            style: TextStyle(color: sheetContext.inkSoft),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: sheetContext.primarySoft,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              l.safeToSpend(s.safeToSpend.text),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: sheetContext.primaryDark,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget _breakdownRow(BuildContext context, String label, String value) =>
-    Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-              child: Text(label, style: TextStyle(color: context.inkSoft))),
-          const SizedBox(width: 12),
-          Text(
-            value,
-            style: TextStyle(color: context.ink, fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
-    );
 
 Color _paceColor(BuildContext context, Pace p) => switch (p) {
       Pace.onTrack => context.primary,
@@ -1967,33 +1872,6 @@ class SmartCard extends StatelessWidget {
       );
     }
 
-    // 1c. Recurring expense due soon (C7) - review, post or skip
-    final dueRule = s.dueRecurring.isEmpty ? null : s.dueRecurring.first;
-    if (dueRule != null) {
-      return _card(
-        context,
-        color: context.violetSoft,
-        icon: Icons.push_pin,
-        title: '${dueRule.name} - ${dueRule.amount.text}',
-        subtitle: AppLocalizations.of(context)!.recDueSub(
-            dueRule.nextDue.isBefore(DateTime.now())
-                ? AppLocalizations.of(context)!.dueNow
-                : AppLocalizations.of(context)!.dueSoon),
-        actionLabel: AppLocalizations.of(context)!.post,
-        onTap: () {
-          s.postRecurring(dueRule);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.postedSnack(dueRule.name),
-              ),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        },
-      );
-    }
-
     // 2. Chores waiting for parent confirmation
     Chore? waiting;
     for (final c in s.chores) {
@@ -2045,9 +1923,8 @@ class SmartCard extends StatelessWidget {
         },
       );
     }
-    final paidCount = s.circle.participantIds
-        .where((id) => s.hasMukandoPaid(id))
-        .length;
+    final paidCount =
+        s.circle.participantIds.where((id) => s.hasMukandoPaid(id)).length;
     final canComplete = s.currentMukandoRoundComplete;
 
     return _card(

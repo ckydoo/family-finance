@@ -233,29 +233,42 @@ class SupabaseAuthService implements AuthService {
   Future<bool> adoptOAuthSession(
       String accessToken, String refreshToken) async {
     // A deep link is public input. Validate the token with this Supabase
-    // project before trusting its unsigned, locally decoded claims.
-    try {
-      final response = await _get(
-        Uri.parse('$_base/auth/v1/user'),
-        headers: {..._headers, 'Authorization': 'Bearer $accessToken'},
-      );
-      if (response.statusCode < 200 || response.statusCode >= 300) return false;
-      final user = jsonDecode(response.body) as Map<String, dynamic>;
-      final uid = user['id']?.toString();
-      if (uid == null || uid.isEmpty) return false;
-      final email = user['email']?.toString() ?? '';
-      _session = AuthSession(userId: uid, email: email);
-      await _persistTokens(
-        access: accessToken,
-        refresh: refreshToken,
-        userId: uid,
-        email: email,
-      );
-      await _kvSet?.call('pw_reset_pending', '');
-      return true;
-    } catch (_) {
-      return false;
+    // project before trusting its unsigned, locally decoded claims. Android
+    // can briefly report no network while Chrome hands control back to the
+    // Play-installed app, so retry transient failures instead of discarding a
+    // valid OAuth callback and returning the user to Login.
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final response = await _get(
+          Uri.parse('$_base/auth/v1/user'),
+          headers: {..._headers, 'Authorization': 'Bearer $accessToken'},
+        );
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          return false;
+        }
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final user = jsonDecode(response.body) as Map<String, dynamic>;
+          final uid = user['id']?.toString();
+          if (uid == null || uid.isEmpty) return false;
+          final email = user['email']?.toString() ?? '';
+          _session = AuthSession(userId: uid, email: email);
+          await _persistTokens(
+            access: accessToken,
+            refresh: refreshToken,
+            userId: uid,
+            email: email,
+          );
+          await _kvSet?.call('pw_reset_pending', '');
+          return true;
+        }
+      } catch (_) {
+        // A transient handoff/network failure is retried below.
+      }
+      if (attempt < 2) {
+        await Future<void>.delayed(Duration(milliseconds: 350 * (attempt + 1)));
+      }
     }
+    return false;
   }
 
   Future<bool> _persistTokenSession(
@@ -551,9 +564,15 @@ class SupabaseAuthService implements AuthService {
     }
     if (raw.isEmpty) {
       if (r.statusCode >= 500) {
-        return ('Our servers are temporarily busy. Please try again shortly.', null);
+        return (
+          'Our servers are temporarily busy. Please try again shortly.',
+          null
+        );
       }
-      return ('Something went wrong. Please check your details and try again.', null);
+      return (
+        'Something went wrong. Please check your details and try again.',
+        null
+      );
     }
     return (raw, null);
   }

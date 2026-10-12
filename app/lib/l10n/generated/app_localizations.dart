@@ -205,19 +205,19 @@ abstract class AppLocalizations {
   /// No description provided for @safeToSpend.
   ///
   /// In en, this message translates to:
-  /// **'Available today: {amount}'**
+  /// **'Free after commitments: {amount}'**
   String safeToSpend(Object amount);
 
   /// No description provided for @flexibleSpendTitle.
   ///
   /// In en, this message translates to:
-  /// **'Available today'**
+  /// **'Free after commitments'**
   String get flexibleSpendTitle;
 
   /// No description provided for @flexibleSpendExplanation.
   ///
   /// In en, this message translates to:
-  /// **'What remains today after protecting savings and money reserved in your budgets.'**
+  /// **'Money not currently reserved for savings or your budgets.'**
   String get flexibleSpendExplanation;
 
   /// No description provided for @reservedForEnvelopes.
@@ -2949,6 +2949,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This device only - no family cloud connected yet.'**
   String get syncNotConnected;
+
+  /// No description provided for @syncServiceLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get syncServiceLive;
+
+  /// No description provided for @syncServiceDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down'**
+  String get syncServiceDown;
 
   /// No description provided for @syncBackupNote.
   ///

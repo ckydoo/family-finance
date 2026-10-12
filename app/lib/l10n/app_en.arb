@@ -18,15 +18,15 @@
   "goalOverfundBody": "The contribution puts this goal {amount} above its target. Add it anyway?",
   "@goalOverfundBody": {"placeholders": {"amount": {}}},
   "addAnyway": "Add anyway",
-  "safeToSpend": "Available today: {amount}",
+  "safeToSpend": "Free after commitments: {amount}",
   "@safeToSpend": {
     "placeholders": {
       "amount": {
       }
     }
   },
-  "flexibleSpendTitle": "Available today",
-  "flexibleSpendExplanation": "What remains today after protecting savings and money reserved in your budgets.",
+  "flexibleSpendTitle": "Free after commitments",
+  "flexibleSpendExplanation": "Money not currently reserved for savings or your budgets.",
   "reservedForEnvelopes": "Reserved for budgets",
   "freeAfterCommitments": "Free after commitments",
   "daysRemaining": "Days remaining: {count}",
@@ -833,6 +833,8 @@
   "syncWhereTitle": "Where your data lives",
   "syncConnectedTo": "Family cloud:",
   "syncNotConnected": "This device only - no family cloud connected yet.",
+  "syncServiceLive": "Live",
+  "syncServiceDown": "Down",
   "syncBackupNote": "There is no separate backup to switch on. Every change is saved on this phone the moment you make it and syncs to the family cloud whenever you have data. Export a CSV below anytime for a copy you keep.",
   "previewBanner": "Previewing as {name}",
   "@previewBanner": {

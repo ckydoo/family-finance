@@ -138,7 +138,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Groceries is close to its limit'), findsOneWidget);
-
   });
 
   testWidgets('home envelope card opens its details', (tester) async {
@@ -166,19 +165,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final availableToday = find.textContaining('Available today');
-    await tester.scrollUntilVisible(
-      availableToday,
-      180,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(availableToday);
-    await tester.pumpAndSettle();
-    expect(find.text('Reserved for budgets'), findsOneWidget);
-    expect(find.text('Free after commitments'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.tap(find.byIcon(Icons.close_rounded));
-    await tester.pumpAndSettle();
+    expect(find.textContaining('Free after commitments'), findsNothing);
 
     await tester.tap(find.text('Groceries').first);
     await tester.pumpAndSettle();

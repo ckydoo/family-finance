@@ -89,7 +89,7 @@ class SyncEngine {
 
   Timer? _timer;
   Timer? _debounce;
-  bool _busy = false;
+  Future<void>? _activeSync;
 
   SyncStatus status = SyncStatus.idle;
   String? lastError;
@@ -101,9 +101,10 @@ class SyncEngine {
   bool _spaceIdentityLoaded = false;
   bool _familySetupResolutionComplete = false;
 
-  /// M7 reliability: exponential backoff after failed syncs (8s→15min),
-  /// poison batches parked after [maxAttempts] failed pushes (retry with
-  /// `syncNow(force: true)` - the Members "Sync now" button), and a
+  /// Reliability: exponential backoff after failed syncs (8s→30s), with
+  /// every queued write retried indefinitely. [maxAttempts] is only the point
+  /// at which a repeatedly rejected row is surfaced in Sync & data; it never
+  /// stops automatic delivery. A
   /// pluggable error-report hook (wire Sentry/Crashlytics here in live
   /// mode; optional SENTRY_DSN env stays post-8).
   static const int maxAttempts = 8;
@@ -206,10 +207,8 @@ class SyncEngine {
   Future<int> pendingCount() => _outbox.count();
 
   // ── parked changes (never silently dropped) ──────────────────────────────
-  // A change that failed [maxAttempts] pushes is held back from auto-sync
-  // but stays in the outbox. Sync & data lists them with per-item retry
-  // and discard - discard is the ONLY way a row leaves besides success,
-  // and the UI confirms it first.
+  // A change that failed [maxAttempts] pushes is surfaced in Sync & data but
+  // remains part of every automatic retry. It is never silently dropped.
 
   Future<List<OutboxOp>> parked() => _outbox.parked(maxAttempts);
 
@@ -382,10 +381,10 @@ class SyncEngine {
     _setStatus(s, message);
   }
 
-  /// 8s, 16s, 32s … capped at 15 minutes.
+  /// 8s, 16s, 30s … capped at 30 seconds.
   Duration _backoffFor(int n) {
     final secs = 8 * (1 << (n > 6 ? 6 : n - 1));
-    return Duration(seconds: secs > 900 ? 900 : secs);
+    return Duration(seconds: secs > 30 ? 30 : secs);
   }
 
   // ── family bootstrap (create / join) ────────────────────────────────────
@@ -655,7 +654,9 @@ class SyncEngine {
 
   /// Pushes the signed-in member's profile columns (avatar_url, name).
   Future<void> updateMyProfile(Map<String, Object?> values) async {
-    final uid = await _kvGet.call('auth_user_id');
+    // Auth tokens and identity moved to encrypted storage; the sync KV store
+    // no longer reliably contains auth_user_id. Prefer the live session.
+    final uid = state.auth?.session?.userId ?? await _kvGet('auth_user_id');
     if (uid == null || uid.isEmpty || values.isEmpty) return;
     try {
       _setStatus(SyncStatus.syncing);
@@ -671,7 +672,7 @@ class SyncEngine {
     }
   }
 
-  Future<bool> joinSpace(String code) async {
+  Future<bool> joinSpace(String code, {String? preferredName}) async {
     final normalized = code.trim().toUpperCase();
     // Role-bound invitations use six characters after MHRI- and are
     // single-use. Four-character codes are the legacy reusable family code.
@@ -687,6 +688,20 @@ class SyncEngine {
       );
       if (id == null) {
         throw const SyncException(0, 'unexpected response from server');
+      }
+      final cleanName = preferredName?.trim();
+      final uid = state.auth?.session?.userId ?? await _kvGet('auth_user_id');
+      if (cleanName != null && cleanName.isNotEmpty && uid != null) {
+        // The join RPC initially falls back to the email prefix. Persist the
+        // chosen name before pulling the roster so that fallback can never
+        // overwrite what the user entered in onboarding.
+        try {
+          await client.patchRow('user_profile', uid, {'name': cleanName});
+        } catch (_) {
+          // Joining has already succeeded and an invite may now be consumed.
+          // Never report the whole join as failed because this best-effort
+          // early profile write failed; setMyName retries it after adoption.
+        }
       }
       await _adoptSpace(
         id: id.toString(),
@@ -780,23 +795,27 @@ class SyncEngine {
 
   // ── the sync loop ───────────────────────────────────────────────────────
 
-  Future<void> syncNow({bool force = false}) async {
-    if (_busy) return;
+  Future<void> syncNow({bool force = false}) {
+    final active = _activeSync;
+    if (active != null) return active;
+    final run = _runSync(force: force);
+    _activeSync = run;
+    return run.whenComplete(() {
+      if (identical(_activeSync, run)) _activeSync = null;
+    });
+  }
+
+  Future<void> _runSync({required bool force}) async {
     final sid = _spaceId;
     if (sid == null) {
       _setStatus(SyncStatus.needsSetup);
       return;
     }
-    final hasOnlyParked = !force &&
-        await _outbox.count() > 0 &&
-        await _outbox.countParked(maxAttempts) == await _outbox.count();
     if (!force &&
-        !hasOnlyParked &&
         _nextPushOkAt != null &&
         DateTime.now().isBefore(_nextPushOkAt!)) {
       return; // backing off - the periodic poll will try again
     }
-    _busy = true;
     _setStatus(SyncStatus.syncing);
     // Phase 4 #19: correlation id + duration for the sync-health events.
     final run = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
@@ -805,7 +824,7 @@ class SyncEngine {
       try {
         await _backfillLocalFamilyTasks(sid);
         await _detectConflicts();
-        await _push(force: force);
+        await _push();
         await _pull(sid);
       } on SyncException catch (e) {
         // Access token expired mid-session: force one refresh and retry the
@@ -822,7 +841,7 @@ class SyncEngine {
           rethrow;
         }
         await _detectConflicts();
-        await _push(force: force);
+        await _push();
         await _pull(sid);
       }
       lastSyncAt = DateTime.now();
@@ -846,7 +865,6 @@ class SyncEngine {
       reportError?.call('sync', e, st);
       mhuriEvent('sync.fail', {'run': run, 'kind': 'offline'});
     } finally {
-      _busy = false;
       await state.refreshPending();
     }
   }
@@ -945,28 +963,12 @@ class SyncEngine {
 
   /// Ordered, grouped, verbatim push. A failed entity batch stays in the
   /// outbox (attempts++) and retries on the next sync.
-  Future<void> _push({bool force = false}) async {
+  Future<void> _push() async {
     final taken = await _outbox.take(200);
     if (taken.isEmpty) return;
-    final cutoff = force ? 1 << 30 : SyncEngine.maxAttempts;
-    final ops = [
-      for (final op in taken)
-        if (op.attempts < cutoff) op,
-    ];
-    final parked = taken.length - ops.length;
-    if (parked > 0) {
-      reportError?.call(
-        'push',
-        'parked $parked op(s) after $maxAttempts+ failed attempts',
-        StackTrace.current,
-      );
-    }
-    if (ops.isEmpty) {
-      throw SyncException(
-        0,
-        '$parked change(s) are parked - use "Sync now" to retry them.',
-      );
-    }
+    // Attempts are diagnostic only. Long-failing rows remain eligible so
+    // they upload automatically when Supabase or connectivity recovers.
+    final ops = taken;
 
     final byEntity = <String, List<OutboxOp>>{};
     for (final op in ops) {

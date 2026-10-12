@@ -927,7 +927,7 @@ class AppState extends ChangeNotifier {
 
   /// Payday-aligned cycles (B5) - e.g. 25 for salary-cycle budgeting.
   void setMonthStartDay(int day) {
-    if (day < 1 || day > 28) return;
+    if (day < 1 || day > 31) return;
     monthStartDay = day;
     _persistKv('month_start_day', '$day');
     _resyncReminders();
@@ -1537,6 +1537,13 @@ class AppState extends ChangeNotifier {
         break;
       }
     }
+    _persistKv(
+      'profile_edits',
+      jsonEncode({
+        for (final member in members)
+          member.id: {'name': member.name, 'emoji': member.emoji},
+      }),
+    );
     _persistKv('members_v1', _membersJson());
     sync?.updateMyProfile({'name': clean});
     notifyListeners();
@@ -2363,13 +2370,21 @@ class AppState extends ChangeNotifier {
   // ── Cycle math (M4: payday-aligned months + rollover carry) ──────────────
 
   /// Start of the cycle containing [now] (e.g. day 25 for salary cycles).
-  DateTime cycleStartFor(DateTime now) => now.day >= monthStartDay
-      ? DateTime(now.year, now.month, monthStartDay)
-      : DateTime(now.year, now.month - 1, monthStartDay);
+  DateTime _cycleDate(int year, int month) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    return DateTime(year, month, monthStartDay.clamp(1, lastDay));
+  }
+
+  DateTime cycleStartFor(DateTime now) {
+    final thisMonth = _cycleDate(now.year, now.month);
+    return now.isBefore(thisMonth)
+        ? _cycleDate(now.year, now.month - 1)
+        : thisMonth;
+  }
 
   DateTime nextCycleStartFor(DateTime now) {
     final cs = cycleStartFor(now);
-    return DateTime(cs.year, cs.month + 1, monthStartDay);
+    return _cycleDate(cs.year, cs.month + 1);
   }
 
   DateTime get now => _clock();
@@ -2385,8 +2400,7 @@ class AppState extends ChangeNotifier {
   }
 
   BudgetCyclePlan? get previousBudgetPlan {
-    final previous =
-        DateTime(cycleStart.year, cycleStart.month - 1, monthStartDay);
+    final previous = _cycleDate(cycleStart.year, cycleStart.month - 1);
     final key = _cycleKey(previous);
     for (final plan in budgetPlans) {
       if (_cycleKey(plan.cycleStart) == key) return plan;
@@ -2742,7 +2756,7 @@ class AppState extends ChangeNotifier {
     if (first != null) {
       var cursor = cycleStartFor(first);
       while (cursor.isBefore(cycleStart) && cycles < 24) {
-        cursor = DateTime(cursor.year, cursor.month + 1, monthStartDay);
+        cursor = _cycleDate(cursor.year, cursor.month + 1);
         cycles++;
       }
     }
@@ -3560,8 +3574,7 @@ class AppState extends ChangeNotifier {
     if (_store != null) _fire(_store!.saveMukandoPayment(payment));
     _queue('mukando_payment', payment);
     final memberName = member(memberId)?.name ?? 'Member';
-    _recordLocalAudit(
-        'mukando.pay', 'mukando_payment', payment.id, {
+    _recordLocalAudit('mukando.pay', 'mukando_payment', payment.id, {
       'round': circle.currentRound,
       'member_id': memberId,
       'member_name': memberName,
@@ -3583,8 +3596,7 @@ class AppState extends ChangeNotifier {
     final payment = mukandoPayments.removeAt(paymentIndex);
     if (_store != null) _fire(_store!.deleteMukandoPayment(payment.id));
     final memberName = member(memberId)?.name ?? 'Member';
-    _recordLocalAudit(
-        'mukando.undo_pay', 'mukando_payment', payment.id, {
+    _recordLocalAudit('mukando.undo_pay', 'mukando_payment', payment.id, {
       'round': circle.currentRound,
       'member_id': memberId,
       'member_name': memberName,

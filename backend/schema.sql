@@ -26,7 +26,7 @@ create table family_space (
   name text not null,
   household_type text not null default 'couple_kids'
     check (household_type in ('couple_kids','single_parent','extended','blended','partners','solo','other')),
-  month_start_day int not null default 1 check (month_start_day between 1 and 28),
+  month_start_day int not null default 1 check (month_start_day between 1 and 31),
   base_currency text not null default 'USD' check (base_currency in ('USD','ZWG')),
   rate_profile text not null default 'rbz' check (rate_profile in ('rbz','market')),
   settings jsonb not null default '{}'::jsonb,

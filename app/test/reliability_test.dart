@@ -14,7 +14,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'fake_auth.dart';
 
-/// M7 - sync reliability: exponential backoff, poison-batch parking, and
+/// M7 - sync reliability: exponential backoff, persistent retries, and
 /// the pluggable error-report hook, exercised against a server that keeps
 /// failing pushes with a 500.
 class FakeServer extends http.BaseClient {
@@ -169,7 +169,8 @@ void main() {
     expect(txPosts(), posts + 1, reason: 'no backoff after a clean sync');
   });
 
-  test('poison batches park after maxAttempts; force retries them', () async {
+  test('rows still retry after maxAttempts and upload when server recovers',
+      () async {
     expect(await engine.createSpace('The Taylor Family'), isTrue);
     state.addTx(
       type: TxType.expense,
@@ -184,15 +185,19 @@ void main() {
       await engine.syncNow(force: true);
       expect(engine.status, SyncStatus.error);
     }
-    expect(await engine.pendingCount(), 1, reason: 'parked, never dropped');
-
-    await engine.syncNow();
-    expect(engine.lastError, contains('parked'),
-        reason: 'the parked op is clearly surfaced, not silently retried');
+    expect(await engine.pendingCount(), 1, reason: 'never dropped');
+    expect((await engine.parked()).length, 1,
+        reason: 'repeated failure remains visible to the user');
     final before = txPosts();
 
+    server.handler = (request) async {
+      if (request.method == 'GET') return _json([]);
+      return _json(null);
+    };
     await engine.syncNow(force: true);
-    expect(txPosts(), before + 1, reason: '"Sync now" retries parked ops');
-    expect(await engine.pendingCount(), 1);
+    expect(txPosts(), before + 1,
+        reason: 'attempt count never excludes the row from upload');
+    expect(await engine.pendingCount(), 0,
+        reason: 'the recovered server receives and clears the change');
   });
 }
