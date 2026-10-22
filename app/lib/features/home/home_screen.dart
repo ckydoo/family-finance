@@ -93,32 +93,10 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
   }
 
   Future<void> _createFamily() async {
-    final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Create another family'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Family name'),
-          onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+      builder: (_) => const _CreateFamilyDialog(),
     );
-    controller.dispose();
     if (name == null || name.isEmpty || !mounted) return;
     setState(() => _switching = true);
     final ok = await widget.state.sync!.createSpace(
@@ -198,6 +176,15 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
     if (!confirmed || !mounted) return;
     Navigator.pop(context);
     await auth.signOut();
+  }
+
+  Future<void> _openManageFamily() async {
+    if (_switching || !mounted) return;
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    await navigator.push<void>(
+      MaterialPageRoute(builder: (_) => const MembersScreen()),
+    );
   }
 
   @override
@@ -290,9 +277,11 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                       borderRadius: kBRadiusM,
                       child: InkWell(
                         borderRadius: kBRadiusM,
-                        onTap: _switching || selected
+                        onTap: _switching
                             ? null
-                            : () => _switch(space),
+                            : selected
+                                ? _openManageFamily
+                                : () => _switch(space),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 13),
@@ -325,7 +314,9 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                                           color: context.ink)),
                                   const SizedBox(height: 2),
                                   Text(
-                                    _displayFamilyRole(space.role),
+                                    selected
+                                        ? '${_displayFamilyRole(space.role)} · Tap to manage'
+                                        : _displayFamilyRole(space.role),
                                     style: TextStyle(
                                         fontSize: 12, color: context.inkSoft),
                                   ),
@@ -333,26 +324,34 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                               ),
                             ),
                             if (selected)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 9, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: context.primary,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.check_rounded,
-                                        size: 13, color: context.onSolid),
-                                    const SizedBox(width: 4),
-                                    Text('Current',
-                                        style: TextStyle(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w700,
-                                            color: context.onSolid)),
-                                  ],
-                                ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 9, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: context.primary,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.check_rounded,
+                                            size: 13, color: context.onSolid),
+                                        const SizedBox(width: 4),
+                                        Text('Current',
+                                            style: TextStyle(
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: context.onSolid)),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.chevron_right_rounded,
+                                      size: 20, color: context.inkSoft),
+                                ],
                               )
                             else
                               Icon(Icons.chevron_right_rounded,
@@ -398,14 +397,7 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
             leading: const Icon(Icons.manage_accounts_outlined),
             title: const Text('Manage current family'),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: _switching
-                ? null
-                : () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const MembersScreen(),
-                    ));
-                  },
+            onTap: _switching ? null : _openManageFamily,
           ),
           if (widget.state.auth?.isLoggedIn ?? false)
             ListTile(
@@ -425,6 +417,61 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
       ),
     );
   }
+}
+
+class _CreateFamilyDialog extends StatefulWidget {
+  const _CreateFamilyDialog();
+
+  @override
+  State<_CreateFamilyDialog> createState() => _CreateFamilyDialogState();
+}
+
+class _CreateFamilyDialogState extends State<_CreateFamilyDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) {
+      setState(() => _error = 'Enter a family name');
+      return;
+    }
+    Navigator.pop(context, value);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Create another family'),
+        content: TextField(
+          controller: _controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            labelText: 'Family name',
+            errorText: _error,
+          ),
+          onChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+          },
+          onSubmitted: (_) => _submit(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: _submit,
+            child: const Text('Create'),
+          ),
+        ],
+      );
 }
 
 String _displayFamilyRole(String role) => role
@@ -485,47 +532,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView(
               padding: kTabPageInsets,
               children: [
-                // ── Preview banner ("Preview as…") ──────────────────────────
-                if (s.isPreviewing)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
-                      decoration: BoxDecoration(
-                        color: context.warningSoft,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.accentSoft),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.visibility,
-                              size: 16, color: context.accent),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              AppLocalizations.of(context)!
-                                  .previewBanner(u.name),
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                                color: context.ink,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => s.exitPreview(),
-                            child: Text(
-                              AppLocalizations.of(context)!.previewExit,
-                              style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: context.ink),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 // ── Compact Header ──────────────────────────────────────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -539,13 +545,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
                             children: [
-                              MemberAvatar(
-                                key: const ValueKey('home_signed_in_avatar'),
-                                radius: 18,
-                                backgroundColor: context.primarySoft,
-                                icon: iconForKey(u.emoji) ??
-                                    kFallbackSemanticIcon,
-                                imageUrl: u.avatarUrl,
+                              Tooltip(
+                                message: 'View profile avatar',
+                                child: InkWell(
+                                  key: const ValueKey('home_signed_in_avatar'),
+                                  customBorder: const CircleBorder(),
+                                  onTap: () =>
+                                      showProfileAvatarViewer(context, s),
+                                  child: MemberAvatar(
+                                    radius: 18,
+                                    backgroundColor: context.primarySoft,
+                                    icon: iconForKey(u.emoji) ??
+                                        kFallbackSemanticIcon,
+                                    imageUrl: u.avatarUrl,
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -700,6 +714,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: const _PoolCard(),
                     ),
                   ),
+                  const _CycleBoundaryNotice(),
                   const _MonthlySummary(),
                   const _NeedsAttention(),
                   const _ComingUp(),
@@ -785,10 +800,81 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontSize: 12.5, color: context.inkSoft, height: 1.4),
                     ),
                   ),
-                for (final t in s.txs.take(3)) TxTile(tx: t, surface: false),
+                for (final t in s.txs.take(6)) TxTile(tx: t, surface: false),
                 const SizedBox(height: 12),
               ],
             )),
+      ),
+    );
+  }
+}
+
+class _CycleBoundaryNotice extends StatelessWidget {
+  const _CycleBoundaryNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final startsToday = state.isCycleStartToday;
+    final endsTomorrow = state.daysUntilNextCycle == 1;
+    if (!startsToday && !endsTomorrow) return const SizedBox.shrink();
+
+    final nextDate = DateFormat.yMMMd().format(state.nextCycleStart);
+    final title = startsToday
+        ? 'A new budget month starts today'
+        : 'Your budget month ends tomorrow';
+    final message = startsToday
+        ? 'Cycle totals restarted today, so income and spending may show 0 until new activity is recorded. Your available balance, rollover budgets and history are unchanged.'
+        : 'Your next cycle starts $nextDate. Income, spending and reset budgets will start fresh; your available balance, rollover budgets and history will remain.';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: startsToday ? context.infoSoft : context.accentSoft,
+          borderRadius: kBRadiusM,
+          border: Border.all(
+            color: startsToday ? context.information : context.accentDark,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              startsToday
+                  ? Icons.refresh_rounded
+                  : Icons.event_available_outlined,
+              size: 21,
+              color: startsToday ? context.information : context.accentDark,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      color: context.inkSoft,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -809,6 +895,12 @@ class _PremiumHeaderAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final badgeLabel = badgeCount > 99 ? '99+' : '$badgeCount';
+    final badgeWidth = switch (badgeLabel.length) {
+      1 => 22.0,
+      2 => 26.0,
+      _ => 32.0,
+    };
     return Tooltip(
       message: tooltip,
       child: Stack(
@@ -853,24 +945,35 @@ class _PremiumHeaderAction extends StatelessWidget {
           ),
           if (badgeCount > 0)
             Positioned(
-              right: -3,
-              top: -3,
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: context.accent,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: context.bg, width: 1.5),
-                ),
-                child: Text(
-                  badgeCount > 99 ? '99+' : '$badgeCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 8.5,
-                    height: 1,
-                    fontWeight: FontWeight.w700,
+              right: -6,
+              top: -6,
+              child: SizedBox(
+                width: badgeWidth,
+                height: 22,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: context.accentDark,
+                    shape: badgeLabel.length == 1
+                        ? BoxShape.circle
+                        : BoxShape.rectangle,
+                    borderRadius: badgeLabel.length == 1
+                        ? null
+                        : BorderRadius.circular(11),
+                    border: Border.all(color: context.card, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      badgeLabel,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? context.onSolid
+                            : Colors.white,
+                        fontSize: 10,
+                        height: 1,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1513,7 +1616,10 @@ class _HomeBudgets extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8, bottom: 8),
         ),
         SizedBox(
-          height: allUnconfigured ? 132 : 160,
+          height: (allUnconfigured ? 132.0 : 160.0) +
+              ((MediaQuery.textScalerOf(context).scale(13) / 13 - 1)
+                      .clamp(0.0, 0.8) *
+                  44),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -1936,12 +2042,15 @@ class _PoolCard extends StatelessWidget {
         splashColor: Colors.white24,
         highlightColor: Colors.white10,
         child: Container(
+          clipBehavior: Clip.antiAlias,
           padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [context.primaryDark, context.primary],
+              colors: Theme.of(context).brightness == Brightness.dark
+                  ? [context.primarySoft, context.card]
+                  : [context.primaryDark, context.primary],
             ),
             borderRadius: kBRadiusL,
             border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
@@ -1970,8 +2079,11 @@ class _PoolCard extends StatelessWidget {
                           AppLocalizations.of(context)!.availableToSpendLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? context.ink
+                                    : Colors.white70,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                             letterSpacing: 1.1,
@@ -1995,7 +2107,10 @@ class _PoolCard extends StatelessWidget {
                             s.hideAmounts
                                 ? Icons.visibility_off
                                 : Icons.visibility,
-                            color: Colors.white70,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? context.ink
+                                    : Colors.white70,
                             size: 18,
                           ),
                         ),
@@ -2012,7 +2127,10 @@ class _PoolCard extends StatelessWidget {
                         ? Text(
                             '•••••',
                             style: MhuriType.display.copyWith(
-                              color: Colors.white,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? context.ink
+                                  : Colors.white,
                               fontSize: 31,
                               letterSpacing: -0.8,
                             ),
@@ -2020,7 +2138,10 @@ class _PoolCard extends StatelessWidget {
                         : CountUpText(
                             amount: primary,
                             style: MhuriType.display.copyWith(
-                              color: Colors.white,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? context.ink
+                                  : Colors.white,
                               fontSize: 31,
                               letterSpacing: -0.8,
                             ),
@@ -2041,8 +2162,11 @@ class _PoolCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Text(
                             s.hideAmounts ? '≈ •••••' : '≈ ${secondary.text}',
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? context.ink
+                                  : Colors.white70,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
@@ -2061,16 +2185,22 @@ class _PoolCard extends StatelessWidget {
                           AppLocalizations.of(context)!.viewDetails,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? context.ink
+                                    : Colors.white70,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward_rounded,
-                          size: 14, color: Colors.white70),
+                      Icon(Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? context.ink
+                              : Colors.white70),
                     ],
                   ),
                 ],
@@ -2091,7 +2221,7 @@ class _BalanceCardPainter extends CustomPainter {
     final glow = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFFE5B94B).withValues(alpha: 0.28),
+          kAccent.withValues(alpha: 0.28),
           Colors.transparent,
         ],
       ).createShader(Rect.fromCircle(
@@ -2109,7 +2239,7 @@ class _BalanceCardPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.1;
     final accent = Paint()
-      ..color = const Color(0xFFE5B94B).withValues(alpha: 0.72)
+      ..color = kAccent.withValues(alpha: 0.72)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.3;
 

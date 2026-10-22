@@ -262,7 +262,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             Icon(
               ok ? Icons.check_circle : Icons.radio_button_unchecked,
               size: 16,
-              color: ok ? Colors.green : context.inkSoft,
+              color: ok ? context.incomeGreen : context.inkSoft,
             ),
             const SizedBox(width: 8),
             Text(text, style: TextStyle(fontSize: 12.5, color: context.ink)),

@@ -534,7 +534,7 @@
     }
   },
   "listEmptyAdd": "Nothing here - add an item with ＋",
-  "usesPct": "Uses {pct}% of the {name}",
+  "usesPct": "Uses {pct}% of your {name} budget",
   "@usesPct": {
     "placeholders": {
       "pct": {

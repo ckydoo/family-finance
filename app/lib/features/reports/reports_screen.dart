@@ -14,6 +14,7 @@ import '../lists/lists_screen.dart';
 import '../../core/widgets/tx_tile.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/widgets/ui.dart';
+import '../settings/plus_screen.dart';
 
 /// Monthly report card (spec Module I1/I2) - one screen the family can
 /// review together at the monthly Family Meeting.
@@ -333,6 +334,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   plan: selectedPlan,
                 ),
                 const SizedBox(height: 12),
+                _PlusInsightsCard(
+                  state: s,
+                  current: transactions,
+                  previous: previousTransactions,
+                  displayCurrency: displayCur,
+                ),
+                const SizedBox(height: 12),
+                _CashflowForecastCard(state: s),
+                const SizedBox(height: 12),
 
                 // ── Envelope health ──────────────────────────────────────────
                 Container(
@@ -606,6 +616,214 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ],
           ],
         ),
+      );
+}
+
+class _PlusInsightsCard extends StatelessWidget {
+  const _PlusInsightsCard({
+    required this.state,
+    required this.current,
+    required this.previous,
+    required this.displayCurrency,
+  });
+
+  final AppState state;
+  final List<Tx> current;
+  final List<Tx> previous;
+  final Currency displayCurrency;
+
+  Map<String, int> _categoryTotals(List<Tx> rows) {
+    final totals = <String, int>{};
+    final txIds = rows.map((tx) => tx.id).toSet();
+    final allocations = <String, List<TxAllocation>>{};
+    for (final allocation in state.txAllocations.where((a) => txIds.contains(a.txId))) {
+      allocations.putIfAbsent(allocation.txId, () => []).add(allocation);
+    }
+    for (final tx in rows.where((tx) => tx.type == TxType.expense)) {
+      final parts = allocations[tx.id];
+      if (parts != null && parts.isNotEmpty) {
+        for (final part in parts) {
+          final envelope = state.envelope(part.envelopeId);
+          if (envelope == null) continue;
+          totals.update(
+            envelope.id,
+            (value) => value + part.amount.inCurrency(displayCurrency, state.rate).minor,
+            ifAbsent: () => part.amount.inCurrency(displayCurrency, state.rate).minor,
+          );
+        }
+      } else if (state.envelope(tx.envelopeId) case final envelope?) {
+        final amount = tx.amount.inCurrency(displayCurrency, state.rate).minor;
+        totals.update(envelope.id, (value) => value + amount,
+            ifAbsent: () => amount);
+      }
+    }
+    return totals;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = state.hasPlusFeature('advanced_insights') &&
+        state.hasPlusFeature('advanced_reports');
+    final currentTotals = _categoryTotals(current);
+    final previousTotals = _categoryTotals(previous);
+    final envelopeById = {for (final e in state.envelopes) e.id: e};
+    final categoryIds = {...currentTotals.keys, ...previousTotals.keys}.toList()
+      ..sort((a, b) => (currentTotals[b] ?? 0).compareTo(currentTotals[a] ?? 0));
+    final rows = categoryIds.take(4).toList();
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.auto_awesome, color: context.primary, size: 19),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Plus · category insights', style: TextStyle(
+              color: context.ink, fontWeight: FontWeight.w700, fontSize: 15,
+            ))),
+            if (!active) const Icon(Icons.lock_outline, size: 18),
+          ]),
+          const SizedBox(height: 8),
+          Text(
+            active
+                ? 'Compare this cycle’s category spending with the previous cycle. These figures use recorded transactions only.'
+                : 'Unlock deeper category comparisons and enhanced family reports. Your current reports and CSV export stay free.',
+            style: TextStyle(color: context.inkSoft, fontSize: 12, height: 1.4),
+          ),
+          if (active) ...[
+            if (rows.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text('Add expenses in at least one category to see a comparison.',
+                    style: TextStyle(color: context.inkSoft, fontSize: 12)),
+              )
+            else
+              for (final id in rows)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Row(children: [
+                    Expanded(child: Text(envelopeById[id]?.name ?? 'Category',
+                        style: TextStyle(color: context.ink, fontSize: 12))),
+                    Text(Money(currentTotals[id] ?? 0, displayCurrency).text,
+                        style: TextStyle(color: context.ink, fontWeight: FontWeight.w700, fontSize: 12)),
+                    const SizedBox(width: 8),
+                    _changeLabel(context, currentTotals[id] ?? 0, previousTotals[id] ?? 0),
+                  ]),
+                ),
+          ] else ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const PlusScreen(),
+                )),
+                icon: const Icon(Icons.workspace_premium_outlined, size: 18),
+                label: const Text('Explore Plus'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _changeLabel(BuildContext context, int now, int before) {
+    if (before == 0) return Text(now == 0 ? '—' : 'new', style: TextStyle(color: context.inkSoft, fontSize: 11));
+    final pct = ((now - before) * 100 / before).round();
+    final color = pct > 0 ? context.danger : context.successSoft;
+    return Text('${pct > 0 ? '+' : ''}$pct%', style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11));
+  }
+}
+
+class _CashflowForecastCard extends StatelessWidget {
+  const _CashflowForecastCard({required this.state});
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = state.hasPlusFeature('cash_flow_forecast');
+    final now = DateTime.now();
+    final since = now.subtract(const Duration(days: 90));
+    final recent = state.txs.where((tx) =>
+        !tx.when.isBefore(since) && !tx.when.isAfter(now));
+    var incomeMinor = 0;
+    var expenseMinor = 0;
+    final dataDays = <DateTime>[
+      for (final tx in recent) tx.when,
+    ];
+    for (final tx in recent) {
+      final amount = tx.amount.inCurrency(state.displayCurrency, state.rate).minor;
+      if (tx.type == TxType.income) {
+        incomeMinor += amount;
+      } else {
+        expenseMinor += amount;
+      }
+    }
+    final observedDays = dataDays.isEmpty
+        ? 0
+        : now.difference(dataDays.reduce((a, b) => a.isBefore(b) ? a : b)).inDays;
+    final enoughData = observedDays >= 30;
+    final days = observedDays.clamp(30, 90);
+    final projectedIncome = enoughData ? (incomeMinor * 30 / days).round() : 0;
+    final projectedExpense = enoughData ? (expenseMinor * 30 / days).round() : 0;
+    final projectedNet = projectedIncome - projectedExpense;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusM),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.query_stats, color: context.primary, size: 19),
+          const SizedBox(width: 8),
+          Expanded(child: Text('Plus · 30-day cash-flow estimate', style: TextStyle(
+            color: context.ink, fontWeight: FontWeight.w700, fontSize: 15,
+          ))),
+          if (!active) const Icon(Icons.lock_outline, size: 18),
+        ]),
+        const SizedBox(height: 8),
+        Text(
+          active
+              ? enoughData
+                  ? 'A simple estimate based on recorded income and expenses over the last $days days. It is not a guaranteed balance.'
+                  : 'Add at least 30 days of transactions to see a cautious estimate. This does not assume unrecorded income or expenses.'
+              : 'Estimate next month’s net cash-flow trend from your recorded activity. Existing reports remain free.',
+          style: TextStyle(color: context.inkSoft, fontSize: 12, height: 1.4),
+        ),
+        if (active && enoughData) ...[
+          const SizedBox(height: 14),
+          Row(children: [
+            Expanded(child: _forecastMetric(context, 'Income trend', projectedIncome)),
+            const SizedBox(width: 10),
+            Expanded(child: _forecastMetric(context, 'Spending trend', projectedExpense)),
+            const SizedBox(width: 10),
+            Expanded(child: _forecastMetric(context, 'Net trend', projectedNet)),
+          ]),
+        ] else if (!active)
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: TextButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const PlusScreen(),
+              )),
+              icon: const Icon(Icons.workspace_premium_outlined, size: 18),
+              label: const Text('Explore Plus'),
+            ),
+          ),
+      ]),
+    );
+  }
+
+  Widget _forecastMetric(BuildContext context, String label, int minor) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: context.inkSoft, fontSize: 10)),
+          const SizedBox(height: 3),
+          Text(state.hideAmounts ? '•••••' : Money(minor, state.displayCurrency).text,
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: context.ink, fontWeight: FontWeight.w700, fontSize: 11)),
+        ],
       );
 }
 
@@ -995,8 +1213,8 @@ class _WhereItWentState extends State<_WhereItWent> {
       context.incomeGreen,
       context.expenseRed,
       context.primaryDark,
-      const Color(0xFF7EC8F2),
-      const Color(0xFFFF6B6B),
+      context.information,
+      context.danger,
     ];
 
     final spent = <MapEntry<String, (double, Color)>>[

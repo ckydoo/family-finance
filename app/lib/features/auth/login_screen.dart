@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/error_messages.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../legal/legal_screen.dart';
 
@@ -80,14 +81,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /// Server/auth failures mapped to honest, specific copy - never a riddle.
-  String _mappedError(AppLocalizations l) => switch (_errorCode) {
-        'email_not_confirmed' => l.authErrEmailNotConfirmed,
-        'invalid_credentials' => l.authErrBadCredentials,
-        'already_registered' => l.authErrAlreadyRegistered,
-        'rate_limited' => l.authErrRateLimited,
-        'network' => _error ?? l.authErrNetwork,
-        _ => _error ?? widget.auth.lastError ?? '',
-      };
+  String _mappedError(AppLocalizations l) =>
+      _errorCode == null && _error != null
+          ? _error!
+          : switch (_errorCode) {
+              'email_not_confirmed' => l.authErrEmailNotConfirmed,
+              'invalid_credentials' => l.authErrBadCredentials,
+              'already_registered' => l.authErrAlreadyRegistered,
+              'rate_limited' => l.authErrRateLimited,
+              'network' => l.authErrNetwork,
+              _ => userFacingErrorMessage(
+                  _error ?? widget.auth.lastError,
+                  fallback: l.authErrNetwork,
+                ),
+            };
 
   bool get _validEmail => RegExp(r'^\S+@\S+\.\S+').hasMatch(_email.text.trim());
 
@@ -96,6 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_validEmail) {
       setState(() {
         _error = l.loginBadEmail;
+        _errorCode = null;
         _confirmSent = false;
       });
       return;
@@ -103,6 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_password.text.length < 6) {
       setState(() {
         _error = l.loginShortPassword;
+        _errorCode = null;
         _confirmSent = false;
       });
       return;
@@ -482,7 +491,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       else
                                         const SizedBox(height: 14),
                                       if (_error != null ||
-                                          widget.auth.lastError != null) ...[
+                                          (_errorCode != null &&
+                                              widget.auth.lastError !=
+                                                  null)) ...[
                                         _AuthNotice(
                                           icon: Icons.error_outline_rounded,
                                           text: _mappedError(l),

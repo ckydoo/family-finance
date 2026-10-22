@@ -51,6 +51,18 @@ void main() {
       );
     });
 
+    test('cycle boundary helpers use calendar days for custom payday', () {
+      final before = AppState(clock: () => DateTime(2026, 10, 24, 23, 45));
+      before.setMonthStartDay(25);
+      expect(before.daysUntilNextCycle, 1);
+      expect(before.isCycleStartToday, isFalse);
+
+      final start = AppState(clock: () => DateTime(2026, 10, 25, 8));
+      start.setMonthStartDay(25);
+      expect(start.isCycleStartToday, isTrue);
+      expect(start.daysUntilNextCycle, 31);
+    });
+
     test('setMonthStartDay rejects out-of-range values', () {
       final s = AppState();
       s.setMonthStartDay(31);

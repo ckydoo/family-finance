@@ -8,7 +8,8 @@ import '../sync/supabase_sync_client.dart';
 /// developer error strings into empathetic, user-facing error messages.
 String userFacingErrorMessage(
   dynamic error, {
-  String fallback = 'Something went wrong. Please check your connection and try again.',
+  String fallback =
+      'Something went wrong. Please check your connection and try again.',
 }) {
   if (error == null) return fallback;
 
@@ -40,7 +41,9 @@ String _friendlySyncException(SyncException e, {required String fallback}) {
   }
 
   final msg = e.message.trim();
-  if (msg.isNotEmpty && !msg.startsWith('HTTP ') && !msg.startsWith('SyncException(')) {
+  if (msg.isNotEmpty &&
+      !msg.startsWith('HTTP ') &&
+      !msg.startsWith('SyncException(')) {
     return _cleanRawErrorMessage(msg, fallback: fallback);
   }
 
@@ -53,8 +56,9 @@ String _mapHttpStatusCode(int code, {required String fallback}) {
     case 422:
       return 'The information provided could not be processed. Please check and try again.';
     case 401:
-    case 403:
       return 'Your session has expired. Please sign in again.';
+    case 403:
+      return 'You do not have permission to make this change.';
     case 404:
       return 'The requested record was not found.';
     case 409:
@@ -128,6 +132,26 @@ String _cleanRawErrorMessage(String raw, {required String fallback}) {
     return 'Could not create your savings jar. Please try again.';
   }
 
+  if (text.contains('row-level security') ||
+      text.contains('violates row-level security') ||
+      text.contains('permission denied') ||
+      text.contains('PGRST') ||
+      text.contains('PostgrestException')) {
+    return 'This change could not be saved. Check your family access and try again.';
+  }
+
+  if (text.contains('JWT') ||
+      text.contains('invalid claim') ||
+      text.contains('token is expired')) {
+    return 'Your session has expired. Please sign in again.';
+  }
+
+  if (text.contains('DatabaseException') ||
+      text.contains('SqliteException') ||
+      text.contains('database_closed')) {
+    return 'Mhuri could not access saved data on this device. Please reopen the app and try again.';
+  }
+
   if (text.startsWith('HTTP ')) {
     final parts = text.split(' ');
     final code = parts.length > 1 ? int.tryParse(parts[1]) : null;
@@ -149,6 +173,8 @@ String _cleanRawErrorMessage(String raw, {required String fallback}) {
     return 'The request timed out. Please check your connection and try again.';
   }
 
-  return text;
+  // Unknown server, database and implementation messages must never be
+  // rendered to users. They remain available through debug/observability
+  // logging at the call site.
+  return fallback;
 }
-

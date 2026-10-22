@@ -547,7 +547,7 @@ void main() {
     });
 
     test(
-        '7. Token revocation / forced logout transitions session to sign-in while preserving outbox',
+        '7. Authentication interruption preserves the session and outbox for retry',
         () async {
       // Device A has a pending transaction
       deviceA.state.addTx(
@@ -566,21 +566,20 @@ void main() {
       // Sync attempt fails with 401
       await deviceA.syncEngine.syncNow();
 
-      // Forced logout triggered: session cleared, marked as needing sign in
-      expect(deviceA.auth.session, isNull);
-      expect(deviceA.auth.lastErrorCode, 'session_revoked');
+      // A failed refresh must not destroy the local login: it may be a brief
+      // network/auth-service interruption rather than a revoked account.
+      expect(deviceA.auth.session, isNotNull);
+      expect(deviceA.auth.lastErrorCode, isNot('session_revoked'));
       expect(deviceA.syncEngine.status, SyncStatus.needsSignIn);
 
       // Outbox remains safely preserved (NOT discarded)
       final pendingCount = await deviceA.syncEngine.pendingCount();
       expect(pendingCount, 1);
 
-      // User re-authenticates (e.g. signs back in)
+      // Service recovers; the existing session retries without a login loop.
       backend.rejectWith401 = false;
-      await deviceA.auth.signIn('user@mhuri.test', 'valid_pass');
-      expect(deviceA.auth.session, isNotNull);
 
-      // Sync resumes and successfully pushes the preserved transaction
+      // Sync resumes and successfully pushes the preserved transaction.
       await deviceA.sync();
       expect(deviceA.syncEngine.status, SyncStatus.idle);
       expect(await deviceA.syncEngine.pendingCount(), 0);

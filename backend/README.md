@@ -60,22 +60,62 @@ adult/parent roles; parents may provision teen, child, or viewer accounts.
 3. **Trash purge** - scheduled SQL: delete transactions `where deleted_at < now() - interval '7 days'`.
 4. **Backup reminder cron** - weekly `pg_dump` to cold storage.
 
-## Wiring the Flutter app (Phase 1, next milestone)
+## Plus billing foundation (not enabled)
 
-```bash
-flutter pub add supabase_flutter drift drift_flutter path_provider \
-                flutter_secure_storage sqlite3_flutter_libs
-flutter pub add --dev drift_dev build_runner
-```
+The Phase 1 billing work is intentionally fail-closed and is not ready for
+deployment or purchase activation. The reviewed schema is now in
+`migrations/047_family_entitlements.sql`; it is not applied to the linked
+project yet. The live project's migration ledger is absent, so reconcile the
+deployment history and repair tracking only from verified records before
+applying migration 047. Do not fabricate migration history.
 
-1. Initialise in `main()` with `Supabase.initialize(url: …, anonKey: …)`.
-2. Generate the Drift database from `lib/core/db/` (tables mirror `schema.sql`)
-   with `dart run build_runner build`.
-3. Implement the outbox (spec §9.2): local write → queue →
-   `Supabase.rpc('sync_flush', …)` on connectivity; the existing
-   `AppState.pendingOps` counter is the UI hook.
-4. Turn on `Supabase.initialize` behind a config flag; the in-memory seed stays
-   as the offline/demo mode and for widget tests.
+The `verify-family-entitlement` Edge Function verifies the caller and active
+family membership, then reads the server-owned family entitlement. When
+`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `MHURI_ANDROID_PACKAGE_NAME`, and the
+monthly/annual product ID secrets are set, it verifies posted purchase tokens
+through the Google Play Publisher API and stores only a SHA-256 token hash.
+Without those secrets it fails closed. `google-play-rtdn` handles subscription
+lifecycle events: it verifies Google's Pub/Sub OIDC identity, then re-queries
+Play before updating entitlements. Its `verify_jwt = false` setting is scoped
+to that endpoint only; configure the Pub/Sub push OIDC service account and
+audience to exactly match `GOOGLE_PLAY_PUBSUB_SERVICE_ACCOUNT` and
+`GOOGLE_PLAY_RTDN_AUDIENCE` before deploying it. Required function secrets are
+`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `MHURI_ANDROID_PACKAGE_NAME`,
+`GOOGLE_PLAY_MONTHLY_PRODUCT_ID`, `GOOGLE_PLAY_ANNUAL_PRODUCT_ID`,
+`GOOGLE_PLAY_PUBSUB_SERVICE_ACCOUNT`, and `GOOGLE_PLAY_RTDN_AUDIENCE`.
+
+Flutter's `MHURI_BILLING_ENABLED` define defaults to false; keep it false
+until production product/store configuration, RTDN delivery, legal/store
+setup, and end-to-end tests are ready.
+
+### Plus feature access
+
+Migration `048_plus_chat_tools.sql` adds family-scoped polls, votes, pins, and
+an advanced-search RPC. Poll creation, new pins, and advanced search are
+server-checked against the active family entitlement; voting on an existing
+open poll and removing pins remain available after downgrade. Existing text
+chat, basic search, reports, CSV exports, and savings goals stay Free. Migration
+048 has been applied directly to the linked project; because the remote
+migration ledger is absent, no history row was fabricated and reconciliation
+is still needed before future CLI-managed migrations.
+
+The current Plus UI also adds a 30-day observed cash-flow estimate, category
+comparisons, and savings-goal completion estimates based on recent
+contributions. They are estimates, explicitly labeled as such, and are shown
+only when the server-verified feature keys are present.
+
+## Flutter Plus experience
+
+Settings now opens a family-scoped Plus page with Google Play plan pricing,
+purchase, restore, and server-refreshed entitlement status. Purchases remain
+disabled unless the Android build explicitly sets
+`--dart-define=MHURI_BILLING_ENABLED=true`; do not enable that define until the
+schema migration is reconciled and applied, Google Play products and publisher
+credentials are configured, RTDN is deployed, and an end-to-end Play test has
+verified purchase, renewal, cancellation, expiry, and restore. Product IDs can
+be overridden using `MHURI_PLUS_MONTHLY_PRODUCT_ID` and
+`MHURI_PLUS_ANNUAL_PRODUCT_ID` build defines and must match the server-side
+monthly/annual product ID secrets exactly.
 
 ## Before public launch (security checklist)
 

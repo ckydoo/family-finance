@@ -9,6 +9,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/widgets/ui.dart';
+import '../family_chat/family_chat_screen.dart';
 
 /// Shared shopping list connected to the budget (spec Module F, §7.6).
 class ListsScreen extends StatefulWidget {
@@ -57,7 +58,7 @@ class _ListsScreenState extends State<ListsScreen> {
     final groceries = s.envelopes
         .where((e) => e.name.toLowerCase().contains('grocer'))
         .firstOrNull;
-    final budgetUse = groceries != null && groceries.limit.minor > 0
+    final budgetUse = groceries != null && s.effectiveLimit(groceries).minor > 0
         ? estPrimary.minor /
             groceries.limit.inCurrency(s.primaryCurrency, s.rate).minor
         : 0.0;
@@ -302,8 +303,7 @@ class _ListsScreenState extends State<ListsScreen> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                AppLocalizations.of(context)!.usesPct(
-                                    (budgetUse * 100).round(), groceries.name),
+                                'Uses ${(budgetUse * 100).round()}% of your ${groceries.name} budget',
                                 style: TextStyle(
                                     fontSize: 12, color: context.inkSoft),
                               ),
@@ -514,7 +514,7 @@ class _ListsScreenState extends State<ListsScreen> {
                       ? 0.0
                       : double.tryParse(priceText.replaceAll(',', ''));
                   if (n.isEmpty) {
-                    setSheet(() => itemError = l.listNameLabel);
+                    setSheet(() => itemError = 'Enter an item name');
                     return;
                   }
                   if (q <= 0) {
@@ -693,7 +693,32 @@ class _ItemRow extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
-            onChanged: (_) => s.advanceItem(item),
+            onChanged: (_) {
+              final messenger = ScaffoldMessenger.of(context);
+              final previousState = item.state;
+              final previousCheckedOut = item.checkedOut;
+              final previousActual = item.actual;
+              final previousPurchasedById = item.purchasedById;
+              s.advanceItem(item);
+              messenger
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(
+                  content: Text(
+                    '${item.name} moved to ${item.state.label}',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  action: SnackBarAction(
+                    label: 'Undo',
+                    onPressed: () => s.restoreItemStage(
+                      item,
+                      state: previousState,
+                      checkedOut: previousCheckedOut,
+                      actual: previousActual,
+                      purchasedById: previousPurchasedById,
+                    ),
+                  ),
+                ));
+            },
           ),
           Expanded(
             child: Column(
@@ -738,6 +763,14 @@ class _ItemRow extends StatelessWidget {
           PopupMenuButton<String>(
             tooltip: 'Item actions',
             onSelected: (action) async {
+              if (action == 'discuss') {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => FamilyChatScreen(initialShoppingItem: item),
+                  ),
+                );
+                return;
+              }
               if (action == 'edit') {
                 _editSheet(context, s);
                 return;
@@ -759,6 +792,8 @@ class _ItemRow extends StatelessWidget {
               ));
             },
             itemBuilder: (_) => const [
+              PopupMenuItem(
+                  value: 'discuss', child: Text('Discuss with family')),
               PopupMenuItem(value: 'edit', child: Text('Edit item')),
               PopupMenuItem(value: 'remove', child: Text('Remove item')),
             ],

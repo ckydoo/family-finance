@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/config/app_version.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ui.dart';
 
@@ -43,7 +44,7 @@ class _LegalScreenState extends State<LegalScreen> {
             onPressed: () => showLicensePage(
               context: context,
               applicationName: 'Mhuri',
-              applicationVersion: '1.0.0',
+              applicationVersion: kAppVersion,
               applicationLegalese: '© 2026 Mhuri. All rights reserved.\n'
                   'Built for African family financial collaboration.',
             ),
@@ -233,15 +234,15 @@ class _LegalScreenState extends State<LegalScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.amber.shade50,
+            color: context.warningSoft,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.amber.shade700, width: 1.2),
+            border: Border.all(color: context.warning, width: 1.2),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(Icons.warning_amber_rounded,
-                  color: Colors.amber.shade900, size: 28),
+                  color: context.warning, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -252,7 +253,7 @@ class _LegalScreenState extends State<LegalScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Colors.amber.shade900,
+                        color: context.ink,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -261,7 +262,7 @@ class _LegalScreenState extends State<LegalScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.amber.shade900,
+                        color: context.ink,
                         height: 1.4,
                       ),
                     ),
@@ -506,7 +507,7 @@ class _LegalScreenState extends State<LegalScreen> {
             onPressed: () => showLicensePage(
               context: context,
               applicationName: 'Mhuri',
-              applicationVersion: '1.0.0',
+              applicationVersion: kAppVersion,
             ),
           ),
         ],

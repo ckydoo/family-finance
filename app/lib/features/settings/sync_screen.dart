@@ -4,6 +4,7 @@ import '../../core/state/app_state.dart';
 import '../../core/sync/outbox.dart' show OutboxOp;
 import '../../core/sync/sync_engine.dart' show SyncStatus;
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/error_messages.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 
@@ -31,14 +32,14 @@ class SyncScreen extends StatelessWidget {
         status != SyncStatus.needsSetup;
 
     final (statusLabel, statusColor) = switch (status) {
-      SyncStatus.syncing => (l.syncStateSyncing, Colors.blue),
-      SyncStatus.error => (l.syncStateError, Colors.orange),
-      SyncStatus.offline => (l.syncStateOffline, Colors.grey),
-      SyncStatus.needsSignIn => (l.syncStateNeedsSignIn, Colors.deepPurple),
-      SyncStatus.needsSetup => (l.syncStateNeedsSetup, Colors.deepOrange),
-      SyncStatus.needsReview => ('Needs review', Colors.amber.shade800),
-      SyncStatus.idle => (l.syncStateSaved, Colors.green),
-      null => (l.syncStateSaved, Colors.green),
+      SyncStatus.syncing => (l.syncStateSyncing, context.information),
+      SyncStatus.error => (l.syncStateError, context.danger),
+      SyncStatus.offline => (l.syncStateOffline, context.inkSoft),
+      SyncStatus.needsSignIn => (l.syncStateNeedsSignIn, context.primaryLight),
+      SyncStatus.needsSetup => (l.syncStateNeedsSetup, context.warning),
+      SyncStatus.needsReview => ('Needs review', context.warning),
+      SyncStatus.idle => (l.syncStateSaved, context.incomeGreen),
+      null => (l.syncStateSaved, context.incomeGreen),
     };
 
     return Scaffold(
@@ -76,13 +77,23 @@ class SyncScreen extends StatelessWidget {
                   _row(l.syncPendingLabel,
                       s.pendingOps == 0 ? l.syncUpToDate : '${s.pendingOps}'),
                   _row(l.envLabel, s.env.environment),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.cloud_download_outlined, size: 18),
+                      label: const Text('Reload all family data'),
+                      onPressed: s.sync == null
+                          ? null
+                          : () => _confirmFullReload(context, s),
+                    ),
+                  ),
                   if (error != null && error.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        '${l.syncErrorLabel}: $error',
-                        style: TextStyle(
-                            fontSize: 12.5, color: Colors.orange.shade800),
+                        '${l.syncErrorLabel}: ${userFacingErrorMessage(error, fallback: l.syncProblem)}',
+                        style: TextStyle(fontSize: 12.5, color: context.danger),
                       ),
                     ),
                 ],
@@ -99,8 +110,7 @@ class SyncScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: context.card,
                     borderRadius: BorderRadius.circular(16),
-                    border:
-                        Border.all(color: Colors.amber.shade800, width: 1.2),
+                    border: Border.all(color: context.warning, width: 1.2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,7 +119,7 @@ class SyncScreen extends StatelessWidget {
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Colors.amber.shade900)),
+                              color: context.warning)),
                       const SizedBox(height: 5),
                       Text(
                         'Another device changed these records while this device was offline. Choose which version the family should keep.',
@@ -121,7 +131,7 @@ class SyncScreen extends StatelessWidget {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(Icons.compare_arrows,
-                              color: Colors.amber.shade800),
+                              color: context.warning),
                           title: Text(_parkedTitle(l, op),
                               maxLines: 1, overflow: TextOverflow.ellipsis),
                           subtitle: Text(op.conflictReason ??
@@ -166,7 +176,7 @@ class SyncScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: context.card,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.orange, width: 1.2),
+                    border: Border.all(color: context.danger, width: 1.2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +188,7 @@ class SyncScreen extends StatelessWidget {
                                 style: TextStyle(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.orange.shade900)),
+                                    color: context.danger)),
                           ),
                           TextButton.icon(
                             style: TextButton.styleFrom(
@@ -207,8 +217,8 @@ class SyncScreen extends StatelessWidget {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           dense: true,
-                          leading: const Icon(Icons.sync_problem,
-                              size: 20, color: Colors.orange),
+                          leading: Icon(Icons.sync_problem,
+                              size: 20, color: context.danger),
                           title: Text(_parkedTitle(l, op),
                               style: const TextStyle(fontSize: 13.5),
                               maxLines: 1,
@@ -261,7 +271,9 @@ class SyncScreen extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: cloudIsLive ? Colors.green : Colors.red,
+                          color: cloudIsLive
+                              ? context.incomeGreen
+                              : context.danger,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -272,8 +284,8 @@ class SyncScreen extends StatelessWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: cloudIsLive
-                              ? Colors.green.shade700
-                              : Colors.red.shade700,
+                              ? context.incomeGreen
+                              : context.danger,
                         ),
                       ),
                     ],
@@ -382,4 +394,36 @@ class SyncScreen extends StatelessWidget {
       await s.sync?.discardParked(op.rowId);
     }
   }
+}
+
+Future<void> _confirmFullReload(BuildContext context, AppState state) async {
+  final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Reload all family data?'),
+          content: const Text(
+            'This downloads the complete family record again to repair missing '
+            'or incomplete history. Pending changes will not be deleted.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Reload'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+  if (!confirmed || !context.mounted) return;
+  final ok = await state.sync!.reloadAllFamilyData();
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Text(ok
+        ? 'Family data reloaded successfully.'
+        : 'Could not reload family data. Check Sync & Data for details.'),
+  ));
 }

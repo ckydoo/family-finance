@@ -14,6 +14,7 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/ring_progress.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../settings/plus_screen.dart';
 
 /// Savings goals, kid jars and the savings-circle tracker (spec Module E, §7.5).
 enum SavingsSection { goals, debts }
@@ -578,6 +579,10 @@ class _SavingsScreenState extends State<SavingsScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
+                if (_section == SavingsSection.goals) ...[
+                  _SavingsProjectionCard(state: s, goals: familyGoals),
+                  const SizedBox(height: 12),
+                ],
                 for (final g in familyGoals) ...[
                   GoalCard(goal: g),
                   const SizedBox(height: 12),
@@ -596,7 +601,13 @@ class _SavingsScreenState extends State<SavingsScreen> {
                     ),
                   ),
                 ]),
-                if (s.familyDebts.isEmpty)
+                if (s.familyDebts.isEmpty) ...[
+                  const EmptyState(
+                    icon: Icons.handshake_outlined,
+                    title: 'No debts recorded',
+                    subtitle:
+                        'Track a family loan, money your family owes, or money someone owes you.',
+                  ),
                   OutlinedButton.icon(
                     onPressed: () {
                       if (!s.canCreateSavingsRecords) {
@@ -607,8 +618,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
                     },
                     icon: const Icon(Icons.handshake_outlined),
                     label: const Text('Add debt or money owed'),
-                  )
-                else
+                  ),
+                ] else
                   for (final debt in s.familyDebts) ...[
                     _DebtCard(debt: debt),
                     const SizedBox(height: 10),
@@ -1009,6 +1020,10 @@ class _SavingsScreenState extends State<SavingsScreen> {
     var goalName = initialName;
     var targetText = '';
     var currency = s.displayCurrency;
+    DateTime? targetDate;
+    var recurringEnabled = false;
+    var recurringText = '';
+    var recurringFrequency = Frequency.monthly;
 
     String? goalError;
 
@@ -1085,6 +1100,60 @@ class _SavingsScreenState extends State<SavingsScreen> {
                       ),
                   ],
                 ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: sheetContext,
+                    initialDate: targetDate ??
+                        DateTime.now().add(const Duration(days: 90)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 3650)),
+                  );
+                  if (picked != null) {
+                    setSheetState(() => targetDate = picked);
+                  }
+                },
+                icon: const Icon(Icons.event_outlined),
+                label: Text(targetDate == null
+                    ? 'Add target date (optional)'
+                    : 'Target date: ${_shortDate(targetDate!)}'),
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Recurring contribution'),
+                subtitle: const Text('Plan how much to save regularly'),
+                value: recurringEnabled,
+                onChanged: (value) =>
+                    setSheetState(() => recurringEnabled = value),
+              ),
+              if (recurringEnabled) ...[
+                TextField(
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: amountInputFormatters,
+                  onChanged: (value) => recurringText = value,
+                  decoration: InputDecoration(
+                    labelText: 'Contribution amount',
+                    prefixText: '${currency.symbol} ',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<Frequency>(
+                  initialValue: recurringFrequency,
+                  decoration: const InputDecoration(labelText: 'Frequency'),
+                  items: const [
+                    DropdownMenuItem(
+                        value: Frequency.weekly, child: Text('Weekly')),
+                    DropdownMenuItem(
+                        value: Frequency.monthly, child: Text('Monthly')),
+                    DropdownMenuItem(
+                        value: Frequency.term, child: Text('Every 3 months')),
+                  ],
+                  onChanged: (value) => setSheetState(
+                      () => recurringFrequency = value ?? Frequency.monthly),
+                ),
+              ],
               if (goalError != null) ...[
                 const SizedBox(height: 10),
                 ErrorNotice(goalError!),
@@ -1093,12 +1162,15 @@ class _SavingsScreenState extends State<SavingsScreen> {
               PrimaryButton(
                 label: AppLocalizations.of(context)!.createGoal,
                 onPressed: () {
-                  final parsed = double.tryParse(
-                    targetText.trim().replaceAll(',', ''),
-                  );
+                  final target = Money.tryParse(targetText, currency);
+                  final recurring = recurringEnabled
+                      ? Money.tryParse(recurringText, currency)
+                      : null;
                   if (goalName.trim().isEmpty ||
-                      parsed == null ||
-                      parsed <= 0) {
+                      target == null ||
+                      target.minor <= 0 ||
+                      (recurringEnabled &&
+                          (recurring == null || recurring.minor <= 0))) {
                     setSheetState(() {
                       goalError =
                           AppLocalizations.of(context)!.goalNameAmountFirst;
@@ -1107,10 +1179,14 @@ class _SavingsScreenState extends State<SavingsScreen> {
                   }
                   s.addGoal(
                     name: goalName,
-                    target: Money.fromMajor(parsed, currency),
+                    target: target,
                     emoji: isKidJar ? 'gift' : 'goal',
                     isKidJar: isKidJar,
                     ownerMemberId: selectedKidId,
+                    deadline: targetDate,
+                    autoSave: recurring == null
+                        ? null
+                        : '${recurring.text} ${recurringFrequency.name}',
                   );
                   Navigator.pop(sheetContext);
                 },
@@ -1332,6 +1408,7 @@ Future<void> _newDebtSheet(BuildContext context) async {
   var direction = DebtDirection.iOwe;
   String? counterpartyMemberId;
   DateTime? dueDate;
+  String? error;
   await showMhuriSheet<void>(
       context: context,
       builder: (sheetContext) => StatefulBuilder(
@@ -1342,9 +1419,14 @@ Future<void> _newDebtSheet(BuildContext context) async {
                   onPressed: () {
                     final value =
                         double.tryParse(amount.text.replaceAll(',', ''));
-                    if (name.text.trim().isEmpty ||
-                        value == null ||
-                        value <= 0) {
+                    if (name.text.trim().isEmpty) {
+                      setSheet(
+                          () => error = 'Enter who or what this debt is for.');
+                      return;
+                    }
+                    if (value == null || value <= 0) {
+                      setSheet(
+                          () => error = 'Amount must be greater than zero.');
                       return;
                     }
                     s.createDebt(
@@ -1356,6 +1438,10 @@ Future<void> _newDebtSheet(BuildContext context) async {
                     Navigator.pop(sheetContext);
                   }),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
+                if (error != null) ...[
+                  ErrorNotice(error!),
+                  const SizedBox(height: 12),
+                ],
                 SegmentedButton<DebtDirection>(
                     segments: const [
                       ButtonSegment(
@@ -1381,6 +1467,7 @@ Future<void> _newDebtSheet(BuildContext context) async {
                 const SizedBox(height: 12),
                 TextField(
                     controller: amount,
+                    onChanged: (_) => setSheet(() => error = null),
                     inputFormatters: amountInputFormatters,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
@@ -1850,6 +1937,132 @@ class _DebtDetailAmount extends StatelessWidget {
       );
 }
 
+class _SavingsProjectionCard extends StatelessWidget {
+  const _SavingsProjectionCard({required this.state, required this.goals});
+
+  final AppState state;
+  final List<Goal> goals;
+
+  @override
+  Widget build(BuildContext context) {
+    final unlocked = state.hasPlusFeature('savings_projections');
+    final now = DateTime.now();
+    final since = now.subtract(const Duration(days: 90));
+    final projections = <(Goal, int, int)>[];
+    if (unlocked) {
+      for (final goal in goals) {
+        final saved = state.savedOn(goal);
+        final contributions = state.goalTxs.where((tx) =>
+            tx.goalId == goal.id &&
+            !tx.at.isBefore(since) &&
+            tx.at.isBefore(now) &&
+            tx.amount.minor > 0);
+        var total = 0;
+        for (final tx in contributions) {
+          total += tx.amount.inCurrency(goal.target.currency, state.rate).minor;
+        }
+        final monthlyAverage = total ~/ 3;
+        final remaining = (goal.target.minor - saved.minor).clamp(0, goal.target.minor);
+        if (remaining > 0 && monthlyAverage > 0) {
+          projections.add((goal, (remaining / monthlyAverage).ceil(),
+              (remaining / (monthlyAverage * 1.25)).ceil()));
+        }
+      }
+      projections.sort((a, b) => a.$2.compareTo(b.$2));
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: context.card, borderRadius: kBRadiusM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.insights_outlined, color: context.primary, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Plus · savings projections', style: TextStyle(
+              color: context.ink, fontWeight: FontWeight.w700, fontSize: 15,
+            ))),
+            if (!unlocked) const Icon(Icons.lock_outline, size: 18),
+          ]),
+          const SizedBox(height: 7),
+          Text(
+            unlocked
+                ? 'Estimates use each goal’s recorded contributions over the last 90 days; no investment returns are assumed.'
+                : 'See estimated goal dates and compare contribution scenarios. Existing savings goals stay available for free.',
+            style: TextStyle(color: context.inkSoft, fontSize: 12, height: 1.4),
+          ),
+          if (!unlocked)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const PlusScreen(),
+                )),
+                icon: const Icon(Icons.workspace_premium_outlined, size: 18),
+                label: const Text('Explore Plus'),
+              ),
+            )
+          else if (projections.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                goals.isEmpty
+                    ? 'Create a family savings goal to start planning.'
+                    : 'Record contributions for a few weeks to see a projection.',
+                style: TextStyle(color: context.inkSoft, fontSize: 12),
+              ),
+            )
+          else
+            for (final projection in projections.take(3))
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(children: [
+                  Expanded(child: Text(projection.$1.name,
+                      style: TextStyle(color: context.ink, fontSize: 12))),
+                  const SizedBox(width: 8),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text(
+                      state.hideAmounts ? '•••••' : _projectionLabel(now, projection.$2),
+                      style: TextStyle(color: context.primary, fontWeight: FontWeight.w700, fontSize: 12),
+                    ),
+                    if (!state.hideAmounts)
+                      Text('+25% contribution: ${_projectionLabel(now, projection.$3)}',
+                          style: TextStyle(color: context.inkSoft, fontSize: 10)),
+                  ]),
+                ]),
+              ),
+        ],
+      ),
+    );
+  }
+
+  String _projectionLabel(DateTime now, int months) {
+    final projectedDate = DateTime(now.year, now.month + months, now.day);
+    return 'Around ${DateFormat('MMM y').format(projectedDate)}';
+  }
+}
+
+String _shortDate(DateTime date) =>
+    '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+bool? _goalOnTrack(Goal goal, Money saved) {
+  if (goal.deadline == null || goal.autoSave == null) return null;
+  final amountMatch =
+      RegExp(r'([\d,]+(?:\.\d{1,2})?)').firstMatch(goal.autoSave!);
+  if (amountMatch == null) return null;
+  final planned = Money.tryParse(amountMatch.group(1)!, goal.target.currency);
+  if (planned == null) return null;
+  final days = goal.deadline!.difference(DateTime.now()).inDays;
+  if (days < 0) return saved.minor >= goal.target.minor;
+  final periods = goal.autoSave!.endsWith('weekly')
+      ? (days / 7).ceil()
+      : goal.autoSave!.endsWith('term')
+          ? (days / 91).ceil()
+          : (days / 30).ceil();
+  return saved.minor + (planned.minor * periods) >= goal.target.minor;
+}
+
 class GoalCard extends StatelessWidget {
   final Goal goal;
   final bool kidFlavored;
@@ -1865,6 +2078,7 @@ class GoalCard extends StatelessWidget {
         : s.member(goal.createdById!)?.name ?? 'Former member';
     final ratio =
         goal.target.minor <= 0 ? 0.0 : saved.minor / goal.target.minor;
+    final onTrack = _goalOnTrack(goal, saved);
     final ringColor = kidFlavored
         ? context.accent
         : ratio < 0.35
@@ -1919,6 +2133,16 @@ class GoalCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 11, color: context.inkSoft),
                 ),
+                if (goal.deadline != null)
+                  Text(
+                    'Target ${_shortDate(goal.deadline!)}${onTrack == null ? '' : onTrack ? ' · On track' : ' · Needs attention'}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          onTrack == false ? context.warning : context.inkSoft,
+                    ),
+                  ),
                 if (creator != null)
                   Text(
                     'Created by $creator',
@@ -2027,6 +2251,18 @@ class GoalCard extends StatelessWidget {
     final target = TextEditingController(
         text: (goal.target.minor / 100).toStringAsFixed(2));
     String? error;
+    DateTime? deadline = goal.deadline;
+    var recurringEnabled = goal.autoSave != null;
+    var recurringFrequency = Frequency.values.firstWhere(
+      (value) => goal.autoSave?.endsWith(value.name) ?? false,
+      orElse: () => Frequency.monthly,
+    );
+    final recurringAmount = TextEditingController(
+      text: RegExp(r'([\d,]+(?:\.\d{1,2})?)')
+              .firstMatch(goal.autoSave ?? '')
+              ?.group(1) ??
+          '',
+    );
     showMhuriSheet<void>(
       context: context,
       builder: (sheetContext) => StatefulBuilder(
@@ -2035,14 +2271,25 @@ class GoalCard extends StatelessWidget {
           footer: PrimaryButton(
             label: 'Save changes',
             onPressed: () {
-              final amount = double.tryParse(target.text.replaceAll(',', ''));
-              if (name.text.trim().isEmpty || amount == null || amount <= 0) {
+              final amount = Money.tryParse(target.text, goal.target.currency);
+              final recurring = recurringEnabled
+                  ? Money.tryParse(recurringAmount.text, goal.target.currency)
+                  : null;
+              if (name.text.trim().isEmpty ||
+                  amount == null ||
+                  amount.minor <= 0 ||
+                  (recurringEnabled &&
+                      (recurring == null || recurring.minor <= 0))) {
                 setSheet(() => error = 'Enter a goal name and valid target.');
                 return;
               }
               state.updateGoal(goal,
                   name: name.text,
-                  target: Money.fromMajor(amount, goal.target.currency));
+                  target: amount,
+                  deadline: deadline,
+                  autoSave: recurring == null
+                      ? null
+                      : '${recurring.text} ${recurringFrequency.name}');
               final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(sheetContext);
               messenger.showSnackBar(const SnackBar(
@@ -2063,6 +2310,55 @@ class GoalCard extends StatelessWidget {
                 inputFormatters: amountInputFormatters,
                 decoration: InputDecoration(
                     labelText: 'Target (${goal.target.currency.symbol})')),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: sheetContext,
+                  initialDate:
+                      deadline ?? DateTime.now().add(const Duration(days: 90)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 3650)),
+                );
+                if (picked != null) setSheet(() => deadline = picked);
+              },
+              icon: const Icon(Icons.event_outlined),
+              label: Text(deadline == null
+                  ? 'Add target date (optional)'
+                  : 'Target date: ${_shortDate(deadline!)}'),
+            ),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Recurring contribution'),
+              value: recurringEnabled,
+              onChanged: (value) => setSheet(() => recurringEnabled = value),
+            ),
+            if (recurringEnabled) ...[
+              TextField(
+                controller: recurringAmount,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: amountInputFormatters,
+                decoration: InputDecoration(
+                    labelText: 'Contribution amount',
+                    prefixText: '${goal.target.currency.symbol} '),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<Frequency>(
+                initialValue: recurringFrequency,
+                decoration: const InputDecoration(labelText: 'Frequency'),
+                items: const [
+                  DropdownMenuItem(
+                      value: Frequency.weekly, child: Text('Weekly')),
+                  DropdownMenuItem(
+                      value: Frequency.monthly, child: Text('Monthly')),
+                  DropdownMenuItem(
+                      value: Frequency.term, child: Text('Every 3 months')),
+                ],
+                onChanged: (value) => setSheet(
+                    () => recurringFrequency = value ?? Frequency.monthly),
+              ),
+            ],
             if (error != null) ErrorNotice(error!),
           ]),
         ),
@@ -2075,12 +2371,12 @@ class GoalCard extends StatelessWidget {
     Currency cur = goal.target.currency;
     final controller = TextEditingController();
     bool submitting = false;
+    String? contributionError;
 
     showMhuriSheet<void>(
       context: context,
       builder: (sheetCtx) => StatefulBuilder(
         builder: (sheetCtx, setSheet) {
-          String? contributionError;
           return MhuriSheetShell(
             title: AppLocalizations.of(context)!.addToGoal(goal.name),
             child: Column(
@@ -2137,14 +2433,13 @@ class GoalCard extends StatelessWidget {
                   label: AppLocalizations.of(context)!.saveContribution,
                   busy: submitting,
                   onPressed: () async {
-                    final v =
-                        double.tryParse(controller.text.replaceAll(',', ''));
-                    if (v == null || v <= 0) {
-                      setSheet(() => contributionError =
-                          AppLocalizations.of(sheetCtx)!.enterAmountFirst);
+                    final inputError =
+                        positiveMoneyInputError(controller.text, cur);
+                    if (inputError != null) {
+                      setSheet(() => contributionError = inputError);
                       return;
                     }
-                    final contribution = Money.fromMajor(v, cur);
+                    final contribution = Money.tryParse(controller.text, cur)!;
                     final available = s.availableToSpend(cur);
                     if (contribution.minor > available.minor) {
                       final shortfall = Money(

@@ -49,6 +49,10 @@ void main() {
         userFacingErrorMessage(authErr),
         'Your session has expired. Please sign in again.',
       );
+      expect(
+        userFacingErrorMessage(const SyncException(403, 'HTTP 403')),
+        'You do not have permission to make this change.',
+      );
     });
 
     test('formats SyncException server error codes without message', () {
@@ -67,7 +71,8 @@ void main() {
 
     test('translates raw error codes and developer strings', () {
       expect(
-        userFacingErrorMessage('FAMILY_NAME_TAKEN: That family name is already taken - try another.'),
+        userFacingErrorMessage(
+            'FAMILY_NAME_TAKEN: That family name is already taken - try another.'),
         'That family name is already taken - try another.',
       );
       expect(
@@ -104,7 +109,8 @@ void main() {
       );
     });
 
-    test('strips Exception: prefix and formats nested SyncException strings', () {
+    test('strips Exception: prefix and formats nested SyncException strings',
+        () {
       expect(
         userFacingErrorMessage('Exception: FAMILY_NAME_TAKEN: Taken'),
         'Taken',
@@ -114,6 +120,28 @@ void main() {
         'Our servers are temporarily busy. Please try again shortly.',
       );
     });
+
+    test('never exposes unknown developer or database details', () {
+      expect(
+        userFacingErrorMessage(
+          'DatabaseException(near SELECT: syntax error)',
+          fallback: 'Could not save your change. Please try again.',
+        ),
+        'Mhuri could not access saved data on this device. Please reopen the app and try again.',
+      );
+      expect(
+        userFacingErrorMessage(
+          'Null check operator used on a null value at sync_engine.dart:42',
+          fallback: 'Could not save your change. Please try again.',
+        ),
+        'Could not save your change. Please try again.',
+      );
+      expect(
+        userFacingErrorMessage(
+          'new row violates row-level security policy for table transaction',
+        ),
+        'This change could not be saved. Check your family access and try again.',
+      );
+    });
   });
 }
-

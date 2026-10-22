@@ -222,11 +222,12 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
 
   Future<void> _save(AppState s, AppLocalizations l) async {
     if (_saving) return;
-    final amt = _parsedAmount;
-    if (amt == null) {
-      setState(() => _amountError = l.enterAmountFirst);
+    final inputError = positiveMoneyInputError(_amount.text, _cur);
+    if (inputError != null) {
+      setState(() => _amountError = inputError);
       return;
     }
+    final amt = _parsedAmount!;
     final member = _memberId == null
         ? null
         : s.member(_memberId!) ?? (_memberId == s.user.id ? s.user : null);
@@ -246,7 +247,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       }
     }
     final entered = _enteredExpense(s);
-    if (envelope != null && entered != null) {
+    if (envelope != null &&
+        s.effectiveLimit(envelope).minor > 0 &&
+        entered != null) {
       final remaining = s.remainingOn(envelope);
       final overMinor = entered.minor - remaining.minor;
       if (overMinor > 0) {
@@ -1063,6 +1066,7 @@ class _EnvelopeLimitNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (envelope.limit.minor <= 0) return const SizedBox.shrink();
     final l = AppLocalizations.of(context)!;
     final projected =
         entered == null ? remaining.minor : remaining.minor - entered!.minor;

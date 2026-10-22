@@ -30,78 +30,43 @@ class KidsMode extends StatelessWidget {
         : ((saved.minor / jar.target.minor) * 100).round().clamp(0, 100);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7D9),
+      backgroundColor: context.bg,
       body: SafeArea(
         child: Stack(
           children: [
-            const Positioned.fill(
+            Positioned.fill(
               child: IgnorePointer(
-                child: RepaintBoundary(child: _KidsPatternBackground()),
+                child: RepaintBoundary(
+                  child: _KidsPatternBackground(colors: context.mc),
+                ),
               ),
             ),
             ListView(
               padding: kPageInsets,
               children: [
-                if (s.isPreviewing) ...[
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(12, 5, 6, 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4D6),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE8D39A)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.visibility_outlined,
-                            size: 17, color: Color(0xFF765B13)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(context)!
-                                .previewBanner(kid.name),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF624A0E),
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: s.exitPreview,
-                          icon: const Icon(Icons.logout, size: 16),
-                          label:
-                              Text(AppLocalizations.of(context)!.previewExit),
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF765B13),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                ],
                 // ── Header ────────────────────────────────────────────────────
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: kKidBg,
+                    color: context.bg,
                     borderRadius: BorderRadius.circular(28),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Stack(
                     children: [
-                      const Positioned(
+                      Positioned(
                         right: 46,
                         top: -20,
                         child: Icon(Icons.star_rounded,
-                            size: 72, color: Color(0x3DFFFFFF)),
+                            size: 72,
+                            color: context.card.withValues(alpha: 0.24)),
                       ),
-                      const Positioned(
+                      Positioned(
                         right: -20,
                         bottom: -26,
                         child: Icon(Icons.savings_outlined,
-                            size: 88, color: Color(0x296B4700)),
+                            size: 88,
+                            color: context.primaryDark.withValues(alpha: 0.16)),
                       ),
                       Row(
                         children: [
@@ -114,11 +79,11 @@ class KidsMode extends StatelessWidget {
                                       .kidsHi(kid.name),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 28,
                                     height: 1.05,
                                     fontWeight: FontWeight.w900,
-                                    color: kKidInk,
+                                    color: context.ink,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -128,23 +93,23 @@ class KidsMode extends StatelessWidget {
                                     vertical: 7,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: kKidCard,
+                                    color: context.card,
                                     borderRadius: BorderRadius.circular(99),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.star_rounded,
-                                          size: 19, color: Color(0xFFF4A81D)),
+                                      Icon(Icons.star_rounded,
+                                          size: 19, color: context.accentDark),
                                       const SizedBox(width: 5),
                                       Flexible(
                                         child: Text(
                                           '${s.stars} stars',
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w900,
-                                            color: kKidInk,
+                                            color: context.ink,
                                           ),
                                         ),
                                       ),
@@ -158,7 +123,7 @@ class KidsMode extends StatelessWidget {
                           Icon(
                             iconForKey(kid.emoji) ?? kFallbackSemanticIcon,
                             size: 34,
-                            color: kKidInk,
+                            color: context.ink,
                           ),
                         ],
                       ),
@@ -171,9 +136,9 @@ class KidsMode extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: kKidCard,
+                    color: context.card,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: const Color(0xFFF0D77A)),
+                    border: Border.all(color: context.hairline),
                   ),
                   child: Column(
                     children: [
@@ -182,10 +147,10 @@ class KidsMode extends StatelessWidget {
                           Expanded(
                             child: Text(
                               AppLocalizations.of(context)!.kidsMyJar,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,
-                                color: kKidInk,
+                                color: context.ink,
                               ),
                             ),
                           ),
@@ -195,10 +160,10 @@ class KidsMode extends StatelessWidget {
                                 : saved.minor / jar.target.minor,
                             size: 60,
                             stroke: 8,
-                            color: kKidSky,
-                            track: const Color(0xFFF0E9D8),
-                            child: const Icon(Icons.directions_bike,
-                                size: 24, color: kKidInk),
+                            color: context.information,
+                            track: context.surfaceSecondary,
+                            child: Icon(Icons.directions_bike,
+                                size: 24, color: context.ink),
                           ),
                         ],
                       ),
@@ -207,10 +172,10 @@ class KidsMode extends StatelessWidget {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           saved.text,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.w900,
-                            color: kKidInk,
+                            color: context.ink,
                           ),
                         ),
                       ),
@@ -224,8 +189,8 @@ class KidsMode extends StatelessWidget {
                                   .clamp(0.0, 1.0)
                                   .toDouble(),
                           minHeight: 12,
-                          backgroundColor: const Color(0xFFF0E9D8),
-                          color: kKidSky,
+                          backgroundColor: context.surfaceSecondary,
+                          color: context.information,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -234,10 +199,10 @@ class KidsMode extends StatelessWidget {
                         child: Text(
                           AppLocalizations.of(context)!
                               .kidsGoalSaved(jar?.name ?? '-', pct),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: kKidInk,
+                            color: context.ink,
                           ),
                         ),
                       ),
@@ -250,24 +215,24 @@ class KidsMode extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.card,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: const Color(0xFFFFD96A)),
+                    border: Border.all(color: context.hairline),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.task_alt_rounded,
-                              color: Color(0xFFF4A81D), size: 26),
+                          Icon(Icons.task_alt_rounded,
+                              color: context.accentDark, size: 26),
                           const SizedBox(width: 9),
                           Text(
                             AppLocalizations.of(context)!.kidsMyChores,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: kKidInk,
+                              color: context.ink,
                             ),
                           ),
                         ],
@@ -278,17 +243,17 @@ class KidsMode extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 10, bottom: 4),
                           child: Row(
                             children: [
-                              const Icon(Icons.celebration_rounded,
-                                  size: 34, color: kKidCoral),
+                              Icon(Icons.celebration_rounded,
+                                  size: 34, color: context.danger),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   AppLocalizations.of(context)!.kidsNoChores,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     height: 1.4,
                                     fontWeight: FontWeight.w600,
-                                    color: kKidInk,
+                                    color: context.ink,
                                   ),
                                 ),
                               ),
@@ -307,7 +272,7 @@ class KidsMode extends StatelessWidget {
                                         AppLocalizations.of(context)!
                                             .sentKid(c.name),
                                       ),
-                                      backgroundColor: kKidInk,
+                                      backgroundColor: context.ink,
                                       behavior: SnackBarBehavior.floating,
                                     ),
                                   );
@@ -323,16 +288,16 @@ class KidsMode extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.card,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: const Color(0xFFAEDDF7)),
+                    border: Border.all(color: context.hairline),
                   ),
                   child: Row(
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         width: 48,
                         child: Icon(Icons.card_giftcard_rounded,
-                            size: 32, color: kKidCoral),
+                            size: 32, color: context.danger),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -341,10 +306,10 @@ class KidsMode extends StatelessWidget {
                           children: [
                             Text(
                               AppLocalizations.of(context)!.kidsWishList,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
-                                color: kKidInk,
+                                color: context.ink,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -357,9 +322,9 @@ class KidsMode extends StatelessWidget {
                                       jar.target.text,
                                       saved.text,
                                     ),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12.5,
-                                color: kKidInk,
+                                color: context.ink,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -371,8 +336,8 @@ class KidsMode extends StatelessWidget {
                                     .clamp(0.0, 1.0)
                                     .toDouble(),
                                 minHeight: 10,
-                                backgroundColor: const Color(0xFFF0E9D8),
-                                color: kKidCoral,
+                                backgroundColor: context.surfaceSecondary,
+                                color: context.danger,
                               ),
                             ),
                           ],
@@ -385,6 +350,7 @@ class KidsMode extends StatelessWidget {
 
                 // ── Actions ───────────────────────────────────────────────────
                 _bigButton(
+                  context: context,
                   label: AppLocalizations.of(context)!.kidsDoChore,
                   color: context.primary,
                   onTap: () {
@@ -400,7 +366,7 @@ class KidsMode extends StatelessWidget {
                         SnackBar(
                           content:
                               Text(AppLocalizations.of(context)!.kidsAllDone),
-                          backgroundColor: kKidInk,
+                          backgroundColor: context.ink,
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -412,7 +378,7 @@ class KidsMode extends StatelessWidget {
                         content: Text(
                           AppLocalizations.of(context)!.sentKid(next.name),
                         ),
-                        backgroundColor: kKidInk,
+                        backgroundColor: context.ink,
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -428,8 +394,8 @@ class KidsMode extends StatelessWidget {
                         .replaceAll('\n', ' '),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: kKidCoral,
-                    side: const BorderSide(color: kKidCoral, width: 1.5),
+                    foregroundColor: context.danger,
+                    side: BorderSide(color: context.danger, width: 1.5),
                     minimumSize: const Size.fromHeight(54),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
@@ -441,12 +407,12 @@ class KidsMode extends StatelessWidget {
                 Center(
                   child: TextButton.icon(
                     onPressed: () => _pinDialog(context),
-                    icon: const Icon(Icons.lock_outline,
-                        size: 18, color: kKidInk),
+                    icon:
+                        Icon(Icons.lock_outline, size: 18, color: context.ink),
                     label: Text(
                       AppLocalizations.of(context)!.kidsParentArea,
-                      style: const TextStyle(
-                        color: kKidInk,
+                      style: TextStyle(
+                        color: context.ink,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -461,6 +427,7 @@ class KidsMode extends StatelessWidget {
   }
 
   Widget _bigButton({
+    required BuildContext context,
     required String label,
     required Color color,
     required VoidCallback onTap,
@@ -469,7 +436,7 @@ class KidsMode extends StatelessWidget {
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
-        foregroundColor: Colors.white,
+        foregroundColor: context.onSolid,
         padding: const EdgeInsets.symmetric(vertical: 18),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 3,
@@ -526,14 +493,14 @@ class KidsMode extends StatelessWidget {
                     SnackBar(
                       content:
                           Text(AppLocalizations.of(context)!.sentToParents),
-                      backgroundColor: kKidInk,
+                      backgroundColor: context.ink,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kKidCoral,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.danger,
+                  foregroundColor: context.onSolid,
                   minimumSize: const Size.fromHeight(52),
                   shape: const StadiumBorder(),
                 ),
@@ -557,15 +524,15 @@ class KidsMode extends StatelessWidget {
                 onChanged: (_) {
                   if (askError != null) setSheet(() => askError = null);
                 },
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
-                  color: kKidInk,
+                  color: context.ink,
                 ),
                 decoration: InputDecoration(
                   prefixText: '${cur.symbol} ',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: context.card,
                   border: const OutlineInputBorder(borderSide: BorderSide.none),
                   hintText: '0.00',
                 ),
@@ -593,7 +560,7 @@ class KidsMode extends StatelessWidget {
                 decoration: InputDecoration(
                   labelText: AppLocalizations.of(context)!.kidsWhatFor,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: context.card,
                   border: const OutlineInputBorder(borderSide: BorderSide.none),
                 ),
               ),
@@ -667,7 +634,7 @@ class KidsMode extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: context.onSolid,
               ),
               onPressed: () async {
                 final ok = await s.pinStore
@@ -703,15 +670,20 @@ class KidsMode extends StatelessWidget {
 /// A quiet illustration layer that keeps Kids Mode playful without competing
 /// with balances, labels, or actions.
 class _KidsPatternBackground extends StatelessWidget {
-  const _KidsPatternBackground();
+  const _KidsPatternBackground({required this.colors});
+
+  final MhuriColors colors;
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(painter: _KidsPatternPainter());
+    return CustomPaint(painter: _KidsPatternPainter(colors));
   }
 }
 
 class _KidsPatternPainter extends CustomPainter {
+  const _KidsPatternPainter(this.colors);
+
+  final MhuriColors colors;
   static const _symbols = <IconData>[
     Icons.star_rounded,
     Icons.savings_outlined,
@@ -730,9 +702,9 @@ class _KidsPatternPainter extends CustomPainter {
         final x = column * (size.width / 2) - 8 + (row.isOdd ? 28 : 0);
         final y = 24.0 + row * 115 + (column.isOdd ? 24 : 0);
         final color = switch ((row + column) % 3) {
-          0 => kKidInk.withValues(alpha: 0.14),
-          1 => kKidCoral.withValues(alpha: 0.16),
-          _ => const Color(0xFFF4A81D).withValues(alpha: 0.20),
+          0 => colors.ink.withValues(alpha: 0.14),
+          1 => colors.danger.withValues(alpha: 0.16),
+          _ => colors.accent.withValues(alpha: 0.20),
         };
         final painter = TextPainter(
           text: TextSpan(
@@ -753,7 +725,8 @@ class _KidsPatternPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _KidsPatternPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _KidsPatternPainter oldDelegate) =>
+      oldDelegate.colors != colors;
 }
 
 class _ChoreRow extends StatelessWidget {
@@ -778,15 +751,15 @@ class _ChoreRow extends StatelessWidget {
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                color: done ? kKidSky : Colors.white,
+                color: done ? context.information : context.card,
                 border: Border.all(
-                  color: done ? kKidSky : const Color(0xFFD8D2C2),
+                  color: done ? context.information : context.hairline,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: done
-                  ? const Icon(Icons.check, size: 18, color: Colors.white)
+                  ? Icon(Icons.check, size: 18, color: context.onSolid)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -796,7 +769,7 @@ class _ChoreRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: done ? context.inkSoft : kKidInk,
+                  color: done ? context.inkSoft : context.ink,
                   decoration: done ? TextDecoration.lineThrough : null,
                 ),
               ),
@@ -813,10 +786,10 @@ class _ChoreRow extends StatelessWidget {
             else
               Text(
                 '${chore.stars} stars',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: kKidInk,
+                  color: context.ink,
                 ),
               ),
           ],

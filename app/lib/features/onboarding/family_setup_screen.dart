@@ -717,8 +717,8 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                   child: CircleAvatar(
                     radius: 14,
                     backgroundColor: context.primary,
-                    child: const Icon(Icons.camera_alt,
-                        color: Colors.white, size: 15),
+                    child: Icon(Icons.camera_alt,
+                        color: context.onSolid, size: 15),
                   ),
                 ),
               ],

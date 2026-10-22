@@ -96,6 +96,36 @@ void main() {
       expect(s.savedOn(goal).minor, savedAfterFirst.minor);
     });
 
+    test('server echo of a savings contribution does not change its balance',
+        () {
+      final goal = s.goals.first;
+      const contributionId = 'goal-contribution-server-echo';
+      s.contribute(
+        goal,
+        const Money(10000, Currency.usd),
+        id: contributionId,
+      );
+      final contribution =
+          s.goalTxs.singleWhere((item) => item.id == contributionId);
+      final countAfterEntry = s.goalTxs.length;
+      final savedAfterEntry = s.savedOn(goal);
+
+      s.applyPulled('goal_tx', [
+        {
+          'id': contributionId,
+          'goal_id': goal.id,
+          'member_id': contribution.byMemberId,
+          'amount_minor': contribution.amount.minor,
+          'currency': contribution.amount.currency.code,
+          'at': contribution.at.toUtc().toIso8601String(),
+        },
+      ]);
+
+      expect(s.goalTxs, hasLength(countAfterEntry));
+      expect(s.savedOn(goal).minor, savedAfterEntry.minor);
+      expect(s.savedOn(goal).currency, savedAfterEntry.currency);
+    });
+
     test('moveMoney idempotency maintains envelope balance invariants', () {
       expect(s.envelopes.length, greaterThanOrEqualTo(2));
       final envFrom = s.envelopes[0];

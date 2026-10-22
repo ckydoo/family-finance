@@ -79,14 +79,6 @@ void main() {
     final state = AppState(db: db);
     await state.ready();
 
-    state.addTx(
-      id: '11111111-1111-4111-8111-111111111111',
-      type: TxType.expense,
-      amount: const Money(2500, Currency.usd),
-      memberId: state.realUser.id,
-      method: Method.cash,
-      note: 'Debt payment',
-    );
     state.createDebt(
       name: 'Test debt',
       direction: DebtDirection.iOwe,
@@ -111,7 +103,7 @@ void main() {
       balanceAfterPayment.minor,
     );
     expect(
-      state.txs.where((tx) => tx.note == 'Debt payment'),
+      state.txs.where((tx) => tx.note == 'Debt repayment: Test debt'),
       hasLength(1),
     );
   });
@@ -131,6 +123,12 @@ void main() {
     );
     first.addItem('Roundtrip soap', 2, Money.fromMajor(1.5, Currency.usd));
     first.contribute(first.goal('g_fees')!, Money.fromMajor(30, Currency.usd));
+    first.addGoal(
+      name: 'Planned goal',
+      target: const Money(75000, Currency.usd),
+      deadline: DateTime(2027, 12, 31),
+      autoSave: 'US\$ 50.00 monthly',
+    );
     final owner = first.realUser;
     const kid = Member(
       id: 'roundtrip-kid',
@@ -164,6 +162,10 @@ void main() {
       second.savedOn(second.goal('g_fees')!).minor,
       first.savedOn(first.goal('g_fees')!).minor,
     );
+    final plannedGoal =
+        second.goals.singleWhere((g) => g.name == 'Planned goal');
+    expect(plannedGoal.deadline, DateTime(2027, 12, 31));
+    expect(plannedGoal.autoSave, 'US\$ 50.00 monthly');
     expect(
       second.requests.any((r) => r.reason == 'Roundtrip request'),
       isTrue,

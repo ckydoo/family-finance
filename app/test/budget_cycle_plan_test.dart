@@ -192,7 +192,10 @@ void main() {
     expect(roundTripped.replyToId, 'chat-original');
     expect(roundTripped.replySenderName, 'Tariro');
     expect(roundTripped.replyPreview, 'Can you check the food budget?');
-    expect(roundTripped.editedAt, DateTime.utc(2026, 10, 7, 19));
+    expect(
+      roundTripped.editedAt?.isAtSameMomentAs(DateTime.utc(2026, 10, 7, 19)),
+      isTrue,
+    );
   });
 }
 

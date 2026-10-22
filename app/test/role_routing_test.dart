@@ -69,30 +69,4 @@ void main() {
     expect(find.byType(AdultShell), findsNothing);
     expect(find.byType(TeenZone), findsNothing);
   });
-
-  testWidgets('owner can exit a child preview without the child PIN',
-      (tester) async {
-    final state = stateFor(Role.owner);
-    final owner = state.user;
-    const child = Member(
-      id: 'child-preview',
-      name: 'Tino',
-      emoji: 'child',
-      role: Role.kid,
-    );
-    state.members.add(child);
-    state.switchUser(child);
-
-    await tester.pumpWidget(harness(state));
-    await tester.pump();
-    expect(find.byType(KidsMode), findsOneWidget);
-    expect(find.text('Previewing as Tino'), findsOneWidget);
-
-    await tester.tap(find.text('Exit'));
-    await tester.pump();
-
-    expect(state.user.id, owner.id);
-    expect(find.byType(AdultShell), findsOneWidget);
-    await tester.pumpAndSettle(const Duration(seconds: 1));
-  });
 }

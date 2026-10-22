@@ -188,21 +188,45 @@ class ReminderPlanner {
 
     // 2. Budget warnings (J2): envelope at 80% or used up this cycle.
     if (config.allows(ReminderCategory.budget)) {
+      final warnings = <({EnvelopeHealth health, bool empty})>[];
       for (final h in envelopes) {
         if (h.limit.minor <= 0) continue;
         final ratio = h.spent.minor / h.limit.minor;
         if (ratio < 0.8) continue;
-        final empty = ratio >= 1;
+        warnings.add((health: h, empty: ratio >= 1));
+      }
+      if (warnings.length == 1) {
+        final warning = warnings.single;
+        final h = warning.health;
         out.add(Reminder(
           key: 'budget_${h.envelope.id}_${_dayKey(h.cycleStart)}',
           category: ReminderCategory.budget,
-          title: empty
+          title: warning.empty
               ? '${h.envelope.emoji} ${h.envelope.name} is used up'
               : '${h.envelope.emoji} ${h.envelope.name} is 80% spent',
-          body: empty
+          body: warning.empty
               ? 'The envelope reached its limit this cycle - decide together '
                   'before topping it up.'
               : 'Only a slice of this envelope is left this cycle.',
+          when: _atHour(now, 18, minute: 30),
+        ));
+      } else if (warnings.length > 1) {
+        final usedUp = warnings.where((warning) => warning.empty).length;
+        final runningLow = warnings.length - usedUp;
+        final parts = <String>[
+          if (usedUp > 0) '$usedUp used up',
+          if (runningLow > 0) '$runningLow running low',
+        ];
+        final names = warnings
+            .take(3)
+            .map((warning) => warning.health.envelope.name)
+            .join(', ');
+        final more = warnings.length > 3 ? ' +${warnings.length - 3} more' : '';
+        out.add(Reminder(
+          key: 'budget_summary_${_dayKey(warnings.first.health.cycleStart)}',
+          category: ReminderCategory.budget,
+          title: '${warnings.length} budgets need attention',
+          body: '${parts.join(' · ')} — $names$more.',
           when: _atHour(now, 18, minute: 30),
         ));
       }
@@ -241,8 +265,7 @@ class ReminderPlanner {
       out.add(Reminder(
         key: 'circle_weekly',
         category: ReminderCategory.circle,
-        title:
-            '🔄 Savings circle - $collectorName collects this round',
+        title: '🔄 Savings circle - $collectorName collects this round',
         body: 'Round ${circle.currentRound} of ${circle.totalRounds}. '
             'Mark contributions in Savings.',
         when: _nextSundayAt(now, 17),

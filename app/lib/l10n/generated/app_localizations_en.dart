@@ -1058,7 +1058,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String usesPct(Object pct, Object name) {
-    return 'Uses $pct% of the $name';
+    return 'Uses $pct% of your $name budget';
   }
 
   @override

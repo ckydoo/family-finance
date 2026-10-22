@@ -35,44 +35,19 @@ class TeenZone extends StatelessWidget {
           padding: kPageInsets,
           children: [
             if (s.isPreviewing) ...[
-              Container(
-                padding: const EdgeInsets.fromLTRB(12, 5, 6, 5),
-                decoration: BoxDecoration(
-                  color: context.warningSoft,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: context.accentSoft),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.visibility_outlined,
-                        size: 17, color: context.accent),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        AppLocalizations.of(context)!
-                            .previewBanner(s.user.name),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: context.ink,
-                        ),
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: s.exitPreview,
-                      icon: const Icon(Icons.logout, size: 16),
-                      label: Text(AppLocalizations.of(context)!.previewExit),
-                      style: TextButton.styleFrom(
-                        foregroundColor: context.ink,
-                        textStyle: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+              Material(
+                color: context.accentSoft,
+                borderRadius: BorderRadius.circular(14),
+                child: ListTile(
+                  leading:
+                      Icon(Icons.visibility_outlined, color: context.primary),
+                  title: Text('Previewing as ${s.user.name}',
+                      style: TextStyle(
+                          color: context.ink, fontWeight: FontWeight.w700)),
+                  trailing: TextButton(
+                    onPressed: s.exitPreview,
+                    child: const Text('Exit'),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -82,7 +57,9 @@ class TeenZone extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [context.primary, context.primaryDark],
+                  colors: Theme.of(context).brightness == Brightness.dark
+                      ? [context.card, context.primarySoft]
+                      : [context.primary, context.primaryDark],
                 ),
                 borderRadius: BorderRadius.circular(22),
               ),
@@ -303,6 +280,7 @@ class TeenZone extends StatelessWidget {
                         painter: _BarsPainter(
                           color: context.primary,
                           lastColor: context.accent,
+                          labelColor: context.inkSoft,
                           values: s.teenEarnings
                               .take(8)
                               .toList()
@@ -412,7 +390,7 @@ class TeenZone extends StatelessWidget {
                       const SizedBox(width: 4),
                       _seg(0.4, context.accent),
                       const SizedBox(width: 4),
-                      _seg(0.1, kKidCoral),
+                      _seg(0.1, context.danger),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -424,8 +402,8 @@ class TeenZone extends StatelessWidget {
                       _legend(context.accent,
                           AppLocalizations.of(context)!.teenSave),
                       const SizedBox(width: 8),
-                      _legend(
-                          kKidCoral, AppLocalizations.of(context)!.teenGive),
+                      _legend(context.danger,
+                          AppLocalizations.of(context)!.teenGive),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -971,9 +949,14 @@ class _BarsPainter extends CustomPainter {
   final List<double> values;
   final Color color;
   final Color lastColor;
+  final Color labelColor;
 
-  _BarsPainter(
-      {required this.values, required this.color, required this.lastColor});
+  _BarsPainter({
+    required this.values,
+    required this.color,
+    required this.lastColor,
+    required this.labelColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1004,7 +987,7 @@ class _BarsPainter extends CustomPainter {
           text: values[i] == values[i].roundToDouble()
               ? values[i].toStringAsFixed(0)
               : values[i].toStringAsFixed(1),
-          style: const TextStyle(fontSize: 9, color: Color(0xFF6B7280)),
+          style: TextStyle(fontSize: 9, color: labelColor),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -1016,7 +999,11 @@ class _BarsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BarsPainter old) => old.values != values;
+  bool shouldRepaint(_BarsPainter old) =>
+      old.values != values ||
+      old.color != color ||
+      old.lastColor != lastColor ||
+      old.labelColor != labelColor;
 }
 
 // ── Proposal row ────────────────────────────────────────────────────────────

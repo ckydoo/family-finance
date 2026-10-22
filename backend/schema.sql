@@ -1,605 +1,548 @@
--- ============================================================================
--- ⚠ SUPERSEDED - DO NOT RUN THIS FILE AGAINST A DATABASE.
--- The authoritative chain is backend/migrations/001…008, applied in order
--- (CI applies them to a clean Postgres on every push to prove it works).
--- This file is kept as a human-readable reference of the CURRENT end state;
--- parts of it (e.g. the old global profile_read policy, the old
--- delete_own_account) are intentionally out of date. Change migrations, then
--- mirror the change here.
--- ============================================================================
--- Mhuri Money - Supabase / PostgreSQL schema (Phase 1)
--- Maps to PRODUCT_SPEC.md §8 (Data Model) and §10 (Security, Privacy).
---
--- Money rule: amounts are ALWAYS bigint minor units + currency.
--- No floats. Conversion happens in the app using rate_snapshots - never
--- re-value stored amounts.
---
--- Run in the Supabase SQL editor (or `supabase db push`) on a fresh project.
--- ============================================================================
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
-create extension if not exists pgcrypto;
-
--- ── Core: spaces, users, membership ─────────────────────────────────────────
-
-create table family_space (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  household_type text not null default 'couple_kids'
-    check (household_type in ('couple_kids','single_parent','extended','blended','partners','solo','other')),
-  month_start_day int not null default 1 check (month_start_day between 1 and 31),
-  base_currency text not null default 'USD' check (base_currency in ('USD','ZWG')),
-  rate_profile text not null default 'rbz' check (rate_profile in ('rbz','market')),
-  settings jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
+CREATE TABLE public.family_space (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  household_type text NOT NULL DEFAULT 'couple_kids'::text CHECK (household_type = ANY (ARRAY['couple_kids'::text, 'single_parent'::text, 'extended'::text, 'blended'::text, 'partners'::text, 'solo'::text, 'other'::text])),
+  month_start_day integer NOT NULL DEFAULT 1 CHECK (month_start_day >= 1 AND month_start_day <= 31),
+  base_currency text NOT NULL DEFAULT 'USD'::text CHECK (base_currency = ANY (ARRAY['USD'::text, 'EUR'::text, 'GBP'::text, 'ZAR'::text, 'CAD'::text, 'AUD'::text, 'KES'::text, 'NGN'::text, 'INR'::text, 'ZWG'::text])),
+  rate_profile text NOT NULL DEFAULT 'rbz'::text CHECK (rate_profile = ANY (ARRAY['rbz'::text, 'market'::text])),
+  settings jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT family_space_pkey PRIMARY KEY (id)
 );
-
-create table user_profile (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text unique, -- auth.users email (2026-09: email+password auth replaced phone OTP)
-  name text not null,
-  avatar text not null default '🙂',
-  language text not null default 'en' check (language in ('en','sn','nd')),
-  ui_size text not null default 'normal' check (ui_size in ('normal','large')),
-  created_at timestamptz not null default now()
+CREATE TABLE public.user_profile (
+  id uuid NOT NULL,
+  phone text UNIQUE,
+  name text NOT NULL,
+  avatar text NOT NULL DEFAULT '🙂'::text,
+  language text NOT NULL DEFAULT 'en'::text CHECK (language = ANY (ARRAY['en'::text, 'es'::text, 'fr'::text, 'pt'::text, 'sn'::text, 'nd'::text])),
+  ui_size text NOT NULL DEFAULT 'normal'::text CHECK (ui_size = ANY (ARRAY['normal'::text, 'large'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  email text UNIQUE,
+  avatar_url text,
+  CONSTRAINT user_profile_pkey PRIMARY KEY (id),
+  CONSTRAINT user_profile_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
-
-create table membership (
-  space_id uuid not null references family_space(id) on delete cascade,
-  user_id uuid not null references user_profile(id) on delete cascade,
-  role text not null
-    check (role in ('owner','adult','teen','kid','viewer','co_parent')),
-  sharing_level text not null default 'shared_only'
-    check (sharing_level in ('full','shared_only')),
-  private_pocket_enabled boolean not null default false,
-  invite_status text not null default 'invited'
-    check (invite_status in ('invited','active','left')),
+CREATE TABLE public.membership (
+  space_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['owner'::text, 'co_parent'::text, 'adult'::text, 'contributor'::text, 'teen'::text, 'kid'::text, 'viewer'::text])),
+  sharing_level text NOT NULL DEFAULT 'shared_only'::text CHECK (sharing_level = ANY (ARRAY['full'::text, 'shared_only'::text])),
+  private_pocket_enabled boolean NOT NULL DEFAULT false,
+  invite_status text NOT NULL DEFAULT 'invited'::text CHECK (invite_status = ANY (ARRAY['invited'::text, 'active'::text, 'left'::text])),
   invite_code text,
-  joined_at timestamptz,
-  primary key (space_id, user_id)
+  joined_at timestamp with time zone,
+  CONSTRAINT membership_pkey PRIMARY KEY (space_id, user_id),
+  CONSTRAINT membership_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT membership_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profile(id)
 );
-
-create index on membership (user_id);
-
--- ── Accounts & transactions ─────────────────────────────────────────────────
-
-create table account (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  name text not null,
-  kind text not null default 'cash'
-    check (kind in ('cash','ecocash','bank_card','bank_transfer','zipit','innbucks','other')),
-  owner_member_id uuid references user_profile(id) on delete set null,
-  currency text not null check (currency in ('USD','ZWG')),
-  sharing text not null default 'shared' check (sharing in ('shared','private')),
-  opening_balance_minor bigint not null default 0 check (opening_balance_minor >= 0),
-  is_archived boolean not null default false,
-  created_at timestamptz not null default now()
+CREATE TABLE public.account (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  kind text NOT NULL DEFAULT 'cash'::text CHECK (kind = ANY (ARRAY['cash'::text, 'ecocash'::text, 'bank_card'::text, 'bank_transfer'::text, 'zipit'::text, 'innbucks'::text, 'other'::text])),
+  owner_member_id uuid,
+  currency text NOT NULL CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  sharing text NOT NULL DEFAULT 'shared'::text CHECK (sharing = ANY (ARRAY['shared'::text, 'private'::text])),
+  opening_balance_minor bigint NOT NULL DEFAULT 0 CHECK (opening_balance_minor >= 0),
+  is_archived boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT account_pkey PRIMARY KEY (id),
+  CONSTRAINT account_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT account_owner_member_id_fkey FOREIGN KEY (owner_member_id) REFERENCES public.user_profile(id)
 );
-
-create table category (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  name text not null,
-  icon text not null default '🧾',
-  kind text not null default 'expense' check (kind in ('expense','income')),
-  is_personal boolean not null default false
+CREATE TABLE public.category (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  icon text NOT NULL DEFAULT '🧾'::text,
+  kind text NOT NULL DEFAULT 'expense'::text CHECK (kind = ANY (ARRAY['expense'::text, 'income'::text])),
+  is_personal boolean NOT NULL DEFAULT false,
+  CONSTRAINT category_pkey PRIMARY KEY (id),
+  CONSTRAINT category_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id)
 );
-
-create table transaction (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  account_id uuid references account(id) on delete set null,
-  type text not null check (type in ('expense','income','transfer')),
-  amount_minor bigint not null check (amount_minor > 0),
-  currency text not null check (currency in ('USD','ZWG')),
-  category_id uuid references category(id) on delete set null,
-  member_id uuid not null references user_profile(id),
-  method text not null default 'cash'
-    check (method in ('cash','ecocash','bank_card','bank_transfer','zipit','innbucks','other')),
-  occurred_at timestamptz not null default now(),
-  note text not null default '',
+CREATE TABLE public.transaction (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  account_id uuid,
+  type text NOT NULL CHECK (type = ANY (ARRAY['expense'::text, 'income'::text, 'transfer'::text])),
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  category_id uuid,
+  member_id uuid NOT NULL,
+  method text NOT NULL DEFAULT 'cash'::text CHECK (method = ANY (ARRAY['cash'::text, 'ecocash'::text, 'mobile_money'::text, 'bank_card'::text, 'bank_transfer'::text, 'zipit'::text, 'innbucks'::text, 'agent'::text, 'other'::text])),
+  occurred_at timestamp with time zone NOT NULL DEFAULT now(),
+  note text NOT NULL DEFAULT ''::text,
   voice_note_uri text,
   receipt_uri text,
   recurring_rule_id uuid,
   split_group_id uuid,
-  created_by uuid not null references user_profile(id),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  deleted_at timestamptz                      -- soft delete = 7-day trash (§3.4)
+  created_by uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  deleted_at timestamp with time zone,
+  updated_by uuid,
+  CONSTRAINT transaction_pkey PRIMARY KEY (id),
+  CONSTRAINT transaction_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT transaction_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(id),
+  CONSTRAINT transaction_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.category(id),
+  CONSTRAINT transaction_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT transaction_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id),
+  CONSTRAINT transaction_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.user_profile(id)
 );
-
-create index on transaction (space_id, occurred_at desc);
-create index on transaction (member_id);
-
--- ── Envelopes (budgets, Module D) ───────────────────────────────────────────
-
-create table envelope (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  name text not null,
-  icon text not null default '🧾',
-  limit_minor bigint not null check (limit_minor >= 0),
-  limit_currency text not null check (limit_currency in ('USD','EUR','GBP','ZAR','CAD','AUD','KES','NGN','INR','ZWG')),
-  period text not null default 'monthly'
-    check (period in ('monthly','term','custom')),
-  rollover text not null default 'reset'
-    check (rollover in ('reset','rollover','accumulate')),
-  sharing text not null default 'shared' check (sharing in ('shared','personal')),
+CREATE TABLE public.envelope (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  icon text NOT NULL DEFAULT '🧾'::text,
+  limit_minor bigint NOT NULL CHECK (limit_minor >= 0),
+  limit_currency text NOT NULL CHECK (limit_currency = ANY (ARRAY['USD'::text, 'EUR'::text, 'GBP'::text, 'ZAR'::text, 'CAD'::text, 'AUD'::text, 'KES'::text, 'NGN'::text, 'INR'::text, 'ZWG'::text])),
+  period text NOT NULL DEFAULT 'monthly'::text CHECK (period = ANY (ARRAY['monthly'::text, 'term'::text, 'custom'::text])),
+  rollover text NOT NULL DEFAULT 'reset'::text CHECK (rollover = ANY (ARRAY['reset'::text, 'rollover'::text, 'accumulate'::text])),
+  sharing text NOT NULL DEFAULT 'shared'::text CHECK (sharing = ANY (ARRAY['shared'::text, 'personal'::text])),
   linked_goal_id uuid,
-  sort_order int not null default 0,
+  sort_order integer NOT NULL DEFAULT 0,
+  is_archived boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
   template_key text,
-  is_archived boolean not null default false,
-  created_at timestamptz not null default now()
+  created_by uuid,
+  archived_at timestamp with time zone,
+  archived_by uuid,
+  CONSTRAINT envelope_pkey PRIMARY KEY (id),
+  CONSTRAINT envelope_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT envelope_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id),
+  CONSTRAINT envelope_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.user_profile(id)
 );
-
-create table envelope_tx (
-  envelope_id uuid not null references envelope(id) on delete cascade,
-  transaction_id uuid not null references transaction(id) on delete cascade,
-  allocated_minor bigint not null check (allocated_minor > 0),
-  currency text not null check (currency in ('USD','ZWG')),
-  primary key (envelope_id, transaction_id)
+CREATE TABLE public.envelope_tx (
+  envelope_id uuid NOT NULL,
+  transaction_id uuid NOT NULL,
+  allocated_minor bigint NOT NULL CHECK (allocated_minor > 0),
+  currency text NOT NULL CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  CONSTRAINT envelope_tx_pkey PRIMARY KEY (envelope_id, transaction_id),
+  CONSTRAINT envelope_tx_envelope_id_fkey FOREIGN KEY (envelope_id) REFERENCES public.envelope(id),
+  CONSTRAINT envelope_tx_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transaction(id)
 );
-
--- ── Goals & community savings (Module E) ────────────────────────────────────
-
-create table goal (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  name text not null,
-  icon text not null default '🎯',
-  target_minor bigint not null check (target_minor > 0),
-  target_currency text not null check (target_currency in ('USD','ZWG')),
+CREATE TABLE public.goal (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  icon text NOT NULL DEFAULT '🎯'::text,
+  target_minor bigint NOT NULL CHECK (target_minor > 0),
+  target_currency text NOT NULL CHECK (target_currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
   deadline date,
-  owner_member_id uuid references user_profile(id) on delete set null,
-  auto_save_rule jsonb,          -- e.g. {"amount_minor":2500,"currency":"USD","freq":"weekly","day":"friday"}
-  is_kid_jar boolean not null default false,
-  status text not null default 'active' check (status in ('active','done','archived')),
-  created_at timestamptz not null default now()
+  owner_member_id uuid,
+  auto_save_rule jsonb,
+  is_kid_jar boolean NOT NULL DEFAULT false,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'done'::text, 'archived'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by uuid,
+  archived_at timestamp with time zone,
+  archived_by uuid,
+  CONSTRAINT goal_pkey PRIMARY KEY (id),
+  CONSTRAINT goal_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT goal_owner_member_id_fkey FOREIGN KEY (owner_member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT goal_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id),
+  CONSTRAINT goal_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.user_profile(id)
 );
-
-create table goal_tx (
-  id uuid primary key default gen_random_uuid(),
-  goal_id uuid not null references goal(id) on delete cascade,
-  member_id uuid not null references user_profile(id),
-  amount_minor bigint not null check (amount_minor > 0),
-  currency text not null check (currency in ('USD','ZWG')),
-  note text not null default '',
-  at timestamptz not null default now()
+CREATE TABLE public.goal_tx (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  goal_id uuid NOT NULL,
+  member_id uuid NOT NULL,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  note text NOT NULL DEFAULT ''::text,
+  at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by uuid,
+  deleted_at timestamp with time zone,
+  CONSTRAINT goal_tx_pkey PRIMARY KEY (id),
+  CONSTRAINT goal_tx_goal_id_fkey FOREIGN KEY (goal_id) REFERENCES public.goal(id),
+  CONSTRAINT goal_tx_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT goal_tx_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.user_profile(id)
 );
-
-create table mukando (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  name text not null,
-  contribution_minor bigint not null check (contribution_minor > 0),
-  currency text not null check (currency in ('USD','ZWG')),
-  frequency text not null default 'monthly'
-    check (frequency in ('weekly','fortnightly','monthly')),
-  total_rounds int not null check (total_rounds > 0),
-  current_round int not null default 1 check (current_round >= 1),
-  started_on date not null default current_date,
-  status text not null default 'active' check (status in ('active','done','archived')),
-  created_at timestamptz not null default now()
+CREATE TABLE public.mukando (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  contribution_minor bigint NOT NULL CHECK (contribution_minor > 0),
+  currency text NOT NULL CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  frequency text NOT NULL DEFAULT 'monthly'::text CHECK (frequency = ANY (ARRAY['weekly'::text, 'fortnightly'::text, 'monthly'::text])),
+  total_rounds integer NOT NULL CHECK (total_rounds > 0),
+  current_round integer NOT NULL DEFAULT 1 CHECK (current_round >= 1),
+  started_on date NOT NULL DEFAULT CURRENT_DATE,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'done'::text, 'archived'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  round_order ARRAY NOT NULL DEFAULT '{}'::text[],
+  participant_ids ARRAY NOT NULL DEFAULT '{}'::uuid[],
+  CONSTRAINT mukando_pkey PRIMARY KEY (id),
+  CONSTRAINT mukando_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id)
 );
-
-create table mukando_member (
-  mukando_id uuid not null references mukando(id) on delete cascade,
-  user_id uuid not null references user_profile(id),
-  round_order int not null check (round_order >= 1),
-  collected_minor bigint not null default 0,
-  collected_on timestamptz,
-  primary key (mukando_id, user_id)
+CREATE TABLE public.mukando_member (
+  mukando_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  round_order integer NOT NULL CHECK (round_order >= 1),
+  collected_minor bigint NOT NULL DEFAULT 0,
+  collected_on timestamp with time zone,
+  CONSTRAINT mukando_member_pkey PRIMARY KEY (mukando_id, user_id),
+  CONSTRAINT mukando_member_mukando_id_fkey FOREIGN KEY (mukando_id) REFERENCES public.mukando(id),
+  CONSTRAINT mukando_member_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profile(id)
 );
-
-create table mukando_event (
-  id uuid primary key default gen_random_uuid(),
-  mukando_id uuid not null references mukando(id) on delete cascade,
-  round_no int not null check (round_no >= 1),
-  kind text not null check (kind in ('paid','collected')),
-  member_id uuid not null references user_profile(id),
-  proof_uri text,                              -- storage: payment proof photo
-  at timestamptz not null default now()
+CREATE TABLE public.mukando_event (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  mukando_id uuid NOT NULL,
+  round_no integer NOT NULL CHECK (round_no >= 1),
+  kind text NOT NULL CHECK (kind = ANY (ARRAY['paid'::text, 'collected'::text])),
+  member_id uuid NOT NULL,
+  proof_uri text,
+  at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT mukando_event_pkey PRIMARY KEY (id),
+  CONSTRAINT mukando_event_mukando_id_fkey FOREIGN KEY (mukando_id) REFERENCES public.mukando(id),
+  CONSTRAINT mukando_event_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id)
 );
-
--- ── Shopping lists (Module F) ───────────────────────────────────────────────
-
-create table shopping_list (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  name text not null,
-  linked_envelope_id uuid references envelope(id) on delete set null,
-  status text not null default 'active' check (status in ('active','done')),
-  template_of uuid references shopping_list(id) on delete set null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),  -- 009: pull cursor
-  deleted_at timestamptz                           -- 009: tombstone
+CREATE TABLE public.shopping_list (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  linked_envelope_id uuid,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'done'::text])),
+  template_of uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  deleted_at timestamp with time zone,
+  CONSTRAINT shopping_list_pkey PRIMARY KEY (id),
+  CONSTRAINT shopping_list_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT shopping_list_linked_envelope_id_fkey FOREIGN KEY (linked_envelope_id) REFERENCES public.envelope(id),
+  CONSTRAINT shopping_list_template_of_fkey FOREIGN KEY (template_of) REFERENCES public.shopping_list(id)
 );
-
-create table list_item (
-  id uuid primary key default gen_random_uuid(),
-  list_id uuid not null references shopping_list(id) on delete cascade,
-  name text not null,
-  qty int not null default 1 check (qty > 0),
-  est_price_minor bigint not null default 0,
-  currency text not null default 'USD' check (currency in ('USD','ZWG')),
-  added_by uuid not null references user_profile(id),
-  assigned_to uuid references user_profile(id) on delete set null,
-  state text not null default 'tobuy' check (state in ('tobuy','incart','done')),
-  checked_out boolean not null default false,
-  deleted_at timestamptz,                          -- 009: tombstone
-  created_at timestamptz not null default now()
+CREATE TABLE public.list_item (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  list_id uuid NOT NULL,
+  name text NOT NULL,
+  qty integer NOT NULL DEFAULT 1 CHECK (qty > 0),
+  est_price_minor bigint NOT NULL DEFAULT 0,
+  currency text NOT NULL DEFAULT 'USD'::text CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  added_by uuid NOT NULL,
+  assigned_to uuid,
+  state text NOT NULL DEFAULT 'tobuy'::text CHECK (state = ANY (ARRAY['tobuy'::text, 'incart'::text, 'done'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  checked_out boolean NOT NULL DEFAULT false,
+  deleted_at timestamp with time zone,
+  actual_price_minor bigint CHECK (actual_price_minor IS NULL OR actual_price_minor >= 0),
+  actual_currency text,
+  purchased_by uuid,
+  CONSTRAINT list_item_pkey PRIMARY KEY (id),
+  CONSTRAINT list_item_list_id_fkey FOREIGN KEY (list_id) REFERENCES public.shopping_list(id),
+  CONSTRAINT list_item_added_by_fkey FOREIGN KEY (added_by) REFERENCES public.user_profile(id),
+  CONSTRAINT list_item_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.user_profile(id),
+  CONSTRAINT list_item_purchased_by_fkey FOREIGN KEY (purchased_by) REFERENCES public.user_profile(id)
 );
-
--- ── Kids & teens (Modules G/H) ──────────────────────────────────────────────
-
-create table chore (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  name text not null,
-  star_value int not null default 1 check (star_value between 1 and 10),
-  assignee_member_id uuid not null references user_profile(id),
-  recurrence text not null default 'daily'
-    check (recurrence in ('once','daily','weekly','custom')),
-  is_active boolean not null default true
+CREATE TABLE public.chore (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  star_value integer NOT NULL DEFAULT 1 CHECK (star_value >= 1 AND star_value <= 10),
+  assignee_member_id uuid,
+  recurrence text NOT NULL DEFAULT 'daily'::text CHECK (recurrence = ANY (ARRAY['once'::text, 'daily'::text, 'weekly'::text, 'custom'::text])),
+  is_active boolean NOT NULL DEFAULT true,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  state text NOT NULL DEFAULT 'todo'::text CHECK (state = ANY (ARRAY['todo'::text, 'waiting'::text, 'confirmed'::text])),
+  is_archived boolean NOT NULL DEFAULT false,
+  archived_at timestamp with time zone,
+  archived_by uuid,
+  CONSTRAINT chore_pkey PRIMARY KEY (id),
+  CONSTRAINT chore_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT chore_assignee_member_id_fkey FOREIGN KEY (assignee_member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT chore_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.user_profile(id)
 );
-
-create table chore_log (
-  id uuid primary key default gen_random_uuid(),
-  chore_id uuid not null references chore(id) on delete cascade,
-  done_on date not null default current_date,
-  state text not null check (state in ('claimed','confirmed')),
-  claimed_by uuid not null references user_profile(id),
-  confirmed_by uuid references user_profile(id),
-  unique (chore_id, done_on)
+CREATE TABLE public.chore_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  chore_id uuid NOT NULL,
+  done_on date NOT NULL DEFAULT CURRENT_DATE,
+  state text NOT NULL CHECK (state = ANY (ARRAY['claimed'::text, 'confirmed'::text])),
+  claimed_by uuid NOT NULL,
+  confirmed_by uuid,
+  CONSTRAINT chore_log_pkey PRIMARY KEY (id),
+  CONSTRAINT chore_log_chore_id_fkey FOREIGN KEY (chore_id) REFERENCES public.chore(id),
+  CONSTRAINT chore_log_claimed_by_fkey FOREIGN KEY (claimed_by) REFERENCES public.user_profile(id),
+  CONSTRAINT chore_log_confirmed_by_fkey FOREIGN KEY (confirmed_by) REFERENCES public.user_profile(id)
 );
-
-create table kid_request (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  requester_id uuid not null references user_profile(id),
-  amount_minor bigint not null check (amount_minor > 0),
-  currency text not null check (currency in ('USD','ZWG')),
-  reason text not null default '',
-  kind text not null default 'money' check (kind in ('money','expense_proposal')),
-  envelope_id uuid references envelope(id) on delete set null,  -- for teen proposals
-  state text not null default 'pending'
-    check (state in ('pending','approved','declined')),
-  decided_by uuid references user_profile(id),
+CREATE TABLE public.kid_request (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  requester_id uuid NOT NULL,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  reason text NOT NULL DEFAULT ''::text,
+  kind text NOT NULL DEFAULT 'money'::text CHECK (kind = ANY (ARRAY['money'::text, 'expense_proposal'::text])),
+  envelope_id uuid,
+  state text NOT NULL DEFAULT 'pending'::text CHECK (state = ANY (ARRAY['pending'::text, 'approved'::text, 'declined'::text])),
+  decided_by uuid,
   decision_note text,
-  decided_at timestamptz,
-  created_at timestamptz not null default now()
+  decided_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT kid_request_pkey PRIMARY KEY (id),
+  CONSTRAINT kid_request_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT kid_request_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.user_profile(id),
+  CONSTRAINT kid_request_envelope_id_fkey FOREIGN KEY (envelope_id) REFERENCES public.envelope(id),
+  CONSTRAINT kid_request_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.user_profile(id)
 );
-
-create table earning (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  member_id uuid not null references user_profile(id),
-  note text not null,
-  amount_minor bigint not null check (amount_minor > 0),
-  currency text not null check (currency in ('USD','ZWG')),
-  occurred_at timestamptz not null default now()
+CREATE TABLE public.earning (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  member_id uuid NOT NULL,
+  note text NOT NULL,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  occurred_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT earning_pkey PRIMARY KEY (id),
+  CONSTRAINT earning_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT earning_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id)
 );
-
--- ── FX rates & audit ────────────────────────────────────────────────────────
-
-create table rate_snapshot (
-  day date not null,
-  source text not null check (source in ('rbz','market')),
-  usd_zwg numeric(12,4) not null check (usd_zwg > 0),
-  captured_at timestamptz not null default now(),
-  primary key (day, source)
+CREATE TABLE public.rate_snapshot (
+  day date NOT NULL,
+  source text NOT NULL CHECK (source = ANY (ARRAY['rbz'::text, 'market'::text])),
+  usd_zwg numeric NOT NULL CHECK (usd_zwg > 0::numeric),
+  captured_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT rate_snapshot_pkey PRIMARY KEY (day, source)
 );
-
--- Hash-chained, tamper-evident activity log (§3.4, §7 A7).
--- prev_hash chain is verified by the app on read (and by a scheduled job).
-create table activity_log (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  actor_id uuid not null references user_profile(id),
-  action text not null,                        -- 'tx.create','envelope.move','request.approve'…
-  entity text not null,
+CREATE TABLE public.activity_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  actor_id uuid NOT NULL,
+  action text NOT NULL,
+  entity text NOT NULL,
   entity_id uuid,
-  detail jsonb not null default '{}'::jsonb,
-  at timestamptz not null default now(),
+  detail jsonb NOT NULL DEFAULT '{}'::jsonb,
+  at timestamp with time zone NOT NULL DEFAULT now(),
   prev_hash text,
-  hash text not null  -- placeholder until real chaining ships (011 note)
+  hash text NOT NULL,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT activity_log_pkey PRIMARY KEY (id),
+  CONSTRAINT activity_log_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT activity_log_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.user_profile(id)
 );
-
-create index on activity_log (space_id, at desc);
-
--- family_invite (010): unique role-bound invites; owner-only RLS.
--- join_invite refuses every dead-code reason with the same INVALID_CODE.
--- transfer_ownership moves membership.invite_code (the family code) with
--- the crown. role_perm() (011) lets RLS read family_space.settings ->
--- role_permissions so the onboarding switches are real policy; audit
--- triggers append tx.create / goal.contribute / request.approve /
--- request.decline to activity_log.
-
--- ── updated_at trigger ──────────────────────────────────────────────────────
-
-create or replace function set_updated_at() returns trigger
-language plpgsql as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
-create trigger trg_transaction_updated
-  before update on transaction
-  for each row execute function set_updated_at();
-
--- ── Row-Level Security ──────────────────────────────────────────────────────
--- Pattern: helper SECURITY DEFINER function avoids recursive policy scans.
--- `space_role(space)` returns the caller's role or NULL if not an active
--- member. Kids/teens get targeted own-row policies; adults/owners get
--- space-wide write access; private pockets are enforced by view definitions
--- in the app layer (private rows are never returned to non-owners).
-
-create or replace function space_role(s uuid) returns text
-language sql security definer stable set search_path = public as $$
-  select m.role from membership m
-  where m.space_id = s
-    and m.user_id = auth.uid()
-    and m.invite_status = 'active'
-  limit 1;
-$$;
-
-create or replace function is_adult(s uuid) returns boolean
-language sql security definer stable set search_path = public as $$
-  select coalesce(space_role(s) in ('owner','adult'), false);
-$$;
-
-alter table family_space  enable row level security;
-alter table user_profile  enable row level security;
-alter table membership    enable row level security;
-alter table account       enable row level security;
-alter table category      enable row level security;
-alter table transaction   enable row level security;
-alter table envelope      enable row level security;
-alter table envelope_tx   enable row level security;
-alter table goal          enable row level security;
-alter table goal_tx       enable row level security;
-alter table mukando       enable row level security;
-alter table mukando_member enable row level security;
-alter table mukando_event enable row level security;
-alter table shopping_list enable row level security;
-alter table list_item     enable row level security;
-alter table chore         enable row level security;
-alter table chore_log     enable row level security;
-alter table kid_request   enable row level security;
-alter table earning       enable row level security;
-alter table rate_snapshot enable row level security;
-alter table activity_log  enable row level security;
-
--- family_space: visible to members; create = any authenticated user (becomes owner)
-create policy space_read on family_space
-  for select using (space_role(id) is not null);
-
--- user_profile: members of shared spaces see each other (basic demo policy;
--- tighten to a membership join view before launch)
-create policy profile_read on user_profile
-  for select using (true);
-create policy profile_self_write on user_profile
-  for update using (id = auth.uid());
-
--- membership: see co-members of your spaces; owners manage roles
-create policy membership_read on membership
-  for select using (
-    user_id = auth.uid()
-    or space_role(space_id) is not null
-  );
-create policy membership_manage on membership
-  for all using (space_role(space_id) = 'owner')
-  with check (space_role(space_id) = 'owner');
-
--- Generic member-read / adult-write policies for space-scoped tables
-create policy account_read  on account      for select using (space_role(space_id) is not null);
-create policy account_write on account      for all    using (is_adult(space_id)) with check (is_adult(space_id));
-create policy category_read on category      for select using (space_role(space_id) is not null);
-create policy category_write on category     for all    using (is_adult(space_id)) with check (is_adult(space_id));
-create policy envelope_read on envelope      for select using (space_role(space_id) is not null);
-create policy envelope_write on envelope     for all    using (is_adult(space_id)) with check (is_adult(space_id));
-create policy goal_read    on goal          for select using (space_role(space_id) is not null);
-create policy goal_write   on goal          for all    using (is_adult(space_id)) with check (is_adult(space_id));
-create policy mukando_read on mukando       for select using (space_role(space_id) is not null);
-create policy mukando_write on mukando      for all    using (is_adult(space_id)) with check (is_adult(space_id));
-create policy list_read    on shopping_list for select using (space_role(space_id) is not null);
-create policy list_write   on shopping_list for all    using (space_role(space_id) is not null) with check (space_role(space_id) is not null);
-create policy item_read    on list_item     for select using (
-  exists (select 1 from shopping_list l where l.id = list_item.list_id and space_role(l.space_id) is not null)
+CREATE TABLE public.recurring_rule (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  emoji text NOT NULL DEFAULT ''::text,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL DEFAULT 'USD'::text CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  envelope_id uuid,
+  member_id uuid,
+  method text NOT NULL DEFAULT 'cash'::text CHECK (method = ANY (ARRAY['cash'::text, 'ecocash'::text, 'mobile_money'::text, 'bank_card'::text, 'bank_transfer'::text, 'zipit'::text, 'innbucks'::text, 'agent'::text, 'other'::text])),
+  frequency text NOT NULL DEFAULT 'monthly'::text CHECK (frequency = ANY (ARRAY['weekly'::text, 'monthly'::text, 'term'::text])),
+  next_due date NOT NULL,
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by uuid,
+  archived_at timestamp with time zone,
+  archived_by uuid,
+  CONSTRAINT recurring_rule_pkey PRIMARY KEY (id),
+  CONSTRAINT recurring_rule_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT recurring_rule_envelope_id_fkey FOREIGN KEY (envelope_id) REFERENCES public.envelope(id),
+  CONSTRAINT recurring_rule_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT recurring_rule_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id),
+  CONSTRAINT recurring_rule_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.user_profile(id)
 );
-create policy item_write   on list_item     for all using (
-  exists (select 1 from shopping_list l where l.id = list_item.list_id and space_role(l.space_id) is not null)
-) with check (
-  exists (select 1 from shopping_list l where l.id = list_item.list_id and space_role(l.space_id) is not null)
+CREATE TABLE public.family_invite (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  space_id uuid NOT NULL,
+  code text NOT NULL UNIQUE,
+  role text NOT NULL CHECK (role = ANY (ARRAY['adult'::text, 'co_parent'::text, 'teen'::text, 'kid'::text, 'viewer'::text])),
+  email text,
+  created_by uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  expires_at timestamp with time zone NOT NULL DEFAULT (now() + '7 days'::interval),
+  revoked_at timestamp with time zone,
+  accepted_by uuid,
+  accepted_at timestamp with time zone,
+  CONSTRAINT family_invite_pkey PRIMARY KEY (id),
+  CONSTRAINT family_invite_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT family_invite_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id),
+  CONSTRAINT family_invite_accepted_by_fkey FOREIGN KEY (accepted_by) REFERENCES public.user_profile(id)
 );
-create policy chore_read   on chore         for select using (space_role(space_id) is not null);
-create policy chore_write  on chore         for all    using (is_adult(space_id)) with check (is_adult(space_id));
-
--- transactions: adults read all; teens/kids only see their own rows
-create policy tx_read on transaction for select using (
-  is_adult(space_id) or (member_id = auth.uid() and space_role(space_id) is not null)
+CREATE TABLE public.push_device (
+  token text NOT NULL,
+  user_id uuid NOT NULL DEFAULT auth.uid(),
+  platform text NOT NULL CHECK (platform = ANY (ARRAY['android'::text, 'ios'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT push_device_pkey PRIMARY KEY (token),
+  CONSTRAINT push_device_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
-create policy tx_write on transaction for insert with check (
-  is_adult(space_id)
-  or (member_id = auth.uid() and space_role(space_id) in ('owner','adult','teen'))
+CREATE TABLE public.budget_cycle_plan (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  cycle_start date NOT NULL,
+  income_mode text NOT NULL CHECK (income_mode = ANY (ARRAY['known_monthly'::text, 'as_earned'::text])),
+  expected_income_minor bigint,
+  currency text NOT NULL DEFAULT 'USD'::text,
+  allocations jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'closed'::text])),
+  copied_from date,
+  closed_at timestamp with time zone,
+  created_by uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT budget_cycle_plan_pkey PRIMARY KEY (id),
+  CONSTRAINT budget_cycle_plan_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT budget_cycle_plan_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id)
 );
-create policy tx_update on transaction for update using (
-  is_adult(space_id) or created_by = auth.uid()
-) with check (
-  is_adult(space_id) or created_by = auth.uid()
+CREATE TABLE public.family_chat_message (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  sender_id uuid NOT NULL,
+  text text NOT NULL,
+  status text NOT NULL DEFAULT 'sent'::text CHECK (status = ANY (ARRAY['sent'::text, 'delivered'::text, 'read'::text])),
+  reference_type text CHECK (reference_type = ANY (ARRAY['task'::text, 'shopping_list'::text, 'expense'::text, 'goal'::text, 'contribution'::text, 'budget'::text])),
+  reference_id text,
+  reference_title text,
+  reference_meta text,
+  is_system boolean NOT NULL DEFAULT false,
+  sender_name text,
+  sender_avatar text,
+  deleted boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  media_url text,
+  media_type text,
+  sticker text,
+  reply_to_id uuid,
+  reply_sender_name text,
+  reply_preview text,
+  CONSTRAINT family_chat_message_pkey PRIMARY KEY (id),
+  CONSTRAINT family_chat_message_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT family_chat_message_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.user_profile(id)
 );
-
-create policy etx_read  on envelope_tx for select using (space_role(
-  (select space_id from transaction t where t.id = envelope_tx.transaction_id)
-) is not null);
-create policy etx_write on envelope_tx for all using (is_adult(
-  (select space_id from transaction t where t.id = envelope_tx.transaction_id)
-)) with check (is_adult(
-  (select space_id from transaction t where t.id = envelope_tx.transaction_id)
-));
-
-create policy gtx_read   on goal_tx for select using (space_role(
-  (select space_id from goal g where g.id = goal_tx.goal_id)
-) is not null);
-create policy gtx_write  on goal_tx for all using (space_role(
-  (select space_id from goal g where g.id = goal_tx.goal_id)
-) is not null) with check (
-  member_id = auth.uid() or is_adult(
-    (select space_id from goal g where g.id = goal_tx.goal_id)
-  )
+CREATE TABLE public.family_debt (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  direction text NOT NULL CHECK (direction = ANY (ARRAY['iOwe'::text, 'owedToMe'::text, 'familyLoan'::text])),
+  principal_minor bigint NOT NULL CHECK (principal_minor > 0),
+  currency text NOT NULL,
+  counterparty_member_id uuid,
+  due_date timestamp with time zone,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'settled'::text, 'archived'::text])),
+  created_by uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT family_debt_pkey PRIMARY KEY (id),
+  CONSTRAINT family_debt_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT family_debt_counterparty_member_id_fkey FOREIGN KEY (counterparty_member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT family_debt_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id)
 );
-
-create policy mm_read   on mukando_member for select using (space_role(
-  (select space_id from mukando m where m.id = mukando_member.mukando_id)
-) is not null);
-create policy mm_write  on mukando_member for all using (is_adult(
-  (select space_id from mukando m where m.id = mukando_member.mukando_id)
-)) with check (is_adult(
-  (select space_id from mukando m where m.id = mukando_member.mukando_id)
-));
-
-create policy me_read   on mukando_event for select using (space_role(
-  (select space_id from mukando m where m.id = mukando_event.mukando_id)
-) is not null);
-create policy me_write  on mukando_event for all using (space_role(
-  (select space_id from mukando m where m.id = mukando_event.mukando_id)
-) is not null) with check (space_role(
-  (select space_id from mukando m where m.id = mukando_event.mukando_id)
-) is not null);
-
-create policy clog_read   on chore_log for select using (space_role(
-  (select space_id from chore c where c.id = chore_log.chore_id)
-) is not null);
-create policy clog_write  on chore_log for all using (space_role(
-  (select space_id from chore c where c.id = chore_log.chore_id)
-) is not null) with check (space_role(
-  (select space_id from chore c where c.id = chore_log.chore_id)
-) is not null);
-
--- kid_request: requester sees own; adults see all and decide
-create policy req_read on kid_request for select using (
-  is_adult(space_id) or requester_id = auth.uid()
+CREATE TABLE public.debt_repayment (
+  id uuid NOT NULL,
+  debt_id uuid NOT NULL,
+  member_id uuid NOT NULL,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL,
+  paid_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT debt_repayment_pkey PRIMARY KEY (id),
+  CONSTRAINT debt_repayment_debt_id_fkey FOREIGN KEY (debt_id) REFERENCES public.family_debt(id),
+  CONSTRAINT debt_repayment_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id)
 );
-create policy req_insert on kid_request for insert with check (
-  requester_id = auth.uid() or is_adult(space_id)
+CREATE TABLE public.contribution_campaign (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  target_minor bigint NOT NULL CHECK (target_minor > 0),
+  currency text NOT NULL,
+  deadline timestamp with time zone NOT NULL,
+  created_by uuid NOT NULL,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'closed'::text, 'archived'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT contribution_campaign_pkey PRIMARY KEY (id),
+  CONSTRAINT contribution_campaign_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT contribution_campaign_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id)
 );
-create policy req_decide on kid_request for update using (
-  is_adult(space_id)
-) with check (is_adult(space_id));
-
-create policy earn_read   on earning for select using (
-  is_adult(space_id) or member_id = auth.uid()
+CREATE TABLE public.contribution_pledge (
+  id uuid NOT NULL,
+  campaign_id uuid NOT NULL,
+  member_id uuid NOT NULL,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT contribution_pledge_pkey PRIMARY KEY (id),
+  CONSTRAINT contribution_pledge_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.contribution_campaign(id),
+  CONSTRAINT contribution_pledge_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id)
 );
-create policy earn_write  on earning for all using (
-  member_id = auth.uid()
-) with check (member_id = auth.uid());
-
--- rate_snapshot: public read (bundled offline too), server-cron writes
-create policy rate_read  on rate_snapshot for select using (true);
-
--- activity_log: members read; writes go through server RPCs only
-create policy log_read  on activity_log for select using (space_role(space_id) is not null);
-
--- ── Storage buckets (run once) ──────────────────────────────────────────────
--- insert into storage.buckets (id, name, public) values
---   ('receipts', 'receipts', false),
---   ('voice-notes', 'voice-notes', false),
---   ('mukando-proofs', 'mukando-proofs', false);
--- Access via signed URLs; policies mirror the RLS pattern above.
-
--- ── Notes ───────────────────────────────────────────────────────────────────
--- * Soft-deleted transactions (deleted_at set) stay queryable for the 7-day
---   trash; a scheduled job purges rows older than 7 days.
--- * Private pockets: privacy is enforced by NOT RETURNING private rows to
---   non-owners (extend tx_read with account.sharing checks + a summary RPC),
---   never by hiding in the UI only (spec §3.2, §10).
--- * Next server-side steps: edge function for daily RBZ rate upsert into
---   rate_snapshot, and RPCs `log_activity` (hash chaining) + `sync_flush`.
-
-
--- ═════════════════════════════════════════════════════════════════════════════
--- Sync-scope completion (premium pass, 2026-09-21)
--- * updated_at + triggers on EVERY synced table (the pull API orders by
---   updated_at - tables missing it would fail on first live sync);
--- * chore gains `state` (local ChoreState), assignee becomes nullable,
---   mukando gains `round_order` (member names, v1 simplification);
--- * new recurring_rule table (budget rules now sync across the family).
--- ═════════════════════════════════════════════════════════════════════════════
-
-alter table envelope     add column if not exists updated_at timestamptz not null default now();
-alter table goal         add column if not exists updated_at timestamptz not null default now();
-alter table goal_tx      add column if not exists updated_at timestamptz not null default now();
-alter table list_item    add column if not exists updated_at timestamptz not null default now();
-alter table kid_request  add column if not exists updated_at timestamptz not null default now();
-alter table earning      add column if not exists updated_at timestamptz not null default now();
-alter table mukando      add column if not exists updated_at timestamptz not null default now();
-alter table chore        add column if not exists updated_at timestamptz not null default now();
-
-alter table chore add column if not exists state text not null default 'todo'
-  check (state in ('todo','waiting','confirmed'));
-alter table chore alter column assignee_member_id drop not null;
-alter table mukando add column if not exists round_order text[] not null default '{}';
-
-create or replace trigger trg_envelope_updated    before update on envelope     for each row execute function set_updated_at();
-create or replace trigger trg_goal_updated        before update on goal         for each row execute function set_updated_at();
-create or replace trigger trg_goal_tx_updated     before update on goal_tx      for each row execute function set_updated_at();
-create or replace trigger trg_list_item_updated   before update on list_item    for each row execute function set_updated_at();
-create or replace trigger trg_kid_request_updated before update on kid_request  for each row execute function set_updated_at();
-create or replace trigger trg_earning_updated     before update on earning      for each row execute function set_updated_at();
-create or replace trigger trg_mukando_updated     before update on mukando      for each row execute function set_updated_at();
-create or replace trigger trg_chore_updated       before update on chore        for each row execute function set_updated_at();
-
-create table if not exists recurring_rule (
-  id uuid primary key default gen_random_uuid(),
-  space_id uuid not null references family_space(id) on delete cascade,
-  name text not null,
-  emoji text not null default '',
-  amount_minor bigint not null check (amount_minor > 0),
-  currency text not null default 'USD' check (currency in ('USD','ZWG')),
-  envelope_id uuid references envelope(id) on delete set null,
-  member_id uuid references user_profile(id) on delete set null,
-  method text not null default 'cash'
-    check (method in ('cash','mobile_money','bank_card','bank_transfer','agent','other')),
-  frequency text not null default 'monthly'
-    check (frequency in ('weekly','monthly','term')),
-  next_due date not null,
-  active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+CREATE TABLE public.contribution_payment (
+  id uuid NOT NULL,
+  campaign_id uuid NOT NULL,
+  member_id uuid NOT NULL,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL,
+  paid_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT contribution_payment_pkey PRIMARY KEY (id),
+  CONSTRAINT contribution_payment_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT contribution_payment_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.contribution_campaign(id)
 );
-
-create index if not exists idx_recurring_rule_space on recurring_rule (space_id);
-
-create or replace trigger trg_recurring_rule_updated
-  before update on recurring_rule
-  for each row execute function set_updated_at();
-
-alter table recurring_rule enable row level security;
-create policy recurring_read on recurring_rule
-  for select using (space_role(space_id) is not null);
-create policy recurring_write on recurring_rule
-  for all using (space_role(space_id) is not null)
-  with check (space_role(space_id) is not null);
-
--- Self-service account deletion. The authenticated role can invoke this
--- function but never receives direct access to auth.users.
-create or replace function public.delete_own_account()
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_user uuid := auth.uid();
-begin
-  if v_user is null then
-    raise exception 'NOT_AUTHENTICATED';
-  end if;
-  delete from auth.users where id = v_user;
-end;
-$$;
-
-revoke all on function public.delete_own_account() from public, anon;
-grant execute on function public.delete_own_account() to authenticated;
+CREATE TABLE public.transaction_split (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  transaction_id uuid NOT NULL,
+  envelope_id uuid NOT NULL,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT transaction_split_pkey PRIMARY KEY (id),
+  CONSTRAINT transaction_split_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT transaction_split_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transaction(id),
+  CONSTRAINT transaction_split_envelope_id_fkey FOREIGN KEY (envelope_id) REFERENCES public.envelope(id)
+);
+CREATE TABLE public.family_task (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  title text NOT NULL CHECK (length(btrim(title)) >= 1 AND length(btrim(title)) <= 200),
+  note text,
+  assignee_member_id uuid,
+  created_by uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  due_at timestamp with time zone,
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'inProgress'::text, 'done'::text])),
+  points integer NOT NULL DEFAULT 1 CHECK (points >= 0 AND points <= 20),
+  requires_approval boolean NOT NULL DEFAULT true,
+  approved_by_member_id uuid,
+  approved_at timestamp with time zone,
+  completed_at timestamp with time zone,
+  is_archived boolean NOT NULL DEFAULT false,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT family_task_pkey PRIMARY KEY (id),
+  CONSTRAINT family_task_approved_by_member_id_fkey FOREIGN KEY (approved_by_member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT family_task_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT family_task_assignee_member_id_fkey FOREIGN KEY (assignee_member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT family_task_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id)
+);
+CREATE TABLE public.mukando_payment (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  round_no integer NOT NULL CHECK (round_no >= 1),
+  member_id uuid NOT NULL,
+  recorded_by uuid NOT NULL,
+  amount_minor bigint NOT NULL CHECK (amount_minor > 0),
+  currency text NOT NULL CHECK (currency = ANY (ARRAY['USD'::text, 'ZWG'::text])),
+  paid_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT mukando_payment_pkey PRIMARY KEY (id),
+  CONSTRAINT mukando_payment_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
+  CONSTRAINT mukando_payment_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT mukando_payment_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.user_profile(id)
+);

@@ -52,9 +52,15 @@ class AvatarUploader {
           'Upload timed out - check your connection and try again.');
     });
     if (r.statusCode < 200 || r.statusCode >= 300) {
-      if (r.statusCode == 401 || r.statusCode == 403) {
+      if (r.statusCode == 401) {
         throw const AvatarException(
             'Your session has expired - sign in again.');
+      }
+      if (r.statusCode == 403) {
+        throw const AvatarException(
+          'You do not have permission to upload this photo. '
+          'Ask the family owner to update the family permissions.',
+        );
       }
       throw AvatarException(
           'Could not upload the photo (${r.statusCode}) - check your '

@@ -413,7 +413,7 @@ class _InviteScreenState extends State<InviteScreen> {
                         ? Icons.check_circle_outline
                         : Icons.link_off,
                     size: 20,
-                    color: inv.acceptedAt != null ? Colors.green : null,
+                    color: inv.acceptedAt != null ? context.incomeGreen : null,
                   ),
                   title: Text(
                     inv.acceptedAt != null

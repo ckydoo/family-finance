@@ -14,11 +14,18 @@ enum ItemState { tobuy, incart, done }
 
 enum ChoreState { todo, waiting, confirmed }
 
-enum ChatMessageStatus { pending, sent, delivered, read }
+enum ChatMessageStatus { pending, failed, sent, delivered, read }
 
 enum FamilyTaskStatus { open, inProgress, done }
 
-enum ChatReferenceType { task, shoppingList, expense, goal, contribution }
+enum ChatReferenceType {
+  task,
+  shoppingList,
+  expense,
+  goal,
+  contribution,
+  budget,
+}
 
 enum RequestState { pending, approved, declined }
 
@@ -501,6 +508,7 @@ class Goal {
   final String emoji;
   final Money target;
   final String? autoSave;
+  final DateTime? deadline;
   final bool isKidJar;
   final String? ownerMemberId;
   final String status;
@@ -512,6 +520,7 @@ class Goal {
     required this.emoji,
     required this.target,
     this.autoSave,
+    this.deadline,
     this.isKidJar = false,
     this.ownerMemberId,
     this.status = 'active',

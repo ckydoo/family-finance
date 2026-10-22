@@ -102,7 +102,12 @@ class _RemindersSheet extends StatelessWidget {
   }
 }
 
-String _hh(int h) => '${h.toString().padLeft(2, '0')}:00';
+String _hh(int hour) {
+  final normalized = hour % 24;
+  final period = normalized < 12 ? 'AM' : 'PM';
+  final clockHour = normalized % 12 == 0 ? 12 : normalized % 12;
+  return '$clockHour:00 $period';
+}
 
 IconData _icon(ReminderCategory c) => switch (c) {
       ReminderCategory.bills => Icons.push_pin,

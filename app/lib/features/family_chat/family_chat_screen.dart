@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,43 +12,247 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/error_messages.dart';
 import '../../core/utils/ids.dart';
 import '../../core/widgets/ui.dart';
+import '../budgets/budgets_screen.dart' show showEnvelopeDetailSheet;
 import '../family_tasks/family_tasks_screen.dart';
+import '../lists/lists_screen.dart';
+import 'family_polls_sheet.dart';
+import '../settings/plus_screen.dart';
 
 class FamilyChatScreen extends StatefulWidget {
-  const FamilyChatScreen({super.key, this.initialTask});
+  const FamilyChatScreen({
+    super.key,
+    this.initialTask,
+    this.initialBudget,
+    this.initialShoppingItem,
+  });
 
   final FamilyTask? initialTask;
+  final Envelope? initialBudget;
+  final ListItem? initialShoppingItem;
 
   @override
   State<FamilyChatScreen> createState() => _FamilyChatScreenState();
 }
 
-enum _ChatMessageAction { edit, delete }
+enum _ChatMessageAction { edit, delete, pin, unpin, upgrade }
+
+enum _ChatAttachmentAction { budget, shopping, gallery }
+
+class _PendingReference {
+  const _PendingReference({
+    required this.type,
+    required this.id,
+    required this.title,
+    required this.meta,
+  });
+
+  final ChatReferenceType type;
+  final String id;
+  final String title;
+  final String meta;
+}
 
 class _FamilyChatScreenState extends State<FamilyChatScreen> {
   final _controller = TextEditingController();
   final _composerFocus = FocusNode();
   final _scroll = ScrollController();
-  FamilyTask? _pendingTask;
+  _PendingReference? _pendingReference;
   FamilyChatMessage? _replyingTo;
   bool _searching = false;
   bool _showExpressionTray = false;
   bool _uploadingMedia = false;
   String _query = '';
+  String? _advancedSenderId;
+  DateTime? _advancedFrom;
+  DateTime? _advancedBefore;
+  String _advancedKind = 'any';
+  List<FamilyChatMessage>? _advancedResults;
+  bool _advancedSearchRunning = false;
   int _visibleCount = 50;
   Future<Map<String, String>>? _mediaHeaderFuture;
+  Timer? _chatRefreshTimer;
+  Set<String> _pinnedMessageIds = {};
 
   @override
   void initState() {
     super.initState();
-    _pendingTask = widget.initialTask;
+    final task = widget.initialTask;
+    final budget = widget.initialBudget;
+    final item = widget.initialShoppingItem;
+    if (task != null) {
+      _pendingReference = _taskReference(task);
+    } else if (budget != null) {
+      _pendingReference = _budgetReference(budget);
+    } else if (item != null) {
+      _pendingReference = _shoppingReference(item);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) AppScope.of(context).markFamilyChatRead();
+      if (!mounted) return;
+      final state = AppScope.of(context);
+      state.markFamilyChatRead();
+      unawaited(state.sync?.refreshChat());
+      unawaited(_loadPinnedMessageIds(state));
+      _chatRefreshTimer = Timer.periodic(
+        const Duration(milliseconds: 1200),
+        (_) {
+          if (mounted) unawaited(AppScope.of(context).sync?.refreshChat());
+        },
+      );
     });
+  }
+
+  Future<void> _loadPinnedMessageIds(AppState state) async {
+    try {
+      final pins = await state.sync?.fetchFamilyChatPins() ?? const [];
+      if (!mounted) return;
+      setState(() => _pinnedMessageIds = {
+            for (final pin in pins)
+              if (pin['message_id'] != null) pin['message_id'].toString(),
+          });
+    } catch (_) {
+      // Existing chat stays usable if pin loading is unavailable.
+    }
+  }
+
+  Future<void> _showAdvancedFilters(AppState state) async {
+    var sender = _advancedSenderId ?? '';
+    var from = _advancedFrom;
+    var before = _advancedBefore;
+    var kind = _advancedKind;
+    final result = await showDialog<(String, DateTime?, DateTime?, String)>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Advanced message search'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            DropdownButtonFormField<String>(
+              initialValue: sender,
+              decoration: const InputDecoration(labelText: 'Sender'),
+              items: [
+                const DropdownMenuItem(value: '', child: Text('Anyone')),
+                for (final member in state.members)
+                  DropdownMenuItem(value: member.id, child: Text(member.name)),
+              ],
+              onChanged: (value) => setDialogState(() => sender = value ?? ''),
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: kind,
+              decoration: const InputDecoration(labelText: 'Message type'),
+              items: const [
+                DropdownMenuItem(value: 'any', child: Text('Any type')),
+                DropdownMenuItem(value: 'text', child: Text('Text')),
+                DropdownMenuItem(
+                    value: 'media', child: Text('Photo or attachment')),
+                DropdownMenuItem(value: 'sticker', child: Text('Sticker')),
+                DropdownMenuItem(value: 'system', child: Text('Family update')),
+              ],
+              onChanged: (value) => setDialogState(() => kind = value ?? 'any'),
+            ),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                  child: TextButton.icon(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: from ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) setDialogState(() => from = picked);
+                },
+                icon: const Icon(Icons.calendar_today_outlined),
+                label: Text(from == null
+                    ? 'From date'
+                    : DateFormat.yMMMd().format(from!)),
+              )),
+              IconButton(
+                  onPressed: () => setDialogState(() => from = null),
+                  tooltip: 'Clear start date',
+                  icon: const Icon(Icons.close, size: 18)),
+            ]),
+            Row(children: [
+              Expanded(
+                  child: TextButton.icon(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: before ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) setDialogState(() => before = picked);
+                },
+                icon: const Icon(Icons.event_outlined),
+                label: Text(before == null
+                    ? 'Through date'
+                    : DateFormat.yMMMd().format(before!)),
+              )),
+              IconButton(
+                  onPressed: () => setDialogState(() => before = null),
+                  tooltip: 'Clear end date',
+                  icon: const Icon(Icons.close, size: 18)),
+            ]),
+          ]),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext,
+                  (sender, from, before?.add(const Duration(days: 1)), kind)),
+              child: const Text('Search'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _advancedSenderId = result.$1.isEmpty ? null : result.$1;
+      _advancedFrom = result.$2;
+      _advancedBefore = result.$3;
+      _advancedKind = result.$4;
+    });
+    await _runAdvancedSearch(state);
+  }
+
+  Future<void> _runAdvancedSearch(AppState state) async {
+    if (!state.hasPlusFeature('advanced_chat_search')) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:
+              Text('Advanced search requires an active Plus subscription.'),
+        ));
+      }
+      return;
+    }
+    setState(() => _advancedSearchRunning = true);
+    try {
+      final results = await state.sync!.searchFamilyChatMessages(
+        text: _query.trim().isEmpty ? null : _query.trim(),
+        senderId: _advancedSenderId,
+        from: _advancedFrom,
+        before: _advancedBefore,
+        kind: _advancedKind,
+      );
+      if (mounted) setState(() => _advancedResults = results);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(error.toString().contains('PLUS_FEATURE_REQUIRED')
+              ? 'Advanced search requires Plus.'
+              : 'Could not search server history. Check your connection and try again.'),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _advancedSearchRunning = false);
+    }
   }
 
   @override
   void dispose() {
+    _chatRefreshTimer?.cancel();
     _controller.dispose();
     _composerFocus.dispose();
     _scroll.dispose();
@@ -72,6 +278,66 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     );
   }
 
+  _PendingReference _taskReference(FamilyTask task) => _PendingReference(
+        type: ChatReferenceType.task,
+        id: task.id,
+        title: task.title,
+        meta: [
+          if (task.dueDate != null)
+            'Due ${DateFormat('MMM d').format(task.dueDate!)}',
+          '${task.points} pts',
+        ].join(' • '),
+      );
+
+  _PendingReference _budgetReference(Envelope budget) => _PendingReference(
+        type: ChatReferenceType.budget,
+        id: budget.id,
+        title: budget.name,
+        meta: '${budget.limit.text} budget',
+      );
+
+  _PendingReference _shoppingReference(ListItem item) => _PendingReference(
+        type: ChatReferenceType.shoppingList,
+        id: item.id,
+        title: item.name,
+        meta:
+            'Qty ${item.qty} · ${item.est.minor == 0 ? 'price not set' : item.est.text}',
+      );
+
+  void _openReference(AppState state, FamilyChatMessage message) {
+    switch (message.referenceType) {
+      case ChatReferenceType.task:
+        _openReferencedTask(state, message);
+        return;
+      case ChatReferenceType.budget:
+        final budget = state.envelopes
+            .where((candidate) => candidate.id == message.referenceId)
+            .firstOrNull;
+        if (budget != null) showEnvelopeDetailSheet(context, budget);
+        return;
+      case ChatReferenceType.shoppingList:
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+              builder: (_) => const ListsScreen(standalone: true)),
+        );
+        return;
+      default:
+        break;
+    }
+  }
+
+  IconData _referenceIcon(ChatReferenceType? type) => switch (type) {
+        ChatReferenceType.budget => Icons.savings_outlined,
+        ChatReferenceType.shoppingList => Icons.shopping_cart_outlined,
+        _ => Icons.task_rounded,
+      };
+
+  String _referenceLabel(ChatReferenceType? type) => switch (type) {
+        ChatReferenceType.budget => 'budget',
+        ChatReferenceType.shoppingList => 'shopping item',
+        _ => 'task',
+      };
+
   FamilyChatMessage _message(
     AppState state, {
     required String text,
@@ -79,27 +345,24 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     String? mediaType,
     String? sticker,
   }) {
-    final task = _pendingTask;
+    final reference = _pendingReference;
     final reply = _replyingTo;
+    // RLS requires sender_id = auth.uid(); always use the authenticated
+    // identity rather than any device-local profile state.
+    final sender = state.realUser;
     return FamilyChatMessage(
       id: newUuid(),
       familyId: state.sync?.spaceId ?? state.space.name,
-      senderId: state.user.id,
+      senderId: sender.id,
       text: text,
       createdAt: DateTime.now(),
-      senderName: state.user.name,
-      senderAvatar: state.user.avatarUrl,
+      senderName: sender.name,
+      senderAvatar: sender.avatarUrl,
       status: ChatMessageStatus.pending,
-      referenceType: task == null ? null : ChatReferenceType.task,
-      referenceId: task?.id,
-      referenceTitle: task?.title,
-      referenceMeta: task == null
-          ? null
-          : [
-              if (task.dueDate != null)
-                'Due ${DateFormat('MMM d').format(task.dueDate!)}',
-              '${task.points} pts',
-            ].join(' • '),
+      referenceType: reference?.type,
+      referenceId: reference?.id,
+      referenceTitle: reference?.title,
+      referenceMeta: reference?.meta,
       mediaUrl: mediaUrl,
       mediaType: mediaType,
       sticker: sticker,
@@ -164,7 +427,9 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     AppState state,
     FamilyChatMessage message,
   ) async {
-    if (message.isSystem || message.senderId != state.user.id) return;
+    if (message.isSystem) return;
+    final isPinned = _pinnedMessageIds.contains(message.id);
+    final canEditDelete = message.senderId == state.realUser.id;
     final canEdit = message.mediaUrl == null && message.sticker == null;
     final action = await showMhuriSheet<_ChatMessageAction>(
       context: context,
@@ -173,27 +438,62 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (canEdit)
+            if (canEditDelete && canEdit)
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
                 title: const Text('Edit message'),
                 onTap: () =>
                     Navigator.pop(sheetContext, _ChatMessageAction.edit),
               ),
-            ListTile(
-              leading: Icon(Icons.delete_outline, color: context.danger),
-              title: Text(
-                'Delete message',
-                style: TextStyle(color: context.danger),
+            if (canEditDelete)
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: context.danger),
+                title: Text(
+                  'Delete message',
+                  style: TextStyle(color: context.danger),
+                ),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _ChatMessageAction.delete),
               ),
-              onTap: () =>
-                  Navigator.pop(sheetContext, _ChatMessageAction.delete),
+            ListTile(
+              leading:
+                  Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+              title: Text(isPinned ? 'Unpin message' : 'Pin message'),
+              onTap: () => Navigator.pop(
+                  sheetContext,
+                  isPinned
+                      ? _ChatMessageAction.unpin
+                      : state.hasPlusFeature('family_polls_pins')
+                          ? _ChatMessageAction.pin
+                          : _ChatMessageAction.upgrade),
             ),
           ],
         ),
       ),
     );
     if (!mounted || action == null) return;
+    if (action == _ChatMessageAction.upgrade) {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const PlusScreen()));
+      return;
+    }
+    if (action == _ChatMessageAction.pin ||
+        action == _ChatMessageAction.unpin) {
+      try {
+        await state.sync?.setFamilyChatPin(message.id,
+            pinned: action == _ChatMessageAction.pin);
+        await _loadPinnedMessageIds(state);
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(error.toString().contains('PIN_LIMIT_REACHED')
+                ? 'Your family has reached the pinned-message limit.'
+                : 'Could not update pinned message. Check your connection and Plus access.'),
+          ));
+        }
+      }
+      return;
+    }
     if (action == _ChatMessageAction.delete) {
       final confirmed = await confirmDialog(
         context,
@@ -253,15 +553,18 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
 
   void _send(AppState state) {
     final text = _controller.text.trim();
-    if (text.isEmpty && _pendingTask == null) return;
-    final task = _pendingTask;
-    final message = _message(state,
-        text:
-            text.isEmpty && task != null ? 'Task update: ${task.title}' : text);
+    if (text.isEmpty && _pendingReference == null) return;
+    final reference = _pendingReference;
+    final message = _message(
+      state,
+      text: text.isEmpty && reference != null
+          ? '${_referenceLabel(reference.type)[0].toUpperCase()}${_referenceLabel(reference.type).substring(1)}: ${reference.title}'
+          : text,
+    );
     state.addChatMessage(message);
     _controller.clear();
     setState(() {
-      _pendingTask = null;
+      _pendingReference = null;
       _replyingTo = null;
       _showExpressionTray = false;
     });
@@ -271,7 +574,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   void _sendSticker(AppState state, String sticker) {
     state.addChatMessage(_message(state, text: '', sticker: sticker));
     setState(() {
-      _pendingTask = null;
+      _pendingReference = null;
       _replyingTo = null;
       _showExpressionTray = false;
     });
@@ -290,7 +593,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   }
 
   Future<void> _attachmentMenu(AppState state) async {
-    final source = await showMhuriSheet<ImageSource>(
+    final action = await showMhuriSheet<_ChatAttachmentAction>(
       context: context,
       builder: (sheetContext) => MhuriSheetShell(
         title: 'Share with the family',
@@ -304,23 +607,97 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.photo_library_outlined),
-            title: const Text('Photo library'),
-            onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            leading: const Icon(Icons.savings_outlined),
+            title: const Text('Budget'),
+            onTap: () => Navigator.pop(
+              sheetContext,
+              _ChatAttachmentAction.budget,
+            ),
           ),
           ListTile(
-            leading: const Icon(Icons.photo_camera_outlined),
-            title: const Text('Take a photo'),
-            onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            leading: const Icon(Icons.shopping_cart_outlined),
+            title: const Text('Shopping item'),
+            onTap: () => Navigator.pop(
+              sheetContext,
+              _ChatAttachmentAction.shopping,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined),
+            title: const Text('Photo library'),
+            onTap: () => Navigator.pop(
+              sheetContext,
+              _ChatAttachmentAction.gallery,
+            ),
           ),
         ]),
       ),
     );
-    if (source == null || !mounted) return;
-    await _pickAndSendPhoto(state, source);
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _ChatAttachmentAction.budget:
+        await _pickBudget(state);
+        return;
+      case _ChatAttachmentAction.shopping:
+        await _pickShoppingItem(state);
+        return;
+      case _ChatAttachmentAction.gallery:
+        await _pickAndSendPhoto(state);
+        return;
+    }
   }
 
-  Future<void> _pickAndSendPhoto(AppState state, ImageSource source) async {
+  Future<void> _pickBudget(AppState state) async {
+    final budget = await showMhuriSheet<Envelope>(
+      context: context,
+      builder: (sheetContext) => MhuriSheetShell(
+        title: 'Reference a budget',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final budget in state.envelopes.where((e) => !e.isArchived))
+              ListTile(
+                leading: const Icon(Icons.savings_outlined),
+                title: Text(budget.name),
+                subtitle: Text(budget.limit.text),
+                onTap: () => Navigator.pop(sheetContext, budget),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (budget != null && mounted) {
+      setState(() => _pendingReference = _budgetReference(budget));
+      _composerFocus.requestFocus();
+    }
+  }
+
+  Future<void> _pickShoppingItem(AppState state) async {
+    final item = await showMhuriSheet<ListItem>(
+      context: context,
+      builder: (sheetContext) => MhuriSheetShell(
+        title: 'Reference a shopping item',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final item in state.items.where((i) => i.deletedAt == null))
+              ListTile(
+                leading: const Icon(Icons.shopping_cart_outlined),
+                title: Text(item.name),
+                subtitle: Text('Qty ${item.qty}'),
+                onTap: () => Navigator.pop(sheetContext, item),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (item != null && mounted) {
+      setState(() => _pendingReference = _shoppingReference(item));
+      _composerFocus.requestFocus();
+    }
+  }
+
+  Future<void> _pickAndSendPhoto(AppState state) async {
     final spaceId = state.sync?.spaceId;
     final baseUrl = state.env.supabaseUrl;
     final anonKey = state.env.supabaseAnonKey;
@@ -331,7 +708,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       return;
     }
     final file = await ImagePicker().pickImage(
-      source: source,
+      source: ImageSource.gallery,
       imageQuality: 82,
       maxWidth: 1800,
     );
@@ -375,7 +752,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
         editedAt: message.editedAt,
       ));
       _controller.clear();
-      setState(() => _pendingTask = null);
+      setState(() => _pendingReference = null);
       _scrollToLatest();
     } catch (error) {
       if (mounted) {
@@ -431,12 +808,16 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       });
     }
     final query = _query.trim().toLowerCase();
-    final matching = state.familyChatMessages
+    final advancedResults = _advancedResults;
+    final sourceMessages = advancedResults ?? state.familyChatMessages;
+    final matching = sourceMessages
         .where((message) =>
-            query.isEmpty ||
+            (message.deleted && advancedResults == null && query.isEmpty) ||
             (!message.deleted &&
-                (message.text.toLowerCase().contains(query) ||
-                    (message.sticker?.contains(query) ?? false) ||
+                (advancedResults != null ||
+                    query.isEmpty ||
+                    message.text.toLowerCase().contains(query) ||
+                    (message.sticker?.toLowerCase().contains(query) ?? false) ||
                     (message.senderName?.toLowerCase().contains(query) ??
                         false) ||
                     (message.referenceTitle?.toLowerCase().contains(query) ??
@@ -460,15 +841,52 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                   hintText: 'Search messages',
                   border: InputBorder.none,
                 ),
-                onChanged: (value) => setState(() => _query = value),
+                onChanged: (value) => setState(() {
+                  _query = value;
+                  _advancedResults = null;
+                }),
+                onSubmitted: (_) {
+                  if (_advancedSenderId != null ||
+                      _advancedFrom != null ||
+                      _advancedBefore != null ||
+                      _advancedKind != 'any') {
+                    _runAdvancedSearch(state);
+                  }
+                },
               )
             : Text(familyName),
         actions: [
           IconButton(
+            tooltip: 'Family polls',
+            onPressed: () =>
+                showFamilyPollsSheet(context, AppScope.of(context)),
+            icon: const Icon(Icons.poll_outlined),
+          ),
+          if (_searching && state.hasPlusFeature('advanced_chat_search'))
+            IconButton(
+              tooltip: 'Advanced search filters',
+              onPressed: _advancedSearchRunning
+                  ? null
+                  : () => _showAdvancedFilters(state),
+              icon: _advancedSearchRunning
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.tune),
+            ),
+          IconButton(
             tooltip: _searching ? 'Close search' : 'Search messages',
             onPressed: () => setState(() {
               _searching = !_searching;
-              if (!_searching) _query = '';
+              if (!_searching) {
+                _query = '';
+                _advancedSenderId = null;
+                _advancedFrom = null;
+                _advancedBefore = null;
+                _advancedKind = 'any';
+                _advancedResults = null;
+              }
             }),
             icon: Icon(_searching ? Icons.close : Icons.search),
           ),
@@ -566,9 +984,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                           children: [
                             if (showDay) _ChatDayLabel(dayLabel),
                             GestureDetector(
-                              onLongPress: isMine
-                                  ? () => _showMessageActions(state, message)
-                                  : null,
+                              onLongPress: () =>
+                                  _showMessageActions(state, message),
                               child: Dismissible(
                                 key: ValueKey('reply-${message.id}'),
                                 direction: DismissDirection.startToEnd,
@@ -753,18 +1170,14 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                             message.referenceTitle != null) ...[
                                           const SizedBox(height: 8),
                                           Semantics(
-                                            button: message.referenceType ==
-                                                ChatReferenceType.task,
+                                            button: true,
                                             label:
-                                                'Open task ${message.referenceTitle}',
+                                                'Open ${_referenceLabel(message.referenceType)} ${message.referenceTitle}',
                                             child: InkWell(
                                               borderRadius:
                                                   BorderRadius.circular(12),
-                                              onTap: message.referenceType ==
-                                                      ChatReferenceType.task
-                                                  ? () => _openReferencedTask(
-                                                      state, message)
-                                                  : null,
+                                              onTap: () => _openReference(
+                                                  state, message),
                                               child: Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -785,7 +1198,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                                       MainAxisSize.min,
                                                   children: [
                                                     Icon(
-                                                      Icons.task_rounded,
+                                                      _referenceIcon(message
+                                                          .referenceType),
                                                       size: 14,
                                                       color: isMine
                                                           ? context.onSolid
@@ -836,8 +1250,14 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                                       ),
                                                     ),
                                                     if (message.referenceType ==
-                                                        ChatReferenceType
-                                                            .task) ...[
+                                                            ChatReferenceType
+                                                                .task ||
+                                                        message.referenceType ==
+                                                            ChatReferenceType
+                                                                .budget ||
+                                                        message.referenceType ==
+                                                            ChatReferenceType
+                                                                .shoppingList) ...[
                                                       const SizedBox(width: 6),
                                                       Icon(
                                                           Icons
@@ -858,6 +1278,15 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
+                                            if (_pinnedMessageIds
+                                                .contains(message.id)) ...[
+                                              Icon(Icons.push_pin,
+                                                  size: 12,
+                                                  color: isMine
+                                                      ? context.onSolid
+                                                      : context.primary),
+                                              const SizedBox(width: 3),
+                                            ],
                                             Text(
                                               DateFormat('MMM d, h:mm a')
                                                   .format(message.createdAt
@@ -885,23 +1314,51 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                             if (isMine &&
                                                 !message.isSystem) ...[
                                               const SizedBox(width: 4),
-                                              Icon(
-                                                switch (message.status) {
-                                                  ChatMessageStatus.pending =>
-                                                    Icons.schedule_rounded,
-                                                  ChatMessageStatus.sent =>
-                                                    Icons.check_rounded,
-                                                  ChatMessageStatus.delivered ||
-                                                  ChatMessageStatus.read =>
-                                                    Icons.done_all_rounded,
-                                                },
-                                                size: 14,
-                                                color: message.status ==
-                                                        ChatMessageStatus.read
-                                                    ? Colors.lightBlueAccent
-                                                    : context.onSolid
-                                                        .withValues(
-                                                            alpha: 0.75),
+                                              GestureDetector(
+                                                onTap: message.status ==
+                                                        ChatMessageStatus.failed
+                                                    ? () =>
+                                                        state.retryChatMessage(
+                                                            message)
+                                                    : null,
+                                                child: Tooltip(
+                                                  message: message.status ==
+                                                          ChatMessageStatus
+                                                              .failed
+                                                      ? 'Not sent. Tap to retry.'
+                                                      : 'Message status',
+                                                  child: Icon(
+                                                    switch (message.status) {
+                                                      ChatMessageStatus
+                                                            .pending =>
+                                                        Icons.schedule_rounded,
+                                                      ChatMessageStatus
+                                                            .failed =>
+                                                        Icons
+                                                            .error_outline_rounded,
+                                                      ChatMessageStatus.sent =>
+                                                        Icons.check_rounded,
+                                                      ChatMessageStatus
+                                                          .delivered ||
+                                                      ChatMessageStatus.read =>
+                                                        Icons.done_all_rounded,
+                                                    },
+                                                    size: 14,
+                                                    color: message.status ==
+                                                            ChatMessageStatus
+                                                                .failed
+                                                        ? context.danger
+                                                        : message.status ==
+                                                                ChatMessageStatus
+                                                                    .read
+                                                            ? Colors
+                                                                .lightBlueAccent
+                                                            : context.onSolid
+                                                                .withValues(
+                                                                    alpha:
+                                                                        0.75),
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ],
@@ -979,16 +1436,19 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                           ],
                         ),
                       ),
-                    if (_pendingTask != null)
+                    if (_pendingReference != null)
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: InputChip(
-                            label: Text(_pendingTask!.title),
-                            avatar: const Icon(Icons.task_rounded, size: 16),
+                            label: Text(_pendingReference!.title),
+                            avatar: Icon(
+                              _referenceIcon(_pendingReference!.type),
+                              size: 16,
+                            ),
                             onDeleted: () =>
-                                setState(() => _pendingTask = null),
+                                setState(() => _pendingReference = null),
                           ),
                         ),
                       ),
@@ -998,7 +1458,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                           onPressed: _uploadingMedia
                               ? null
                               : () => _attachmentMenu(state),
-                          tooltip: 'Add photo or task',
+                          tooltip: 'Add photo or reference',
                           icon: _uploadingMedia
                               ? const SizedBox(
                                   width: 20,

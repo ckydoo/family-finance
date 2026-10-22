@@ -6,6 +6,7 @@ import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/features/quickadd/quick_add_sheet.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
+
 void main() {
   testWidgets('Quick Add closes without saving', (tester) async {
     final state = AppState();
@@ -103,5 +104,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Budget 11'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Quick Add explains that zero must be greater than zero',
+      (tester) async {
+    final state = AppState();
+    state.members.add(state.user);
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => showQuickAdd(context),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Amount spent'),
+      '0',
+    );
+    await tester.tap(find.text('Add expense'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Amount must be greater than zero.'), findsOneWidget);
+    expect(state.txs, isEmpty);
   });
 }

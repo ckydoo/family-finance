@@ -1,0 +1,1056 @@
+
+===== PAGE 1 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+         PrimeTestLab                                          APP TESTING REPORT 
+                                                          Nº 9052 · OCT 20, 2026  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+       GOOGLE PLAY · CLOSED TESTING · QA REPORT                                   
+       com.codzlabzim.mhuri                                                       
+                                                                                  
+                                                                                  
+       QA Report — Mhuri: Family Money                                            
+                                                                                  
+       v0.2.0                                                                     
+                                                                                  
+                                                                                  
+         6         0            1                                                 
+                                                                                  
+         CHECKS RUN ISSUES LOGGED DEVICE COVERED                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+       PREPARED FOR                        TEST DATE                              
+       codzlabzim                          Oct 20, 2026                           
+                                                                                  
+       TESTING WINDOW                      REPORT STATUS                          
+       Oct 13, 2026 to Oct 27, 2026                                               
+                                            OPEN                                  
+                                                                                  
+       Confidential. Prepared for the client named on this cover. primetestlab.com
+                                                                                  
+                                                                                  
+
+===== PAGE 2 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      Report overview                                                             
+                                                                                  
+      COM.CODZLABZIM.MHURI · QA REPORT Nº 9052                                    
+                                                                                  
+        VERDICT AT A GLANCE                                 Computed from this report
+                                                                                  
+        6        6      0       0                                                 
+                                                                                  
+        CHECKS RUN PASS  PARTIAL FAIL                                             
+                                                                                  
+        6 of 6 checks passed. No issues were logged.                              
+                                                                                  
+                                                                                  
+                                                                                  
+                  codzlabzim                           Oct 20, 2026               
+      PREPARED FOR                         TEST DATE                              
+                  Testing Project - Order              Oct 13, 2026 to Oct 27, 2026
+      PROJECT                              TESTING WINDOW                         
+                  #P03311312                                                      
+                                                       25                         
+                                           TESTERS                                
+                  com.codzlabzim.mhuri                                            
+      APPLICATION                                                                 
+                                                       22101316UG                 
+                                           DEVICE                                 
+      PACKAGE     com.codzlabzim.mhuri                  Redmi Note 12 Pro+ 5G     
+                  0.2.0                                14                         
+      APP VERSION                          ANDROID                                
+      REPORT Nº   9052                     STATUS       OPEN                      
+                  Bug                                                             
+      REPORT TYPE                          PRIORITY     MEDIUM                    
+        IN THIS REPORT                                                            
+        01 Test Environment                02 App Overview                        
+                                                                                  
+        03 Product Perspective             04 Test Coverage                       
+        05 Standard Checks                 06 Critical / Core-Feature Issues      
+                                                                                  
+        07 Minor Issues                    08 Suggestions                         
+        09 Summary                         10 About this report                   
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                       Page 2 of 16
+                                                                                  
+
+===== PAGE 3 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        Test Environment                                                          
+      01                                                                          
+       FIELD                   VALUE                                              
+                                                                                  
+       App name                Mhuri: Family Money                                
+                                                                                  
+       Android package         com.codzlabzim.mhuri                               
+                                                                                  
+       App version             0.2.0 (version code 15)                            
+                                                                                  
+       Device                  Redmi Note 12 Pro+ 5G                              
+                                                                                  
+       Android version         14 (SDK 34)                                        
+                                                                                  
+       Screen resolution       1080x2400                                          
+                                                                                  
+          Tested by: Our QA team                                                  
+                                                                                  
+        App Overview                                                              
+      02                                                                          
+                                                                                  
+      Mhuri is a shared money app for families. After signing in and creating a family, members can record income and
+      expenses, set budgets, save toward goals, track debts, keep a shared shopping list and chat with the household. A
+      Family area holds members, currency and privacy options.                    
+                                                                                  
+                                                                                  
+        Product Perspective                                                       
+      03                                                                          
+                                                                                  
+      The app keeps everyday household money tasks in one calm, consistent place. The guided three-step setup, the
+      over-budget warning and the "This exceeds the goal" confirmation show real care for the person using it. The
+      biggest opportunities are making form messages consistent on every screen, fixing the dark theme contrast on the
+      balance and plan cards, and correcting a few budget and currency labels that contradict each other.
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                       Page 3 of 16
+                                                                                  
+
+===== PAGE 4 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        Test Coverage                                                             
+      04                                                                          
+       AREA                                                   RESULT              
+                                                                                  
+       Sign in with empty fields and an email like "name@"    Failed (M-01)       
+                                                                                  
+       Google sign in and 3-step family setup (names, currency, payday, starter budgets) PASS
+                                                                                  
+       Home tab: balance card, Income / Spent / Remaining, budgets, recent activity PASS
+                                                                                  
+       Quick add for income and expense, including 0, negative and empty amounts Failed (M-05)
+                                                                                  
+       Budgets tab: new budget, oversized and zero limits, No limit budget Failed (M-05)
+       Savings goals: create, add money, over-goal prompt, zero target PASS       
+                                                                                  
+       Savings debts: add debt with amount 0                  Failed (M-02)       
+                                                                                  
+       Shopping list: footer, add item, empty item name       Failed (M-03, M-04) 
+                                                                                  
+       Family chat: sending a message                          PASS               
+                                                                                  
+       Reminders sheet: recent activity, upcoming reminders, quiet hours PASS     
+                                                                                  
+       Family switcher: Create family with an empty name      Failed (M-07)       
+                                                                                  
+       Family settings: Currency & rates                      Failed (M-08)       
+                                                                                  
+       Settings: account, theme, large text, sync, help and legal, licenses PASS  
+                                                                                  
+       Dark theme on Home and Budgets                         Failed (M-06)       
+                                                                                  
+                                                                                  
+        Standard Checks                                                           
+      05                                                                          
+          Dark mode applies to every screen we opened, but the balance card on Home and the plan card on Budgets
+          become hard to read (see M-06).                                         
+                                                                                  
+          The eye icon in the sign in Password field shows and hides the typed password.
+          Sign out asks for confirmation and takes us back to the sign in screen, and the app stays signed out after
+          reopening.                                                              
+          The four tabs and the round + button sit clear of the phone's gesture area when held upright.
+          Home, Budgets and Settings keep their content clear of the status bar.  
+                                                                                  
+                                                                                  
+        Critical / Core-Feature Issues                                            
+      06                                                                          
+      None.                                                                       
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                       Page 4 of 16
+                                                                                  
+
+===== PAGE 5 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        Minor Issues                                                              
+      07                                                                          
+                                                                                  
+        M-01 Sign in shows "No connection" for empty or badly formatted fields    
+                                                                                  
+        EXPECTED      a message asking for a valid email and password.            
+                                                                                  
+        ACTUAL        a red box says "No connection - check your internet and try again." even though the
+                      phone is online and Continue with Google works.             
+                                                                                  
+        Impact: A user who forgets to type their email or password is told the internet is down, so they go and
+        troubleshoot the wrong thing.                                             
+                                                                                  
+        Steps to Reproduce:                                                       
+                                                                                  
+          1. Open the app while signed out.                                       
+          2. Leave Email and Password empty, or type name@ as the email with any password.
+          3. Tap Sign in.                                                         
+                                                                                  
+        Expected vs Actual:                                                       
+                                                                                  
+        Screenshot:                                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-01                                                                      
+        Verified:✓                                                                
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                       Page 5 of 16
+                                                                                  
+
+===== PAGE 6 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-02 Add debt does nothing when the amount is 0                           
+                                                                                  
+                                                                                  
+        EXPECTED      a message saying the amount must be greater than zero.      
+        ACTUAL        the form stays open and no message appears. The goal and expense forms do show a
+                                                                                  
+                      message for a zero amount.                                  
+        Impact: A user who saves a debt with a zero amount gets no response and cannot tell what is wrong.
+                                                                                  
+        Steps to Reproduce:                                                       
+                                                                                  
+          1. Open the app and tap Savings.                                        
+          2. Open the Debts tab and tap "Add debt or money owed".                 
+          3. Type "Car repair loan" in "Who or what is this for?".                
+          4. Type 0 in "Original amount".                                         
+                                                                                  
+          5. Tap Save.                                                            
+        Expected vs Actual:                                                       
+                                                                                  
+        Screenshot:                                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-02                                                                      
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-02 after Save                                                           
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                       Page 6 of 16
+                                                                                  
+
+===== PAGE 7 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        Verified:✓                                                                
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                       Page 7 of 16
+                                                                                  
+
+===== PAGE 8 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-03 Shopping footer reads "Uses 0% of the Groceries"                     
+                                                                                  
+                                                                                  
+        EXPECTED      a complete phrase such as "Uses 0% of your Groceries budget".
+        ACTUAL        the line reads "Uses 0% of the Groceries".                  
+                                                                                  
+        Impact: The sentence looks unfinished, so users may not understand what the percentage refers to.
+                                                                                  
+        Steps to Reproduce:                                                       
+                                                                                  
+          1. Open the app and tap Shopping.                                       
+          2. Look below "Estimated total".                                        
+                                                                                  
+        Expected vs Actual:                                                       
+                                                                                  
+        Screenshot:                                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-03                                                                      
+        Verified:✓                                                                
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                       Page 8 of 16
+                                                                                  
+
+===== PAGE 9 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-04 Empty shopping item shows only the word "Item" as the error          
+                                                                                  
+                                                                                  
+        EXPECTED      a sentence such as "Enter an item name".                    
+        ACTUAL        a red box appears with just the word "Item" in it.          
+                                                                                  
+        Impact: The error does not say what to do, so a new user may not understand why nothing was added.
+                                                                                  
+        Steps to Reproduce:                                                       
+                                                                                  
+          1. Open the app and tap Shopping.                                       
+          2. Tap "Add first item".                                                
+          3. Leave Item empty and tap "Add to list".                              
+                                                                                  
+        Expected vs Actual:                                                       
+                                                                                  
+        Screenshot:                                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-04                                                                      
+        Verified:✓                                                                
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                       Page 9 of 16
+                                                                                  
+
+===== PAGE 10 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-05 Budget with "No limit" is treated as a zero limit and shown as over budget
+                                                                                  
+                                                                                  
+        EXPECTED      a budget with no limit never warns about going over.        
+        ACTUAL        the form shows "Groceries No limit" while also warning that the expense puts Groceries
+                                                                                  
+                      over budget. After saving 45.50, the Budgets tab shows "US$ 45.50 of US$ 0.00 Over by
+                      US$ 45.50".                                                 
+        Impact: Spending in a budget the family never put a limit on is flagged as overspending, which can confuse
+                                                                                  
+        their picture of real finances.                                           
+        Steps to Reproduce:                                                       
+                                                                                  
+          1. Finish setup with the starter budgets.                               
+          2. Tap the + button, choose Expense, enter 0 and read the budget line under "Which budget is this
+                                                                                  
+            from?".                                                               
+          3. Enter 45.50 and tap "Add expense".                                   
+          4. Open the Budgets tab and read Groceries.                             
+                                                                                  
+        Expected vs Actual:                                                       
+        Screenshot:                                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-05                                                                      
+        Verified:✓                                                                
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                      Page 10 of 16
+                                                                                  
+
+===== PAGE 11 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-06 Dark theme: text on the balance and plan cards is almost invisible   
+                                                                                  
+                                                                                  
+        EXPECTED      readable text on every card in dark mode.                   
+        ACTUAL        the card background stays pale while its labels are white, so "Available to spend", "View
+                                                                                  
+                      balance details", "This month's plan" and "Set up plan" nearly disappear.
+        Impact: People who use dark mode cannot read the label on their available balance or the "Set up plan"
+                                                                                  
+        button.                                                                   
+        Steps to Reproduce:                                                       
+                                                                                  
+          1. Open Settings, tap Theme and choose Dark.                            
+          2. Go back to Home and look at the "Available to spend" card.           
+          3. Open the Budgets tab and look at the "This month's plan" card.       
+                                                                                  
+        Expected vs Actual:                                                       
+                                                                                  
+        Screenshot:                                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-06                                                                      
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-06 Budgets                                                              
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                      Page 11 of 16
+                                                                                  
+
+===== PAGE 12 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        Verified:✓                                                                
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                      Page 12 of 16
+                                                                                  
+
+===== PAGE 13 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-07 Create family with an empty name closes the dialog silently          
+                                                                                  
+                                                                                  
+        EXPECTED      a message asking for a family name, with the dialog still open.
+        ACTUAL        the dialog closes, no family is added and no message is shown.
+                                                                                  
+        Impact: A user who forgets the name gets no hint and may think the family was created.
+                                                                                  
+        Steps to Reproduce:                                                       
+                                                                                  
+          1. Open the app and tap the family name at the top of Home.             
+          2. Tap "Create family".                                                 
+          3. Leave Family name empty and tap Create.                              
+                                                                                  
+        Expected vs Actual:                                                       
+                                                                                  
+        Screenshot:                                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-07 empty name                                                           
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-07 after Create                                                         
+        Verified:✓                                                                
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                      Page 13 of 16
+                                                                                  
+
+===== PAGE 14 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-08 Family settings say "ZiG secondary" while the currency screen says None
+                                                                                  
+                                                                                  
+        EXPECTED      both screens agree the family uses a single currency.       
+        ACTUAL        the row reads "USD primary · ZiG secondary · USD", but the sheet shows Secondary
+                                                                                  
+                      Currency as "None (Single Currency Mode)".                  
+        Impact: The family sees a second currency they never chose, which makes their totals feel uncertain.
+                                                                                  
+        Steps to Reproduce:                                                       
+                                                                                  
+          1. During setup, leave Secondary currency as None.                      
+          2. Tap the family name on Home, then "Manage current family".           
+          3. Under Settings, read the "Currency & rates" row.                     
+          4. Tap "Currency & rates".                                              
+                                                                                  
+        Expected vs Actual:                                                       
+                                                                                  
+        Screenshot:                                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-08                                                                      
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        M-08 Currency sheet                                                       
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                      Page 14 of 16
+                                                                                  
+
+===== PAGE 15 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        Verified:✓                                                                
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                      Page 15 of 16
+                                                                                  
+
+===== PAGE 16 =====
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+        Suggestions                                                               
+      08                                                                          
+                                                                                  
+        S-01 Savings, Debts tab                                                   
+                                                                                  
+        Add a short empty state with a hint and a couple of examples, such as a family loan or money owed, so the
+        blank Debts page explains what to do.                                     
+                                                                                  
+                                                                                  
+        S-02 Reminders sheet                                                      
+                                                                                  
+                                                                                  
+        Show quiet hours in the same 12 hour style used for transaction times, for example 9:00 PM to 7:00 AM,
+        instead of 21:00 to 07:00.                                                
+                                                                                  
+                                                                                  
+        S-03 Currency & rates                                                     
+                                                                                  
+        Hide or disable "Save rate" while the family uses a single currency, since there is no rate to save.
+                                                                                  
+                                                                                  
+                                                                                  
+        Summary                                                                   
+      09                                                                          
+      We wanted to set up a family with Google sign in, record income and spending, create budgets and savings goals,
+      add a debt and a shopping item, and chat with the household. Setup, income and expense totals, savings goals
+                                                                                  
+      with the over-goal prompt, the shopping list, chat and sign out all worked without a crash, and most wrong entries
+      got clear messages. Nothing blocked us, but the no-limit budget being flagged as over budget, the unreadable
+      dark theme cards and several missing or unhelpful form messages need attention. The core money flows are solid,
+      and these fixes should be made before wider use.                            
+                                                                                  
+        About this report                                                         
+      10                                                                          
+      This report was prepared by PrimeTestLab from testing performed on the device, build and testing window
+      recorded in this document. Verdicts and severity ratings describe the behavior observed during that testing
+                                                                                  
+      session.                                                                    
+      If you have a question about any finding in this document, open the report in your PrimeTestLab dashboard and
+      send a reply. Our team follows up on the same page.                         
+                                                                                  
+      This document was prepared for the client named on the cover. It may describe an unreleased build of your
+      application, so please treat its contents as confidential.                  
+                                                                                  
+                                                                                  
+         PrimeTestLab                                                             
+                                                                  Report Nº 9052  
+                                                             Generated Oct 21, 2026
+        QUALITY ASSURANCE · GOOGLE PLAY CLOSED TESTING                            
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+      PrimeTestLab · App Testing Report Nº 9052                      Page 16 of 16
+                                                                                  

@@ -463,12 +463,20 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 ),
               );
             },
-            // Elder mode (J6): scale every screen's text.
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(_state.largeText ? 1.2 : 1.0)),
-              child: child ?? const SizedBox.shrink(),
-            ),
+            // Respect the device accessibility size and layer Mhuri's optional
+            // large-text mode on top. A bounded scale keeps dense financial
+            // layouts usable while shared widgets adapt their geometry.
+            builder: (context, child) {
+              final media = MediaQuery.of(context);
+              final systemScale = media.textScaler.scale(14) / 14;
+              final scale = (systemScale * (_state.largeText ? 1.2 : 1.0))
+                  .clamp(1.0, 1.8)
+                  .toDouble();
+              return MediaQuery(
+                data: media.copyWith(textScaler: TextScaler.linear(scale)),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
             home: AnimatedBuilder(
               animation: Listenable.merge([_auth, _state]),
               builder: (context, _) {
@@ -536,7 +544,9 @@ class _OAuthRouteSinkState extends State<_OAuthRouteSink> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onReceived();
-      if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
     });
   }
 

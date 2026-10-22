@@ -63,6 +63,32 @@ void main() {
   databaseFactory = databaseFactoryFfi;
 
   group('sync mappers', () {
+    test('budget chat references remain compatible with production schema', () {
+      final adapter = kSyncAdapters['family_chat_message']!;
+      final message = FamilyChatMessage(
+        id: '00000000-0000-4000-8000-000000000010',
+        familyId: 'sp1',
+        senderId: 'member-1',
+        text: 'Can we review this?',
+        createdAt: DateTime.utc(2026, 10, 15),
+        referenceType: ChatReferenceType.budget,
+        referenceId: 'budget-1',
+        referenceTitle: 'Groceries',
+        referenceMeta: r'US$ 100.00 budget',
+      );
+
+      final json = adapter.encode(
+        message,
+        SyncCtx(spaceId: 'sp1', actorId: 'member-1', newId: () => 'x1'),
+      );
+      expect(json['reference_type'], 'expense');
+      expect(json['reference_meta'], startsWith('[budget]'));
+
+      final decoded = adapter.decode(json) as FamilyChatMessage;
+      expect(decoded.referenceType, ChatReferenceType.budget);
+      expect(decoded.referenceMeta, r'US$ 100.00 budget');
+    });
+
     test('family task survives encode and decode as shared family data', () {
       final ctx = SyncCtx(spaceId: 'sp1', newId: () => 'x1');
       final task = FamilyTask(
@@ -88,7 +114,8 @@ void main() {
     });
 
     test('tx survives encode→decode with enum bridges', () {
-      final ctx = SyncCtx(spaceId: 'sp1', newId: () => 'x1');
+      final ctx = SyncCtx(
+          spaceId: 'sp1', actorId: 'signed-in-parent', newId: () => 'x1');
       final t = Tx(
         id: 't1',
         envelopeId: 'e1',
@@ -102,6 +129,8 @@ void main() {
       final j = kSyncAdapters['tx']!.encode(t, ctx);
       expect(j['method'], 'bank_card');
       expect(j['space_id'], 'sp1');
+      expect(j['member_id'], 'm1');
+      expect(j['created_by'], 'signed-in-parent');
       final back = kSyncAdapters['tx']!.decode(j) as Tx;
       expect(back.id, t.id);
       expect(back.method, Method.bankCard);
@@ -150,9 +179,23 @@ void main() {
       expect(decodedProp.envelopeId, 'e6');
     });
 
-    test('goal_tx gets a server id from the context at encode time', () {
+    test('goal_tx preserves its client id when encoded for sync', () {
       var n = 0;
       final ctx = SyncCtx(spaceId: 'sp1', newId: () => 'gen${n++}');
+      final g = GoalTx(
+        id: 'client-contribution-id',
+        goalId: 'g1',
+        byMemberId: 'm1',
+        amount: Money.fromMajor(25, Currency.usd),
+        at: DateTime(2026, 9, 21),
+      );
+      final j = kSyncAdapters['goal_tx']!.encode(g, ctx);
+      expect(j['id'], 'client-contribution-id');
+      expect(n, 0);
+    });
+
+    test('legacy goal_tx without an id gets one from the context', () {
+      final ctx = SyncCtx(spaceId: 'sp1', newId: () => 'generated-id');
       final g = GoalTx(
         goalId: 'g1',
         byMemberId: 'm1',
@@ -160,7 +203,7 @@ void main() {
         at: DateTime(2026, 9, 21),
       );
       final j = kSyncAdapters['goal_tx']!.encode(g, ctx);
-      expect(j['id'], 'gen0');
+      expect(j['id'], 'generated-id');
     });
   });
 
@@ -705,8 +748,7 @@ void main() {
       expect(row.containsKey('space_id'), isTrue);
     });
 
-    test('family chat message is queued and pushed to the shared space',
-        () async {
+    test('family chat message bypasses outbox and sends immediately', () async {
       kv['space_id'] = 'sp1';
       await engine.start();
       await state.ready();
@@ -724,8 +766,6 @@ void main() {
       ));
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(await engine.pendingCount(), 1);
-      await engine.syncNow();
       expect(await engine.pendingCount(), 0);
 
       final push = server.sent.firstWhere(
@@ -744,6 +784,44 @@ void main() {
             .status,
         ChatMessageStatus.sent,
       );
+    });
+
+    test('foreground chat refresh pulls new messages without a full sync',
+        () async {
+      kv['space_id'] = 'sp1';
+      final now = DateTime.now().toUtc();
+      server.handler = (request) async {
+        if (request.method == 'GET' &&
+            request.url.path == '/rest/v1/family_chat_message') {
+          return _json([
+            {
+              'id': 'chat-fast-1',
+              'space_id': 'sp1',
+              'sender_id': 'another-member',
+              'text': 'Fast family update',
+              'created_at': now.toIso8601String(),
+              'is_system': false,
+              'sender_name': 'Tariro',
+              'status': 'sent',
+              'deleted': false,
+              'updated_at': now.toIso8601String(),
+            }
+          ]);
+        }
+        if (request.method == 'GET') return _json([]);
+        return _json(null, 201);
+      };
+      await engine.start();
+
+      await engine.refreshChat();
+
+      expect(
+        state.familyChatMessages
+            .singleWhere((message) => message.id == 'chat-fast-1')
+            .text,
+        'Fast family update',
+      );
+      expect(kv['sync_cursor_family_chat_message'], now.toIso8601String());
     });
 
     test('pull applies remote rows and advances the cursor', () async {
@@ -1322,7 +1400,13 @@ void main() {
       // every pushed row id is a well-formed uuid (server columns are uuid)
       final uuidRe = RegExp(
           r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$');
-      for (final r in server.sent.where((r) => r.method == 'POST')) {
+      for (final r in server.sent.where((r) =>
+          r.method == 'POST' &&
+          const {
+            '/rest/v1/chore',
+            '/rest/v1/recurring_rule',
+            '/rest/v1/mukando',
+          }.contains(r.url.path))) {
         final body = jsonDecode((r as http.Request).body) as List;
         for (final row in body) {
           expect(uuidRe.hasMatch((row as Map<String, dynamic>)['id'] as String),

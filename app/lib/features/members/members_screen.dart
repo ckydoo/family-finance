@@ -24,20 +24,23 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/error_messages.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
+Future<({bool success, String message})> _pickAndUploadPhoto(
+  BuildContext sheetCtx,
+  AppState s,
+  Member member,
+) async {
   final l = AppLocalizations.of(sheetCtx)!;
-  final messenger = ScaffoldMessenger.of(sheetCtx);
   try {
     final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery, maxWidth: 720, imageQuality: 72);
-    if (picked == null) return;
-    messenger.showSnackBar(SnackBar(
-        content: Text(l.photoUploading), behavior: SnackBarBehavior.floating));
+    if (picked == null) {
+      return (success: false, message: 'No photo was selected.');
+    }
     final bytes = await picked.readAsBytes();
     final ext = picked.name.toLowerCase().endsWith('.png') ? 'png' : 'jpg';
     final url = s.env.supabaseUrl;
     final key = s.env.supabaseAnonKey;
-    if (url == null || key == null || s.user.id.isEmpty) {
+    if (url == null || key == null || member.id.isEmpty) {
       throw AvatarException(l.photoFailed);
     }
     final uploader = AvatarUploader(
@@ -50,17 +53,125 @@ Future<void> _pickAndUploadPhoto(BuildContext sheetCtx, AppState s) async {
       },
     );
     final publicUrl =
-        await uploader.upload(bytes: bytes, userId: s.user.id, ext: ext);
-    s.setMyAvatar(publicUrl);
-    messenger.showSnackBar(SnackBar(
-        content: Text(l.photoSaved), behavior: SnackBarBehavior.floating));
+        await uploader.upload(bytes: bytes, userId: member.id, ext: ext);
+    s.setMemberAvatar(member, publicUrl);
+    return (success: true, message: l.photoSaved);
   } on AvatarException catch (e) {
-    messenger.showSnackBar(SnackBar(
-        content: Text(e.message), behavior: SnackBarBehavior.floating));
-  } catch (_) {
-    messenger.showSnackBar(SnackBar(
-        content: Text(l.photoFailed), behavior: SnackBarBehavior.floating));
+    return (success: false, message: e.message);
+  } catch (error) {
+    debugPrint('Mhuri avatar upload error: $error');
+    return (success: false, message: l.photoFailed);
   }
+}
+
+Future<void> showProfileAvatarViewer(
+  BuildContext context,
+  AppState state, [
+  Member? member,
+]) async {
+  await Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      fullscreenDialog: true,
+      builder: (_) => _ProfileAvatarViewer(
+        state: state,
+        memberId: member?.id,
+        initialMember: member,
+      ),
+    ),
+  );
+}
+
+class _ProfileAvatarViewer extends StatelessWidget {
+  const _ProfileAvatarViewer({
+    required this.state,
+    this.memberId,
+    this.initialMember,
+  });
+
+  final AppState state;
+  final String? memberId;
+  final Member? initialMember;
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen to avatar edits so the full view updates immediately when the
+    // user returns from the editor.
+    final liveState = AppScope.of(context);
+    final member = memberId == null
+        ? liveState.user
+        : liveState.member(memberId!) ?? initialMember ?? liveState.user;
+    final canEdit = member.id == liveState.realUser.id ||
+        liveState.canEditChildProfile(member);
+    final imageUrl = member.avatarUrl?.trim();
+    final hasPhoto = imageUrl != null && imageUrl.isNotEmpty;
+
+    return Scaffold(
+      backgroundColor: context.bg,
+      appBar: AppBar(
+        title: Text(member.name),
+        leading: IconButton(
+          tooltip: 'Close avatar',
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close),
+        ),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: hasPhoto
+                ? InteractiveViewer(
+                    minScale: 1,
+                    maxScale: 4,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => _LargeAvatar(member),
+                      ),
+                    ),
+                  )
+                : _LargeAvatar(member),
+          ),
+        ),
+      ),
+      bottomNavigationBar: canEdit
+          ? SafeArea(
+              minimum: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+              child: FilledButton.icon(
+                onPressed: () => _editProfileSheet(context, state, member),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  backgroundColor: context.accent,
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? context.onSolid
+                          : context.primaryDark,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                ),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Change avatar'),
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+class _LargeAvatar extends StatelessWidget {
+  const _LargeAvatar(this.member);
+
+  final Member member;
+
+  @override
+  Widget build(BuildContext context) => MemberAvatar(
+        radius: 112,
+        backgroundColor: context.primarySoft,
+        icon: iconForKey(member.emoji) ?? kFallbackSemanticIcon,
+        imageUrl: member.avatarUrl,
+      );
 }
 
 Future<void> _addChoreSheet(BuildContext context, AppState s) async {
@@ -139,6 +250,9 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
   final l = AppLocalizations.of(context)!;
   final nameCtrl = TextEditingController(text: m.name);
   var avatar = m.emoji;
+  var uploadingPhoto = false;
+  String? photoStatus;
+  var photoUploadSucceeded = false;
   const avatarKeys = [
     'person',
     'man',
@@ -156,10 +270,12 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
         subtitle: l.editProfileSub,
         footer: PrimaryButton(
           label: l.save,
-          onPressed: () {
-            s.updateMember(m.id, name: nameCtrl.text, emoji: avatar);
-            Navigator.pop(ctx);
-          },
+          onPressed: uploadingPhoto
+              ? null
+              : () {
+                  s.updateMember(m.id, name: nameCtrl.text, emoji: avatar);
+                  Navigator.pop(ctx);
+                },
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -205,23 +321,65 @@ void _editProfileSheet(BuildContext context, AppState s, Member m) {
               ],
             ),
             const SizedBox(height: 10),
+            if (uploadingPhoto) ...[
+              const LinearProgressIndicator(),
+              const SizedBox(height: 8),
+              Text(
+                l.photoUploading,
+                style: TextStyle(
+                  color: context.inkSoft,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (!uploadingPhoto && photoStatus != null) ...[
+              if (photoUploadSucceeded)
+                Text(
+                  photoStatus!,
+                  style: TextStyle(
+                    color: context.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              else
+                ErrorNotice(photoStatus!),
+              const SizedBox(height: 10),
+            ],
             Row(
               children: [
                 Expanded(
                   child: SecondaryButton(
-                    onPressed: () => _pickAndUploadPhoto(context, s),
-                    icon: Icons.photo_outlined,
-                    label: l.addPhoto,
+                    onPressed: uploadingPhoto
+                        ? null
+                        : () async {
+                            setSheet(() {
+                              uploadingPhoto = true;
+                              photoStatus = null;
+                            });
+                            final result = await _pickAndUploadPhoto(ctx, s, m);
+                            if (ctx.mounted) {
+                              setSheet(() {
+                                uploadingPhoto = false;
+                                photoStatus = result.message;
+                                photoUploadSucceeded = result.success;
+                              });
+                            }
+                          },
+                    icon: uploadingPhoto ? null : Icons.photo_outlined,
+                    label: uploadingPhoto ? l.photoUploading : l.addPhoto,
                   ),
                 ),
                 if (m.avatarUrl != null) ...[
                   const SizedBox(width: 8),
                   Expanded(
                     child: SecondaryButton(
-                      onPressed: () {
-                        s.setMyAvatar('');
-                        Navigator.pop(ctx);
-                      },
+                      onPressed: uploadingPhoto
+                          ? null
+                          : () {
+                              s.setMemberAvatar(m, '');
+                              Navigator.pop(ctx);
+                            },
                       danger: true,
                       label: l.removePhoto,
                     ),
@@ -257,34 +415,40 @@ Future<void> _showRoleGuide(BuildContext context) => showDialog<void>(
             children: [
               Text('Family Owner',
                   style: TextStyle(fontWeight: FontWeight.w700)),
-              Text('Full family, money, member and ownership control.'),
+              Text(
+                  'Full family, money, member and ownership control. Can remove any other member.'),
               SizedBox(height: 12),
               Text('Family Admin',
                   style: TextStyle(fontWeight: FontWeight.w700)),
               Text(
-                  'Manages budgets, approvals and members, without ownership transfer or family deletion.'),
+                  'Manages budgets, approvals and members. Can remove another member, but cannot transfer ownership or delete the family.'),
               SizedBox(height: 12),
               Text('Adult Member',
                   style: TextStyle(fontWeight: FontWeight.w700)),
               Text(
-                  'Adds personal transactions, savings goals and debts; can edit shopping lists.'),
+                  'Adds personal transactions, savings goals and debts; can edit shopping lists. Cannot remove members.'),
               SizedBox(height: 12),
               Text('Contributor',
                   style: TextStyle(fontWeight: FontWeight.w700)),
               Text(
-                  'Adds personal transactions and contributes to existing savings records.'),
+                  'Adds personal transactions and contributes to existing savings records. Cannot remove members.'),
               SizedBox(height: 12),
               Text('Teen', style: TextStyle(fontWeight: FontWeight.w700)),
               Text(
-                  'Uses transactions, budgets and savings according to the family permission switches.'),
+                  'Uses transactions, budgets and savings according to the family permission switches. Cannot remove members.'),
               SizedBox(height: 12),
               Text('Kid', style: TextStyle(fontWeight: FontWeight.w700)),
               Text(
-                  'Claims chores, makes requests and uses enabled child money features.'),
+                  'Claims chores, makes requests and uses enabled child money features. Cannot remove members.'),
               SizedBox(height: 12),
               Text('Viewer', style: TextStyle(fontWeight: FontWeight.w700)),
               Text(
-                  'Can view shared family information but cannot change money records.'),
+                  'Can view shared family information but cannot change money records or remove members.'),
+              SizedBox(height: 16),
+              Text('Removing family members',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(
+                  'Only the Family Owner or a Family Admin can remove another member. No one can remove themselves here, and the family must always keep at least one Owner or Admin.'),
             ],
           ),
         ),
@@ -313,7 +477,7 @@ Future<void> _showAdminRestriction(BuildContext context) => showDialog<void>(
       ),
     );
 
-/// Members, roles and the "View as" profile switcher (spec §3, §7.10).
+/// Members, roles and family administration.
 class MembersScreen extends StatelessWidget {
   const MembersScreen({super.key});
 
@@ -481,14 +645,10 @@ class MembersScreen extends StatelessWidget {
             const SizedBox(height: 10),
             _settingAction(
               context,
-              AppLocalizations.of(context)!.switchProfile,
-              AppLocalizations.of(context)!.switchProfileSub,
-              () => _switchProfileSheet(context, s),
-            ),
-            _settingAction(
-              context,
               AppLocalizations.of(context)!.setCurrency,
-              AppLocalizations.of(context)!.setCurrencySub(s.rateLabel),
+              s.secondaryCurrency == null
+                  ? '${s.primaryCurrency.short} · Single currency mode'
+                  : '${s.primaryCurrency.short} primary · ${s.secondaryCurrency!.short} secondary · ${s.rateLabel}',
               () => _currencySheet(context, s),
             ),
             _languageRow(context, s),
@@ -699,7 +859,10 @@ class MembersScreen extends StatelessWidget {
                     s.syncStatus == SyncStatus.offline)) ...[
               const SizedBox(height: 10),
               Text(
-                s.syncLastError!,
+                userFacingErrorMessage(
+                  s.syncLastError,
+                  fallback: AppLocalizations.of(context)!.syncProblem,
+                ),
                 style: TextStyle(fontSize: 11.5, color: context.expenseRed),
               ),
             ],
@@ -729,8 +892,11 @@ class MembersScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient:
-            LinearGradient(colors: [context.primary, context.primaryDark]),
+        gradient: LinearGradient(
+          colors: Theme.of(context).brightness == Brightness.dark
+              ? [context.card, context.primarySoft]
+              : [context.primary, context.primaryDark],
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1164,8 +1330,10 @@ class MembersScreen extends StatelessWidget {
                       } else {
                         setReauth(() {
                           reauthBusy = false;
-                          reauthError =
-                              auth.lastError ?? l.authErrBadCredentials;
+                          reauthError = userFacingErrorMessage(
+                            auth.lastError,
+                            fallback: l.authErrBadCredentials,
+                          );
                         });
                       }
                     },
@@ -1230,7 +1398,7 @@ class MembersScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.logout, size: 16, color: Colors.orange),
+                    Icon(Icons.logout, size: 16, color: context.warning),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(l.deleteWhatSessions,
@@ -1242,8 +1410,8 @@ class MembersScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.shield_outlined,
-                        size: 16, color: Colors.green),
+                    Icon(Icons.shield_outlined,
+                        size: 16, color: context.incomeGreen),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1384,76 +1552,6 @@ class MembersScreen extends StatelessWidget {
         ),
       );
 
-  Future<void> _switchProfileSheet(BuildContext context, AppState s) async {
-    final l = AppLocalizations.of(context)!;
-    final navigator = Navigator.of(context);
-    final selected = await showMhuriSheet<Member>(
-      context: context,
-      builder: (ctx) => MhuriSheetShell(
-        title: l.switchProfile,
-        subtitle: l.switchProfileSub,
-        child: ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: s.members.length,
-          itemBuilder: (ctx, index) {
-            final member = s.members[index];
-            return _profileTile(
-              ctx,
-              s,
-              member,
-              () => Navigator.pop(ctx, member),
-            );
-          },
-        ),
-      ),
-    );
-    if (selected == null || !navigator.mounted) return;
-    navigator.popUntil((route) => route.isFirst);
-    s.switchUser(selected);
-  }
-
-  Widget _profileTile(
-    BuildContext ctx,
-    AppState s,
-    Member m,
-    VoidCallback onSelected,
-  ) {
-    final l = AppLocalizations.of(ctx)!;
-    final isCurrent = s.user.id == m.id;
-    return ListTile(
-      leading: MemberAvatar(
-        backgroundColor: _roleBg(ctx, m.role),
-        icon: iconForKey(m.emoji) ?? kFallbackSemanticIcon,
-        imageUrl: m.avatarUrl,
-      ),
-      title: Text(
-        m.name,
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 14.5,
-          color: ctx.ink,
-        ),
-      ),
-      subtitle: Text(
-        roleLabel(AppLocalizations.of(ctx)!, m.role),
-        style: TextStyle(fontSize: 12, color: ctx.inkSoft),
-      ),
-      trailing: isCurrent
-          ? Text(
-              l.youTag,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                color: ctx.primary,
-              ),
-            )
-          : Icon(Icons.chevron_right, color: ctx.inkSoft),
-      onTap: onSelected,
-    );
-  }
-
   void _currencySheet(BuildContext context, AppState s) {
     final l = AppLocalizations.of(context)!;
     if (s.secondaryCurrency != null) {
@@ -1471,14 +1569,16 @@ class MembersScreen extends StatelessWidget {
         animation: s,
         builder: (ctx, _) => MhuriSheetShell(
           title: l.setCurrency,
-          footer: PrimaryButton(
-            label: l.rateSave,
-            onPressed: () {
-              final v = double.tryParse(rateCtrl.text.trim());
-              if (v != null && v > 0) s.setCustomRate(v);
-              Navigator.pop(ctx);
-            },
-          ),
+          footer: s.secondaryCurrency == null
+              ? null
+              : PrimaryButton(
+                  label: l.rateSave,
+                  onPressed: () {
+                    final v = double.tryParse(rateCtrl.text.trim());
+                    if (v != null && v > 0) s.setCustomRate(v);
+                    Navigator.pop(ctx);
+                  },
+                ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1987,157 +2087,126 @@ class _MemberRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final isMe = s.user.id == m.id;
-    // Profile switching previews that member's view; Kids Mode stays
-    // PIN-sealed.
-
+    final canEditKid = s.canEditChildProfile(m);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      constraints: const BoxConstraints(minHeight: 68),
+      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
       decoration: BoxDecoration(
         color: context.card,
         borderRadius: kBRadiusM,
+        border: Border.all(color: context.hairline),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
+          Tooltip(
+            message: 'View ${m.name} avatar',
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => showProfileAvatarViewer(context, s, m),
+              child: MemberAvatar(
                 radius: 20,
                 backgroundColor: _roleBg(context, m.role),
-                backgroundImage:
-                    m.avatarUrl != null ? NetworkImage(m.avatarUrl!) : null,
-                child: m.avatarUrl != null
-                    ? null
-                    : Icon(
-                        iconForKey(m.emoji) ?? kFallbackSemanticIcon,
-                        size: 19,
-                        color: context.ink,
-                      ),
+                icon: iconForKey(m.emoji) ?? kFallbackSemanticIcon,
+                imageUrl: m.avatarUrl,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: InkWell(
-                  onTap: isMe ? () => _editProfileSheet(context, s, m) : null,
-                  borderRadius: kBRadiusS,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              m.name,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14.5,
-                                color: context.ink,
-                              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: InkWell(
+              onTap: isMe || canEditKid
+                  ? () => _editProfileSheet(context, s, m)
+                  : null,
+              borderRadius: kBRadiusS,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            m.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14.5,
+                              color: context.ink,
                             ),
                           ),
-                          if (isMe) ...[
-                            const SizedBox(width: 6),
-                            Text(
-                              AppLocalizations.of(context)!.youTag,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: context.primary,
-                                  fontWeight: FontWeight.w700),
+                        ),
+                        if (isMe) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            AppLocalizations.of(context)!.youTag,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.primary,
+                              fontWeight: FontWeight.w700,
                             ),
-                          ],
+                          ),
                         ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        roleLabel(AppLocalizations.of(context)!, m.role),
-                        style: TextStyle(fontSize: 12, color: context.inkSoft),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      roleLabel(AppLocalizations.of(context)!, m.role),
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                  ],
                 ),
               ),
-              if (isMe)
-                InkWell(
-                  onTap: () => _editProfileSheet(context, s, m),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(Icons.edit, size: 18, color: context.primary),
-                  ),
-                ),
-              if (!isMe)
-                OutlinedButton(
-                  onPressed: () {
-                    final navigator = Navigator.of(context);
-                    s.switchUser(m);
-                    navigator.popUntil((r) => r.isFirst);
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.primary,
-                    side: BorderSide(color: context.primary),
-                    shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-                  ),
-                  child: Text(AppLocalizations.of(context)!.viewAs),
-                ),
-            ],
+            ),
           ),
-          // Owner handing the family over (server: roles swap, the family
-          // code moves, audit row - migration 010).
-          if (!isMe && s.canTransferOwnership && m.role == Role.adult)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _makeOwner(context, s, m),
-                  icon: const Icon(Icons.workspace_premium, size: 18),
-                  label: Text(AppLocalizations.of(context)!.makeOwner),
-                ),
-              ),
+          if (isMe || canEditKid)
+            IconButton(
+              tooltip: isMe ? 'Edit profile' : 'Edit ${m.name} profile',
+              onPressed: () => _editProfileSheet(context, s, m),
+              icon: const Icon(Icons.edit_outlined, size: 20),
             ),
-          if (!isMe && s.canAdmin) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: PopupMenuButton<String>(
-                tooltip: 'Manage ${m.name}',
-                onSelected: (action) => _manageMember(context, s, m, action),
-                itemBuilder: (_) => [
-                  if ((m.serverRole ?? m.role.name) == 'adult')
-                    const PopupMenuItem(
-                      value: 'promote',
-                      child: Text('Make Family Admin'),
-                    ),
-                  if ((m.serverRole ?? m.role.name) == 'adult')
-                    const PopupMenuItem(
-                      value: 'contributor',
-                      child: Text('Change to Contributor'),
-                    ),
-                  if ((m.serverRole ?? m.role.name) == 'contributor')
-                    const PopupMenuItem(
-                      value: 'adult',
-                      child: Text('Change to Adult Member'),
-                    ),
-                  if ((m.serverRole ?? m.role.name) == 'co_parent')
-                    const PopupMenuItem(
-                      value: 'adult',
-                      child: Text('Change to Adult Member'),
-                    ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'remove',
-                    child: Text('Remove from family'),
+          if (!isMe && s.canAdmin)
+            PopupMenuButton<String>(
+              tooltip: 'Manage ${m.name}',
+              icon: const Icon(Icons.more_vert_rounded),
+              onSelected: (action) {
+                if (action == 'make_owner') {
+                  _makeOwner(context, s, m);
+                } else {
+                  _manageMember(context, s, m, action);
+                }
+              },
+              itemBuilder: (_) => [
+                if (s.canTransferOwnership && m.role == Role.adult)
+                  PopupMenuItem(
+                    value: 'make_owner',
+                    child: Text(AppLocalizations.of(context)!.makeOwner),
                   ),
-                ],
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Text('Manage',
-                      style: TextStyle(
-                          color: context.primary, fontWeight: FontWeight.w700)),
+                if ((m.serverRole ?? m.role.name) == 'adult')
+                  const PopupMenuItem(
+                    value: 'promote',
+                    child: Text('Make Family Admin'),
+                  ),
+                if ((m.serverRole ?? m.role.name) == 'adult')
+                  const PopupMenuItem(
+                    value: 'contributor',
+                    child: Text('Change to Contributor'),
+                  ),
+                if ((m.serverRole ?? m.role.name) == 'contributor' ||
+                    (m.serverRole ?? m.role.name) == 'co_parent')
+                  const PopupMenuItem(
+                    value: 'adult',
+                    child: Text('Change to Adult Member'),
+                  ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'remove',
+                  child: Text('Remove from family'),
                 ),
-              ),
+              ],
             ),
-          ],
         ],
       ),
     );
@@ -2289,8 +2358,8 @@ class _DeleteProgressDialogState extends State<_DeleteProgressDialog> {
               child: Row(
                 children: [
                   if (_done)
-                    const Icon(Icons.check_circle,
-                        size: 18, color: Colors.green)
+                    Icon(Icons.check_circle,
+                        size: 18, color: context.incomeGreen)
                   else
                     const SizedBox(
                         width: 18,

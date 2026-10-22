@@ -5,6 +5,25 @@ import 'package:mhuri_money/core/security/rate_limiter.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 
 void main() {
+  test('parents can manage a kid avatar without changing their own', () {
+    final state = AppState();
+    state.members.add(state.user);
+    const kid = Member(
+      id: 'kid-avatar',
+      name: 'Tari',
+      emoji: 'boy',
+      role: Role.kid,
+    );
+    state.members.add(kid);
+    final parentAvatar = state.user.avatarUrl;
+
+    expect(state.canEditChildProfile(kid), isTrue);
+    state.setMemberAvatar(kid, 'https://example.test/tari.jpg');
+
+    expect(state.member(kid.id)?.avatarUrl, 'https://example.test/tari.jpg');
+    expect(state.user.avatarUrl, parentAvatar);
+  });
+
   group('Phase 4 - Permissions Matrix & Security Enforcement', () {
     AppState makeStateFor({
       required Role role,

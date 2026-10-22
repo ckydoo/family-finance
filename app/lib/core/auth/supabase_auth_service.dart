@@ -371,48 +371,25 @@ class SupabaseAuthService implements AuthService {
       return _session;
     }
 
-    // Try to refresh; only a definite rejection (400/401 - dead refresh
-    // token) clears the session for a clean re-login. Transient failures
-    // (5xx, rate limits, offline bodies) MUST NOT wipe the stored tokens:
-    // that produced a "logged-in app with empty JWT" state.
-    try {
-      final r = await _post(
-        Uri.parse('$_base/auth/v1/token?grant_type=refresh_token'),
-        headers: _headers,
-        body: jsonEncode({'refresh_token': refresh}),
-      );
-      if (r.statusCode >= 200 && r.statusCode < 300) {
-        final body = jsonDecode(r.body) as Map<String, dynamic>;
-        final newAccess = body['access_token'] as String?;
-        final newRefresh = body['refresh_token'] as String? ?? refresh;
-        if (newAccess != null && newAccess.isNotEmpty) {
-          final uid = userId ?? 'user';
-          final em = email ?? '';
-          _session = AuthSession(userId: uid, email: em);
-          await _persistTokens(
-              access: newAccess, refresh: newRefresh, userId: uid, email: em);
-          return _session;
-        }
-      }
-      if (r.statusCode == 400 || r.statusCode == 401) {
-        await _clearTokens();
-        return _session;
-      }
-      // Transient server error: keep tokens, trust the stored identity.
-      if ((userId != null && userId.isNotEmpty)) {
-        _session ??= AuthSession(userId: userId, email: email ?? '');
-        return _session;
-      }
-      return _session;
-    } catch (_) {
-      // Offline at startup with a stored session: trust it for now; the sync
-      // layer (M3) handles 401s by re-refreshing.
-      if (access != null && access.isNotEmpty) {
-        _session ??= AuthSession(userId: userId ?? 'user', email: email ?? '');
-        return _session;
-      }
-      return _session;
+    // Share the same single-flight refresh used by sync and media requests.
+    // Supabase rotates refresh tokens, so a separate startup request can race
+    // another caller and make a healthy session look revoked.
+    final refreshResult = await _refresh();
+    if (refreshResult.token != null) return _session;
+    if (refreshResult.rejected) {
+      _session = null;
+      await _clearTokens();
+      return null;
     }
+
+    // A failed refresh may be offline, rate-limited, or temporarily rejected.
+    // Keep the local identity and credentials; a later request can retry.
+    if (userId != null && userId.isNotEmpty) {
+      _session ??= AuthSession(userId: userId, email: email ?? '');
+    } else if (access != null && access.isNotEmpty) {
+      _session ??= AuthSession(userId: 'user', email: email ?? '');
+    }
+    return _session;
   }
 
   @override
@@ -449,39 +426,77 @@ class SupabaseAuthService implements AuthService {
   /// In-flight refresh shared by concurrent callers. Supabase rotates
   /// refresh tokens, so parallel refreshes with the same token race each
   /// other (and burn through GoTrue's token-refresh rate limit).
-  Future<String?>? _refreshInFlight;
+  Future<({String? token, bool rejected})>? _refreshInFlight;
 
   @override
-  Future<String?> refreshAccessToken() {
-    return _refreshInFlight ??=
-        _doRefresh().whenComplete(() => _refreshInFlight = null);
-  }
+  Future<String?> refreshAccessToken() async => (await _refresh()).token;
 
-  Future<String?> _doRefresh() async {
+  Future<({String? token, bool rejected})> _refresh() => _refreshInFlight ??=
+      _doRefresh().whenComplete(() => _refreshInFlight = null);
+
+  Future<({String? token, bool rejected})> _doRefresh() async {
     final get = _kvGet;
-    if (get == null) return null;
+    if (get == null) return (token: null, rejected: false);
     final refresh = await get('auth_refresh_token');
-    if (refresh == null || refresh.isEmpty) return null;
+    if (refresh == null || refresh.isEmpty) {
+      return (token: null, rejected: true);
+    }
     try {
       final r = await _post(
         Uri.parse('$_base/auth/v1/token?grant_type=refresh_token'),
         headers: _headers,
         body: jsonEncode({'refresh_token': refresh}),
       );
-      if (r.statusCode < 200 || r.statusCode >= 300) return null;
+      if (r.statusCode < 200 || r.statusCode >= 300) {
+        return (
+          token: null,
+          // Do not turn every 400 into a logout. GoTrue and gateways can use
+          // 400 for malformed/transient provider responses. Only a response
+          // that explicitly says the refresh token/session is invalid is
+          // authoritative enough to erase a persisted login.
+          rejected: _isDefinitiveRefreshRejection(r),
+        );
+      }
       final body = jsonDecode(r.body) as Map<String, dynamic>;
       final newAccess = body['access_token'] as String?;
-      if (newAccess == null || newAccess.isEmpty) return null;
+      if (newAccess == null || newAccess.isEmpty) {
+        return (token: null, rejected: false);
+      }
       final newRefresh = body['refresh_token'] as String? ?? refresh;
       final uid = await get('auth_user_id') ?? 'user';
       final em = await get('auth_email') ?? '';
       _session = AuthSession(userId: uid, email: em);
       await _persistTokens(
           access: newAccess, refresh: newRefresh, userId: uid, email: em);
-      return newAccess;
+      return (token: newAccess, rejected: false);
     } catch (_) {
-      return null;
+      return (token: null, rejected: false);
     }
+  }
+
+  bool _isDefinitiveRefreshRejection(http.Response response) {
+    if (response.statusCode == 401) return true;
+    if (response.statusCode != 400 && response.statusCode != 403) return false;
+    var detail = response.body.toLowerCase();
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map) {
+        detail = [
+          body['error'],
+          body['error_code'],
+          body['code'],
+          body['message'],
+          body['msg'],
+          body['error_description'],
+        ].whereType<Object>().join(' ').toLowerCase();
+      }
+    } catch (_) {}
+    return detail.contains('invalid refresh token') ||
+        detail.contains('refresh token not found') ||
+        detail.contains('refresh_token_not_found') ||
+        detail.contains('session_not_found') ||
+        detail.contains('session revoked') ||
+        detail.contains('session_revoked');
   }
 
   @override

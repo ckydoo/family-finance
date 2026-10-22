@@ -37,4 +37,55 @@ void main() {
       }
     });
   }
+
+  test('dark accent surfaces use a readable foreground', () {
+    final theme = buildAppDarkTheme();
+    const colors = MhuriColors.dark;
+
+    expect(
+      _contrast(theme.colorScheme.onSecondary, colors.accent),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      _contrast(theme.badgeTheme.textColor!, colors.accentDark),
+      greaterThanOrEqualTo(4.5),
+    );
+  });
+
+  test('dark Material surfaces use the app palette', () {
+    final scheme = buildAppDarkTheme().colorScheme;
+    const colors = MhuriColors.dark;
+
+    expect(scheme.surfaceDim, colors.bg);
+    expect(scheme.surfaceContainerLowest, colors.bg);
+    expect(scheme.surfaceContainerLow, colors.card);
+    expect(scheme.surfaceContainer, colors.card);
+    expect(scheme.surfaceContainerHigh, colors.surfaceSecondary);
+  });
+
+  test('light accent foregrounds remain unchanged', () {
+    final theme = buildAppTheme();
+
+    expect(theme.colorScheme.onSecondary, MhuriColors.light.ink);
+    expect(theme.badgeTheme.textColor, Colors.white);
+  });
+
+  for (final theme in <ThemeData>[buildAppTheme(), buildAppDarkTheme()]) {
+    test('${theme.brightness.name} color scheme pairs stay legible', () {
+      final scheme = theme.colorScheme;
+      final pairs = <(Color, Color)>[
+        (scheme.onPrimary, scheme.primary),
+        (scheme.onPrimaryContainer, scheme.primaryContainer),
+        (scheme.onSecondary, scheme.secondary),
+        (scheme.onSecondaryContainer, scheme.secondaryContainer),
+        (scheme.onError, scheme.error),
+        (scheme.onErrorContainer, scheme.errorContainer),
+        (scheme.onSurface, scheme.surface),
+      ];
+
+      for (final pair in pairs) {
+        expect(_contrast(pair.$1, pair.$2), greaterThanOrEqualTo(4.5));
+      }
+    });
+  }
 }

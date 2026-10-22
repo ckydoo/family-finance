@@ -72,6 +72,59 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('New budget rejects the oversized QA report value',
+      (tester) async {
+    final state = AppState();
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: const MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: BudgetsScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('New budget'));
+    await tester.pumpAndSettle();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'Utilities');
+    await tester.enterText(fields.at(1), '999999999999999');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(state.envelopes, isEmpty);
+    expect(find.textContaining('Enter an amount'), findsOneWidget);
+  });
+
+  testWidgets('New budget groups digits and shows the supported maximum',
+      (tester) async {
+    final state = AppState();
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: const MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: BudgetsScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('New budget'));
+    await tester.pumpAndSettle();
+    final amountField = find.byType(TextField).at(1);
+    await tester.enterText(amountField, '1234567.89');
+    await tester.pump();
+
+    expect(find.text('1,234,567.89'), findsOneWidget);
+    expect(
+        find.textContaining('Maximum US\$ 999,999,999,999.99'), findsOneWidget);
+  });
+
   test(
       'deduplicateEnvelopes merges duplicate envelopes and preserves transactions',
       () {

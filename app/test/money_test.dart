@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mhuri_money/core/money/money.dart';
+import 'package:mhuri_money/core/state/app_state.dart';
 
 void main() {
   group('Money formatting (spec §5.2)', () {
@@ -20,6 +21,13 @@ void main() {
 
   group('Conversion (default rate 15.27)', () {
     const rate = 15.27;
+
+    setUp(() {
+      Money.primaryCurrency = Currency.usd;
+      Money.secondaryCurrency = Currency.zwg;
+    });
+
+    tearDown(() => Money.secondaryCurrency = null);
 
     test('USD → ZiG', () {
       expect(
@@ -43,7 +51,38 @@ void main() {
     });
   });
 
+  test('a new family starts with only its chosen primary currency', () {
+    final state = AppState();
+
+    expect(state.primaryCurrency, Currency.usd);
+    expect(state.secondaryCurrency, isNull);
+    expect(state.activeCurrencies, [Currency.usd]);
+
+    state.setSecondaryCurrency(Currency.zwg);
+    expect(state.activeCurrencies, [Currency.usd, Currency.zwg]);
+
+    state.setSecondaryCurrency(null);
+    expect(state.activeCurrencies, [Currency.usd]);
+  });
+
   test('times() multiplies in minor units', () {
     expect(Money.fromMajor(9.5, Currency.usd).times(2).text, 'US\$ 19.00');
+  });
+
+  group('exact user input parsing', () {
+    test('preserves cents without floating-point conversion', () {
+      expect(
+        Money.tryParse('999999999999.99', Currency.usd)?.minor,
+        99999999999999,
+      );
+      expect(Money.tryParse('1,240.50', Currency.usd)?.minor, 124050);
+      expect(Money.tryParse('0.29', Currency.usd)?.minor, 29);
+    });
+
+    test('rejects values outside the supported range', () {
+      expect(Money.tryParse('999999999999999', Currency.usd), isNull);
+      expect(Money.tryParse('1000000000000.00', Currency.usd), isNull);
+      expect(Money.tryParse('', Currency.usd), isNull);
+    });
   });
 }

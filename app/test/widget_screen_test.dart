@@ -77,6 +77,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Reminders'), findsOneWidget);
     expect(find.textContaining('Scheduled on this device'), findsOneWidget);
+    expect(find.textContaining('9:00 PM–7:00 AM'), findsOneWidget);
   });
 
   testWidgets('Home exposes the family switcher and Settings separately',
@@ -93,6 +94,30 @@ void main() {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets('Home avatar opens full view with a change-avatar action',
+      (tester) async {
+    sizeWindow(tester);
+    final s = await seeded();
+    await tester.pumpWidget(harness(s, const HomeScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('home_signed_in_avatar')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Change avatar'), findsOneWidget);
+    expect(find.byTooltip('Close avatar'), findsOneWidget);
+    final changeAvatarButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Change avatar'),
+    );
+    expect(changeAvatarButton.style?.backgroundColor?.resolve({}), isNotNull);
+    expect(changeAvatarButton.style?.foregroundColor?.resolve({}), isNotNull);
+
+    await tester.tap(find.text('Change avatar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit profile'), findsOneWidget);
+    expect(find.byIcon(Icons.photo_outlined), findsOneWidget);
   });
 
   testWidgets('Home shows only the two nearest dated open tasks',
@@ -143,7 +168,7 @@ void main() {
     await tester.pumpWidget(harness(s, const FamilyChatScreen()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Add photo or task'));
+    await tester.tap(find.byTooltip('Add photo or reference'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Family tasks'));
     await tester.pumpAndSettle();
@@ -603,6 +628,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Rice'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('shopping stage changes offer Undo', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final s = AppState();
+    s.addItem('Milk', 1, Money.fromMajor(2, Currency.usd));
+    final item = s.items.single;
+    await tester.pumpWidget(harness(s, const ListsScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    expect(item.state, ItemState.incart);
+    expect(find.text('Undo'), findsOneWidget);
+
+    tester.widget<SnackBarAction>(find.byType(SnackBarAction)).onPressed();
+    await tester.pumpAndSettle();
+    expect(item.state, ItemState.tobuy);
   });
 
   testWidgets('shopping item can be added without a unit price',

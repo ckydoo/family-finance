@@ -121,7 +121,7 @@ class _ConfettiState extends State<_Confetti>
       duration: const Duration(milliseconds: 1200),
     );
     final rng = math.Random(7);
-    const colors = [kPrimary, kAccent, Color(0xFFFF6B6B), Color(0xFF7EC8F2)];
+    const colors = [kPrimary, kAccent, kDanger, kInformation];
     _particles = List.generate(42, (i) {
       final angle = -math.pi / 2 + (rng.nextDouble() - 0.5) * 2.2;
       final speed = 240 + rng.nextDouble() * 380;

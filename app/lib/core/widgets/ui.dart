@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../money/money.dart';
 import '../theme/app_theme.dart';
 
 /// ── Mhuri shared component kit (Phase 3) ────────────────────────────────────
@@ -99,27 +100,33 @@ class SectionLabel extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: context.ink,
-              letterSpacing: -0.2,
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: context.ink,
+                letterSpacing: -0.2,
+              ),
             ),
           ),
           if (actionLabel != null && onAction != null)
-            GestureDetector(
-              onTap: onAction,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                child: Text(
-                  actionLabel!,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: context.primary,
+            Flexible(
+              child: GestureDetector(
+                onTap: onAction,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  child: Text(
+                    actionLabel!,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: context.primary,
+                    ),
                   ),
                 ),
               ),
@@ -283,12 +290,18 @@ class PrimaryButton extends StatelessWidget {
                     children: [
                       Icon(icon, size: 18),
                       const SizedBox(width: 8),
-                      Text(label,
+                      Flexible(
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w700)),
+                              fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                      ),
                     ],
                   )
                 : Text(label,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w700)),
       );
@@ -387,12 +400,54 @@ Future<bool> confirmDialog(
 
 /// Prevents typing or pasting any non-numeric characters into amounts (allows digits and up to 2 decimal places).
 List<TextInputFormatter> get amountInputFormatters => [
-      // 12 major-unit digits plus decimal point and cents. This stays far
-      // inside SQLite's signed 64-bit integer range after conversion to minor
-      // units, while still supporting amounts up to 999,999,999,999.99.
+      // 12 major-unit digits plus decimal point and cents.
       LengthLimitingTextInputFormatter(15),
-      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+      TextInputFormatter.withFunction((oldValue, newValue) {
+        final accepted =
+            RegExp(r'^\d{0,12}(?:\.\d{0,2})?$').hasMatch(newValue.text);
+        return accepted ? newValue : oldValue;
+      }),
     ];
+
+/// Budget inputs group major-unit digits while preserving an optional decimal
+/// part. Parsing remains exact because [Money.tryParse] strips the separators.
+List<TextInputFormatter> get groupedAmountInputFormatters => [
+      LengthLimitingTextInputFormatter(19),
+      _GroupedMoneyInputFormatter(),
+    ];
+
+class _GroupedMoneyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final raw = newValue.text.replaceAll(',', '');
+    if (!RegExp(r'^\d{0,12}(?:\.\d{0,2})?$').hasMatch(raw)) return oldValue;
+    final parts = raw.split('.');
+    final digits = parts.first;
+    final grouped = digits.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+    final formatted = parts.length == 2 ? '$grouped.${parts[1]}' : grouped;
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
+String? positiveMoneyInputError(String input, Currency currency) {
+  final raw = input.trim();
+  if (raw.isEmpty) return 'Enter an amount.';
+  final money = Money.tryParse(raw, currency);
+  if (money == null) {
+    return 'Enter an amount below ${currency.symbol} 1,000,000,000,000.00.';
+  }
+  if (money.minor <= 0) return 'Amount must be greater than zero.';
+  return null;
+}
 
 /// Prevents typing or pasting any non-numeric characters into integer fields (e.g. quantity).
 List<TextInputFormatter> get integerInputFormatters => [
@@ -430,6 +485,7 @@ class MhuriField extends StatelessWidget {
     this.onChanged,
     this.currencySymbol,
     this.errorText,
+    this.helperText,
     this.inputFormatters,
   });
 
@@ -446,6 +502,7 @@ class MhuriField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final ValueChanged<String>? onChanged;
   final String? errorText;
+  final String? helperText;
   final List<TextInputFormatter>? inputFormatters;
 
   /// When set: decimal keyboard + `symbol ` prefix - the currency input.
@@ -482,6 +539,7 @@ class MhuriField extends StatelessWidget {
             : Icon(prefixIcon, color: context.inkSoft),
         prefixText: prefixText,
         errorText: errorText,
+        helperText: helperText,
         errorStyle: TextStyle(
           color: context.danger,
           fontSize: 12,
@@ -545,15 +603,33 @@ class SettingsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          children: [
-            Text(label, style: const TextStyle(fontSize: 13)),
-            const Spacer(),
-            Text(value,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-          ],
-        ),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final scale = MediaQuery.textScalerOf(context).scale(13) / 13;
+          final stacked = constraints.maxWidth < 280 || scale > 1.35;
+          final valueText = Text(
+            value,
+            textAlign: stacked ? TextAlign.start : TextAlign.end,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          );
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 13)),
+                const SizedBox(height: 2),
+                valueText,
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(
+                  child: Text(label, style: const TextStyle(fontSize: 13))),
+              const SizedBox(width: 12),
+              Flexible(child: valueText),
+            ],
+          );
+        }),
       );
 }
 
@@ -584,14 +660,21 @@ class SecondaryButton extends StatelessWidget {
       minimumSize: const Size.fromHeight(44),
       shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
     );
-    return icon == null
-        ? OutlinedButton(onPressed: onPressed, style: style, child: Text(label))
-        : OutlinedButton.icon(
-            onPressed: onPressed,
-            style: style,
-            icon: Icon(icon, size: 18),
-            label: Text(label),
-          );
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: style,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 18),
+            const SizedBox(width: 8),
+          ],
+          Flexible(child: Text(label, textAlign: TextAlign.center)),
+        ],
+      ),
+    );
   }
 }
 
@@ -758,17 +841,21 @@ class StatusBanner extends StatelessWidget {
           ),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(width: 8),
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                foregroundColor: fg,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: const Size(48, 36),
-              ),
-              child: Text(
-                actionLabel!,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 12.5),
+            Flexible(
+              child: TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: fg,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: const Size(48, 36),
+                ),
+                child: Text(
+                  actionLabel!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 12.5),
+                ),
               ),
             ),
           ],

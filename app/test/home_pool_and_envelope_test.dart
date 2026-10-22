@@ -143,6 +143,42 @@ void main() {
     );
   });
 
+  testWidgets('home warns before cycle end and explains the reset day',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    Future<void> pumpAt(DateTime date) async {
+      final state = AppState(clock: () => date)..monthStartDay = 25;
+      state.members.add(state.user);
+      state.addEnvelope(
+        name: 'Groceries',
+        limit: Money.fromMajor(100, Currency.usd),
+      );
+      await tester.pumpWidget(
+        AppScope(
+          notifier: state,
+          child: MaterialApp(
+            theme: buildAppTheme(),
+            localizationsDelegates: mhuriLocalizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: HomeScreen()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await pumpAt(DateTime(2026, 10, 24, 23, 45));
+    expect(find.text('Your budget month ends tomorrow'), findsOneWidget);
+    expect(find.textContaining('starts Oct 25, 2026'), findsOneWidget);
+
+    await pumpAt(DateTime(2026, 10, 25, 8));
+    expect(find.text('A new budget month starts today'), findsOneWidget);
+    expect(find.textContaining('may show 0'), findsOneWidget);
+  });
+
   testWidgets('home does not flag a budget that is exactly at its limit',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);

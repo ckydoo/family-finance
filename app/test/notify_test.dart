@@ -170,6 +170,32 @@ void main() {
       expect(out50.where((r) => r.key.startsWith('budget_')), isEmpty);
     });
 
+    test('multiple envelope warnings are bundled into one summary', () {
+      EnvelopeHealth health(String id, String name, double spent) =>
+          EnvelopeHealth(
+            envelope: Envelope(
+              id: id,
+              name: name,
+              emoji: 'wallet',
+              limit: Money.fromMajor(100, Currency.usd),
+            ),
+            limit: Money.fromMajor(100, Currency.usd),
+            spent: Money.fromMajor(spent, Currency.usd),
+            cycleStart: now,
+          );
+
+      final out = plan(envelopes: [
+        health('food', 'Food', 100),
+        health('travel', 'Travel', 85),
+        health('school', 'School', 120),
+      ]);
+      final budget = out.where((r) => r.category == ReminderCategory.budget);
+      expect(budget, hasLength(1));
+      expect(budget.single.title, '3 budgets need attention');
+      expect(budget.single.body, contains('2 used up'));
+      expect(budget.single.body, contains('1 running low'));
+    });
+
     test('pending kid request reminds; answered ones do not', () {
       final req = KidRequest(
         id: 'kr_1',

@@ -339,6 +339,7 @@ void main() {
 
   test('server FX fills the gap; a custom user rate wins', () async {
     final (s, _, raw) = await liveStateRaw();
+    s.setSecondaryCurrency(Currency.zwg);
     expect(s.rate, Currency.usd.defaultRateTo(Currency.zwg));
 
     await s.applyServerRate(15.95);

@@ -13,11 +13,13 @@ void main() {
       principal: const Money(10000, Currency.usd),
     );
     final debt = state.familyDebts.single;
+    final balanceBefore = state.availableToSpend(Currency.usd).minor;
     expect(
         state.recordDebtRepayment(debt, const Money(3000, Currency.usd),
             id: 'first'),
         isTrue);
     expect(state.remainingOnDebt(debt).minor, 7000);
+    expect(state.availableToSpend(Currency.usd).minor, balanceBefore - 3000);
     expect(debt.status, 'active');
 
     expect(
@@ -25,7 +27,30 @@ void main() {
             id: 'final'),
         isTrue);
     expect(state.remainingOnDebt(debt).minor, 0);
+    expect(state.availableToSpend(Currency.usd).minor, balanceBefore - 10000);
     expect(debt.status, 'settled');
+  });
+
+  test('repayment received for money owed to me increases balance', () {
+    final state = AppState();
+    state.members.add(state.user);
+    state.createDebt(
+      name: 'School advance',
+      direction: DebtDirection.owedToMe,
+      principal: const Money(5000, Currency.usd),
+    );
+
+    final before = state.availableToSpend(Currency.usd).minor;
+    expect(
+      state.recordDebtRepayment(
+        state.familyDebts.single,
+        const Money(2000, Currency.usd),
+        id: 'received',
+      ),
+      isTrue,
+    );
+    expect(state.availableToSpend(Currency.usd).minor, before + 2000);
+    expect(state.txs.first.type, TxType.income);
   });
 
   test('repayment cannot exceed balance or be duplicated', () {

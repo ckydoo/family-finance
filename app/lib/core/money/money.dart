@@ -104,7 +104,7 @@ class Money {
   final Currency currency;
 
   static Currency primaryCurrency = Currency.usd;
-  static Currency? secondaryCurrency = Currency.zwg;
+  static Currency? secondaryCurrency;
 
   /// G7: app locale for number grouping (set once per build from MaterialApp).
   /// Only locales intl formats well; null keeps the original en-US grouping
@@ -112,10 +112,34 @@ class Money {
   static String? localeTag;
   static const _intlLocales = {'es', 'fr', 'pt'};
 
+  /// Maximum accepted user-entered amount: 12 whole digits plus cents.
+  /// Keeping this below 2^53 minor units also preserves exact values on web.
+  static const int maxMinor = 99999999999999;
+
   const Money(this.minor, this.currency);
 
   factory Money.fromMajor(num major, Currency currency) =>
       Money((major * 100).round(), currency);
+
+  /// Parses user-entered decimal money without passing through a binary
+  /// floating-point number. Returns null for malformed or unsupported values.
+  static Money? tryParse(String input, Currency currency) {
+    final normalized = input.trim().replaceAll(',', '');
+    if (normalized.isEmpty ||
+        !RegExp(r'^\d{0,12}(?:\.\d{0,2})?$').hasMatch(normalized) ||
+        normalized == '.' ||
+        normalized.startsWith('-')) {
+      return null;
+    }
+    final parts = normalized.split('.');
+    final whole = int.tryParse(parts.first.isEmpty ? '0' : parts.first);
+    if (whole == null) return null;
+    final centsText = parts.length == 1 ? '00' : parts[1].padRight(2, '0');
+    final cents = int.tryParse(centsText);
+    if (cents == null) return null;
+    final minor = whole * 100 + cents;
+    return minor <= maxMinor ? Money(minor, currency) : null;
+  }
 
   double get major => minor / 100;
   bool get isZero => minor == 0;

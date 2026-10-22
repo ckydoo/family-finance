@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -12,6 +13,7 @@ import '../db/app_database.dart';
 import '../db/persistence.dart';
 import '../sync/sync_engine.dart';
 import '../sync/sync_mappers.dart';
+import '../billing/entitlement.dart';
 import '../models/models.dart';
 import '../notifications/reminders.dart';
 import '../money/money.dart';
@@ -65,6 +67,10 @@ class AppState extends ChangeNotifier {
     debtRepayments = [];
     stars = 0;
     _user = _placeholderUser;
+    // A second currency is opt-in. Reset the shared money formatter for each
+    // fresh state so a prior family selection cannot leak into another one.
+    Money.primaryCurrency = primaryCurrency;
+    Money.secondaryCurrency = secondaryCurrency;
     hydrating = db != null;
     if (db != null) {
       _store = Persistence(db!);
@@ -98,6 +104,11 @@ class AppState extends ChangeNotifier {
 
   /// Sync engine (M3) - attached by app.dart; null until then.
   SyncEngine? sync;
+  FamilyEntitlement? familyEntitlement;
+  bool entitlementLoading = false;
+  String? entitlementError;
+  String? _entitlementFamilyId;
+  int _entitlementRequestVersion = 0;
   Persistence? _store;
   Future<void>? _hydrationFuture;
   final List<Future<void>> _writes = <Future<void>>[];
@@ -135,7 +146,7 @@ class AppState extends ChangeNotifier {
   Member _user =
       const Member(id: 'x', name: 'x', emoji: 'person', role: Role.adult);
   Currency primaryCurrency = Currency.usd;
-  Currency? secondaryCurrency = Currency.zwg;
+  Currency? secondaryCurrency;
   Currency displayCurrency = Currency.usd;
 
   List<Currency> get activeCurrencies => [
@@ -278,6 +289,46 @@ class AppState extends ChangeNotifier {
   DateTime? get lastSyncAt => sync?.lastSyncAt;
   SyncStatus? get syncStatus => sync?.status;
   String? get syncLastError => sync?.lastError;
+
+  bool get hasPlus => familyEntitlement?.plusActive == true;
+
+  bool hasPlusFeature(String feature) =>
+      hasPlus && familyEntitlement!.features.contains(feature);
+
+  Future<FamilyEntitlement> refreshFamilyEntitlement(
+      {String? purchaseToken, String? productId}) async {
+    final engine = sync;
+    if (engine == null || !hasSpace) {
+      throw StateError('Sign in and join a family to manage Plus.');
+    }
+    final familyId = engine.spaceId;
+    _entitlementFamilyId ??= familyId;
+    if (_entitlementFamilyId != familyId) {
+      throw StateError(
+          'Family changed; refresh before checking subscription status.');
+    }
+    final requestVersion = ++_entitlementRequestVersion;
+    entitlementLoading = true;
+    entitlementError = null;
+    notifyListeners();
+    try {
+      final result = await engine.fetchFamilyEntitlement(
+          purchaseToken: purchaseToken, productId: productId);
+      if (engine.spaceId != familyId || _entitlementFamilyId != familyId) {
+        throw StateError('Family changed while checking subscription status.');
+      }
+      familyEntitlement = result;
+      return result;
+    } catch (error) {
+      entitlementError = error.toString();
+      rethrow;
+    } finally {
+      if (requestVersion == _entitlementRequestVersion) {
+        entitlementLoading = false;
+        notifyListeners();
+      }
+    }
+  }
 
   SyncHealthState get syncHealth {
     if (syncStatus == SyncStatus.syncing) {
@@ -534,6 +585,14 @@ class AppState extends ChangeNotifier {
             rate = primaryCurrency.defaultRateTo(secondaryCurrency!);
           }
         }
+      } else {
+        // Keep a user's configured rate even while the second currency is
+        // temporarily disabled. Re-enabling that currency must not silently
+        // discard a deliberate setting, and Settings should round-trip
+        // independently from whether financial rows already exist.
+        final custom = await db?.kvGet('custom_rate');
+        final value = custom == null ? null : double.tryParse(custom);
+        if (value != null && value > 0) rate = value;
       }
       final ne = await db?.kvGet('notify_enabled');
       if (ne != null && ne.isNotEmpty) {
@@ -1001,7 +1060,21 @@ class AppState extends ChangeNotifier {
   /// Engine reports a status change → repaint whatever shows sync state.
   /// ─── Notifications (M5 - spec J2/J3) ─────────────────────────────────
 
-  void syncIdentityChanged() => notifyListeners();
+  void syncIdentityChanged() {
+    final familyId = sync?.spaceId;
+    if (familyId != _entitlementFamilyId) {
+      _entitlementFamilyId = familyId;
+      familyEntitlement = null;
+      entitlementError = null;
+      entitlementLoading = false;
+      if (familyId != null && familyId.isNotEmpty && sync != null) {
+        unawaited(refreshFamilyEntitlement()
+            .then<void>((_) {})
+            .catchError((Object _) {}));
+      }
+    }
+    notifyListeners();
+  }
 
   NotifyConfig get _notifyConfig => NotifyConfig(
         enabled: notifyEnabled,
@@ -1192,8 +1265,84 @@ class AppState extends ChangeNotifier {
     }
     familyChatMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     _store?.saveChatMessage(clean);
-    _queue('family_chat_message', clean);
+    final engine = sync;
+    if (engine != null && env.isConfigured) {
+      _fire(engine.sendChatMessage(clean).then((sent) {
+        if (sent) {
+          markChatMessagesSent([clean.id]);
+        } else {
+          markChatMessagesFailed([clean.id]);
+        }
+      }));
+    } else if (clean.status == ChatMessageStatus.pending) {
+      markChatMessagesFailed([clean.id]);
+    }
     notifyListeners();
+  }
+
+  void retryChatMessage(FamilyChatMessage message) {
+    final pending = _chatMessageWithStatus(message, ChatMessageStatus.pending);
+    final index =
+        familyChatMessages.indexWhere((item) => item.id == message.id);
+    if (index < 0) return;
+    familyChatMessages[index] = pending;
+    _store?.saveChatMessage(pending);
+    notifyListeners();
+    final engine = sync;
+    if (engine == null || !env.isConfigured) {
+      markChatMessagesFailed([message.id]);
+      return;
+    }
+    _fire(engine.sendChatMessage(pending).then((sent) {
+      if (sent) {
+        markChatMessagesSent([message.id]);
+      } else {
+        markChatMessagesFailed([message.id]);
+      }
+    }));
+  }
+
+  FamilyChatMessage _chatMessageWithStatus(
+          FamilyChatMessage message, ChatMessageStatus status) =>
+      FamilyChatMessage(
+        id: message.id,
+        familyId: message.familyId,
+        senderId: message.senderId,
+        text: message.text,
+        createdAt: message.createdAt,
+        isSystem: message.isSystem,
+        senderName: message.senderName,
+        senderAvatar: message.senderAvatar,
+        status: status,
+        referenceType: message.referenceType,
+        referenceId: message.referenceId,
+        referenceTitle: message.referenceTitle,
+        referenceMeta: message.referenceMeta,
+        mediaUrl: message.mediaUrl,
+        mediaType: message.mediaType,
+        sticker: message.sticker,
+        replyToId: message.replyToId,
+        replySenderName: message.replySenderName,
+        replyPreview: message.replyPreview,
+        editedAt: message.editedAt,
+        deleted: message.deleted,
+      );
+
+  void markChatMessagesFailed(Iterable<String> ids) {
+    final failedIds = ids.toSet();
+    var changed = false;
+    for (var i = 0; i < familyChatMessages.length; i++) {
+      final message = familyChatMessages[i];
+      if (!failedIds.contains(message.id) ||
+          message.status != ChatMessageStatus.pending) {
+        continue;
+      }
+      final failed = _chatMessageWithStatus(message, ChatMessageStatus.failed);
+      familyChatMessages[i] = failed;
+      _store?.saveChatMessage(failed);
+      changed = true;
+    }
+    if (changed) notifyListeners();
   }
 
   /// Called only after the shared server accepts these messages. This local
@@ -1208,29 +1357,7 @@ class AppState extends ChangeNotifier {
           message.status != ChatMessageStatus.pending) {
         continue;
       }
-      final sent = FamilyChatMessage(
-        id: message.id,
-        familyId: message.familyId,
-        senderId: message.senderId,
-        text: message.text,
-        createdAt: message.createdAt,
-        isSystem: message.isSystem,
-        senderName: message.senderName,
-        senderAvatar: message.senderAvatar,
-        status: ChatMessageStatus.sent,
-        referenceType: message.referenceType,
-        referenceId: message.referenceId,
-        referenceTitle: message.referenceTitle,
-        referenceMeta: message.referenceMeta,
-        mediaUrl: message.mediaUrl,
-        mediaType: message.mediaType,
-        sticker: message.sticker,
-        replyToId: message.replyToId,
-        replySenderName: message.replySenderName,
-        replyPreview: message.replyPreview,
-        editedAt: message.editedAt,
-        deleted: message.deleted,
-      );
+      final sent = _chatMessageWithStatus(message, ChatMessageStatus.sent);
       familyChatMessages[i] = sent;
       _store?.saveChatMessage(sent);
       changed = true;
@@ -1481,6 +1608,7 @@ class AppState extends ChangeNotifier {
     _persistKv('members_v1', _membersJson());
     _persistKv('me_id', me.id);
     pendingOps = 0;
+    syncIdentityChanged();
     notifyListeners();
   }
 
@@ -1604,6 +1732,35 @@ class AppState extends ChangeNotifier {
     }
     _persistKv('members_v1', _membersJson());
     sync?.updateMyProfile({
+      'avatar_url': clean.isEmpty ? null : clean,
+    });
+    notifyListeners();
+  }
+
+  bool canEditChildProfile(Member member) =>
+      member.role == Role.kid &&
+      member.id != realUser.id &&
+      (canAdmin || authRole == Role.adult);
+
+  void setMemberAvatar(Member member, String url) {
+    if (member.id == realUser.id) {
+      setMyAvatar(url);
+      return;
+    }
+    if (!canEditChildProfile(member)) return;
+    final index = members.indexWhere((value) => value.id == member.id);
+    if (index < 0) return;
+    final clean = url.trim();
+    members[index] = Member(
+      id: member.id,
+      name: member.name,
+      emoji: member.emoji,
+      role: member.role,
+      serverRole: member.serverRole,
+      avatarUrl: clean.isEmpty ? null : clean,
+    );
+    _persistKv('members_v1', _membersJson());
+    sync?.updateChildProfile(member.id, {
       'avatar_url': clean.isEmpty ? null : clean,
     });
     notifyListeners();
@@ -1927,14 +2084,25 @@ class AppState extends ChangeNotifier {
       case 'goal_tx':
         for (final row in rows) {
           final g = adapter.decode(row) as GoalTx;
-          final exists = goalTxs.any(
+          final sameId = g.id == null
+              ? -1
+              : goalTxs.indexWhere((existing) => existing.id == g.id);
+          if (sameId >= 0) {
+            // The server echo is authoritative, but it represents the same
+            // append-only mutation and must never increase the saved total.
+            goalTxs[sameId] = g;
+            changed = true;
+            continue;
+          }
+          final isLegacyDuplicate = goalTxs.any(
             (x) =>
                 x.goalId == g.goalId &&
                 x.byMemberId == g.byMemberId &&
                 x.amount.minor == g.amount.minor &&
+                x.amount.currency == g.amount.currency &&
                 x.at.isAtSameMomentAs(g.at),
           );
-          if (!exists) {
+          if (!isLegacyDuplicate) {
             final goal = goals.where((item) => item.id == g.goalId).firstOrNull;
             final before = goal == null ? 0 : savedOn(goal).minor;
             goalTxs.add(g);
@@ -2083,6 +2251,12 @@ class AppState extends ChangeNotifier {
       }),
     );
     _persistKv('members_v1', _membersJson());
+    if (id != realUser.id && canEditChildProfile(members[i])) {
+      sync?.updateChildProfile(id, {
+        'name': members[i].name,
+        'avatar': members[i].emoji,
+      });
+    }
     notifyListeners();
   }
 
@@ -2428,6 +2602,25 @@ class AppState extends ChangeNotifier {
   DateTime get cycleStart => cycleStartFor(now);
   DateTime get nextCycleStart => nextCycleStartFor(now);
 
+  /// Calendar-day boundary helpers for explaining cycle resets in the UI.
+  /// Date-only math avoids time-of-day rounding making "tomorrow" disappear
+  /// during the final hours of a cycle.
+  int get daysUntilNextCycle {
+    final current = now;
+    final today = DateTime(current.year, current.month, current.day);
+    final next = nextCycleStartFor(current);
+    final nextDay = DateTime(next.year, next.month, next.day);
+    return nextDay.difference(today).inDays;
+  }
+
+  bool get isCycleStartToday {
+    final current = now;
+    final start = cycleStartFor(current);
+    return current.year == start.year &&
+        current.month == start.month &&
+        current.day == start.day;
+  }
+
   BudgetCyclePlan? get currentBudgetPlan {
     final key = _cycleKey(cycleStart);
     for (final plan in budgetPlans) {
@@ -2772,6 +2965,8 @@ class AppState extends ChangeNotifier {
   ///    (capped at 24 cycles). Documented simplification; revisit with a
   ///    proper allocation ledger in hardening.
   Money effectiveLimit(Envelope e) {
+    // A zero base limit means the family deliberately has no spending cap.
+    if (e.limit.minor <= 0) return e.limit;
     if (e.rollover == Rollover.reset) return e.limit;
     final prevStart =
         DateTime(cycleStart.year, cycleStart.month - 1, cycleStart.day);
@@ -3098,6 +3293,25 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void restoreItemStage(
+    ListItem item, {
+    required ItemState state,
+    required bool checkedOut,
+    Money? actual,
+    String? purchasedById,
+  }) {
+    if (!canEditLists || !items.contains(item)) return;
+    item
+      ..state = state
+      ..checkedOut = checkedOut
+      ..actual = actual
+      ..purchasedById = purchasedById;
+    _persistItem(item);
+    _queue('list_item', item);
+    pendingOps++;
+    notifyListeners();
+  }
+
   /// F5 - "Finish shopping" closes the loop: checked items become one expense
   /// pre-filled with the estimate, posted to the linked envelope.
   Money finishShopping({
@@ -3340,6 +3554,25 @@ class AppState extends ChangeNotifier {
     if (debtRepayments.any((p) => p.id == paymentId)) return false;
     final inDebt = amount.inCurrency(debt.principal.currency, rate);
     if (inDebt.minor > remainingOnDebt(debt).minor) return false;
+
+    // A repayment is real cash movement, unlike merely recording a debt.
+    // Keep the debt tracker and family ledger in step so Home's available
+    // balance changes immediately. The deterministic transaction id makes a
+    // retried repayment idempotent across offline and sync retries.
+    final moneyReceived = debt.direction == DebtDirection.owedToMe;
+    final posted = addTx(
+      id: uuidFromSeed('debt-repayment:$paymentId'),
+      type: moneyReceived ? TxType.income : TxType.expense,
+      amount: amount,
+      memberId: realUser.id,
+      method: Method.cash,
+      note: moneyReceived
+          ? 'Debt repayment received: ${debt.name}'
+          : 'Debt repayment: ${debt.name}',
+      force: true,
+    );
+    if (!posted) return false;
+
     final value = DebtRepayment(
         id: paymentId,
         debtId: debt.id,
@@ -3375,6 +3608,8 @@ class AppState extends ChangeNotifier {
     String emoji = 'goal',
     bool isKidJar = false,
     String? ownerMemberId,
+    DateTime? deadline,
+    String? autoSave,
   }) {
     if (!canCreateSavingsRecords) {
       debugPrint('Mhuri: unauthorized addGoal for role: ${authRole.name}');
@@ -3387,6 +3622,8 @@ class AppState extends ChangeNotifier {
       target: target,
       isKidJar: isKidJar,
       ownerMemberId: ownerMemberId,
+      deadline: deadline,
+      autoSave: autoSave,
       createdById: realUser.id,
     );
     goals.insert(0, goal);
@@ -3397,7 +3634,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool updateGoal(Goal goal, {required String name, required Money target}) {
+  bool updateGoal(
+    Goal goal, {
+    required String name,
+    required Money target,
+    DateTime? deadline,
+    String? autoSave,
+  }) {
     if (!canManageSavingsGoal(goal) ||
         name.trim().isEmpty ||
         target.minor <= 0) {
@@ -3408,7 +3651,8 @@ class AppState extends ChangeNotifier {
       name: name.trim(),
       emoji: goal.emoji,
       target: target,
-      autoSave: goal.autoSave,
+      autoSave: autoSave,
+      deadline: deadline,
       isKidJar: goal.isKidJar,
       ownerMemberId: goal.ownerMemberId,
       status: goal.status,
@@ -3431,6 +3675,7 @@ class AppState extends ChangeNotifier {
       emoji: goal.emoji,
       target: goal.target,
       autoSave: goal.autoSave,
+      deadline: goal.deadline,
       isKidJar: goal.isKidJar,
       ownerMemberId: goal.ownerMemberId,
       status: 'done',
@@ -3453,6 +3698,7 @@ class AppState extends ChangeNotifier {
       emoji: goal.emoji,
       target: goal.target,
       autoSave: goal.autoSave,
+      deadline: goal.deadline,
       isKidJar: goal.isKidJar,
       ownerMemberId: goal.ownerMemberId,
       status: 'archived',

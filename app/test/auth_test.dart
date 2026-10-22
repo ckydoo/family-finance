@@ -444,6 +444,30 @@ void main() {
       expect(kv['auth_refresh_token'], '');
     });
 
+    test('an ambiguous 400 refresh response does not sign the user out',
+        () async {
+      kv['auth_access_token'] = 'access-1';
+      kv['auth_refresh_token'] = 'refresh-1';
+      kv['auth_user_id'] = 'uuid-7';
+      kv['auth_email'] = 'david@mhuri.app';
+
+      client = FakeClient(
+          [const MapEntry(400, '{"error":"temporarily_unavailable"}')]);
+      service = SupabaseAuthService(
+        baseUrl: 'https://abcdefgh.supabase.co/',
+        anonKey: 'anon-key',
+        kvGet: (k) async => kv[k],
+        kvSet: (k, v) async => kv[k] = v,
+        client: client,
+      );
+
+      final session = await service.restoreSession();
+
+      expect(session?.userId, 'uuid-7');
+      expect(kv['auth_access_token'], 'access-1');
+      expect(kv['auth_refresh_token'], 'refresh-1');
+    });
+
     test('refreshAccessToken() renews and persists the access token', () async {
       kv['auth_access_token'] = 'access-1';
       kv['auth_refresh_token'] = 'refresh-1';

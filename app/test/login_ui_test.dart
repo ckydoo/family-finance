@@ -90,4 +90,27 @@ void main() {
     expect(find.text('Continue with Facebook'), findsNothing);
     expect(auth.isLoggedIn, isFalse);
   });
+
+  testWidgets('empty sign-in fields show validation instead of network error',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final auth = AuthController(env: testEnv(), service: FakeAuthService());
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: mhuriLocalizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: LoginScreen(auth: auth),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final submit = find.widgetWithText(ElevatedButton, 'Sign in');
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a valid email address.'), findsOneWidget);
+    expect(find.textContaining('No connection'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

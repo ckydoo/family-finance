@@ -148,9 +148,14 @@ class _AdultShellState extends State<AdultShell> {
               tooltip: AppLocalizations.of(context)!.addTransaction,
               onPressed: () => showQuickAddMenu(context),
               backgroundColor: context.accent,
-              elevation: 4,
-              child:
-                  const Icon(Icons.add_rounded, size: 26, color: Colors.white),
+              elevation: 2,
+              child: Icon(
+                Icons.add_rounded,
+                size: 26,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? context.onSolid
+                    : context.primaryDark,
+              ),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -203,7 +208,7 @@ class _AdultShellState extends State<AdultShell> {
     final selected = _tab == idx;
     // Extreme text scale: icons only - the row can never overflow.
     final huge = MediaQuery.textScalerOf(context).scale(11) >= 19;
-    final color = selected ? context.primaryDark : context.ink;
+    final color = selected ? context.primaryDark : context.inkSoft;
     return Expanded(
       child: InkWell(
         key: key,

@@ -11,11 +11,13 @@ import '../utils/ids.dart';
 /// Context a mapper needs beyond the domain object itself.
 class SyncCtx {
   final String spaceId;
+  final String? actorId;
   final String? defaultListId;
   final String Function() newId;
 
   const SyncCtx({
     required this.spaceId,
+    this.actorId,
     this.defaultListId,
     required this.newId,
   });
@@ -315,12 +317,24 @@ final kSyncAdapters = <String, SyncAdapter>{
         'sender_avatar': m.senderAvatar,
         // `pending` is device-local. Once this row reaches the shared server,
         // it has been sent successfully.
-        'status':
-            m.status == ChatMessageStatus.pending ? 'sent' : m.status.name,
-        'reference_type': m.referenceType?.name,
+        'status': switch (m.status) {
+          ChatMessageStatus.pending || ChatMessageStatus.failed => 'sent',
+          _ => m.status.name,
+        },
+        'reference_type': switch (m.referenceType) {
+          ChatReferenceType.shoppingList => 'shopping_list',
+          // Older production schemas do not yet include `budget` in the
+          // reference_type check. Carry it through the already-supported
+          // expense wire type and mark the metadata for lossless decoding.
+          ChatReferenceType.budget => 'expense',
+          final value? => value.name,
+          null => null,
+        },
         'reference_id': m.referenceId,
         'reference_title': m.referenceTitle,
-        'reference_meta': m.referenceMeta,
+        'reference_meta': m.referenceType == ChatReferenceType.budget
+            ? '[budget]${m.referenceMeta ?? ''}'
+            : m.referenceMeta,
         'media_url': m.mediaUrl,
         'media_type': m.mediaType,
         'sticker': m.sticker,
@@ -341,13 +355,23 @@ final kSyncAdapters = <String, SyncAdapter>{
       senderName: j['sender_name'] as String?,
       senderAvatar: j['sender_avatar'] as String?,
       status: ChatMessageStatus.values.byName(j['status'] as String? ?? 'sent'),
-      referenceType: j['reference_type'] == null
-          ? null
-          : ChatReferenceType.values
-              .byName(j['reference_type'] as String? ?? 'expense'),
+      referenceType: switch ((
+        j['reference_type'] as String?,
+        j['reference_meta'] as String?
+      )) {
+        ('expense', final meta?) when meta.startsWith('[budget]') =>
+          ChatReferenceType.budget,
+        (null, _) => null,
+        ('shopping_list', _) => ChatReferenceType.shoppingList,
+        (final value?, _) => ChatReferenceType.values.byName(value),
+      },
       referenceId: j['reference_id'] as String?,
       referenceTitle: j['reference_title'] as String?,
-      referenceMeta: j['reference_meta'] as String?,
+      referenceMeta: switch (j['reference_meta'] as String?) {
+        final meta? when meta.startsWith('[budget]') =>
+          meta.substring('[budget]'.length),
+        final meta => meta,
+      },
       mediaUrl: j['media_url'] as String?,
       mediaType: j['media_type'] as String?,
       sticker: j['sticker'] as String?,
@@ -432,7 +456,9 @@ final kSyncAdapters = <String, SyncAdapter>{
         'method': _methodOut[t.method],
         'note': t.note,
         'occurred_at': t.when.toUtc().toIso8601String(),
-        'created_by': t.memberId,
+        // The member attached to a transaction is its subject. It may differ
+        // from the signed-in adult who recorded/approved it.
+        'created_by': ctx.actorId ?? t.memberId,
         'deleted_at': t.deletedAt?.toUtc().toIso8601String(),
         'receipt_uri': t.receiptUri,
         'recurring_rule_id': t.recurringRuleId,
@@ -501,6 +527,9 @@ final kSyncAdapters = <String, SyncAdapter>{
         'is_kid_jar': g.isKidJar,
         'status': g.status,
         'created_by': g.createdById,
+        'deadline': g.deadline?.toIso8601String().split('T').first,
+        'auto_save_rule':
+            g.autoSave == null ? null : <String, Object?>{'label': g.autoSave},
       };
     },
     decode: (j) => Goal(
@@ -515,7 +544,14 @@ final kSyncAdapters = <String, SyncAdapter>{
       isKidJar: (j['is_kid_jar'] as bool?) ?? false,
       status: j['status'] as String? ?? 'active',
       createdById: j['created_by'] as String?,
-      // auto-save rules are device-local for M3
+      deadline: j['deadline'] == null
+          ? null
+          : DateTime.tryParse(j['deadline'].toString()),
+      autoSave: switch (j['auto_save_rule']) {
+        {'label': final Object label} => label.toString(),
+        final String label => label,
+        _ => null,
+      },
     ),
   ),
   'goal_tx': SyncAdapter(
@@ -525,7 +561,10 @@ final kSyncAdapters = <String, SyncAdapter>{
     encode: (d, ctx) {
       final t = d as GoalTx;
       return {
-        'id': ctx.newId(),
+        // Contributions are append-only. Keep the client mutation id all the
+        // way to the server so a later pull upserts the local row instead of
+        // materialising the same contribution a second time.
+        'id': t.id ?? ctx.newId(),
         'goal_id': t.goalId,
         'member_id': t.byMemberId,
         'amount_minor': t.amount.minor,

@@ -8,6 +8,43 @@ import 'package:mhuri_money/features/members/members_screen.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 void main() {
+  testWidgets('owner can edit and remove a kid profile', (tester) async {
+    final state = AppState();
+    state.members.addAll([
+      state.user,
+      const Member(
+        id: 'kid-profile',
+        name: 'Tari',
+        emoji: 'boy',
+        role: Role.kid,
+      ),
+    ]);
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: const MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MembersScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Edit Tari profile'), findsOneWidget);
+    await tester.tap(find.byTooltip('View Tari avatar'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Close avatar'), findsOneWidget);
+    expect(find.text('Change avatar'), findsOneWidget);
+    await tester.tap(find.byTooltip('Close avatar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Manage Tari'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove from family'), findsOneWidget);
+  });
+
   testWidgets('family header uses stored data and never fixture text',
       (tester) async {
     final state = AppState();
@@ -91,7 +128,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('profile switcher scrolls without overflowing a phone screen',
+  testWidgets('family roles explain removal authority without preview controls',
       (tester) async {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1;
@@ -114,16 +151,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('Switch profile'),
-      400,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('Switch profile').first);
+    expect(find.text('Switch profile'), findsNothing);
+    expect(find.text('Preview as…'), findsNothing);
+
+    await tester.tap(find.text('See role permissions'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(ListView), findsAtLeastNWidgets(2));
-    expect(find.text('Zoe'), findsOneWidget);
+    expect(find.text('Removing family members'), findsOneWidget);
+    expect(
+      find.textContaining(
+          'Only the Family Owner or a Family Admin can remove another member'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -149,9 +188,11 @@ void main() {
 
     await tester.scrollUntilVisible(
       find.text('Kids Mode exit PIN'),
-      400,
+      250,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.drag(find.byType(ListView).first, const Offset(0, -80));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Kids Mode exit PIN'));
     await tester.pumpAndSettle();
 

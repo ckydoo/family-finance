@@ -140,7 +140,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 21,
+        version: 23,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -197,6 +197,7 @@ class AppDatabase {
       target_minor INTEGER NOT NULL,
       target_currency TEXT NOT NULL,
       auto_save TEXT,
+      deadline_ms INTEGER,
       is_kid_jar INTEGER NOT NULL DEFAULT 0,
       owner_member_id TEXT
       ,created_by_id TEXT
@@ -217,6 +218,10 @@ class AppDatabase {
     '''
     CREATE UNIQUE INDEX IF NOT EXISTS goal_tx_server_id_idx
       ON goal_tx (server_id) WHERE server_id IS NOT NULL
+    ''',
+    '''
+    CREATE UNIQUE INDEX IF NOT EXISTS goal_tx_mutation_idx
+      ON goal_tx (goal_id, member_id, amount_minor, currency, at_ms)
     ''',
     '''
     CREATE TABLE IF NOT EXISTS recurring (
@@ -605,7 +610,8 @@ class AppDatabase {
   /// · v11: contributions · v12: debts · v13: receipts/splits
   /// · v14: recurring bill links · v15: family-task approvals
   /// · v16: reviewable sync conflicts · v17: chat media and stickers
-  /// · v18: savings-goal creator attribution.
+  /// · v18: savings-goal creator attribution · v22: savings deadline
+  /// · v23: stable savings-contribution identity and legacy deduplication.
   static Future<void> upgrade(Database d, int oldVersion) async {
     if (oldVersion >= 2 && oldVersion < 2) return;
     if (oldVersion < 2) {
@@ -743,6 +749,28 @@ class AppDatabase {
         await d.execute(
             'ALTER TABLE family_chat_message ADD COLUMN edited_at_ms INTEGER');
       } catch (_) {}
+    }
+    if (oldVersion < 22) {
+      try {
+        await d.execute('ALTER TABLE goal ADD COLUMN deadline_ms INTEGER');
+      } catch (_) {}
+    }
+    if (oldVersion < 23) {
+      // Older clients generated a second server id while retaining the local
+      // contribution id. Both rows have the same immutable business fields,
+      // so collapse those legacy copies before enforcing the invariant.
+      await d.execute('''
+        DELETE FROM goal_tx
+        WHERE id NOT IN (
+          SELECT MIN(id)
+          FROM goal_tx
+          GROUP BY goal_id, member_id, amount_minor, currency, at_ms
+        )
+      ''');
+      await d.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS goal_tx_mutation_idx
+        ON goal_tx (goal_id, member_id, amount_minor, currency, at_ms)
+      ''');
     }
     await createSchema(d); // shopping_list & others are CREATE IF NOT EXISTS
   }

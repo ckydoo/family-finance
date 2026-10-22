@@ -2,11 +2,65 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/l10n/localization_delegates.dart';
 import 'package:mhuri_money/core/money/money.dart';
+import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/features/quickadd/quick_add_sheet.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 void main() {
+  test('zero limit remains unlimited with rollover enabled', () {
+    final state = AppState();
+    state.addEnvelope(
+      name: 'Groceries',
+      limit: const Money(0, Currency.usd),
+      rollover: Rollover.roll,
+    );
+    final envelope = state.envelopes.single;
+    expect(state.effectiveLimit(envelope).minor, 0);
+    expect(state.paceOf(envelope), Pace.onTrack);
+  });
+
+  testWidgets('unlimited budget does not warn about overspending',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final state = AppState();
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Groceries',
+      limit: const Money(0, Currency.usd),
+      rollover: Rollover.roll,
+    );
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => showQuickAdd(context),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '45.50');
+    await tester.tap(find.text('Add expense'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('This budget will be over its limit'), findsNothing);
+    expect(state.txs, hasLength(1));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('expense over the envelope limit requires confirmation',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);

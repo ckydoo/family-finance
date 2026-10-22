@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/config/app_version.dart';
+import '../../core/billing/entitlement.dart';
 import '../../core/notifications/notifier.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/notifications/reminders.dart';
@@ -9,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 import '../instructions/instructions_screen.dart';
 import '../legal/legal_screen.dart';
 import 'sync_screen.dart';
+import 'plus_screen.dart';
 import '../../core/utils/error_messages.dart';
 import '../../core/widgets/ui.dart';
 
@@ -33,6 +36,35 @@ class SettingsScreen extends StatelessWidget {
               padding: kPageInsets,
               children: [
                 if (s.auth?.isLoggedIn ?? false) ...[
+                  _header(context, Icons.workspace_premium_outlined, 'Mhuri Plus'),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.workspace_premium_outlined,
+                        color: context.primary),
+                    title: Text(
+                      s.familyEntitlement?.plusActive == true
+                          ? 'Plus is active'
+                          : 'Explore Plus',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: context.ink,
+                      ),
+                    ),
+                    subtitle: Text(
+                      s.familyEntitlement?.plusActive == true
+                          ? 'Available to your whole family'
+                          : billingEnabled
+                              ? 'Plans, features, and restore purchases'
+                              : 'Plan details and purchase readiness',
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const PlusScreen(),
+                    )),
+                  ),
+                  const SizedBox(height: 16),
                   _header(context, Icons.account_circle_outlined,
                       AppLocalizations.of(context)!.accountTitle),
                   ListTile(
@@ -475,7 +507,7 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () => showLicensePage(
                     context: context,
                     applicationName: 'Mhuri',
-                    applicationVersion: '1.0.0',
+                    applicationVersion: kAppVersion,
                     applicationLegalese: '© 2026 Mhuri. All rights reserved.\n'
                         'Built for African family financial collaboration.',
                   ),
@@ -489,8 +521,8 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Future<void> _editPayday(BuildContext context, AppState state) async {
-    final controller = TextEditingController(text: '${state.monthStartDay}');
     final formKey = GlobalKey<FormState>();
+    var enteredDay = state.monthStartDay;
     final day = await showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -498,7 +530,7 @@ class SettingsScreen extends StatelessWidget {
         content: Form(
           key: formKey,
           child: TextFormField(
-            controller: controller,
+            initialValue: '${state.monthStartDay}',
             autofocus: true,
             keyboardType: TextInputType.number,
             inputFormatters: integerInputFormatters,
@@ -512,6 +544,9 @@ class SettingsScreen extends StatelessWidget {
                   ? 'Enter a day from 1 to 31.'
                   : null;
             },
+            onChanged: (value) {
+              enteredDay = int.tryParse(value.trim()) ?? enteredDay;
+            },
           ),
         ),
         actions: [
@@ -522,15 +557,26 @@ class SettingsScreen extends StatelessWidget {
           FilledButton(
             onPressed: () {
               if (formKey.currentState?.validate() != true) return;
-              Navigator.pop(dialogContext, int.parse(controller.text.trim()));
+              Navigator.pop(dialogContext, enteredDay);
             },
             child: const Text('Save'),
           ),
         ],
       ),
     );
-    controller.dispose();
-    if (day != null) state.setMonthStartDay(day);
+    if (day == null) return;
+    final engine = state.sync;
+    if (engine != null && state.env.isConfigured) {
+      final saved = await engine.saveFamilyMonthStart(day);
+      if (!saved) {
+        if (context.mounted) {
+          _showMessage(context,
+              'Could not update the family budget cycle. Please try again.');
+        }
+        return;
+      }
+    }
+    state.setMonthStartDay(day);
   }
 
   static void _showMessage(BuildContext context, String message) {

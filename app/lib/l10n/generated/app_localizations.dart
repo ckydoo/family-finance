@@ -1987,7 +1987,7 @@ abstract class AppLocalizations {
   /// No description provided for @usesPct.
   ///
   /// In en, this message translates to:
-  /// **'Uses {pct}% of the {name}'**
+  /// **'Uses {pct}% of your {name} budget'**
   String usesPct(Object pct, Object name);
 
   /// No description provided for @loggedTo.

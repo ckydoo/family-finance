@@ -845,6 +845,7 @@ class Persistence {
         'target_minor': g.target.minor,
         'target_currency': g.target.currency.name,
         'auto_save': g.autoSave,
+        'deadline_ms': g.deadline?.millisecondsSinceEpoch,
         'is_kid_jar': g.isKidJar ? 1 : 0,
         'owner_member_id': g.ownerMemberId,
         'created_by_id': g.createdById,
@@ -1179,6 +1180,9 @@ class Persistence {
           Currency.values.byName(m['target_currency'] as String),
         ),
         autoSave: m['auto_save'] as String?,
+        deadline: m['deadline_ms'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(m['deadline_ms'] as int),
         isKidJar: (m['is_kid_jar'] as int) == 1,
         ownerMemberId: m['owner_member_id'] as String?,
         createdById: m['created_by_id'] as String?,

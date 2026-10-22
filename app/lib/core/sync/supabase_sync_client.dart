@@ -64,14 +64,15 @@ class SupabaseSyncClient {
     String onConflict = 'id',
   }) async {
     if (rows.isEmpty) return true;
-    final r = await _client.post(
-      Uri.parse('$_base/rest/v1/$table?on_conflict=$onConflict'),
-      headers: {
-        ...(await _headers()),
-        'Prefer': 'resolution=merge-duplicates,return=minimal',
-      },
-      body: jsonEncode(rows),
-    );
+    final headers = await _headers();
+    final r = await _call(() => _client.post(
+          Uri.parse('$_base/rest/v1/$table?on_conflict=$onConflict'),
+          headers: {
+            ...headers,
+            'Prefer': 'resolution=merge-duplicates,return=minimal',
+          },
+          body: jsonEncode(rows),
+        ));
     if (r.statusCode >= 200 && r.statusCode < 300) return true;
     throw SyncException(r.statusCode, _msg(r));
   }
@@ -188,7 +189,9 @@ class SyncException implements Exception {
 
   const SyncException(this.statusCode, this.message);
 
-  bool get isAuthError => statusCode == 401 || statusCode == 403;
+  // PostgREST uses 403 for valid users who are blocked by RLS/permissions.
+  // Treating it as an expired token logs users out for ordinary access errors.
+  bool get isAuthError => statusCode == 401;
 
   @override
   String toString() => 'SyncException($statusCode, $message)';

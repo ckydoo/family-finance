@@ -227,15 +227,15 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
+                    color: context.warningSoft,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade300),
+                    border: Border.all(color: context.warning),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(Icons.lightbulb_outline,
-                          size: 18, color: Colors.amber.shade900),
+                          size: 18, color: context.warning),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -243,7 +243,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
-                            color: Colors.amber.shade900,
+                            color: context.ink,
                             height: 1.4,
                           ),
                         ),

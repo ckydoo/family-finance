@@ -1,0 +1,5 @@
+# The RTDN endpoint performs its own Google OIDC signature/audience/identity
+# verification. Supabase's user-JWT gateway check must be disabled only for
+# this function; all other functions retain the platform default.
+[functions.google-play-rtdn]
+verify_jwt = false

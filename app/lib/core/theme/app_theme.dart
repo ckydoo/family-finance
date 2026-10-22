@@ -3,31 +3,46 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// ── Design tokens (see PRODUCT_SPEC.md §6.3) ────────────────────────────────
-const Color kPrimary = Color(0xFF0E7C66); // deep teal - trust/growth
-const Color kPrimaryDark = Color(0xFF0A5A4B);
-const Color kPrimarySoft = Color(0xFFE3F0EC); // teal wash (containers, chips)
-const Color kAccent = Color(0xFFF4A81D); // warm amber - action
-const Color kAccentSoft = Color(0xFFFCF1DC); // amber wash
-const Color kBg = Color(0xFFF6F5F1); // off-white background
+// ── Midnight Slate & Champagne design tokens ───────────────────────────────
+// Keep brand values here so feature widgets consume semantic colors through
+// [MhuriCtx] rather than carrying raw hex values of their own.
+const Color kPrimary = Color(0xFF24344A); // midnight slate
+const Color kPrimaryDark = Color(0xFF17283D);
+const Color kPrimaryLight = Color(0xFF40556D);
+const Color kPrimarySoft = Color(0xFFE7EBEF); // slate wash (containers, chips)
+const Color kAccent = Color(0xFFC6A477); // champagne accent
+const Color kAccentDark =
+    Color(0xFFA77E42); // accessible accent on light surfaces
+const Color kAccentSoft = Color(0xFFF4EDE3); // champagne wash
+const Color kBg = Color(0xFFF5F3EE); // warm off-white background
 const Color kCard = Color(0xFFFFFFFF); // card surface
-const Color kInk = Color(0xFF17251F); // primary text (teal-tinted ink)
-const Color kInkSoft = Color(0xFF5D6A64); // secondary text (WCAG 5.5 on kBg)
-const Color kInkFaint = Color(0xFF67736E); // captions (WCAG 4.5 on kBg)
-const Color kDanger = Color(0xFFD9534F); // kind danger
-const Color kDangerSoft = Color(0xFFFBE9E8);
-const Color kIncomeGreen = Color(0xFF1B8A5A);
-const Color kExpenseRed = Color(0xFFB3423E);
-const Color kTrack = Color(0xFFECEAE4); // progress track
-const Color kHairline = Color(0xFFE8E6DF); // soft borders/dividers
-const Color kShadow = Color(0x1417251F); // 8% ink - soft elevation
+const Color kSurfaceSecondary = Color(0xFFEEEAE3);
+const Color kInk = Color(0xFF20272D); // primary text
+// One step darker than the reference #68717B so normal text clears WCAG 4.5:1
+// against the warm background rather than rounding just below the threshold.
+const Color kInkSoft = Color(0xFF66707A); // secondary text
+const Color kInkFaint = Color(0xFF66707A); // captions
+const Color kDanger = Color(0xFFB65C58);
+const Color kDangerSoft = Color(0xFFF7E8E6);
+const Color kIncomeGreen = Color(0xFF397866);
+// Text/icon red is deliberately deeper than the danger fill token so it is
+// readable on the soft danger surface at normal text sizes.
+const Color kExpenseRed = Color(0xFFA34A47);
+const Color kWarning = Color(0xFFB47C36);
+const Color kInformation = Color(0xFF557C9C);
+const Color kTrack = kSurfaceSecondary;
+const Color kHairline = Color(0xFFE4E2DD);
+const Color kShadow = Color(0x1420272D); // 8% ink - soft elevation
 
-// Kids Mode palette
-const Color kKidBg = Color(0xFFFFC93C); // sunny yellow
-const Color kKidCoral = Color(0xFFFF6B6B);
-const Color kKidSky = Color(0xFF7EC8F2);
-const Color kKidCard = Color(0xFFFFFDF4);
-const Color kKidInk = Color(0xFF5B3A00);
+// Kids Mode keeps its playful geometry, but shares the core brand palette.
+const Color kKidBg = kBg;
+const Color kKidCoral = kDanger;
+const Color kKidSky = kInformation;
+const Color kKidCard = kCard;
+const Color kKidInk = kInk;
+const Color kKidAccentSoft = kAccentSoft;
+const Color kKidBorder = kHairline;
+const Color kDarkInkSoft = Color(0xFFC7D2DF);
 
 /// App-wide font family (bundled - see pubspec + assets/fonts/poppins/OFL.txt).
 const String kFontFamily = 'Poppins';
@@ -111,9 +126,10 @@ const List<BoxShadow> kCardShadow = [];
 /// One object, two instances: every screen reads colors through [MhuriCtx]
 /// so light/dark swap is automatic (G1).
 class MhuriColors {
-  final Color bg, card, ink, inkSoft, inkFaint, hairline;
-  final Color primary, primaryDark, primarySoft;
-  final Color accent, accentSoft, danger, dangerSoft;
+  final Color bg, card, surfaceSecondary, ink, inkSoft, inkFaint, hairline;
+  final Color primary, primaryDark, primaryLight, primarySoft;
+  final Color accent, accentDark, accentSoft, danger, dangerSoft;
+  final Color warning, information;
   final Color successSoft, warningSoft, infoSoft, violetSoft;
   final Color incomeGreen, expenseRed, track, shadowColor, onSolid;
   final List<BoxShadow> cardShadow;
@@ -121,17 +137,22 @@ class MhuriColors {
   const MhuriColors({
     required this.bg,
     required this.card,
+    required this.surfaceSecondary,
     required this.ink,
     required this.inkSoft,
     required this.inkFaint,
     required this.hairline,
     required this.primary,
     required this.primaryDark,
+    required this.primaryLight,
     required this.primarySoft,
     required this.accent,
+    required this.accentDark,
     required this.accentSoft,
     required this.danger,
     required this.dangerSoft,
+    required this.warning,
+    required this.information,
     required this.successSoft,
     required this.warningSoft,
     required this.infoSoft,
@@ -147,20 +168,25 @@ class MhuriColors {
   static const light = MhuriColors(
     bg: kBg,
     card: kCard,
+    surfaceSecondary: kSurfaceSecondary,
     ink: kInk,
     inkSoft: kInkSoft,
     inkFaint: kInkFaint,
     hairline: kHairline,
     primary: kPrimary,
     primaryDark: kPrimaryDark,
+    primaryLight: kPrimaryLight,
     primarySoft: kPrimarySoft,
     accent: kAccent,
+    accentDark: kAccentDark,
     accentSoft: kAccentSoft,
     danger: kDanger,
     dangerSoft: kDangerSoft,
+    warning: kWarning,
+    information: kInformation,
     successSoft: Color(0xFFD9EDE8),
-    warningSoft: Color(0xFFFBE7C6),
-    infoSoft: Color(0xFFDCEBFA),
+    warningSoft: Color(0xFFF7EBD9),
+    infoSoft: Color(0xFFE6EEF4),
     violetSoft: Color(0xFFEFE3F7),
     incomeGreen: kIncomeGreen,
     expenseRed: kExpenseRed,
@@ -171,28 +197,33 @@ class MhuriColors {
   );
 
   static const dark = MhuriColors(
-    bg: Color(0xFF0D1512),
-    card: Color(0xFF17211C),
-    ink: Color(0xFFE9F0EB),
-    inkSoft: Color(0xFFA3B2AB),
-    inkFaint: Color(0xFF7C8B84),
-    hairline: Color(0xFF26332D),
-    primary: Color(0xFF2FB89A),
-    primaryDark: Color(0xFF6FDCC4),
-    primarySoft: Color(0xFF12312A),
-    accent: Color(0xFFF4B84A),
-    accentSoft: Color(0xFF332A12),
-    danger: Color(0xFFE8796F),
-    dangerSoft: Color(0xFF3A211E),
-    successSoft: Color(0xFF17372F),
-    warningSoft: Color(0xFF3A2D14),
-    infoSoft: Color(0xFF172F40),
-    violetSoft: Color(0xFF30263B),
-    incomeGreen: Color(0xFF46C983),
-    expenseRed: Color(0xFFE4796F),
-    track: Color(0xFF223029),
+    bg: Color(0xFF101722),
+    card: Color(0xFF192333),
+    surfaceSecondary: Color(0xFF222E3E),
+    ink: Color(0xFFF3F1EC),
+    inkSoft: Color(0xFFB5BDC7),
+    inkFaint: Color(0xFF9AA5B2),
+    hairline: Color(0xFF2D3A4C),
+    primary: Color(0xFFC7D2DF),
+    primaryDark: Color(0xFFE4EBF2),
+    primaryLight: Color(0xFF9BAEC2),
+    primarySoft: Color(0xFF26364A),
+    accent: Color(0xFFD5B98F),
+    accentDark: Color(0xFFE7C99B),
+    accentSoft: Color(0xFF3A3024),
+    danger: Color(0xFFE28B86),
+    dangerSoft: Color(0xFF402827),
+    warning: Color(0xFFD7A55F),
+    information: Color(0xFF83A9C7),
+    successSoft: Color(0xFF203B35),
+    warningSoft: Color(0xFF3D3223),
+    infoSoft: Color(0xFF243747),
+    violetSoft: Color(0xFF342E40),
+    incomeGreen: Color(0xFF72B29E),
+    expenseRed: Color(0xFFE28B86),
+    track: Color(0xFF263243),
     shadowColor: Color(0x66000000),
-    onSolid: Color(0xFF0C1411),
+    onSolid: Color(0xFF101722),
     cardShadow: [],
   );
 
@@ -205,17 +236,22 @@ extension MhuriCtx on BuildContext {
   MhuriColors get mc => MhuriColors.of(this);
   Color get bg => mc.bg;
   Color get card => mc.card;
+  Color get surfaceSecondary => mc.surfaceSecondary;
   Color get ink => mc.ink;
   Color get inkSoft => mc.inkSoft;
   Color get inkFaint => mc.inkFaint;
   Color get hairline => mc.hairline;
   Color get primary => mc.primary;
   Color get primaryDark => mc.primaryDark;
+  Color get primaryLight => mc.primaryLight;
   Color get primarySoft => mc.primarySoft;
   Color get accent => mc.accent;
+  Color get accentDark => mc.accentDark;
   Color get accentSoft => mc.accentSoft;
   Color get danger => mc.danger;
   Color get dangerSoft => mc.dangerSoft;
+  Color get warning => mc.warning;
+  Color get information => mc.information;
   Color get successSoft => mc.successSoft;
   Color get warningSoft => mc.warningSoft;
   Color get infoSoft => mc.infoSoft;
@@ -230,15 +266,18 @@ extension MhuriCtx on BuildContext {
 
 ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
   final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
-  final scheme =
-      ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness)
-          .copyWith(
+  final seededScheme =
+      ColorScheme.fromSeed(seedColor: p.primary, brightness: brightness);
+  final isDark = brightness == Brightness.dark;
+  final scheme = seededScheme.copyWith(
     primary: p.primary,
     onPrimary: p.onSolid,
     primaryContainer: p.primarySoft,
     onPrimaryContainer: p.primaryDark,
     secondary: p.accent,
-    onSecondary: p.ink,
+    // The dark palette's ink is near-white, so it disappears on the light
+    // champagne accent. Keep the established light-mode pairing unchanged.
+    onSecondary: brightness == Brightness.dark ? p.onSolid : p.ink,
     secondaryContainer: p.accentSoft,
     onSecondaryContainer: p.ink,
     error: p.danger,
@@ -246,6 +285,16 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     errorContainer: p.dangerSoft,
     onErrorContainer: p.expenseRed,
     surface: p.card,
+    // Material 3 components also consume the container tiers directly. In
+    // dark mode, pin them to our palette instead of accepting seed-generated
+    // greys; retain every generated light-mode value exactly as before.
+    surfaceDim: isDark ? p.bg : seededScheme.surfaceDim,
+    surfaceBright: isDark ? p.surfaceSecondary : seededScheme.surfaceBright,
+    surfaceContainerLowest: isDark ? p.bg : seededScheme.surfaceContainerLowest,
+    surfaceContainerLow: isDark ? p.card : seededScheme.surfaceContainerLow,
+    surfaceContainer: isDark ? p.card : seededScheme.surfaceContainer,
+    surfaceContainerHigh:
+        isDark ? p.surfaceSecondary : seededScheme.surfaceContainerHigh,
     onSurface: p.ink,
     surfaceContainerHighest: p.track,
     onSurfaceVariant: p.inkSoft,
@@ -511,6 +560,22 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
         fontSize: 12.5,
         fontWeight: FontWeight.w600,
         color: p.ink,
+      ),
+    ),
+    badgeTheme: BadgeThemeData(
+      backgroundColor: p.accentDark,
+      // White is retained in light mode; dark mode needs dark ink against its
+      // deliberately brighter champagne badge surface.
+      textColor: brightness == Brightness.dark ? p.onSolid : Colors.white,
+      smallSize: 8,
+      largeSize: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      alignment: const AlignmentDirectional(12, -11),
+      textStyle: const TextStyle(
+        fontFamily: kFontFamily,
+        fontSize: 10,
+        height: 1,
+        fontWeight: FontWeight.w700,
       ),
     ),
     listTileTheme: ListTileThemeData(

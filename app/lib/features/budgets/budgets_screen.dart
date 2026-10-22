@@ -12,6 +12,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/tx_tile.dart';
+import '../family_chat/family_chat_screen.dart';
 import 'recurring_ui.dart';
 
 Future<void> _showBudgetRestriction(BuildContext context) => showDialog<void>(
@@ -347,7 +348,9 @@ class _CyclePlanCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [context.primaryDark, context.primary],
+          colors: Theme.of(context).brightness == Brightness.dark
+              ? [context.primarySoft, context.card]
+              : [context.primaryDark, context.primary],
         ),
         borderRadius: kBRadiusL,
         boxShadow: [
@@ -360,32 +363,46 @@ class _CyclePlanCard extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const SizedBox(
+          SizedBox(
             width: 40,
             height: 40,
             child: Center(
               child: Icon(Icons.event_note_outlined,
-                  color: Colors.white, size: 23),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? context.ink
+                      : Colors.white,
+                  size: 23),
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
               child: Text('This month\'s plan',
                   style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white))),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? context.ink
+                          : Colors.white))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
+              color: (Theme.of(context).brightness == Brightness.dark
+                      ? context.ink
+                      : Colors.white)
+                  .withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+              border: Border.all(
+                  color: (Theme.of(context).brightness == Brightness.dark
+                          ? context.ink
+                          : Colors.white)
+                      .withValues(alpha: 0.22)),
             ),
             child: Text(
               plan == null ? 'Not set' : (plan.isClosed ? 'Closed' : 'Active'),
-              style: const TextStyle(
-                  color: Colors.white,
+              style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? context.ink
+                      : Colors.white,
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700),
             ),
@@ -395,14 +412,21 @@ class _CyclePlanCard extends StatelessWidget {
         Row(
           children: [
             Icon(Icons.date_range_outlined,
-                size: 15, color: Colors.white.withValues(alpha: 0.72)),
+                size: 15,
+                color: (Theme.of(context).brightness == Brightness.dark
+                        ? context.ink
+                        : Colors.white)
+                    .withValues(alpha: 0.72)),
             const SizedBox(width: 6),
             Text(
               cycleLabel,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withValues(alpha: 0.78),
+                color: (Theme.of(context).brightness == Brightness.dark
+                        ? context.ink
+                        : Colors.white)
+                    .withValues(alpha: 0.78),
               ),
             ),
           ],
@@ -411,20 +435,33 @@ class _CyclePlanCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.10),
+            color: (Theme.of(context).brightness == Brightness.dark
+                    ? context.card
+                    : Colors.black)
+                .withValues(alpha: 0.10),
             borderRadius: kBRadiusM,
           ),
           child: Row(children: [
             Expanded(
-                child: _PlanMetric(label: 'Expected', value: expectedLabel)),
+                child: _PlanMetric(
+                    label: 'Expected',
+                    value: expectedLabel,
+                    onDarkCard:
+                        Theme.of(context).brightness == Brightness.dark)),
             Container(
               width: 1,
               height: 34,
-              color: Colors.white.withValues(alpha: 0.20),
+              color: (Theme.of(context).brightness == Brightness.dark
+                      ? context.ink
+                      : Colors.white)
+                  .withValues(alpha: 0.20),
             ),
             Expanded(
               child: _PlanMetric(
-                  label: 'Allocated', value: allocation.text, alignEnd: true),
+                  label: 'Allocated',
+                  value: allocation.text,
+                  alignEnd: true,
+                  onDarkCard: Theme.of(context).brightness == Brightness.dark),
             ),
           ]),
         ),
@@ -439,8 +476,12 @@ class _CyclePlanCard extends StatelessWidget {
                   size: 18),
               label: Text(plan == null ? 'Set up plan' : 'Edit plan'),
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: context.primaryDark,
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? context.surfaceSecondary
+                    : Colors.white,
+                foregroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? context.ink
+                    : context.primaryDark,
               ),
             ),
           if (plan == null && state.previousBudgetPlan != null)
@@ -493,11 +534,13 @@ class _PlanMetric extends StatelessWidget {
     required this.label,
     required this.value,
     this.alignEnd = false,
+    this.onDarkCard = false,
   });
 
   final String label;
   final String value;
   final bool alignEnd;
+  final bool onDarkCard;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -508,15 +551,17 @@ class _PlanMetric extends StatelessWidget {
               style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.68))),
+                  color: onDarkCard
+                      ? context.inkSoft
+                      : Colors.white.withValues(alpha: 0.68))),
           const SizedBox(height: 2),
           Text(value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white)),
+                  color: onDarkCard ? context.ink : Colors.white)),
         ],
       );
 }
@@ -619,8 +664,8 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
   void armGuard() => guardArmed = true;
   String? formError;
 
-  final result = await showMhuriSheet<
-      ({String name, double limit, Currency currency, Rollover rollover})>(
+  final result =
+      await showMhuriSheet<({String name, Money limit, Rollover rollover})>(
     context: context,
     builder: (sheetContext) => StatefulBuilder(
       builder: (sheetContext, setSheetState) => SingleChildScrollView(
@@ -671,7 +716,7 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
             MhuriField(
               controller: limit,
               label: l.limitLabel,
-              inputFormatters: amountInputFormatters,
+              inputFormatters: groupedAmountInputFormatters,
               onChanged: (_) {
                 armGuard();
                 if (formError != null) {
@@ -680,6 +725,7 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
               },
               currencySymbol: currency.symbol,
               prefixText: '${currency.symbol} ',
+              helperText: 'Maximum ${currency.symbol} 999,999,999,999.99',
               fillColor: sheetContext.card,
             ),
             const SizedBox(height: 12),
@@ -728,22 +774,22 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
             const SizedBox(height: 18),
             FilledButton(
               onPressed: () {
-                final amount =
-                    double.tryParse(limit.text.trim().replaceAll(',', ''));
                 if (name.text.trim().isEmpty) {
                   setSheetState(() => formError = l.envelopeLabel);
                   return;
                 }
-                if (amount == null || amount <= 0) {
-                  setSheetState(() => formError = l.enterAmountFirst);
+                final inputError =
+                    positiveMoneyInputError(limit.text, currency);
+                if (inputError != null) {
+                  setSheetState(() => formError = inputError);
                   return;
                 }
+                final amount = Money.tryParse(limit.text, currency)!;
                 Navigator.pop(
                   sheetContext,
                   (
                     name: name.text.trim(),
                     limit: amount,
-                    currency: currency,
                     rollover: rollover,
                   ),
                 );
@@ -762,7 +808,7 @@ Future<void> _showNewEnvelopeSheet(BuildContext context, AppState state) async {
   if (result == null) return;
   state.addEnvelope(
     name: result.name,
-    limit: Money.fromMajor(result.limit, result.currency),
+    limit: result.limit,
     rollover: result.rollover,
   );
 }
@@ -1388,6 +1434,20 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
                       ),
                     )
                   : Text(AppLocalizations.of(context)!.moveMoney),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: () {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                navigator.push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => FamilyChatScreen(initialBudget: e),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              label: const Text('Discuss this budget'),
             ),
             const SizedBox(height: 20),
             Text(

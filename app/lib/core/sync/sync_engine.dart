@@ -4,12 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart' show Database;
 
 import '../db/persistence.dart';
-import '../models/models.dart' show Goal, InviteInfo, Role;
+import '../models/models.dart' show FamilyChatMessage, Goal, InviteInfo, Role;
 import '../money/money.dart';
 import '../state/app_state.dart';
 import '../utils/ids.dart';
 import 'outbox.dart';
 import '../observability/reporter.dart';
+import '../billing/entitlement.dart';
 import 'supabase_sync_client.dart';
 import 'sync_mappers.dart';
 
@@ -89,7 +90,10 @@ class SyncEngine {
 
   Timer? _timer;
   Timer? _debounce;
+  Timer? _reconcileTimer;
   Future<void>? _activeSync;
+  Future<void>? _activeChatRefresh;
+  bool _reconciling = false;
 
   SyncStatus status = SyncStatus.idle;
   String? lastError;
@@ -133,11 +137,11 @@ class SyncEngine {
     if (!autoSchedule) return;
 
     // Pull-on-start once state hydration has finished.
-    state.ready().then((_) {
+    state.ready().then((_) async {
       if (_spaceId != null) {
-        syncNow();
+        await _syncOrReconcile();
       } else {
-        state.refreshPending();
+        await state.refreshPending();
       }
     });
 
@@ -146,6 +150,35 @@ class SyncEngine {
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (_spaceId != null) syncNow();
     });
+    // Cursor sync is efficient, while a periodic full snapshot makes it
+    // self-healing if OS backup/restore resurrects a cursor without all of
+    // its corresponding rows. The versioned marker also forces one complete
+    // reconciliation after this reliability fix ships.
+    _reconcileTimer = Timer.periodic(const Duration(hours: 6), (_) {
+      if (_spaceId != null) _syncOrReconcile();
+    });
+  }
+
+  static const _reconcileVersion = 2;
+  static const _reconcileInterval = Duration(hours: 24);
+
+  String get _reconcileKey =>
+      'full_reconcile_v$_reconcileVersion' '_${_spaceId ?? ''}';
+
+  Future<void> _syncOrReconcile() async {
+    final raw = await _kvGet(_reconcileKey);
+    final lastMs = int.tryParse(raw ?? '');
+    final now = DateTime.now();
+    final last =
+        lastMs == null ? null : DateTime.fromMillisecondsSinceEpoch(lastMs);
+    final due = last == null ||
+        last.isAfter(now.add(const Duration(hours: 1))) ||
+        now.difference(last) >= _reconcileInterval;
+    if (due) {
+      await reloadAllFamilyData(automatic: true);
+    } else {
+      await syncNow();
+    }
   }
 
   /// One SQLite database is shared by installations, not by identities.
@@ -202,6 +235,7 @@ class SyncEngine {
   void dispose() {
     _timer?.cancel();
     _debounce?.cancel();
+    _reconcileTimer?.cancel();
   }
 
   Future<int> pendingCount() => _outbox.count();
@@ -355,6 +389,7 @@ class SyncEngine {
         domain,
         SyncCtx(
           spaceId: sid,
+          actorId: state.realUser.id,
           defaultListId: await _kvGet('default_list_id'),
           newId: newClientId,
         ),
@@ -365,6 +400,105 @@ class SyncEngine {
     } catch (e) {
       debugPrint('Mhuri outbox warning: $e');
       reportError?.call('outbox', e, StackTrace.current);
+    }
+  }
+
+  /// Chat is latency-sensitive and deliberately bypasses the offline outbox.
+  /// The caller gets an immediate success/failure result and can expose retry.
+  Future<bool> sendChatMessage(Object domain) async {
+    final sid = _spaceId;
+    if (sid == null) return false;
+    final adapter = kSyncAdapters['family_chat_message']!;
+    final payload = adapter.encode(
+      domain,
+      SyncCtx(
+        spaceId: sid,
+        actorId: state.realUser.id,
+        // Chat rows never use a shopping-list id. Avoid an unrelated SQLite
+        // read on the latency-sensitive send path.
+        defaultListId: null,
+        newId: newClientId,
+      ),
+    );
+    try {
+      await client.pushRows(adapter.table, [payload]);
+      return true;
+    } on SyncException catch (error) {
+      debugPrint(
+          'Mhuri chat send rejected (${error.statusCode}): ${error.message}');
+      reportError?.call('chat:send', error, StackTrace.current);
+      if (error.statusCode == 401 && retryAuth != null && await retryAuth!()) {
+        try {
+          await client.pushRows(adapter.table, [payload]);
+          return true;
+        } catch (retryError, retryStack) {
+          debugPrint('Mhuri chat send retry failed: $retryError');
+          reportError?.call('chat:send_retry', retryError, retryStack);
+          return false;
+        }
+      }
+      return false;
+    } catch (error, stack) {
+      debugPrint('Mhuri chat send failed: $error');
+      reportError?.call('chat:send', error, stack);
+      return false;
+    }
+  }
+
+  /// Pull only new chat rows while the conversation is visible.
+  ///
+  /// The normal sync intentionally covers the entire family data graph and
+  /// can take several requests. Chat must not wait behind that work. This
+  /// small cursor-based pull is idempotent and safely overlaps normal sync.
+  Future<void> refreshChat() {
+    final active = _activeChatRefresh;
+    if (active != null) return active;
+    final run = _refreshChatNow();
+    _activeChatRefresh = run;
+    return run.whenComplete(() {
+      if (identical(_activeChatRefresh, run)) _activeChatRefresh = null;
+    });
+  }
+
+  Future<void> _refreshChatNow() async {
+    final sid = _spaceId;
+    if (sid == null) return;
+    const entity = 'family_chat_message';
+    const key = 'sync_cursor_family_chat_message';
+    final adapter = kSyncAdapters[entity]!;
+    final stored = await _kvGet(key);
+    final since = stored == null || stored.isEmpty
+        ? null
+        : (DateTime.tryParse(stored)
+                ?.subtract(const Duration(milliseconds: 1))
+                .toUtc()
+                .toIso8601String() ??
+            stored);
+    try {
+      final rows = await client.pullRows(
+        adapter.table,
+        orderCol: 'updated_at',
+        sinceIso: since,
+        spaceId: sid,
+        spaceCol: 'space_id',
+        limit: 200,
+      );
+      if (rows.isEmpty) return;
+      await _persistence.applyServerRows(entity, rows);
+      state.applyPulled(entity, rows);
+      String? maxCursor = since;
+      for (final row in rows) {
+        final updatedAt = row['updated_at'];
+        if (updatedAt is String &&
+            (maxCursor == null || updatedAt.compareTo(maxCursor) > 0)) {
+          maxCursor = updatedAt;
+        }
+      }
+      if (maxCursor != null) await _kvSet(key, maxCursor);
+    } catch (error, stack) {
+      // The regular sync and Firebase wake-up remain fallbacks. A transient
+      // foreground refresh failure must not turn the whole app red/offline.
+      reportError?.call('chat:refresh', error, stack);
     }
   }
 
@@ -467,6 +601,28 @@ class SyncEngine {
       return true;
     } catch (e) {
       debugPrint('Mhuri role-permissions error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> saveFamilyMonthStart(int day) async {
+    final sid = _spaceId;
+    if (sid == null || day < 1 || day > 31) return false;
+    try {
+      await client.rpc('set_family_month_start', {
+        'p_space_id': sid,
+        'p_day': day,
+      });
+      return true;
+    } on SyncException catch (e) {
+      _setStatus(
+        e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
+        e.message,
+      );
+      return false;
+    } catch (_) {
+      _setStatus(SyncStatus.offline,
+          'Could not update the family budget cycle. Try again.');
       return false;
     }
   }
@@ -615,6 +771,127 @@ class SyncEngine {
     return id == null ? null : state.goal(id);
   }
 
+  /// Fetches the server-authoritative entitlement for the active family.
+  /// The client never derives Plus from a local purchase callback.
+  Future<FamilyEntitlement> fetchFamilyEntitlement(
+      {String? purchaseToken, String? productId}) async {
+    final familyId = _spaceId;
+    if (familyId == null || familyId.isEmpty) {
+      throw const SyncException(0, 'FAMILY_REQUIRED');
+    }
+    final response = await client.invokeFunction(
+      'verify-family-entitlement',
+      {
+        'family_id': familyId,
+        if (purchaseToken != null) 'purchase_token': purchaseToken,
+        if (productId != null) 'product_id': productId,
+      },
+    );
+    if (response is! Map) {
+      throw const SyncException(0, 'INVALID_ENTITLEMENT_RESPONSE');
+    }
+    final entitlement = FamilyEntitlement.fromJson(
+      Map<String, Object?>.from(response),
+    );
+    if (entitlement.familyId != familyId) {
+      throw const SyncException(0, 'ENTITLEMENT_FAMILY_MISMATCH');
+    }
+    return entitlement;
+  }
+
+  Future<List<Map<String, Object?>>> fetchFamilyChatPolls() async {
+    final familyId = _spaceId;
+    if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
+    final result = await client.rpc('get_family_chat_polls', {
+      'p_space_id': familyId,
+    });
+    if (result is! List) return const [];
+    return [
+      for (final row in result)
+        if (row is Map) Map<String, Object?>.from(row),
+    ];
+  }
+
+  Future<void> createFamilyChatPoll({
+    required String question,
+    required List<String> options,
+    bool allowMultiple = false,
+    DateTime? closesAt,
+  }) async {
+    final familyId = _spaceId;
+    if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
+    await client.rpc('create_family_chat_poll', {
+      'p_space_id': familyId,
+      'p_question': question,
+      'p_options': options,
+      'p_allow_multiple': allowMultiple,
+      'p_closes_at': closesAt?.toUtc().toIso8601String(),
+    });
+  }
+
+  Future<void> voteFamilyChatPoll(String pollId, List<int> optionIndexes) async {
+    await client.rpc('vote_family_chat_poll', {
+      'p_poll_id': pollId,
+      'p_option_indexes': optionIndexes,
+    });
+  }
+
+  Future<void> closeFamilyChatPoll(String pollId) async {
+    await client.rpc('close_family_chat_poll', {'p_poll_id': pollId});
+  }
+
+  Future<void> setFamilyChatPin(String messageId, {required bool pinned}) async {
+    final familyId = _spaceId;
+    if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
+    await client.rpc('set_family_chat_pin', {
+      'p_space_id': familyId,
+      'p_message_id': messageId,
+      'p_pinned': pinned,
+    });
+  }
+
+  Future<List<Map<String, Object?>>> fetchFamilyChatPins() async {
+    final familyId = _spaceId;
+    if (familyId == null) return const [];
+    return client.pullRows(
+      'family_chat_pin',
+      orderCol: 'created_at',
+      spaceId: familyId,
+      spaceCol: 'space_id',
+      ascending: false,
+      limit: 20,
+    );
+  }
+
+  Future<List<FamilyChatMessage>> searchFamilyChatMessages({
+    String? text,
+    String? senderId,
+    DateTime? from,
+    DateTime? before,
+    String kind = 'any',
+    int limit = 250,
+  }) async {
+    final familyId = _spaceId;
+    if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
+    final result = await client.rpc('search_family_chat_messages', {
+      'p_space_id': familyId,
+      'p_text': text,
+      'p_sender_id': senderId,
+      'p_after': from?.toUtc().toIso8601String(),
+      'p_before': before?.toUtc().toIso8601String(),
+      'p_kind': kind,
+      'p_limit': limit.clamp(1, 500),
+      'p_offset': 0,
+    });
+    if (result is! List) return const [];
+    final adapter = kSyncAdapters['family_chat_message']!;
+    return [
+      for (final raw in result)
+        if (raw is Map)
+          adapter.decode(Map<String, Object?>.from(raw)) as FamilyChatMessage,
+    ];
+  }
+
   /// Hands the family to another active member: roles swap, the family's
   /// static code moves with it, audit row written (migration 010).
   Future<void> transferOwnership(String newOwnerUserId) =>
@@ -661,6 +938,33 @@ class SyncEngine {
     try {
       _setStatus(SyncStatus.syncing);
       await client.patchRow('user_profile', uid, values);
+      _setStatus(SyncStatus.idle);
+    } on SyncException catch (e) {
+      _setStatus(
+        e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
+        e.message,
+      );
+    } catch (_) {
+      _setStatus(SyncStatus.offline, 'Network error - try again.');
+    }
+  }
+
+  Future<void> updateChildProfile(
+    String memberId,
+    Map<String, Object?> values,
+  ) async {
+    if (memberId.isEmpty || values.isEmpty) return;
+    try {
+      _setStatus(SyncStatus.syncing);
+      await client.rpc('update_child_profile', {
+        'p_member': memberId,
+        'p_name': values['name'],
+        'p_avatar': values['avatar'],
+        'p_avatar_url': values['avatar_url'],
+        'p_update_name': values.containsKey('name'),
+        'p_update_avatar': values.containsKey('avatar'),
+        'p_update_avatar_url': values.containsKey('avatar_url'),
+      });
       _setStatus(SyncStatus.idle);
     } on SyncException catch (e) {
       _setStatus(
@@ -796,6 +1100,7 @@ class SyncEngine {
   // ── the sync loop ───────────────────────────────────────────────────────
 
   Future<void> syncNow({bool force = false}) {
+    if (_reconciling) return Future<void>.value();
     final active = _activeSync;
     if (active != null) return active;
     final run = _runSync(force: force);
@@ -803,6 +1108,54 @@ class SyncEngine {
     return run.whenComplete(() {
       if (identical(_activeSync, run)) _activeSync = null;
     });
+  }
+
+  /// Repairs a device whose incremental pull cursor is ahead of data it never
+  /// received (for example after Android restores app storage on reinstall).
+  /// Pending local writes are pushed first and are never discarded.
+  Future<bool> reloadAllFamilyData({bool automatic = false}) async {
+    if (_reconciling) return false;
+    final active = _activeSync;
+    if (active != null) await active;
+    if (_spaceId == null) {
+      _setStatus(SyncStatus.needsSetup, 'No family is selected.');
+      return false;
+    }
+
+    if (await _outbox.count() > 0) {
+      await syncNow(force: true);
+      if (await _outbox.count() > 0) {
+        _setStatus(
+          SyncStatus.error,
+          'Some changes on this device have not reached the family yet. '
+          'Resolve them before reloading all data.',
+        );
+        return false;
+      }
+    }
+
+    _reconciling = true;
+    _setStatus(SyncStatus.syncing);
+    try {
+      await _fullSync();
+      await _kvSet(_reconcileKey, '${DateTime.now().millisecondsSinceEpoch}');
+      return true;
+    } on SyncException catch (e) {
+      _registerFailure(
+        e.message,
+        e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
+      );
+      reportError?.call('sync:full_reload', e, StackTrace.current);
+      return false;
+    } catch (e, st) {
+      _registerFailure(
+          'Network error - could not reload family data.', SyncStatus.offline);
+      reportError?.call('sync:full_reload', e, st);
+      return false;
+    } finally {
+      _reconciling = false;
+      await state.refreshPending();
+    }
   }
 
   Future<void> _runSync({required bool force}) async {
@@ -830,14 +1183,10 @@ class SyncEngine {
         // Access token expired mid-session: force one refresh and retry the
         // pass exactly once. Still 401 → rethrown → needsSignIn below.
         if (!e.isAuthError || retryAuth == null) {
-          if (e.isAuthError) {
-            state.auth?.handleForcedLogout(reason: e.message);
-          }
           rethrow;
         }
         final refreshed = await retryAuth!();
         if (!refreshed) {
-          state.auth?.handleForcedLogout(reason: e.message);
           rethrow;
         }
         await _detectConflicts();
@@ -1045,6 +1394,9 @@ class SyncEngine {
     // Membership is not part of the cursor-based entity pull. Refresh it on
     // normal syncs so members added on this or another device become visible.
     await _pullMembers();
+    // Budget-cycle/currency settings are family-wide and can change on any
+    // admin device. Refresh them during every normal sync, not only adoption.
+    await _pullFamilySettings();
     if (pullError != null) throw pullError;
   }
 
@@ -1175,7 +1527,11 @@ class SyncEngine {
           primary: settings['primary_currency']?.toString() ??
               rows.first['base_currency']?.toString(),
           secondary: settings['secondary_currency']?.toString(),
-          monthStart: int.tryParse('${settings['month_start_day'] ?? ''}'),
+          // The typed family_space column is authoritative. Older setup
+          // versions also stored this in JSON and could leave the two values
+          // out of sync, causing totals to jump after the settings pull.
+          monthStart: int.tryParse(
+              '${rows.first['month_start_day'] ?? settings['month_start_day'] ?? ''}'),
           templates: templates,
         );
       }
