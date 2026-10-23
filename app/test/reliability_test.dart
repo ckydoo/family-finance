@@ -101,6 +101,7 @@ void main() {
     SyncEngine.reportError = null;
     engine.dispose();
     await Future<void>.delayed(const Duration(milliseconds: 50));
+    await db.flushWrites();
     await db.raw.close();
   });
 

@@ -1,5 +1,6 @@
 import '../models/models.dart';
 import '../money/money.dart';
+import '../planning/commitments.dart';
 
 /// M5 - smart notifications (spec J2/J3), computed device-side.
 ///
@@ -154,6 +155,9 @@ class ReminderPlanner {
     required Map<String, String> memberNames,
     required int monthStartDay,
     List<ContributionCampaign> campaigns = const [],
+    List<FinancialCommitment> commitments = const [],
+    List<CommitmentOccurrence> commitmentOccurrences = const [],
+    List<CommitmentPayment> commitmentPayments = const [],
     List<Reminder> extra = const [],
   }) {
     if (!config.enabled) return const [];
@@ -183,6 +187,47 @@ class ReminderPlanner {
                   'Review & post when it\'s paid.',
           when: overdue ? _nextDailyAt(now, 9) : _atHour(r.nextDue, 9),
         ));
+      }
+      final commitmentsById = {for (final value in commitments) value.id: value};
+      for (final occurrence in commitmentOccurrences) {
+        final commitment = commitmentsById[occurrence.commitmentId];
+        if (commitment == null ||
+            commitment.status != CommitmentStatus.active ||
+            occurrence.status == CommitmentOccurrenceStatus.paid ||
+            occurrence.status == CommitmentOccurrenceStatus.skipped ||
+            occurrence.status == CommitmentOccurrenceStatus.canceled) {
+          continue;
+        }
+        final remaining = const CommitmentSchedule()
+            .outstanding(occurrence, commitmentPayments);
+        if (remaining.isZero) continue;
+        final today = DateTime(now.year, now.month, now.day);
+        final due = DateTime(occurrence.dueDate.year, occurrence.dueDate.month,
+            occurrence.dueDate.day);
+        if (due.isBefore(today)) {
+          out.add(Reminder(
+            key: 'commitment_${occurrence.id}_overdue',
+            category: ReminderCategory.bills,
+            title: '${commitment.name} is overdue',
+            body: '${remaining.text} remains outstanding.',
+            when: _nextDailyAt(now, 9),
+          ));
+          continue;
+        }
+        for (final days in commitment.reminderDaysBefore.toSet()) {
+          final reminderDate = due.subtract(Duration(days: days));
+          if (reminderDate.isBefore(today) ||
+              reminderDate.isAfter(today.add(const Duration(days: 30)))) {
+            continue;
+          }
+          out.add(Reminder(
+            key: 'commitment_${occurrence.id}_$days',
+            category: ReminderCategory.bills,
+            title: '${commitment.name} - ${remaining.text}',
+            body: days == 0 ? 'Due today.' : 'Due in $days days.',
+            when: _atHour(reminderDate, 9),
+          ));
+        }
       }
     }
 

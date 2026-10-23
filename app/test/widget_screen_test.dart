@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mhuri_money/core/billing/entitlement.dart';
 import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/auth/auth_controller.dart';
 import 'package:mhuri_money/core/models/models.dart';
@@ -78,6 +79,26 @@ void main() {
     expect(find.text('Reminders'), findsOneWidget);
     expect(find.textContaining('Scheduled on this device'), findsOneWidget);
     expect(find.textContaining('9:00 PM–7:00 AM'), findsOneWidget);
+  });
+
+  testWidgets('Home marks an active Mhuri Plus family', (tester) async {
+    sizeWindow(tester);
+    final free = await seeded();
+    await tester.pumpWidget(harness(free, const HomeScreen()));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('home_plus_mark')), findsNothing);
+
+    final plus = await seeded();
+    plus.familyEntitlement = const FamilyEntitlement(
+      familyId: 'family',
+      status: EntitlementStatus.active,
+      features: kPlusV2Features,
+    );
+    await tester.pumpWidget(harness(plus, const HomeScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('home_plus_mark')), findsOneWidget);
+    expect(find.text('PLUS'), findsOneWidget);
   });
 
   testWidgets('Home exposes the family switcher and Settings separately',

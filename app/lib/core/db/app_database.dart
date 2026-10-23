@@ -13,11 +13,26 @@ import 'package:sqflite/sqflite.dart';
 /// null, so main() can show the setup screen instead of crashing.
 class AppDatabase {
   final Database raw;
+  final List<Future<void>> _pendingWrites = <Future<void>>[];
 
   AppDatabase._(this.raw);
 
   /// Public wrapper for tests (sqflite_common_ffi in-memory databases).
   factory AppDatabase.wrap(Database raw) => AppDatabase._(raw);
+
+  /// Registers an in-flight asynchronous persistence operation so callers or
+  /// test teardowns can deterministically wait for completion before closing.
+  void trackWrite(Future<void> op) {
+    _pendingWrites.add(op);
+    op.whenComplete(() => _pendingWrites.remove(op));
+  }
+
+  /// Completes once all currently queued writes on this database have settled.
+  Future<void> flushWrites() async {
+    while (_pendingWrites.isNotEmpty) {
+      await Future.wait(List.of(_pendingWrites));
+    }
+  }
 
   static const List<String> _accountTables = [
     'account',
@@ -45,6 +60,10 @@ class AppDatabase {
     'tx_allocation',
     'family_chat_message',
     'family_task',
+    'financial_commitment',
+    'commitment_occurrence',
+    'commitment_payment',
+    'period_preparation',
   ];
 
   static const Set<String> _familyKvKeys = {
@@ -71,6 +90,7 @@ class AppDatabase {
     'chat_last_read_ms',
     'sync_cursor',
     'last_sync_ms',
+    'family_entitlement_v1',
   };
 
   // ── Key-value helpers (session tokens, PINs, settings) ──────────────────
@@ -128,6 +148,10 @@ class AppDatabase {
       'tx_allocation',
       'family_chat_message',
       'family_task',
+      'financial_commitment',
+      'commitment_occurrence',
+      'commitment_payment',
+      'period_preparation',
       'kv',
       'account_cache',
     ]) {
@@ -140,7 +164,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 23,
+        version: 25,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -471,6 +495,60 @@ class AppDatabase {
     CREATE INDEX IF NOT EXISTS family_task_due_idx
       ON family_task (due_at_ms, created_at_ms DESC)
     ''',
+    '''
+    CREATE TABLE IF NOT EXISTS financial_commitment (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
+      currency TEXT NOT NULL,
+      first_due_ms INTEGER NOT NULL,
+      recurrence TEXT NOT NULL,
+      created_by_id TEXT NOT NULL,
+      envelope_id TEXT,
+      status TEXT NOT NULL,
+      end_date_ms INTEGER,
+      reminder_days_json TEXT NOT NULL DEFAULT '[3]'
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS commitment_occurrence (
+      id TEXT PRIMARY KEY,
+      commitment_id TEXT NOT NULL,
+      occurrence_key TEXT NOT NULL,
+      due_at_ms INTEGER NOT NULL,
+      amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
+      currency TEXT NOT NULL,
+      status TEXT NOT NULL,
+      UNIQUE(commitment_id, occurrence_key),
+      FOREIGN KEY(commitment_id) REFERENCES financial_commitment(id)
+    )
+    ''',
+    '''
+    CREATE INDEX IF NOT EXISTS commitment_occurrence_due_idx
+      ON commitment_occurrence (due_at_ms, status)
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS commitment_payment (
+      id TEXT PRIMARY KEY,
+      occurrence_id TEXT NOT NULL,
+      transaction_id TEXT NOT NULL,
+      amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
+      currency TEXT NOT NULL,
+      created_by_id TEXT NOT NULL,
+      created_at_ms INTEGER NOT NULL,
+      UNIQUE(occurrence_id, transaction_id, id),
+      FOREIGN KEY(occurrence_id) REFERENCES commitment_occurrence(id)
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS period_preparation (
+      operation_id TEXT PRIMARY KEY,
+      target_cycle TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      status TEXT NOT NULL,
+      updated_at_ms INTEGER NOT NULL
+    )
+    ''',
   ];
 
   bool _isFamilyKv(String key) =>
@@ -611,7 +689,9 @@ class AppDatabase {
   /// · v14: recurring bill links · v15: family-task approvals
   /// · v16: reviewable sync conflicts · v17: chat media and stickers
   /// · v18: savings-goal creator attribution · v22: savings deadline
-  /// · v23: stable savings-contribution identity and legacy deduplication.
+  /// · v23: stable savings-contribution identity and legacy deduplication
+  /// · v24: financial commitments, occurrences and payment allocations.
+  /// · v25: durable local preview/apply operations for period preparation.
   static Future<void> upgrade(Database d, int oldVersion) async {
     if (oldVersion >= 2 && oldVersion < 2) return;
     if (oldVersion < 2) {
@@ -772,6 +852,9 @@ class AppDatabase {
         ON goal_tx (goal_id, member_id, amount_minor, currency, at_ms)
       ''');
     }
+    // v24 tables are created by the idempotent schema pass below. Keeping
+    // them in the canonical schema makes both upgrades and clean installs use
+    // exactly the same definitions.
     await createSchema(d); // shopping_list & others are CREATE IF NOT EXISTS
   }
 }

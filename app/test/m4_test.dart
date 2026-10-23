@@ -101,6 +101,7 @@ void main() {
     });
 
     tearDown(() async {
+      await db.flushWrites();
       await db.raw.close();
     });
 
@@ -204,6 +205,7 @@ void main() {
       // Cycles now start on the 25th, whatever today is.
       expect(second.cycleStart.day, 25);
 
+      await db.flushWrites();
       await db.raw.close();
     });
 

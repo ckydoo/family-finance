@@ -31,6 +31,7 @@ void main() {
     });
 
     tearDown(() async {
+      await db.flushWrites();
       await db.raw.close();
     });
 

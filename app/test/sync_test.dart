@@ -215,6 +215,7 @@ void main() {
     });
 
     tearDown(() async {
+      await db.flushWrites();
       await db.raw.close();
     });
 
@@ -1442,6 +1443,76 @@ void main() {
       expect(spaces.map((space) => space.id), ['space-home', 'space-extended']);
       expect(spaces.first.name, 'Home');
       expect(spaces.last.role, 'adult');
+    });
+
+    test('family-task backfill never republishes an existing server row',
+        () async {
+      const taskId = '00000000-0000-4000-8000-000000000099';
+      state.familyTasks.add(FamilyTask(
+        id: taskId,
+        title: 'Server is newer',
+        createdByMemberId: state.realUser.id,
+        createdAt: DateTime.utc(2026, 10, 1),
+        status: FamilyTaskStatus.open,
+      ));
+      server.handler = (request) async {
+        if (request.method == 'GET' &&
+            request.url.path == '/rest/v1/family_task') {
+          return _json([
+            {
+              'id': taskId,
+              'space_id': 'sp1',
+              'title': 'Server is newer',
+              'created_by': state.realUser.id,
+              'created_at': '2026-10-01T00:00:00Z',
+              'status': 'done',
+              'points': 1,
+              'requires_approval': true,
+              'is_archived': false,
+              'updated_at': '2026-10-22T12:00:00Z',
+            }
+          ]);
+        }
+        if (request.method == 'GET') return _json([]);
+        return _json(null, 201);
+      };
+
+      kv['space_id'] = 'sp1';
+      await engine.start();
+      await state.ready();
+      await engine.syncNow();
+
+      expect(
+        server.sent.where((request) =>
+            request.method == 'POST' &&
+            request.url.path == '/rest/v1/family_task'),
+        isEmpty,
+      );
+      expect(kv['family_tasks_backfilled_v2_sp1'], '1');
+      expect(state.familyTasks.single.status, FamilyTaskStatus.done);
+    });
+
+    test('commitment occurrences pull by their mutable update cursor',
+        () async {
+      final requestedOrderCols = <String>[];
+      server.handler = (request) async {
+        if (request.url.path.endsWith('/commitment_occurrence')) {
+          final order = request.url.queryParameters['order'] ?? '';
+          requestedOrderCols.add(order);
+          return _json([]);
+        }
+        return _json([]);
+      };
+
+      kv['space_id'] = 'sp1';
+      await engine.start();
+      await state.ready();
+      await engine.syncNow();
+
+      final paths = server.sent.map((r) => r.url.path).toList();
+      expect(paths, contains('/rest/v1/commitment_occurrence'));
+      expect(requestedOrderCols, contains('updated_at.asc'));
+      expect(requestedOrderCols, isNot(contains('created_at.asc')));
     });
   });
 }

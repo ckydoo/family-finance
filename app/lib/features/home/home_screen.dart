@@ -2031,6 +2031,15 @@ class _PoolCard extends StatelessWidget {
     final hasDual = s.activeCurrencies.length > 1;
     final secondary =
         hasDual ? s.availableToSpend(s.otherCurrency(s.displayCurrency)) : null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isPlus = s.hasPlus;
+    final gradientColors = isPlus
+        ? (isDark
+            ? const [Color(0xFF443621), Color(0xFF192333)]
+            : const [Color(0xFF17283D), Color(0xFF624C2F)])
+        : (isDark
+            ? [context.primarySoft, context.card]
+            : [context.primaryDark, context.primary]);
 
     return Material(
       color: Colors.transparent,
@@ -2048,9 +2057,7 @@ class _PoolCard extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: Theme.of(context).brightness == Brightness.dark
-                  ? [context.primarySoft, context.card]
-                  : [context.primaryDark, context.primary],
+              colors: gradientColors,
             ),
             borderRadius: kBRadiusL,
             border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
@@ -2116,6 +2123,7 @@ class _PoolCard extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
+                      if (isPlus) const _PlusMark(),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -2211,6 +2219,41 @@ class _PoolCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PlusMark extends StatelessWidget {
+  const _PlusMark();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: 'Mhuri Plus active',
+        child: Container(
+          key: const ValueKey('home_plus_mark'),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: context.accent,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.workspace_premium_rounded,
+                  size: 13, color: Color(0xFF17283D)),
+              SizedBox(width: 4),
+              Text(
+                'PLUS',
+                style: TextStyle(
+                  color: Color(0xFF17283D),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _BalanceCardPainter extends CustomPainter {

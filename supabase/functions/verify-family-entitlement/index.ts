@@ -178,8 +178,9 @@ Deno.serve(async (req) => {
       const active = ['active', 'gracePeriod', 'canceledActive'].includes(status) &&
         (!expiry || Date.parse(expiry) > Date.now());
       const features = active
-        ? ['advanced_insights', 'advanced_reports', 'enhanced_reports',
+        ? ['smart_commitments', 'advanced_insights', 'advanced_reports', 'enhanced_reports',
           'cash_flow_forecast', 'savings_projections',
+          'period_preparation', 'financial_health', 'debt_planning',
           'family_polls_pins', 'advanced_chat_search']
         : [];
       const verifiedAt = new Date().toISOString();
@@ -195,15 +196,21 @@ Deno.serve(async (req) => {
       if (existing && String(existing.space_id) !== familyId) {
         return json({ error: 'PURCHASE_ALREADY_CLAIMED' }, 409);
       }
-      const claimedForFamily = new URL(`${baseUrl}/rest/v1/billing_purchase_verification`);
-      claimedForFamily.searchParams.set('select', 'id');
-      claimedForFamily.searchParams.set('space_id', `eq.${familyId}`);
-      claimedForFamily.searchParams.set('limit', '1');
-      const familyClaimRes = await fetch(claimedForFamily, { headers: adminHeaders });
-      if (!familyClaimRes.ok) return json({ error: 'VERIFICATION_LOOKUP_FAILED' }, 502);
-      const familyClaims = await familyClaimRes.json();
-      if (!existing && Array.isArray(familyClaims) && familyClaims.length > 0) {
-        return json({ error: 'FAMILY_ALREADY_HAS_PURCHASE' }, 409);
+      if (!existing) {
+        const currentEntitlementUrl = new URL(`${baseUrl}/rest/v1/family_entitlement`);
+        currentEntitlementUrl.searchParams.set('select', 'status,expires_at');
+        currentEntitlementUrl.searchParams.set('space_id', `eq.${familyId}`);
+        currentEntitlementUrl.searchParams.set('limit', '1');
+        const currentEntRes = await fetch(currentEntitlementUrl, { headers: adminHeaders });
+        if (!currentEntRes.ok) return json({ error: 'VERIFICATION_LOOKUP_FAILED' }, 502);
+        const currentEntRows = await currentEntRes.json();
+        const currentEnt = Array.isArray(currentEntRows) ? currentEntRows[0] : null;
+        const currentStillActive = currentEnt &&
+          ['active', 'gracePeriod', 'canceledActive'].includes(String(currentEnt.status ?? '')) &&
+          (!currentEnt.expires_at || Date.parse(String(currentEnt.expires_at)) > Date.now());
+        if (currentStillActive) {
+          return json({ error: 'FAMILY_ALREADY_HAS_PURCHASE' }, 409);
+        }
       }
       const verificationRow = {
         space_id: familyId,

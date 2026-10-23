@@ -152,8 +152,9 @@ Deno.serve(async (req) => {
     const expiresAt = typeof line?.expiryTime === 'string' ? line.expiryTime : null;
     const active = !!line && ['active', 'gracePeriod', 'canceledActive'].includes(mapped) &&
       (!expiresAt || Date.parse(expiresAt) > Date.now());
-    const features = active ? ['advanced_insights', 'advanced_reports', 'enhanced_reports',
+    const features = active ? ['smart_commitments', 'advanced_insights', 'advanced_reports', 'enhanced_reports',
       'cash_flow_forecast', 'savings_projections', 'family_polls_pins',
+      'period_preparation', 'financial_health', 'debt_planning',
       'advanced_chat_search'] : [];
     const verifiedAt = new Date().toISOString();
     const update = await fetch(`${baseUrl}/rest/v1/family_entitlement?on_conflict=space_id`, {

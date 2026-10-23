@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/planning/commitments.dart';
 import '../../core/state/app_state.dart';
+import '../commitments/commitments_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/money/money.dart';
@@ -15,6 +17,8 @@ import '../../core/widgets/tx_tile.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/widgets/ui.dart';
 import '../settings/plus_screen.dart';
+import '../planner/payday_planner_screen.dart';
+import 'financial_health_screen.dart';
 
 /// Monthly report card (spec Module I1/I2) - one screen the family can
 /// review together at the monthly Family Meeting.
@@ -711,6 +715,19 @@ class _PlusInsightsCard extends StatelessWidget {
                     _changeLabel(context, currentTotals[id] ?? 0, previousTotals[id] ?? 0),
                   ]),
                 ),
+            if (state.hasPlusFeature('financial_health'))
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const FinancialHealthScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.health_and_safety_outlined, size: 18),
+                  label: const Text('Open health check'),
+                ),
+              ),
           ] else ...[
             const SizedBox(height: 12),
             Align(
@@ -799,7 +816,19 @@ class _CashflowForecastCard extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(child: _forecastMetric(context, 'Net trend', projectedNet)),
           ]),
-        ] else if (!active)
+        ],
+        if (active)
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const PaydayPlannerScreen(),
+              )),
+              icon: const Icon(Icons.calendar_month_outlined, size: 18),
+              label: const Text('Open planner'),
+            ),
+          )
+        else
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: TextButton.icon(
@@ -1089,20 +1118,28 @@ class _CommitmentsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = DateTime(state.now.year, state.now.month, state.now.day);
     final overdue = state.recurring
-        .where((rule) =>
-            rule.active &&
-            DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
-                .isBefore(today))
-        .length;
+            .where((rule) =>
+                rule.active &&
+                DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
+                    .isBefore(today))
+            .length +
+        state.overdueCommitments(at: today).length;
     final upcoming = state.recurring
-        .where((rule) =>
-            rule.active &&
-            !DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
-                .isBefore(today))
-        .length;
+            .where((rule) =>
+                rule.active &&
+                !DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
+                    .isBefore(today))
+            .length +
+        state.upcomingCommitments(at: today).length;
     final paid = transactions
-        .where((tx) => tx.recurringRuleId != null && tx.type == TxType.expense)
-        .length;
+            .where((tx) => tx.recurringRuleId != null && tx.type == TxType.expense)
+            .length +
+        state.commitmentOccurrences
+            .where((occ) =>
+                occ.status == CommitmentOccurrenceStatus.paid &&
+                !occ.dueDate.isBefore(state.cycleStart) &&
+                occ.dueDate.isBefore(state.nextCycleStart))
+            .length;
     final debtRemaining = state.familyDebts.fold<int>(
         0,
         (sum, debt) =>
@@ -1125,6 +1162,19 @@ class _CommitmentsCard extends StatelessWidget {
         _SummaryLine(
           label: 'Debt still outstanding',
           value: Money(debtRemaining, displayCurrency).text,
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const CommitmentsScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.event_repeat_rounded, size: 18),
+            label: const Text('Smart Commitments'),
+          ),
         ),
       ]),
     );

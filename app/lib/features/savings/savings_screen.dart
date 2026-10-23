@@ -15,6 +15,7 @@ import '../../core/widgets/ring_progress.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../settings/plus_screen.dart';
+import 'advanced_planning_screen.dart';
 
 /// Savings goals, kid jars and the savings-circle tracker (spec Module E, §7.5).
 enum SavingsSection { goals, debts }
@@ -599,6 +600,22 @@ class _SavingsScreenState extends State<SavingsScreen> {
                         color: context.ink,
                       ),
                     ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      final unlocked = s.hasPlusFeature('debt_planning') ||
+                          s.hasPlusFeature('savings_projections') ||
+                          s.hasPlus;
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => unlocked
+                              ? const AdvancedPlanningScreen()
+                              : const PlusScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: const Text('Payoff scenarios'),
                   ),
                 ]),
                 if (s.familyDebts.isEmpty) ...[
@@ -2032,6 +2049,22 @@ class _SavingsProjectionCard extends StatelessWidget {
                   ]),
                 ]),
               ),
+          if (unlocked)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdvancedPlanningScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.tune, size: 18),
+                  label: const Text('Explore scenarios'),
+                ),
+              ),
+            ),
         ],
       ),
     );

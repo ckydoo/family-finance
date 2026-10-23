@@ -58,6 +58,7 @@ class _FamilyPollsSheetState extends State<_FamilyPollsSheet> {
     final options = [TextEditingController(), TextEditingController()];
     var allowMultiple = false;
     DateTime? closesAt;
+    String? validationError;
     final result = await showDialog<(String, List<String>, bool, DateTime?)>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -95,6 +96,12 @@ class _FamilyPollsSheetState extends State<_FamilyPollsSheet> {
                 icon: const Icon(Icons.event_outlined),
                 label: Text(closesAt == null ? 'Optional close date' : 'Closes ${closesAt!.subtract(const Duration(days: 1)).month}/${closesAt!.subtract(const Duration(days: 1)).day}/${closesAt!.subtract(const Duration(days: 1)).year}'),
               ),
+              if (validationError != null)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(validationError!,
+                      style: TextStyle(color: context.danger)),
+                ),
             ]),
           ),
           actions: [
@@ -103,7 +110,21 @@ class _FamilyPollsSheetState extends State<_FamilyPollsSheet> {
               onPressed: () {
                 final cleanQuestion = question.text.trim();
                 final cleanOptions = options.map((e) => e.text.trim()).where((e) => e.isNotEmpty).toList();
-                if (cleanQuestion.isEmpty || cleanOptions.length < 2 || cleanOptions.toSet().length != cleanOptions.length) return;
+                final normalized = cleanOptions
+                    .map((value) => value.toLowerCase())
+                    .toSet();
+                if (cleanQuestion.isEmpty) {
+                  setDialogState(() => validationError = 'Enter a question.');
+                  return;
+                }
+                if (cleanOptions.length < 2) {
+                  setDialogState(() => validationError = 'Enter at least two options.');
+                  return;
+                }
+                if (normalized.length != cleanOptions.length) {
+                  setDialogState(() => validationError = 'Poll options must be unique.');
+                  return;
+                }
                 Navigator.pop(dialogContext, (cleanQuestion, cleanOptions, allowMultiple, closesAt));
               },
               child: const Text('Create poll'),
@@ -218,7 +239,11 @@ class _FamilyPollsSheetState extends State<_FamilyPollsSheet> {
     final closed = poll['closed_at'] != null ||
         (DateTime.tryParse(poll['closes_at']?.toString() ?? '')?.isBefore(DateTime.now()) ?? false);
     final allowMultiple = poll['allow_multiple'] == true;
-    final pending = _selectedOptions[id] ?? <int>{};
+    final pending = _selectedOptions[id] ?? myVotes;
+    final totalVotes = counts.values.fold<int>(
+      0,
+      (sum, v) => sum + (int.tryParse(v.toString()) ?? 0),
+    );
     final creator = poll['created_by']?.toString();
     final canClose = creator == state.realUser.id ||
         {Role.owner, Role.admin, Role.adult}.contains(state.authRole);
@@ -233,20 +258,27 @@ class _FamilyPollsSheetState extends State<_FamilyPollsSheet> {
             dense: true,
             contentPadding: EdgeInsets.zero,
             leading: Icon(
-              myVotes.contains(i) || pending.contains(i)
+              pending.contains(i)
                   ? Icons.check_circle
                   : allowMultiple ? Icons.circle_outlined : Icons.radio_button_unchecked,
               size: 19,
-              color: myVotes.contains(i) || pending.contains(i) ? context.primary : context.inkSoft,
+              color: pending.contains(i) ? context.primary : context.inkSoft,
             ),
             title: Text(options[i]),
-            trailing: Text('${counts[i.toString()] ?? 0}'),
-            onTap: closed || myVotes.isNotEmpty || _busy
+            trailing: Text(
+              totalVotes > 0
+                  ? '${counts[i.toString()] ?? 0} (${(((int.tryParse((counts[i.toString()] ?? 0).toString()) ?? 0) * 100) / totalVotes).round()}%)'
+                  : '${counts[i.toString()] ?? 0}',
+            ),
+            onTap: closed || _busy
                 ? null
                 : () {
                     if (allowMultiple) {
                       setState(() {
-                        final selected = _selectedOptions.putIfAbsent(id, () => <int>{});
+                        final selected = _selectedOptions.putIfAbsent(
+                          id,
+                          () => Set<int>.from(myVotes),
+                        );
                         if (!selected.add(i)) selected.remove(i);
                       });
                     } else {
@@ -254,16 +286,27 @@ class _FamilyPollsSheetState extends State<_FamilyPollsSheet> {
                     }
                   },
           ),
-        if (allowMultiple && myVotes.isEmpty && !closed && pending.isNotEmpty)
+        if (allowMultiple && !closed && pending.isNotEmpty)
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: FilledButton.tonal(
               onPressed: _busy ? null : () => _vote(id, pending.toList()..sort()),
-              child: const Text('Submit vote'),
+              child: Text(myVotes.isEmpty ? 'Submit vote' : 'Update vote'),
             ),
           ),
         Row(children: [
-          Expanded(child: Text(closed ? 'Closed' : myVotes.isNotEmpty ? 'Vote recorded' : allowMultiple ? 'Choose options, then submit' : 'One vote per family member', style: TextStyle(color: context.inkSoft, fontSize: 11))),
+          Expanded(
+            child: Text(
+              closed
+                  ? 'Closed · $totalVotes total votes'
+                  : myVotes.isNotEmpty
+                      ? 'Vote recorded ($totalVotes total) · tap to update'
+                      : allowMultiple
+                          ? 'Choose options, then submit'
+                          : 'One vote per family member',
+              style: TextStyle(color: context.inkSoft, fontSize: 11),
+            ),
+          ),
           if (!closed && canClose)
             TextButton(onPressed: _busy ? null : () => _closePoll(id), child: const Text('Close poll')),
         ]),

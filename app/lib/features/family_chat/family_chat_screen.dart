@@ -68,10 +68,15 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   String _advancedKind = 'any';
   List<FamilyChatMessage>? _advancedResults;
   bool _advancedSearchRunning = false;
+  int _advancedOffset = 0;
+  bool _advancedHasMore = false;
   int _visibleCount = 50;
   Future<Map<String, String>>? _mediaHeaderFuture;
   Timer? _chatRefreshTimer;
   Set<String> _pinnedMessageIds = {};
+  List<Map<String, Object?>> _pins = const [];
+  String? _highlightedMessageId;
+  int _refreshTick = 0;
 
   @override
   void initState() {
@@ -95,7 +100,13 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       _chatRefreshTimer = Timer.periodic(
         const Duration(milliseconds: 1200),
         (_) {
-          if (mounted) unawaited(AppScope.of(context).sync?.refreshChat());
+          if (!mounted) return;
+          final currentState = AppScope.of(context);
+          unawaited(currentState.sync?.refreshChat());
+          _refreshTick++;
+          if (_refreshTick % 4 == 0) {
+            unawaited(_loadPinnedMessageIds(currentState));
+          }
         },
       );
     });
@@ -105,13 +116,201 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     try {
       final pins = await state.sync?.fetchFamilyChatPins() ?? const [];
       if (!mounted) return;
-      setState(() => _pinnedMessageIds = {
-            for (final pin in pins)
-              if (pin['message_id'] != null) pin['message_id'].toString(),
-          });
+      setState(() {
+        _pins = pins;
+        _pinnedMessageIds = {
+          for (final pin in pins)
+            if (pin['message_id'] != null) pin['message_id'].toString(),
+        };
+      });
     } catch (_) {
       // Existing chat stays usable if pin loading is unavailable.
     }
+  }
+
+  bool _canUnpin(
+    AppState state,
+    String messageId,
+    FamilyChatMessage? message,
+  ) {
+    if (const {Role.owner, Role.admin, Role.adult}.contains(state.authRole)) {
+      return true;
+    }
+    if (message != null && message.senderId == state.realUser.id) {
+      return true;
+    }
+    for (final pin in _pins) {
+      if (pin['message_id']?.toString() == messageId &&
+          pin['pinned_by']?.toString() == state.realUser.id) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _jumpToMessage(AppState state, String messageId) {
+    final allSorted = [...state.familyChatMessages]
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final idx = allSorted.indexWhere((m) => m.id == messageId);
+    if (idx < 0 || allSorted[idx].deleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Original message is unavailable or was deleted.'),
+        ),
+      );
+      return;
+    }
+    final fromNewest = allSorted.length - idx;
+    setState(() {
+      _searching = false;
+      _query = '';
+      _advancedResults = null;
+      if (fromNewest > _visibleCount) {
+        _visibleCount = fromNewest + 10;
+      }
+      _highlightedMessageId = messageId;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      final reverseIndex = (fromNewest - 1).clamp(0, allSorted.length);
+      final targetOffset =
+          (reverseIndex * 76.0).clamp(0.0, _scroll.position.maxScrollExtent);
+      _scroll.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  Future<void> _showPinnedMessagesHub(AppState state) async {
+    await _loadPinnedMessageIds(state);
+    if (!mounted) return;
+    final byId = {
+      for (final msg in state.familyChatMessages) msg.id: msg,
+    };
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.push_pin, color: context.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Pinned messages (${_pins.length})',
+                      style: TextStyle(
+                        color: context.ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (_pins.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    state.hasPlusFeature('family_polls_pins')
+                        ? 'No pinned messages yet. Long-press any message to pin important family updates.'
+                        : 'Pinned messages are a Mhuri Plus feature.',
+                    style: TextStyle(color: context.inkSoft),
+                  ),
+                )
+              else
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.55,
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _pins.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(height: 1, color: context.hairline),
+                    itemBuilder: (_, index) {
+                      final pin = _pins[index];
+                      final msgId = pin['message_id']?.toString() ?? '';
+                      final msg = byId[msgId];
+                      final isDeleted = msg == null || msg.deleted;
+                      final canUnpin = _canUnpin(state, msgId, msg);
+                      final preview = isDeleted
+                          ? 'Original message was deleted'
+                          : _replyPreview(msg);
+                      final sender = isDeleted
+                          ? 'Unavailable'
+                          : (msg.senderName ??
+                              state.member(msg.senderId)?.name ??
+                              'Family member');
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          isDeleted
+                              ? Icons.chat_bubble_outline
+                              : Icons.push_pin_outlined,
+                          color: isDeleted ? context.inkSoft : context.primary,
+                        ),
+                        title: Text(
+                          preview,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isDeleted ? context.inkSoft : context.ink,
+                            fontStyle: isDeleted
+                                ? FontStyle.italic
+                                : FontStyle.normal,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          sender,
+                          style:
+                              TextStyle(color: context.inkSoft, fontSize: 12),
+                        ),
+                        onTap: isDeleted
+                            ? null
+                            : () {
+                                Navigator.pop(sheetContext);
+                                _jumpToMessage(state, msgId);
+                              },
+                        trailing: canUnpin &&
+                                state.hasPlusFeature('family_polls_pins')
+                            ? IconButton(
+                                tooltip: 'Unpin',
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () async {
+                                  Navigator.pop(sheetContext);
+                                  await state.sync
+                                      ?.setFamilyChatPin(msgId, pinned: false);
+                                  await _loadPinnedMessageIds(state);
+                                },
+                              )
+                            : null,
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _showAdvancedFilters(AppState state) async {
@@ -217,7 +416,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     await _runAdvancedSearch(state);
   }
 
-  Future<void> _runAdvancedSearch(AppState state) async {
+  Future<void> _runAdvancedSearch(AppState state, {bool loadMore = false}) async {
     if (!state.hasPlusFeature('advanced_chat_search')) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -227,16 +426,33 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       }
       return;
     }
+    if (loadMore && !_advancedHasMore) return;
     setState(() => _advancedSearchRunning = true);
     try {
+      const pageSize = 50;
+      final offset = loadMore ? _advancedOffset : 0;
       final results = await state.sync!.searchFamilyChatMessages(
         text: _query.trim().isEmpty ? null : _query.trim(),
         senderId: _advancedSenderId,
         from: _advancedFrom,
         before: _advancedBefore,
         kind: _advancedKind,
+        limit: pageSize,
+        offset: offset,
       );
-      if (mounted) setState(() => _advancedResults = results);
+      if (mounted) {
+        setState(() {
+          final merged = loadMore
+              ? <FamilyChatMessage>[...?_advancedResults, ...results]
+              : results;
+          final byId = <String, FamilyChatMessage>{
+            for (final message in merged) message.id: message,
+          };
+          _advancedResults = byId.values.toList();
+          _advancedOffset = offset + results.length;
+          _advancedHasMore = results.length == pageSize;
+        });
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -455,18 +671,21 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                 onTap: () =>
                     Navigator.pop(sheetContext, _ChatMessageAction.delete),
               ),
-            ListTile(
-              leading:
-                  Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-              title: Text(isPinned ? 'Unpin message' : 'Pin message'),
-              onTap: () => Navigator.pop(
-                  sheetContext,
-                  isPinned
-                      ? _ChatMessageAction.unpin
-                      : state.hasPlusFeature('family_polls_pins')
-                          ? _ChatMessageAction.pin
-                          : _ChatMessageAction.upgrade),
-            ),
+            if (!isPinned || _canUnpin(state, message.id, message))
+              ListTile(
+                leading:
+                    Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                title: Text(isPinned ? 'Unpin message' : 'Pin message'),
+                onTap: () => Navigator.pop(
+                    sheetContext,
+                    isPinned
+                        ? state.hasPlusFeature('family_polls_pins')
+                            ? _ChatMessageAction.unpin
+                            : _ChatMessageAction.upgrade
+                        : state.hasPlusFeature('family_polls_pins')
+                            ? _ChatMessageAction.pin
+                            : _ChatMessageAction.upgrade),
+              ),
           ],
         ),
       ),
@@ -824,7 +1043,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                         false))))
         .toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final hasEarlier = matching.length > _visibleCount;
+    final hasEarlier =
+        advancedResults == null && matching.length > _visibleCount;
     final messages = hasEarlier
         ? matching.sublist(matching.length - _visibleCount)
         : matching;
@@ -844,6 +1064,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                 onChanged: (value) => setState(() {
                   _query = value;
                   _advancedResults = null;
+                  _advancedOffset = 0;
+                  _advancedHasMore = false;
                 }),
                 onSubmitted: (_) {
                   if (_advancedSenderId != null ||
@@ -856,6 +1078,15 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
               )
             : Text(familyName),
         actions: [
+          IconButton(
+            tooltip: 'Pinned messages',
+            onPressed: () => _showPinnedMessagesHub(state),
+            icon: Badge(
+              isLabelVisible: _pinnedMessageIds.isNotEmpty,
+              label: Text('${_pinnedMessageIds.length}'),
+              child: const Icon(Icons.push_pin_outlined),
+            ),
+          ),
           IconButton(
             tooltip: 'Family polls',
             onPressed: () =>
@@ -886,6 +1117,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                 _advancedBefore = null;
                 _advancedKind = 'any';
                 _advancedResults = null;
+                _advancedOffset = 0;
+                _advancedHasMore = false;
               }
             }),
             icon: Icon(_searching ? Icons.close : Icons.search),
@@ -895,24 +1128,118 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            if (_pinnedMessageIds.isNotEmpty && !_searching)
+              InkWell(
+                onTap: () => _showPinnedMessagesHub(state),
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: context.primarySoft,
+                    border: Border(
+                      bottom: BorderSide(color: context.hairline),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.push_pin, size: 16, color: context.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${_pinnedMessageIds.length} pinned message${_pinnedMessageIds.length == 1 ? '' : 's'} · Tap to view or jump',
+                          style: TextStyle(
+                            color: context.ink,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: context.inkSoft,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (_searching &&
+                (_advancedSenderId != null ||
+                    _advancedFrom != null ||
+                    _advancedBefore != null ||
+                    _advancedKind != 'any'))
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                color: context.card,
+                child: Row(
+                  children: [
+                    Icon(Icons.filter_alt_outlined,
+                        size: 16, color: context.primary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Server filters active (${_advancedKind != 'any' ? _advancedKind : 'filtered'})',
+                        style:
+                            TextStyle(fontSize: 12, color: context.inkSoft),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _advancedSenderId = null;
+                        _advancedFrom = null;
+                        _advancedBefore = null;
+                        _advancedKind = 'any';
+                        _advancedResults = null;
+                        _advancedOffset = 0;
+                        _advancedHasMore = false;
+                      }),
+                      child: const Text('Clear filters'),
+                    ),
+                  ],
+                ),
+              ),
             Expanded(
               child: messages.isEmpty
-                  ? const EmptyHint(
-                      'No family chat yet. Start the next money check-in here.',
-                      icon: Icons.chat_bubble_outline_rounded,
+                  ? EmptyHint(
+                      _searching ||
+                              _query.trim().isNotEmpty ||
+                              _advancedResults != null
+                          ? 'No messages match your search.'
+                          : 'No family chat yet. Start the next money check-in here.',
+                      icon: _searching ||
+                              _query.trim().isNotEmpty ||
+                              _advancedResults != null
+                          ? Icons.search_off_rounded
+                          : Icons.chat_bubble_outline_rounded,
                     )
                   : ListView.builder(
                       controller: _scroll,
                       reverse: true,
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      itemCount: messages.length + (hasEarlier ? 1 : 0),
+                      itemCount: messages.length +
+                          (hasEarlier ||
+                                  (advancedResults != null && _advancedHasMore)
+                              ? 1
+                              : 0),
                       itemBuilder: (context, index) {
-                        if (hasEarlier && index == messages.length) {
+                        if ((hasEarlier ||
+                                (advancedResults != null && _advancedHasMore)) &&
+                            index == messages.length) {
                           return Center(
                             child: TextButton(
-                              onPressed: () =>
-                                  setState(() => _visibleCount += 50),
-                              child: const Text('Load earlier messages'),
+                              onPressed: _advancedSearchRunning
+                                  ? null
+                                  : advancedResults != null
+                                      ? () => _runAdvancedSearch(state,
+                                          loadMore: true)
+                                      : () =>
+                                          setState(() => _visibleCount += 50),
+                              child: Text(advancedResults != null
+                                  ? 'Load more server results'
+                                  : 'Load earlier messages'),
                             ),
                           );
                         }
@@ -1027,9 +1354,16 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                             Radius.circular(isMine ? 5 : 14),
                                       ),
                                       border: Border.all(
-                                        color: isMine
+                                        color: _highlightedMessageId ==
+                                                message.id
                                             ? context.primary
-                                            : context.hairline,
+                                            : isMine
+                                                ? context.primary
+                                                : context.hairline,
+                                        width: _highlightedMessageId ==
+                                                message.id
+                                            ? 2.2
+                                            : 1.0,
                                       ),
                                     ),
                                     child: Column(

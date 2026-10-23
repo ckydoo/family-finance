@@ -185,7 +185,8 @@ class _PlusScreenState extends State<PlusScreen> {
     return AnimatedBuilder(
       animation: state,
       builder: (context, _) {
-        final active = state.familyEntitlement?.plusActive == true;
+        final entitlement = state.familyEntitlement;
+        final active = state.hasPlus;
         final canPurchase = const {Role.owner, Role.admin, Role.adult}
             .contains(state.authRole);
         return Scaffold(
@@ -219,6 +220,15 @@ class _PlusScreenState extends State<PlusScreen> {
                         plusFunctionalityDescription,
                         style: TextStyle(color: context.inkSoft, height: 1.4),
                       ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'One subscription covers your entire family space. Core family budgeting, expenses, savings, debts, shopping, tasks, and chat always remain free.',
+                        style: TextStyle(
+                          color: context.inkSoft,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -227,8 +237,7 @@ class _PlusScreenState extends State<PlusScreen> {
                   const _Notice('Join or create a family before managing its subscription.'),
                 if (state.hasSpace && !canPurchase && !active)
                   const _Notice('Ask a parent or family admin to manage the family subscription.'),
-                if (active)
-                  _Notice('Status: ${state.familyEntitlement!.status.name}. This subscription is shared with family members.'),
+                if (entitlement != null) _LifecycleBanner(entitlement: entitlement, active: active),
                 if (!billingEnabled)
                   const _Notice('Purchases are not enabled in this build. Configure Google Play products and server verification before release.'),
                 if (billingEnabled && !Platform.isAndroid)
@@ -271,6 +280,8 @@ class _PlusScreenState extends State<PlusScreen> {
                   )),
                 ],
                 const SizedBox(height: 20),
+                const _PlanComparisonCard(),
+                const SizedBox(height: 16),
                 Text(
                   'Subscriptions renew through Google Play. Cancel or manage renewal in your Google Play account. Family access is granted only after server verification.',
                   style: TextStyle(fontSize: 12, color: context.inkSoft, height: 1.4),
@@ -295,8 +306,181 @@ class _PlusScreenState extends State<PlusScreen> {
     if (raw.contains('PURCHASE_ALREADY_CLAIMED')) {
       return 'This purchase is already linked to another family.';
     }
+    if (raw.contains('FAMILY_ALREADY_HAS_PURCHASE')) {
+      return 'This family already has an active Plus subscription.';
+    }
     return raw.replaceFirst('Exception: ', '');
   }
+}
+
+class _LifecycleBanner extends StatelessWidget {
+  const _LifecycleBanner({required this.entitlement, required this.active});
+
+  final FamilyEntitlement entitlement;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final expiryText = entitlement.expiresAt != null
+        ? ' · Period ends ${entitlement.expiresAt!.toLocal().toIso8601String().substring(0, 10)}'
+        : '';
+    final offlineBadge = entitlement.isOfflineSnapshot
+        ? ' (Cached offline snapshot · valid up to 72h after server verification)'
+        : '';
+    final text = switch (entitlement.status) {
+      EntitlementStatus.active =>
+        'Status: active$expiryText$offlineBadge. Shared with all family members.',
+      EntitlementStatus.gracePeriod =>
+        'Status: gracePeriod$expiryText$offlineBadge. Payment retry in progress in Google Play; Plus access remains active.',
+      EntitlementStatus.canceledActive =>
+        'Status: canceledActive$expiryText$offlineBadge. Auto-renewal is off; Plus remains active until the end of the current period.',
+      EntitlementStatus.billingIssue =>
+        'Status: billingIssue. Update your payment method in Google Play to restore Plus access.',
+      EntitlementStatus.expired =>
+        'Status: expired$expiryText. Renew in Google Play to re-enable Plus planning features.',
+      EntitlementStatus.revoked =>
+        'Status: revoked. This subscription was refunded or revoked in Google Play.',
+      EntitlementStatus.verificationPending =>
+        'Status: verificationPending. Waiting for server verification.',
+      EntitlementStatus.free =>
+        'Current plan: Mhuri Free.',
+      EntitlementStatus.unavailable =>
+        'Subscription status is temporarily unavailable.',
+    };
+    if (entitlement.status == EntitlementStatus.free && !active) {
+      return const SizedBox.shrink();
+    }
+    return _Notice(text);
+  }
+}
+
+class _PlanComparisonCard extends StatelessWidget {
+  const _PlanComparisonCard();
+
+  static const _plusFeatures = [
+    (
+      'Smart Bills & Commitments',
+      'One-time & recurring obligations, due-date schedules, partial payments, and multiple reminders.',
+    ),
+    (
+      'Payday-to-Payday Planner',
+      'Forward-looking cash outlook, shortfall detection, and non-destructive what-if scenarios.',
+    ),
+    (
+      'Automated Period Preparation',
+      'Preview-first preparation of budgets, commitments, savings plans, and reusable shopping items.',
+    ),
+    (
+      'Financial Health Check',
+      'Actionable period reviews, comparisons, shortfalls, and drill-down supporting evidence.',
+    ),
+    (
+      'Advanced Savings & Debt Planning',
+      'Contribution schedules, payoff timelines, and what-if target comparisons.',
+    ),
+    (
+      'Premium Family Collaboration',
+      'Family chat polls, pinned messages hub, and advanced server-filtered chat search.',
+    ),
+  ];
+
+  static const _freeFeatures = [
+    'Family space creation, invites, roles & permissions',
+    'Income, expenses, split transactions, budgets & categories',
+    'Basic recurring bills & "Use last month" budget copy',
+    'Savings goals, contributions, debts & repayments',
+    'Shopping lists, checkout, family tasks, chat & CSV export',
+  ];
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: context.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Included in Mhuri Plus',
+              style: TextStyle(
+                color: context.ink,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            for (final item in _plusFeatures) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.check_circle, size: 18, color: context.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.$1,
+                          style: TextStyle(
+                            color: context.ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.$2,
+                          style: TextStyle(
+                            color: context.inkSoft,
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+            Divider(color: context.hairline, height: 20),
+            Text(
+              'Always free in Mhuri Free',
+              style: TextStyle(
+                color: context.ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final feature in _freeFeatures) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.check, size: 16, color: context.inkSoft),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        feature,
+                        style: TextStyle(
+                          color: context.inkSoft,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
 }
 
 class _Notice extends StatelessWidget {

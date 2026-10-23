@@ -6,6 +6,7 @@ library;
 
 import '../models/models.dart';
 import '../money/money.dart';
+import '../planning/commitments.dart';
 import '../utils/ids.dart';
 
 /// Context a mapper needs beyond the domain object itself.
@@ -30,6 +31,7 @@ class SyncAdapter {
   final String entity;
   final String table;
   final bool spaceScoped; // does the server table carry space_id directly?
+  final String orderCol;
   final Map<String, Object?> Function(Object domain, SyncCtx ctx) encode;
   final Object Function(Map<String, Object?> json) decode;
 
@@ -37,6 +39,7 @@ class SyncAdapter {
     required this.entity,
     required this.table,
     required this.spaceScoped,
+    this.orderCol = 'updated_at',
     required this.encode,
     required this.decode,
   });
@@ -88,6 +91,97 @@ DateTime? _iso(Object? v) =>
 // ── adapters ───────────────────────────────────────────────────────────────
 
 final kSyncAdapters = <String, SyncAdapter>{
+  'financial_commitment': SyncAdapter(
+    entity: 'financial_commitment',
+    table: 'financial_commitment',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final value = d as FinancialCommitment;
+      return {
+        'id': value.id,
+        'space_id': ctx.spaceId,
+        'name': value.name,
+        'amount_minor': value.amount.minor,
+        'currency': value.amount.currency.code,
+        'first_due_date': value.firstDueDate.toUtc().toIso8601String(),
+        'recurrence': value.recurrence.name,
+        'created_by': value.createdById,
+        'envelope_id': value.envelopeId,
+        'status': value.status.name,
+        'end_date': value.endDate?.toUtc().toIso8601String(),
+        'reminder_days_before': value.reminderDaysBefore,
+      };
+    },
+    decode: (j) => FinancialCommitment(
+      id: j['id'] as String,
+      name: j['name'] as String,
+      amount: _moneyOf(j, 'amount_minor', 'currency'),
+      firstDueDate: _iso(j['first_due_date']) ?? DateTime.now(),
+      recurrence: CommitmentRecurrence.values.byName(j['recurrence'] as String),
+      createdById: j['created_by'] as String,
+      envelopeId: j['envelope_id'] as String?,
+      status: CommitmentStatus.values.byName(j['status'] as String),
+      endDate: _iso(j['end_date']),
+      reminderDaysBefore: ((j['reminder_days_before'] as List?) ?? const [3])
+          .map((value) => (value as num).toInt())
+          .toList(growable: false),
+    ),
+  ),
+  'commitment_occurrence': SyncAdapter(
+    entity: 'commitment_occurrence',
+    table: 'commitment_occurrence',
+    spaceScoped: false,
+    orderCol: 'updated_at',
+    encode: (d, ctx) {
+      final value = d as CommitmentOccurrence;
+      return {
+        'id': value.id,
+        'commitment_id': value.commitmentId,
+        'occurrence_key': value.occurrenceKey,
+        'due_date': value.dueDate.toUtc().toIso8601String(),
+        'amount_minor': value.amount.minor,
+        'currency': value.amount.currency.code,
+        'status': value.status.name,
+      };
+    },
+    decode: (j) => CommitmentOccurrence(
+      id: j['id'] as String,
+      commitmentId: j['commitment_id'] as String,
+      occurrenceKey: j['occurrence_key'] as String,
+      dueDate: _iso(j['due_date']) ?? DateTime.now(),
+      amount: _moneyOf(j, 'amount_minor', 'currency'),
+      status: switch (j['status'] as String? ?? 'upcoming') {
+        'scheduled' => CommitmentOccurrenceStatus.upcoming,
+        final raw => CommitmentOccurrenceStatus.values.byName(raw),
+      },
+    ),
+  ),
+  'commitment_payment': SyncAdapter(
+    entity: 'commitment_payment',
+    table: 'commitment_payment',
+    spaceScoped: false,
+    orderCol: 'created_at',
+    encode: (d, ctx) {
+      final value = d as CommitmentPayment;
+      return {
+        'id': value.id,
+        'occurrence_id': value.occurrenceId,
+        'transaction_id': value.transactionId,
+        'amount_minor': value.amount.minor,
+        'currency': value.amount.currency.code,
+        'created_by': value.createdById,
+        'created_at': value.createdAt.toUtc().toIso8601String(),
+      };
+    },
+    decode: (j) => CommitmentPayment(
+      id: j['id'] as String,
+      occurrenceId: j['occurrence_id'] as String,
+      transactionId: j['transaction_id'] as String,
+      amount: _moneyOf(j, 'amount_minor', 'currency'),
+      createdById: j['created_by'] as String,
+      createdAt: _iso(j['created_at']) ?? DateTime.now(),
+    ),
+  ),
   'account': SyncAdapter(
     entity: 'account',
     table: 'account',
@@ -873,6 +967,7 @@ const kPullOrder = [
   'family_activity', // immutable server-authored audit trail
   'family_chat_message', // family-scoped conversation thread
   'family_task', // shared responsibilities; kid memberships cannot read it
+  'financial_commitment', 'commitment_occurrence', 'commitment_payment',
   'contribution_campaign', 'contribution_pledge', 'contribution_payment',
   'family_debt', 'debt_repayment',
   'tx_allocation',

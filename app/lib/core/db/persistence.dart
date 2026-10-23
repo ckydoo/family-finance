@@ -5,6 +5,8 @@ import 'package:sqflite/sqflite.dart';
 import '../models/models.dart';
 import '../sync/sync_mappers.dart';
 import '../money/money.dart';
+import '../planning/commitments.dart';
+import '../planning/period_preparation.dart';
 import '../state/app_state.dart';
 import 'app_database.dart';
 
@@ -23,6 +25,10 @@ class DbSnapshot {
   final List<BudgetCyclePlan> budgetPlans;
   final List<FamilyActivity> familyActivities;
   final List<FamilyTask> familyTasks;
+  final List<FinancialCommitment> financialCommitments;
+  final List<CommitmentOccurrence> commitmentOccurrences;
+  final List<CommitmentPayment> commitmentPayments;
+  final List<PeriodPreparation> periodPreparations;
   final List<ContributionCampaign> contributionCampaigns;
   final List<ContributionPledge> contributionPledges;
   final List<ContributionPayment> contributionPayments;
@@ -65,6 +71,10 @@ class DbSnapshot {
     required this.budgetPlans,
     required this.familyActivities,
     required this.familyTasks,
+    required this.financialCommitments,
+    required this.commitmentOccurrences,
+    required this.commitmentPayments,
+    required this.periodPreparations,
     required this.contributionCampaigns,
     required this.contributionPledges,
     required this.contributionPayments,
@@ -233,6 +243,22 @@ class Persistence {
       batch.insert('family_task', _familyTaskRow(task),
           conflictAlgorithm: ConflictAlgorithm.replace);
     }
+    for (final value in s.financialCommitments) {
+      batch.insert('financial_commitment', _commitmentRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final value in s.commitmentOccurrences) {
+      batch.insert('commitment_occurrence', _occurrenceRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final value in s.commitmentPayments) {
+      batch.insert('commitment_payment', _commitmentPaymentRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    for (final value in s.periodPreparations) {
+      batch.insert('period_preparation', _periodPreparationRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
     batch.insert(
       'circle',
       _circleRow(s.circle),
@@ -334,6 +360,20 @@ class Persistence {
             orderBy: 'due_at_ms ASC, created_at_ms DESC'))
         .map(_familyTaskFrom)
         .toList();
+    final financialCommitments =
+        (await _d.query('financial_commitment')).map(_commitmentFrom).toList();
+    final commitmentOccurrences =
+        (await _d.query('commitment_occurrence', orderBy: 'due_at_ms ASC'))
+            .map(_occurrenceFrom)
+            .toList();
+    final commitmentPayments =
+        (await _d.query('commitment_payment', orderBy: 'created_at_ms ASC'))
+            .map(_commitmentPaymentFrom)
+            .toList();
+    final periodPreparations = (await _d.query('period_preparation',
+            orderBy: 'updated_at_ms DESC'))
+        .map((row) => PeriodPreparation.decode(row['payload_json'] as String))
+        .toList();
 
     final mRows = await _d.query('circle', limit: 1);
     final circle =
@@ -362,6 +402,10 @@ class Persistence {
       budgetPlans: budgetPlans,
       familyActivities: familyActivities,
       familyTasks: familyTasks,
+      financialCommitments: financialCommitments,
+      commitmentOccurrences: commitmentOccurrences,
+      commitmentPayments: commitmentPayments,
+      periodPreparations: periodPreparations,
       contributionCampaigns: contributionCampaigns,
       contributionPledges: contributionPledges,
       contributionPayments: contributionPayments,
@@ -481,6 +525,22 @@ class Persistence {
 
   Future<void> saveFamilyTask(FamilyTask task) async =>
       _d.insert('family_task', _familyTaskRow(task),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveFinancialCommitment(FinancialCommitment value) async =>
+      _d.insert('financial_commitment', _commitmentRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveCommitmentOccurrence(CommitmentOccurrence value) async =>
+      _d.insert('commitment_occurrence', _occurrenceRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveCommitmentPayment(CommitmentPayment value) async =>
+      _d.insert('commitment_payment', _commitmentPaymentRow(value),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> savePeriodPreparation(PeriodPreparation value) async =>
+      _d.insert('period_preparation', _periodPreparationRow(value),
           conflictAlgorithm: ConflictAlgorithm.replace);
 
   Future<void> saveKv(String k, String v) async =>
@@ -639,6 +699,18 @@ class Persistence {
           batch.insert(
               'family_task', _familyTaskRow(adapter.decode(row) as FamilyTask),
               conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'financial_commitment':
+          batch.insert('financial_commitment',
+              _commitmentRow(adapter.decode(row) as FinancialCommitment),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'commitment_occurrence':
+          batch.insert('commitment_occurrence',
+              _occurrenceRow(adapter.decode(row) as CommitmentOccurrence),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'commitment_payment':
+          batch.insert('commitment_payment',
+              _commitmentPaymentRow(adapter.decode(row) as CommitmentPayment),
+              conflictAlgorithm: ConflictAlgorithm.replace);
       }
     }
     await batch.commit(noResult: true);
@@ -673,6 +745,10 @@ class Persistence {
       'tx_allocation',
       'family_chat_message',
       'family_task',
+      'commitment_payment',
+      'commitment_occurrence',
+      'financial_commitment',
+      'period_preparation',
     ]) {
       batch.delete(t);
     }
@@ -810,6 +886,48 @@ class Persistence {
         'approved_at_ms': t.approvedAt?.millisecondsSinceEpoch,
         'completed_at_ms': t.completedAt?.millisecondsSinceEpoch,
         'is_archived': t.isArchived ? 1 : 0,
+      };
+
+  Map<String, Object?> _commitmentRow(FinancialCommitment value) => {
+        'id': value.id,
+        'name': value.name,
+        'amount_minor': value.amount.minor,
+        'currency': value.amount.currency.name,
+        'first_due_ms': value.firstDueDate.millisecondsSinceEpoch,
+        'recurrence': value.recurrence.name,
+        'created_by_id': value.createdById,
+        'envelope_id': value.envelopeId,
+        'status': value.status.name,
+        'end_date_ms': value.endDate?.millisecondsSinceEpoch,
+        'reminder_days_json': jsonEncode(value.reminderDaysBefore),
+      };
+
+  Map<String, Object?> _occurrenceRow(CommitmentOccurrence value) => {
+        'id': value.id,
+        'commitment_id': value.commitmentId,
+        'occurrence_key': value.occurrenceKey,
+        'due_at_ms': value.dueDate.millisecondsSinceEpoch,
+        'amount_minor': value.amount.minor,
+        'currency': value.amount.currency.name,
+        'status': value.status.name,
+      };
+
+  Map<String, Object?> _commitmentPaymentRow(CommitmentPayment value) => {
+        'id': value.id,
+        'occurrence_id': value.occurrenceId,
+        'transaction_id': value.transactionId,
+        'amount_minor': value.amount.minor,
+        'currency': value.amount.currency.name,
+        'created_by_id': value.createdById,
+        'created_at_ms': value.createdAt.millisecondsSinceEpoch,
+      };
+
+  Map<String, Object?> _periodPreparationRow(PeriodPreparation value) => {
+        'operation_id': value.operationId,
+        'target_cycle': _dateOnly(value.targetCycle),
+        'payload_json': value.encode(),
+        'status': value.status.name,
+        'updated_at_ms': DateTime.now().millisecondsSinceEpoch,
       };
 
   String _dateOnly(DateTime d) =>
@@ -1142,6 +1260,51 @@ class Persistence {
             ? null
             : DateTime.fromMillisecondsSinceEpoch(m['completed_at_ms'] as int),
         isArchived: (m['is_archived'] as int? ?? 0) == 1,
+      );
+
+  FinancialCommitment _commitmentFrom(Map<String, Object?> m) =>
+      FinancialCommitment(
+        id: m['id'] as String,
+        name: m['name'] as String,
+        amount: Money(m['amount_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        firstDueDate:
+            DateTime.fromMillisecondsSinceEpoch(m['first_due_ms'] as int),
+        recurrence:
+            CommitmentRecurrence.values.byName(m['recurrence'] as String),
+        createdById: m['created_by_id'] as String,
+        envelopeId: m['envelope_id'] as String?,
+        status: CommitmentStatus.values.byName(m['status'] as String),
+        endDate: m['end_date_ms'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(m['end_date_ms'] as int),
+        reminderDaysBefore:
+            (jsonDecode(m['reminder_days_json'] as String) as List)
+                .map((value) => (value as num).toInt())
+                .toList(growable: false),
+      );
+
+  CommitmentOccurrence _occurrenceFrom(Map<String, Object?> m) =>
+      CommitmentOccurrence(
+        id: m['id'] as String,
+        commitmentId: m['commitment_id'] as String,
+        occurrenceKey: m['occurrence_key'] as String,
+        dueDate: DateTime.fromMillisecondsSinceEpoch(m['due_at_ms'] as int),
+        amount: Money(m['amount_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        status: CommitmentOccurrenceStatus.values.byName(m['status'] as String),
+      );
+
+  CommitmentPayment _commitmentPaymentFrom(Map<String, Object?> m) =>
+      CommitmentPayment(
+        id: m['id'] as String,
+        occurrenceId: m['occurrence_id'] as String,
+        transactionId: m['transaction_id'] as String,
+        amount: Money(m['amount_minor'] as int,
+            Currency.values.byName(m['currency'] as String)),
+        createdById: m['created_by_id'] as String,
+        createdAt:
+            DateTime.fromMillisecondsSinceEpoch(m['created_at_ms'] as int),
       );
 
   Tx _txFrom(Map<String, Object?> m) => Tx(

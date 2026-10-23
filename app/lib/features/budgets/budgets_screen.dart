@@ -4,6 +4,7 @@ import 'package:intl/intl.dart' show DateFormat;
 import '../../core/utils/ids.dart';
 
 import '../../core/widgets/ui.dart';
+import 'period_preparation_screen.dart';
 import '../../core/money/money.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
@@ -12,6 +13,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/tx_tile.dart';
+import '../commitments/commitments_screen.dart';
 import '../family_chat/family_chat_screen.dart';
 import 'recurring_ui.dart';
 
@@ -294,6 +296,18 @@ class _RegularPaymentsScreen extends StatelessWidget {
         title: Text(l.recurringExpenses),
         actions: [
           IconButton(
+            tooltip: 'Smart Bills & Commitments',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const CommitmentsScreen(),
+              ),
+            ),
+            icon: Icon(
+              Icons.event_repeat_rounded,
+              color: context.primary,
+            ),
+          ),
+          IconButton(
             tooltip: l.addRecurringTip,
             onPressed: () => showAddRecurringSheet(context),
             icon: Icon(
@@ -497,6 +511,19 @@ class _CyclePlanCard extends StatelessWidget {
               },
               icon: const Icon(Icons.content_copy_outlined, size: 18),
               label: const Text('Use last month'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+              ),
+            ),
+          if (state.previousBudgetPlan != null &&
+              state.hasPlusFeature('period_preparation'))
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const PeriodPreparationScreen(),
+              )),
+              icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+              label: const Text('Prepare period'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white,
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),

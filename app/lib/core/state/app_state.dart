@@ -17,6 +17,8 @@ import '../billing/entitlement.dart';
 import '../models/models.dart';
 import '../notifications/reminders.dart';
 import '../money/money.dart';
+import '../planning/commitments.dart';
+import '../planning/period_preparation.dart';
 import '../utils/ids.dart';
 
 /// Exposes [AppState] to the widget tree. Lightweight stand-in for Riverpod
@@ -60,6 +62,10 @@ class AppState extends ChangeNotifier {
     familyActivities = [];
     familyChatMessages = [];
     familyTasks = [];
+    financialCommitments = [];
+    commitmentOccurrences = [];
+    commitmentPayments = [];
+    periodPreparations = [];
     contributionCampaigns = [];
     contributionPledges = [];
     contributionPayments = [];
@@ -137,6 +143,10 @@ class AppState extends ChangeNotifier {
   late final List<FamilyChatMessage> familyChatMessages;
   DateTime _chatLastReadAt = DateTime.fromMillisecondsSinceEpoch(0);
   late final List<FamilyTask> familyTasks;
+  late final List<FinancialCommitment> financialCommitments;
+  late final List<CommitmentOccurrence> commitmentOccurrences;
+  late final List<CommitmentPayment> commitmentPayments;
+  late final List<PeriodPreparation> periodPreparations;
   late final List<ContributionCampaign> contributionCampaigns;
   late final List<ContributionPledge> contributionPledges;
   late final List<ContributionPayment> contributionPayments;
@@ -290,10 +300,54 @@ class AppState extends ChangeNotifier {
   SyncStatus? get syncStatus => sync?.status;
   String? get syncLastError => sync?.lastError;
 
-  bool get hasPlus => familyEntitlement?.plusActive == true;
+  bool get hasPlus => familyEntitlement?.isActiveAt(now) == true;
 
   bool hasPlusFeature(String feature) =>
       hasPlus && familyEntitlement!.features.contains(feature);
+
+  /// Premium reads may use a short-lived offline entitlement snapshot, but
+  /// premium writes always require a currently verified online entitlement.
+  bool canWritePlusFeature(String feature) =>
+      hasPlusFeature(feature) && familyEntitlement?.isOfflineSnapshot != true;
+
+  String _currentEntitlementUserId() {
+    final sessionUser = auth?.session?.userId;
+    if (sessionUser != null && sessionUser.isNotEmpty) return sessionUser;
+    return realUser.id;
+  }
+
+  Future<FamilyEntitlement?> _restoreOfflineEntitlement({
+    String? familyId,
+    String? userId,
+  }) async {
+    final targetFamilyId =
+        familyId ?? sync?.spaceId ?? await db?.kvGet('space_id');
+    final targetUserId = userId ??
+        auth?.session?.userId ??
+        await db?.kvGet('auth_user_id') ??
+        realUser.id;
+    if (targetFamilyId == null ||
+        targetFamilyId.isEmpty ||
+        targetUserId.isEmpty) {
+      return null;
+    }
+    final raw = await db?.kvGet('family_entitlement_v1');
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      final parsed = FamilyEntitlement.fromJson(
+        decoded.map((k, v) => MapEntry(k.toString(), v)),
+      );
+      return parsed.toOfflineSnapshot(
+        expectedFamilyId: targetFamilyId,
+        expectedUserId: targetUserId,
+        now: now,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<FamilyEntitlement> refreshFamilyEntitlement(
       {String? purchaseToken, String? productId}) async {
@@ -317,9 +371,36 @@ class AppState extends ChangeNotifier {
       if (engine.spaceId != familyId || _entitlementFamilyId != familyId) {
         throw StateError('Family changed while checking subscription status.');
       }
-      familyEntitlement = result;
-      return result;
+      final currentUserId = _currentEntitlementUserId();
+      final stamped = FamilyEntitlement(
+        familyId: result.familyId,
+        status: result.status,
+        features: result.features,
+        expiresAt: result.expiresAt,
+        verifiedAt: result.verifiedAt ?? now.toUtc(),
+        userId: currentUserId,
+        isOfflineSnapshot: false,
+      );
+      familyEntitlement = stamped;
+      if (stamped.isActiveAt(now)) {
+        _persistKv(
+          'family_entitlement_v1',
+          jsonEncode(stamped.toJson(userId: currentUserId)),
+        );
+      } else {
+        _persistKv('family_entitlement_v1', '');
+      }
+      return stamped;
     } catch (error) {
+      if (error is! StateError && familyId != null) {
+        final cached = await _restoreOfflineEntitlement(
+          familyId: familyId,
+          userId: _currentEntitlementUserId(),
+        );
+        if (cached != null) {
+          familyEntitlement = cached;
+        }
+      }
       entitlementError = error.toString();
       rethrow;
     } finally {
@@ -382,7 +463,12 @@ class AppState extends ChangeNotifier {
 
   /// Completes when every write issued so far has reached the database.
   /// Used by tests to make fire-and-forget writes deterministic.
-  Future<void> flushWrites() => Future.wait(List.of(_writes));
+  Future<void> flushWrites() async {
+    while (_writes.isNotEmpty) {
+      await Future.wait(List.of(_writes));
+    }
+    await db?.flushWrites();
+  }
 
   void _fire(Future<void> op) {
     final f = op.then(
@@ -393,6 +479,7 @@ class AppState extends ChangeNotifier {
       },
     );
     _writes.add(f);
+    db?.trackWrite(f);
     f.whenComplete(() => _writes.remove(f));
   }
 
@@ -621,6 +708,13 @@ class AppState extends ChangeNotifier {
           .split(',')
           .where((key) => key.isNotEmpty)
           .toSet();
+      if (familyEntitlement == null) {
+        final cachedEntitlement = await _restoreOfflineEntitlement();
+        if (cachedEntitlement != null) {
+          _entitlementFamilyId ??= cachedEntitlement.familyId;
+          familyEntitlement = cachedEntitlement;
+        }
+      }
       if (await store.hasData()) {
         final data = await store.loadAll();
         lastError = null;
@@ -678,6 +772,18 @@ class AppState extends ChangeNotifier {
         familyTasks
           ..clear()
           ..addAll(data.familyTasks);
+        financialCommitments
+          ..clear()
+          ..addAll(data.financialCommitments);
+        commitmentOccurrences
+          ..clear()
+          ..addAll(data.commitmentOccurrences);
+        commitmentPayments
+          ..clear()
+          ..addAll(data.commitmentPayments);
+        periodPreparations
+          ..clear()
+          ..addAll(data.periodPreparations);
         contributionCampaigns
           ..clear()
           ..addAll(data.contributionCampaigns);
@@ -1067,10 +1173,25 @@ class AppState extends ChangeNotifier {
       familyEntitlement = null;
       entitlementError = null;
       entitlementLoading = false;
-      if (familyId != null && familyId.isNotEmpty && sync != null) {
-        unawaited(refreshFamilyEntitlement()
-            .then<void>((_) {})
-            .catchError((Object _) {}));
+      if (familyId == null || familyId.isEmpty) {
+        _persistKv('family_entitlement_v1', '');
+      } else {
+        _fire(_restoreOfflineEntitlement(
+          familyId: familyId,
+          userId: _currentEntitlementUserId(),
+        ).then((cached) {
+          if (cached != null &&
+              _entitlementFamilyId == familyId &&
+              familyEntitlement == null) {
+            familyEntitlement = cached;
+            notifyListeners();
+          }
+        }));
+        if (sync != null) {
+          _fire(refreshFamilyEntitlement()
+              .then<void>((_) {})
+              .catchError((Object _) {}));
+        }
       }
     }
     notifyListeners();
@@ -1105,6 +1226,9 @@ class AppState extends ChangeNotifier {
       memberNames: {for (final m in members) m.id: m.name},
       monthStartDay: monthStartDay,
       campaigns: const [],
+      commitments: financialCommitments,
+      commitmentOccurrences: commitmentOccurrences,
+      commitmentPayments: commitmentPayments,
       extra: List.of(_reminderExtras),
     );
   }
@@ -1264,7 +1388,7 @@ class AppState extends ChangeNotifier {
       familyChatMessages.add(clean);
     }
     familyChatMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    _store?.saveChatMessage(clean);
+    if (_store != null) _fire(_store!.saveChatMessage(clean));
     final engine = sync;
     if (engine != null && env.isConfigured) {
       _fire(engine.sendChatMessage(clean).then((sent) {
@@ -1286,7 +1410,7 @@ class AppState extends ChangeNotifier {
         familyChatMessages.indexWhere((item) => item.id == message.id);
     if (index < 0) return;
     familyChatMessages[index] = pending;
-    _store?.saveChatMessage(pending);
+    if (_store != null) _fire(_store!.saveChatMessage(pending));
     notifyListeners();
     final engine = sync;
     if (engine == null || !env.isConfigured) {
@@ -1339,7 +1463,7 @@ class AppState extends ChangeNotifier {
       }
       final failed = _chatMessageWithStatus(message, ChatMessageStatus.failed);
       familyChatMessages[i] = failed;
-      _store?.saveChatMessage(failed);
+      if (_store != null) _fire(_store!.saveChatMessage(failed));
       changed = true;
     }
     if (changed) notifyListeners();
@@ -1359,7 +1483,7 @@ class AppState extends ChangeNotifier {
       }
       final sent = _chatMessageWithStatus(message, ChatMessageStatus.sent);
       familyChatMessages[i] = sent;
-      _store?.saveChatMessage(sent);
+      if (_store != null) _fire(_store!.saveChatMessage(sent));
       changed = true;
     }
     if (changed) notifyListeners();
@@ -1429,7 +1553,7 @@ class AppState extends ChangeNotifier {
       final dueB = b.dueDate ?? DateTime.fromMillisecondsSinceEpoch(0);
       return dueA.compareTo(dueB);
     });
-    _store?.saveFamilyTask(clean);
+    if (_store != null) _fire(_store!.saveFamilyTask(clean));
     _queue('family_task', clean);
     notifyListeners();
   }
@@ -1577,6 +1701,10 @@ class AppState extends ChangeNotifier {
     familyActivities.clear();
     familyChatMessages.clear();
     familyTasks.clear();
+    financialCommitments.clear();
+    commitmentOccurrences.clear();
+    commitmentPayments.clear();
+    periodPreparations.clear();
     contributionCampaigns.clear();
     contributionPledges.clear();
     contributionPayments.clear();
@@ -1865,6 +1993,15 @@ class AppState extends ChangeNotifier {
     chores.clear();
     recurring.clear();
     accounts.clear();
+    financialCommitments.clear();
+    commitmentOccurrences.clear();
+    commitmentPayments.clear();
+    periodPreparations.clear();
+    familyEntitlement = null;
+    _entitlementFamilyId = null;
+    entitlementError = null;
+    entitlementLoading = false;
+    _persistKv('family_entitlement_v1', '');
     circle = _neutralCircle;
     final member = Member(
       id: userId,
@@ -2021,6 +2158,28 @@ class AppState extends ChangeNotifier {
           final dueB = b.dueDate ?? DateTime.fromMillisecondsSinceEpoch(0);
           return dueA.compareTo(dueB);
         });
+      case 'financial_commitment':
+        for (final row in rows) {
+          final value = adapter.decode(row) as FinancialCommitment;
+          financialCommitments.removeWhere((item) => item.id == value.id);
+          financialCommitments.add(value);
+          changed = true;
+        }
+      case 'commitment_occurrence':
+        for (final row in rows) {
+          final value = adapter.decode(row) as CommitmentOccurrence;
+          commitmentOccurrences.removeWhere((item) => item.id == value.id);
+          commitmentOccurrences.add(value);
+          changed = true;
+        }
+        commitmentOccurrences.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      case 'commitment_payment':
+        for (final row in rows) {
+          final value = adapter.decode(row) as CommitmentPayment;
+          commitmentPayments.removeWhere((item) => item.id == value.id);
+          commitmentPayments.add(value);
+          changed = true;
+        }
       case 'contribution_campaign':
         for (final row in rows) {
           final value = adapter.decode(row) as ContributionCampaign;
@@ -2708,6 +2867,181 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
+  PeriodPreparation? previewAdvancedPeriodPreparation({
+    required String operationId,
+    DateTime? targetCycle,
+  }) {
+    if (!canEditBudgets || !canWritePlusFeature('period_preparation')) {
+      return null;
+    }
+    final target = targetCycle ?? cycleStart;
+    final sourceDate = _cycleDate(target.year, target.month - 1);
+    final source = budgetPlans
+        .where((plan) => _cycleKey(plan.cycleStart) == _cycleKey(sourceDate))
+        .firstOrNull;
+    if (source == null || operationId.isEmpty) return null;
+    final existing = periodPreparations
+        .where((value) => value.operationId == operationId)
+        .firstOrNull;
+    if (existing != null) return existing;
+
+    final savingsByGoal = <String, Money>{};
+    final sourceEnd = _cycleDate(sourceDate.year, sourceDate.month + 1);
+    for (final contribution in goalTxs.where((value) =>
+        !value.at.isBefore(sourceDate) && value.at.isBefore(sourceEnd))) {
+      final current = savingsByGoal[contribution.goalId];
+      if (current == null) {
+        savingsByGoal[contribution.goalId] = contribution.amount;
+      } else if (current.currency == contribution.amount.currency) {
+        savingsByGoal[contribution.goalId] =
+            Money(current.minor + contribution.amount.minor, current.currency);
+      }
+    }
+    final reusable = <String, ShoppingPreparation>{};
+    for (final item in items.where(
+        (value) => value.deletedAt == null && value.state == ItemState.done)) {
+      reusable.putIfAbsent(
+        item.name.trim().toLowerCase(),
+        () => ShoppingPreparation(
+          name: item.name.trim(),
+          quantity: item.qty,
+          estimate: item.actual ?? item.est,
+        ),
+      );
+    }
+    final proposal = PeriodPreparation(
+      operationId: operationId,
+      sourceCycle: sourceDate,
+      targetCycle: target,
+      createdAt: _clock(),
+      allocations: {
+        for (final envelope in envelopes)
+          if (source.allocations[envelope.id] case final amount?)
+            envelope.id: Money(amount, envelope.limit.currency),
+      },
+      expectedIncome: source.expectedIncome,
+      commitmentIds: financialCommitments
+          .where((value) => value.status == CommitmentStatus.active)
+          .map((value) => value.id)
+          .toList(growable: false),
+      savings: savingsByGoal.entries
+          .map((entry) =>
+              SavingsPreparation(goalId: entry.key, amount: entry.value))
+          .toList(growable: false),
+      shoppingItems: reusable.values.toList(growable: false),
+    );
+    periodPreparations.add(proposal);
+    if (_store != null) _fire(_store!.savePeriodPreparation(proposal));
+    notifyListeners();
+    return proposal;
+  }
+
+  bool updatePeriodPreparation(PeriodPreparation updated) {
+    final index = periodPreparations
+        .indexWhere((value) => value.operationId == updated.operationId);
+    if (!canEditBudgets ||
+        !canWritePlusFeature('period_preparation') ||
+        index < 0 ||
+        periodPreparations[index].status != PreparationStatus.preview ||
+        updated.status != PreparationStatus.preview ||
+        updated.allocations.values.any((value) => value.minor < 0) ||
+        updated.savings.any((value) => value.amount.minor < 0) ||
+        updated.shoppingItems.any((value) =>
+            value.name.trim().isEmpty ||
+            value.quantity < 1 ||
+            value.estimate.minor < 0)) {
+      return false;
+    }
+    periodPreparations[index] = updated;
+    if (_store != null) _fire(_store!.savePeriodPreparation(updated));
+    notifyListeners();
+    return true;
+  }
+
+  bool applyAdvancedPeriodPreparation(String operationId) {
+    if (!canEditBudgets || !canWritePlusFeature('period_preparation')) {
+      return false;
+    }
+    final index = periodPreparations
+        .indexWhere((value) => value.operationId == operationId);
+    if (index < 0) return false;
+    final proposal = periodPreparations[index];
+    if (proposal.status == PreparationStatus.applied) return true;
+    final expectedPlanId = uuidFromSeed(
+        '${sync?.spaceId ?? space.name}:${_cycleKey(proposal.targetCycle)}');
+    final targetPlans = budgetPlans.where((plan) =>
+        _cycleKey(plan.cycleStart) == _cycleKey(proposal.targetCycle));
+    if ((targetPlans.isNotEmpty &&
+            proposal.status != PreparationStatus.applying) ||
+        targetPlans.any((plan) => plan.id != expectedPlanId) ||
+        proposal.allocations.entries.any((entry) {
+          final envelopeValue = envelope(entry.key);
+          return envelopeValue == null ||
+              envelopeValue.limit.currency != entry.value.currency ||
+              entry.value.minor < 0;
+        })) {
+      final failed = proposal.copyWith(
+          status: PreparationStatus.failed,
+          error: 'Target period already exists or the preview is invalid.');
+      periodPreparations[index] = failed;
+      if (_store != null) _fire(_store!.savePeriodPreparation(failed));
+      notifyListeners();
+      return false;
+    }
+    final applying = proposal.copyWith(status: PreparationStatus.applying);
+    periodPreparations[index] = applying;
+    if (_store != null) _fire(_store!.savePeriodPreparation(applying));
+
+    for (final entry in proposal.allocations.entries) {
+      final value = envelope(entry.key)!;
+      value.limit = entry.value;
+      _persistEnvelope(value);
+      _queue('envelope', value);
+    }
+    final plan = targetPlans.firstOrNull ??
+        BudgetCyclePlan(
+          id: expectedPlanId,
+          cycleStart: proposal.targetCycle,
+          incomeMode: proposal.expectedIncome == null
+              ? IncomePlanMode.asEarned
+              : IncomePlanMode.knownMonthly,
+          expectedIncome: proposal.expectedIncome,
+          allocations: {
+            for (final entry in proposal.allocations.entries)
+              entry.key: entry.value.minor,
+          },
+          copiedFrom: proposal.sourceCycle,
+        );
+    if (!budgetPlans.contains(plan)) budgetPlans.add(plan);
+    _persistBudgetPlan(plan);
+    _queue('budget_cycle_plan', plan);
+
+    final targetEnd =
+        _cycleDate(proposal.targetCycle.year, proposal.targetCycle.month + 1)
+            .subtract(const Duration(days: 1));
+    generateCommitmentOccurrences(through: targetEnd);
+    for (final shopping in proposal.shoppingItems) {
+      final itemId = uuidFromSeed('$operationId:shopping:${shopping.name}');
+      if (items.any((value) => value.id == itemId)) continue;
+      final item = ListItem(
+        id: itemId,
+        name: shopping.name,
+        qty: shopping.quantity,
+        est: shopping.estimate,
+        addedById: realUser.id,
+      );
+      items.insert(0, item);
+      _persistItem(item);
+      _queue('list_item', item);
+    }
+    final applied = proposal.copyWith(status: PreparationStatus.applied);
+    periodPreparations[index] = applied;
+    if (_store != null) _fire(_store!.savePeriodPreparation(applied));
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
   bool closeCurrentBudgetPlan() {
     if (!canEditBudgets) return false;
     final plan = currentBudgetPlan;
@@ -3370,6 +3704,225 @@ class AppState extends ChangeNotifier {
       envelopeId: target?.id,
     );
     return total;
+  }
+
+  // ── Commitments ───────────────────────────────────────────────────────
+
+  List<CommitmentOccurrence> upcomingCommitments({DateTime? at}) {
+    final value = at ?? _clock();
+    final today = DateTime(value.year, value.month, value.day);
+    return commitmentOccurrences
+        .where((item) =>
+            !item.dueDate.isBefore(today) &&
+            commitmentOutstanding(item).minor > 0 &&
+            item.status != CommitmentOccurrenceStatus.skipped &&
+            item.status != CommitmentOccurrenceStatus.canceled)
+        .toList(growable: false);
+  }
+
+  List<CommitmentOccurrence> overdueCommitments({DateTime? at}) {
+    final value = at ?? _clock();
+    final today = DateTime(value.year, value.month, value.day);
+    return commitmentOccurrences
+        .where((item) =>
+            item.dueDate.isBefore(today) &&
+            commitmentOutstanding(item).minor > 0 &&
+            item.status != CommitmentOccurrenceStatus.skipped &&
+            item.status != CommitmentOccurrenceStatus.canceled)
+        .toList(growable: false);
+  }
+
+  bool addFinancialCommitment(FinancialCommitment value) {
+    if (!canAuthorTransact ||
+        !canWritePlusFeature('smart_commitments') ||
+        value.name.trim().isEmpty ||
+        value.amount.minor <= 0 ||
+        value.createdById != realUser.id ||
+        value.reminderDaysBefore.any((days) => days < 0 || days > 365) ||
+        financialCommitments.any((item) => item.id == value.id)) {
+      return false;
+    }
+    financialCommitments.add(value);
+    if (_store != null) _fire(_store!.saveFinancialCommitment(value));
+    _queue('financial_commitment', value);
+    generateCommitmentOccurrences(through: value.firstDueDate);
+    _resyncReminders();
+    notifyListeners();
+    return true;
+  }
+
+  bool setCommitmentStatus(String id, CommitmentStatus status) {
+    final index = financialCommitments.indexWhere((item) => item.id == id);
+    if (!canAuthorTransact ||
+        !canWritePlusFeature('smart_commitments') ||
+        index < 0) {
+      return false;
+    }
+    final old = financialCommitments[index];
+    final updated = FinancialCommitment(
+      id: old.id,
+      name: old.name,
+      amount: old.amount,
+      firstDueDate: old.firstDueDate,
+      recurrence: old.recurrence,
+      createdById: old.createdById,
+      envelopeId: old.envelopeId,
+      status: status,
+      endDate: old.endDate,
+      reminderDaysBefore: old.reminderDaysBefore,
+    );
+    financialCommitments[index] = updated;
+    if (_store != null) _fire(_store!.saveFinancialCommitment(updated));
+    _queue('financial_commitment', updated);
+    _resyncReminders();
+    notifyListeners();
+    return true;
+  }
+
+  int generateCommitmentOccurrences({required DateTime through}) {
+    if (!canWritePlusFeature('smart_commitments')) return 0;
+    final existingKeys = {
+      for (final item in commitmentOccurrences)
+        '${item.commitmentId}:${item.occurrenceKey}'
+    };
+    var created = 0;
+    for (final commitment in financialCommitments) {
+      final generated = const CommitmentSchedule().generate(
+        commitment,
+        through: through,
+        idForKey: (key) => uuidFromSeed('commitment:${commitment.id}:$key'),
+      );
+      for (final occurrence in generated) {
+        if (!existingKeys
+            .add('${occurrence.commitmentId}:${occurrence.occurrenceKey}')) {
+          continue;
+        }
+        commitmentOccurrences.add(occurrence);
+        if (_store != null) {
+          _fire(_store!.saveCommitmentOccurrence(occurrence));
+        }
+        _queue('commitment_occurrence', occurrence);
+        created++;
+      }
+    }
+    if (created > 0) {
+      commitmentOccurrences.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      _resyncReminders();
+      notifyListeners();
+    }
+    return created;
+  }
+
+  Money commitmentOutstanding(CommitmentOccurrence occurrence) =>
+      const CommitmentSchedule().outstanding(occurrence, commitmentPayments);
+
+  Money transactionUnallocatedForCommitments(Tx transaction) {
+    final allocated = commitmentPayments
+        .where((item) => item.transactionId == transaction.id)
+        .fold<int>(0, (sum, item) => sum + item.amount.minor);
+    final remaining = transaction.amount.minor - allocated;
+    return Money(remaining < 0 ? 0 : remaining, transaction.amount.currency);
+  }
+
+  bool updateCommitmentOccurrenceStatus(
+    String occurrenceId,
+    CommitmentOccurrenceStatus status,
+  ) {
+    if (!canAuthorTransact || !canWritePlusFeature('smart_commitments')) {
+      return false;
+    }
+    final index =
+        commitmentOccurrences.indexWhere((item) => item.id == occurrenceId);
+    if (index < 0) return false;
+    final current = commitmentOccurrences[index];
+    if (status == CommitmentOccurrenceStatus.paid ||
+        status == CommitmentOccurrenceStatus.partiallyPaid) {
+      return false;
+    }
+    final hasPayments =
+        commitmentPayments.any((item) => item.occurrenceId == occurrenceId);
+    if (hasPayments && status == CommitmentOccurrenceStatus.upcoming) {
+      return false;
+    }
+    final updated = CommitmentOccurrence(
+      id: current.id,
+      commitmentId: current.commitmentId,
+      occurrenceKey: current.occurrenceKey,
+      dueDate: current.dueDate,
+      amount: current.amount,
+      status: status,
+    );
+    commitmentOccurrences[index] = updated;
+    if (_store != null) _fire(_store!.saveCommitmentOccurrence(updated));
+    _queue('commitment_occurrence', updated);
+    _resyncReminders();
+    notifyListeners();
+    return true;
+  }
+
+  bool associateCommitmentPayment({
+    required String id,
+    required String occurrenceId,
+    required String transactionId,
+    required Money amount,
+    DateTime? createdAt,
+  }) {
+    if (!canAuthorTransact ||
+        !canWritePlusFeature('smart_commitments') ||
+        amount.minor <= 0 ||
+        commitmentPayments.any((item) => item.id == id)) {
+      return false;
+    }
+    final occurrence = commitmentOccurrences
+        .where((item) => item.id == occurrenceId)
+        .firstOrNull;
+    final transaction =
+        txs.where((item) => item.id == transactionId).firstOrNull;
+    if (occurrence == null ||
+        transaction == null ||
+        transaction.type != TxType.expense ||
+        transaction.deletedAt != null ||
+        amount.currency != occurrence.amount.currency ||
+        transaction.amount.currency != amount.currency ||
+        amount.minor > commitmentOutstanding(occurrence).minor) {
+      return false;
+    }
+    final allocatedFromTransaction = commitmentPayments
+        .where((item) => item.transactionId == transactionId)
+        .fold<int>(0, (sum, item) => sum + item.amount.minor);
+    if (allocatedFromTransaction + amount.minor > transaction.amount.minor) {
+      return false;
+    }
+    final payment = CommitmentPayment(
+      id: id,
+      occurrenceId: occurrenceId,
+      transactionId: transactionId,
+      amount: amount,
+      createdById: realUser.id,
+      createdAt: createdAt ?? _clock(),
+    );
+    commitmentPayments.add(payment);
+    if (_store != null) _fire(_store!.saveCommitmentPayment(payment));
+    _queue('commitment_payment', payment);
+
+    final remaining = commitmentOutstanding(occurrence);
+    final updated = CommitmentOccurrence(
+      id: occurrence.id,
+      commitmentId: occurrence.commitmentId,
+      occurrenceKey: occurrence.occurrenceKey,
+      dueDate: occurrence.dueDate,
+      amount: occurrence.amount,
+      status: remaining.isZero
+          ? CommitmentOccurrenceStatus.paid
+          : CommitmentOccurrenceStatus.partiallyPaid,
+    );
+    final index = commitmentOccurrences.indexOf(occurrence);
+    commitmentOccurrences[index] = updated;
+    if (_store != null) _fire(_store!.saveCommitmentOccurrence(updated));
+    _queue('commitment_occurrence', updated);
+    _resyncReminders();
+    notifyListeners();
+    return true;
   }
 
   // ── Goals & savings circles (Module E) ────────────────────────────────────────────

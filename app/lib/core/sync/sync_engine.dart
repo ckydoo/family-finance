@@ -137,13 +137,14 @@ class SyncEngine {
     if (!autoSchedule) return;
 
     // Pull-on-start once state hydration has finished.
-    state.ready().then((_) async {
+    final bootSync = state.ready().then((_) async {
       if (_spaceId != null) {
         await _syncOrReconcile();
       } else {
         await state.refreshPending();
       }
     });
+    state.db?.trackWrite(bootSync);
 
     // Family pushes normally trigger an immediate pull. This fallback keeps
     // devices current when notifications are disabled or delivery is delayed.
@@ -818,6 +819,9 @@ class SyncEngine {
     bool allowMultiple = false,
     DateTime? closesAt,
   }) async {
+    if (!state.canWritePlusFeature('family_polls_pins')) {
+      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
+    }
     final familyId = _spaceId;
     if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
     await client.rpc('create_family_chat_poll', {
@@ -829,7 +833,11 @@ class SyncEngine {
     });
   }
 
-  Future<void> voteFamilyChatPoll(String pollId, List<int> optionIndexes) async {
+  Future<void> voteFamilyChatPoll(
+      String pollId, List<int> optionIndexes) async {
+    if (!state.canWritePlusFeature('family_polls_pins')) {
+      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
+    }
     await client.rpc('vote_family_chat_poll', {
       'p_poll_id': pollId,
       'p_option_indexes': optionIndexes,
@@ -837,10 +845,17 @@ class SyncEngine {
   }
 
   Future<void> closeFamilyChatPoll(String pollId) async {
+    if (!state.canWritePlusFeature('family_polls_pins')) {
+      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
+    }
     await client.rpc('close_family_chat_poll', {'p_poll_id': pollId});
   }
 
-  Future<void> setFamilyChatPin(String messageId, {required bool pinned}) async {
+  Future<void> setFamilyChatPin(String messageId,
+      {required bool pinned}) async {
+    if (!state.canWritePlusFeature('family_polls_pins')) {
+      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
+    }
     final familyId = _spaceId;
     if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
     await client.rpc('set_family_chat_pin', {
@@ -869,7 +884,8 @@ class SyncEngine {
     DateTime? from,
     DateTime? before,
     String kind = 'any',
-    int limit = 250,
+    int limit = 50,
+    int offset = 0,
   }) async {
     final familyId = _spaceId;
     if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
@@ -881,7 +897,7 @@ class SyncEngine {
       'p_before': before?.toUtc().toIso8601String(),
       'p_kind': kind,
       'p_limit': limit.clamp(1, 500),
-      'p_offset': 0,
+      'p_offset': offset < 0 ? 0 : offset,
     });
     if (result is! List) return const [];
     final adapter = kSyncAdapters['family_chat_message']!;
@@ -1229,16 +1245,32 @@ class SyncEngine {
     'family_debt',
     'contribution_campaign',
     'family_task',
+    'financial_commitment',
   };
 
-  /// Family tasks pre-dated their server table. On the first sync after this
-  /// upgrade, publish this family's existing local tasks exactly once so they
-  /// do not disappear for the people who already created them.
+  /// Family tasks pre-dated their server table. Publish only local rows that
+  /// are genuinely absent from the server. Re-publishing an existing row can
+  /// replace a newer state with a stale device snapshot because the backfill
+  /// operation itself has a fresh outbox timestamp.
   Future<void> _backfillLocalFamilyTasks(String sid) async {
     if (!state.canManageFamilyTasks || state.familyTasks.isEmpty) return;
-    final key = 'family_tasks_backfilled_v1_$sid';
+    final key = 'family_tasks_backfilled_v2_$sid';
     if (await _kvGet(key) == '1') return;
-    for (final task in state.familyTasks) {
+
+    final remoteRows = await client.pullRows(
+      'family_task',
+      orderCol: 'updated_at',
+      spaceId: sid,
+      spaceCol: 'space_id',
+      limit: 500,
+    );
+    final remoteIds = {
+      for (final row in remoteRows)
+        if (row['id'] != null) row['id'].toString(),
+    };
+    for (final task in state.familyTasks.where(
+      (task) => !remoteIds.contains(task.id),
+    )) {
       await enqueue('family_task', task);
     }
     await _kvSet(key, '1');
@@ -1583,13 +1615,31 @@ class SyncEngine {
                   .toIso8601String() ??
               stored);
       try {
-        final rows = await client.pullRows(
-          adapter.table,
-          orderCol: 'updated_at',
-          sinceIso: since,
-          spaceId: adapter.spaceScoped ? sid : null,
-          spaceCol: adapter.spaceScoped ? 'space_id' : null,
-        );
+        final orderCol = adapter.orderCol;
+        List<Map<String, Object?>> rows;
+        try {
+          rows = await client.pullRows(
+            adapter.table,
+            orderCol: orderCol,
+            sinceIso: since,
+            spaceId: adapter.spaceScoped ? sid : null,
+            spaceCol: adapter.spaceScoped ? 'space_id' : null,
+          );
+        } on SyncException catch (e) {
+          if (orderCol == 'updated_at' &&
+              e.statusCode == 400 &&
+              e.message.contains('.updated_at does not exist')) {
+            rows = await client.pullRows(
+              adapter.table,
+              orderCol: 'created_at',
+              sinceIso: since,
+              spaceId: adapter.spaceScoped ? sid : null,
+              spaceCol: adapter.spaceScoped ? 'space_id' : null,
+            );
+          } else {
+            rethrow;
+          }
+        }
         if (full && entity == 'account') {
           // Accounts used to be device-local. A successful full pull is the
           // authoritative snapshot, including an empty result.
@@ -1599,7 +1649,7 @@ class SyncEngine {
         if (rows.isEmpty) continue;
         var maxCursor = since;
         for (final row in rows) {
-          final ua = row['updated_at'];
+          final ua = row[orderCol] ?? row['updated_at'] ?? row['created_at'];
           if (ua is String &&
               (maxCursor == null || ua.compareTo(maxCursor) > 0)) {
             maxCursor = ua;
