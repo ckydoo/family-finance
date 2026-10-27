@@ -138,6 +138,47 @@ void main() {
       expect(back.note, t.note);
     });
 
+    test('private account ownership and transaction link survive sync', () {
+      const ownerId = 'signed-in-parent';
+      const accountId = 'private-account-1';
+      final ctx = SyncCtx(
+        spaceId: 'sp1',
+        actorId: ownerId,
+        newId: () => 'unused',
+      );
+      const account = Account(
+        id: accountId,
+        name: 'Side hustle',
+        emoji: 'wallet',
+        balance: Money(0, Currency.usd),
+        isPrivate: true,
+        ownerMemberId: ownerId,
+      );
+      final accountJson = kSyncAdapters['account']!.encode(account, ctx);
+      expect(accountJson['sharing'], 'private');
+      expect(accountJson['owner_member_id'], ownerId);
+      final accountBack =
+          kSyncAdapters['account']!.decode(accountJson) as Account;
+      expect(accountBack.isPrivate, isTrue);
+      expect(accountBack.ownerMemberId, ownerId);
+
+      final transaction = Tx(
+        id: 'private-tx-1',
+        accountId: accountId,
+        memberId: ownerId,
+        type: TxType.income,
+        amount: const Money(2500, Currency.usd),
+        method: Method.cash,
+        note: 'Weekend work',
+        when: DateTime(2026, 10, 27),
+      );
+      final transactionJson = kSyncAdapters['tx']!.encode(transaction, ctx);
+      expect(transactionJson['account_id'], accountId);
+      final transactionBack =
+          kSyncAdapters['tx']!.decode(transactionJson) as Tx;
+      expect(transactionBack.accountId, accountId);
+    });
+
     test('envelope rollover roll ↔ "rollover"', () {
       final ctx = SyncCtx(spaceId: 'sp1', newId: () => 'x1');
       final e = Envelope(
@@ -232,6 +273,64 @@ void main() {
       expect(await outbox.count(), 1);
       expect((await outbox.take(10)).first.payload['id'], 'b');
     });
+
+    test('related financial rows and outbox operations commit atomically',
+        () async {
+      final outbox = Outbox(db.raw);
+      await outbox.enqueueBatch(
+        [
+          (
+            entity: 'debt_repayment',
+            opId: 'repayment-op',
+            payload: {'id': 'p1'}
+          ),
+          (entity: 'tx', opId: 'transaction-op', payload: {'id': 't1'}),
+        ],
+        persist: (txn) async {
+          await txn.insert('debt_repayment', {
+            'id': 'p1',
+            'debt_id': 'd1',
+            'member_id': 'm1',
+            'amount_minor': 500,
+            'currency': 'usd',
+            'paid_at_ms': 1,
+          });
+        },
+      );
+
+      expect(await outbox.count(), 2);
+      final savedPayment = await db.raw.rawQuery(
+        'SELECT COUNT(*) AS c FROM debt_repayment WHERE id = ?',
+        ['p1'],
+      );
+      expect(savedPayment.single['c'], 1);
+
+      await expectLater(
+        outbox.enqueueBatch(
+          [
+            (entity: 'tx', opId: 'rollback-op', payload: {'id': 't2'}),
+          ],
+          persist: (txn) async {
+            await txn.insert('debt_repayment', {
+              'id': 'p2',
+              'debt_id': 'd1',
+              'member_id': 'm1',
+              'amount_minor': 500,
+              'currency': 'usd',
+              'paid_at_ms': 2,
+            });
+            throw StateError('rollback');
+          },
+        ),
+        throwsStateError,
+      );
+      expect(await outbox.count(), 2);
+      final rolledBackPayment = await db.raw.rawQuery(
+        'SELECT COUNT(*) AS c FROM debt_repayment WHERE id = ?',
+        ['p2'],
+      );
+      expect(rolledBackPayment.single['c'], 0);
+    });
   });
 
   test('assisted member creation uses authenticated Edge Function', () async {
@@ -300,7 +399,8 @@ void main() {
       kv = {};
       server = FakeServer((request) async {
         final path = request.url.path;
-        if (path.startsWith('/rest/v1/rpc/create_space')) {
+        if (path == '/rest/v1/rpc/create_space' ||
+            path == '/rest/v1/rpc/create_additional_space') {
           return _json({'id': 'sp_new', 'invite_code': 'MHRI-AB12'});
         }
         if (request.method == 'GET' && path == '/rest/v1/envelope') {
@@ -709,6 +809,28 @@ void main() {
       expect(rent, isNotNull);
       expect(rent!.name, 'Rent');
       expect(kv['sync_cursor_envelope'], '2026-09-21T10:00:00+00:00');
+    });
+
+    test('creating another family uses the separate-space RPC', () async {
+      server.sent.clear();
+
+      final ok = await engine.createSpace(
+        'Second Family',
+        additional: true,
+      );
+
+      expect(ok, isTrue);
+      expect(kv['space_id'], 'sp_new');
+      expect(
+        server.sent.any((request) =>
+            request.url.path == '/rest/v1/rpc/create_additional_space'),
+        isTrue,
+      );
+      expect(
+        server.sent
+            .any((request) => request.url.path == '/rest/v1/rpc/create_space'),
+        isFalse,
+      );
     });
 
     test('mutation → outbox → verbatim push → outbox drains', () async {

@@ -23,7 +23,7 @@ class _RemindersSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final plan = s.planReminders();
-    final activity = s.txs.take(5).toList(growable: false);
+    final activity = s.familyTransactions.take(5).toList(growable: false);
     final l10n = AppLocalizations.of(context)!;
     final subtitle = s.notifyEnabled
         ? l10n.scheduledOn(_hh(s.quietStart), _hh(s.quietEnd))

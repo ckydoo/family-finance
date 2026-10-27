@@ -51,6 +51,19 @@ void main() {
     );
     expect(state.availableToSpend(Currency.usd).minor, before + 2000);
     expect(state.txs.first.type, TxType.income);
+    final repaymentTransaction = state.txs.single;
+    expect(state.deleteTx(repaymentTransaction), isFalse);
+    expect(
+      state.updateTx(
+        repaymentTransaction,
+        amount: const Money(1000, Currency.usd),
+        method: Method.cash,
+        note: 'Changed repayment',
+        when: repaymentTransaction.when,
+      ),
+      isFalse,
+    );
+    expect(state.availableToSpend(Currency.usd).minor, before + 2000);
   });
 
   test('repayment cannot exceed balance or be duplicated', () {
@@ -76,6 +89,45 @@ void main() {
         state.recordDebtRepayment(debt, const Money(1000, Currency.usd),
             id: 'same'),
         isFalse);
+  });
+
+  test('a pulled repayment repairs its missing family ledger transaction', () {
+    final state = AppState();
+    state.members.add(state.user);
+    final paidAt = DateTime.utc(2026, 10, 27);
+    state.applyPulled('family_debt', [
+      {
+        'id': 'debt-myla-clothes',
+        'name': 'Myla clothes',
+        'direction': 'iOwe',
+        'principal_minor': 1000,
+        'currency': 'USD',
+        'created_by': state.user.id,
+        'status': 'active',
+      },
+    ]);
+
+    final repayment = {
+      'id': 'payment-myla-clothes',
+      'debt_id': 'debt-myla-clothes',
+      'member_id': state.user.id,
+      'amount_minor': 1000,
+      'currency': 'USD',
+      'paid_at': paidAt.toIso8601String(),
+    };
+    state.applyPulled('debt_repayment', [repayment]);
+
+    expect(state.remainingOnDebt(state.familyDebts.single).minor, 0);
+    expect(state.poolCombined(Currency.usd).minor, -1000);
+    expect(
+      state.txs.where((tx) => tx.note == 'Debt repayment: Myla clothes'),
+      hasLength(1),
+    );
+
+    // Replaying a pull is idempotent and does not subtract the payment twice.
+    state.applyPulled('debt_repayment', [repayment]);
+    expect(state.poolCombined(Currency.usd).minor, -1000);
+    expect(state.txs, hasLength(1));
   });
 
   test('debt can be edited without losing repayments and then archived', () {

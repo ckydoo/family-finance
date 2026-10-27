@@ -32,6 +32,53 @@ void main() {
     expect(state.poolCombined(Currency.zwg).minor, 25000 * state.rate);
   });
 
+  test('soft-deleted transactions do not affect family or private balances',
+      () {
+    final state = AppState();
+    const shared = Account(
+      id: 'shared-cash',
+      name: 'Family cash',
+      emoji: 'cash',
+      balance: Money(500, Currency.usd),
+    );
+    const privateAccount = Account(
+      id: 'private-cash',
+      name: 'Private cash',
+      emoji: 'cash',
+      balance: Money(300, Currency.usd),
+      isPrivate: true,
+      ownerMemberId: 'me',
+    );
+    state.accounts.addAll([shared, privateAccount]);
+    state.txs.addAll([
+      Tx(
+        id: 'deleted-family-expense',
+        memberId: 'me',
+        type: TxType.expense,
+        amount: const Money(10000, Currency.usd),
+        method: Method.cash,
+        note: 'Removed family expense',
+        when: DateTime(2026, 10, 1),
+        deletedAt: DateTime(2026, 10, 2),
+      ),
+      Tx(
+        id: 'deleted-private-income',
+        accountId: privateAccount.id,
+        memberId: 'me',
+        type: TxType.income,
+        amount: const Money(10000, Currency.usd),
+        method: Method.cash,
+        note: 'Removed private income',
+        when: DateTime(2026, 10, 1),
+        deletedAt: DateTime(2026, 10, 2),
+      ),
+    ]);
+
+    expect(state.familyTransactions, isEmpty);
+    expect(state.poolCombined(Currency.usd).minor, 500);
+    expect(state.privateAccountBalance(privateAccount).minor, 300);
+  });
+
   test('savings reduce available cash without reducing total family money', () {
     final state = AppState();
     state.members.add(state.user);

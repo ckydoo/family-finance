@@ -60,6 +60,7 @@ class AppDatabase {
     'tx_allocation',
     'family_chat_message',
     'family_task',
+    'family_reward',
     'financial_commitment',
     'commitment_occurrence',
     'commitment_payment',
@@ -148,6 +149,7 @@ class AppDatabase {
       'tx_allocation',
       'family_chat_message',
       'family_task',
+      'family_reward',
       'financial_commitment',
       'commitment_occurrence',
       'commitment_payment',
@@ -164,7 +166,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 25,
+        version: 27,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -182,7 +184,9 @@ class AppDatabase {
       name TEXT NOT NULL,
       emoji TEXT NOT NULL,
       currency TEXT NOT NULL,
-      minor INTEGER NOT NULL
+      minor INTEGER NOT NULL,
+      sharing TEXT NOT NULL DEFAULT 'shared',
+      owner_member_id TEXT
     )
     ''',
     '''
@@ -200,6 +204,7 @@ class AppDatabase {
     '''
     CREATE TABLE IF NOT EXISTS tx (
       id TEXT PRIMARY KEY,
+      account_id TEXT,
       envelope_id TEXT,
       member_id TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -489,11 +494,23 @@ class AppDatabase {
       approved_at_ms INTEGER,
       completed_at_ms INTEGER,
       is_archived INTEGER NOT NULL DEFAULT 0
+      ,completed_by_member_id TEXT
     )
     ''',
     '''
     CREATE INDEX IF NOT EXISTS family_task_due_idx
       ON family_task (due_at_ms, created_at_ms DESC)
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS family_reward (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      points_cost INTEGER NOT NULL,
+      description TEXT,
+      is_archived INTEGER NOT NULL DEFAULT 0,
+      redeemed_by_member_id TEXT,
+      redeemed_at_ms INTEGER
+    )
     ''',
     '''
     CREATE TABLE IF NOT EXISTS financial_commitment (
@@ -851,6 +868,27 @@ class AppDatabase {
         CREATE UNIQUE INDEX IF NOT EXISTS goal_tx_mutation_idx
         ON goal_tx (goal_id, member_id, amount_minor, currency, at_ms)
       ''');
+    }
+    if (oldVersion < 26) {
+      for (final sql in const [
+        "ALTER TABLE account ADD COLUMN sharing TEXT NOT NULL DEFAULT 'shared'",
+        'ALTER TABLE account ADD COLUMN owner_member_id TEXT',
+        'ALTER TABLE tx ADD COLUMN account_id TEXT',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {
+          // Existing installations may already have the column.
+        }
+      }
+    }
+    if (oldVersion < 27) {
+      try {
+        await d.execute(
+            'ALTER TABLE family_task ADD COLUMN completed_by_member_id TEXT');
+      } catch (_) {
+        // Existing installations may already have the column.
+      }
     }
     // v24 tables are created by the idempotent schema pass below. Keeping
     // them in the canonical schema makes both upgrades and clean installs use

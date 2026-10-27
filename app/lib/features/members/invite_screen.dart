@@ -4,11 +4,14 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/models/models.dart';
+import '../../core/billing/entitlement.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/sync/supabase_sync_client.dart';
+import '../../core/utils/error_messages.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../settings/plus_screen.dart';
 
 /// Owner-managed invitations (migration 010): create role-bound invites,
 /// show them as QR + code with share/copy, list pending/accepted, revoke.
@@ -84,6 +87,7 @@ class _InviteScreenState extends State<InviteScreen> {
       setState(() => _error = l.inviteOwnerOnly);
       return;
     }
+    if (_memberLimitReached(s)) return;
     final email = _email.text.trim();
     if (email.isNotEmpty && !RegExp(r'^\S+@\S+\.\S+$').hasMatch(email)) {
       setState(() => _error = l.loginBadEmail);
@@ -111,7 +115,7 @@ class _InviteScreenState extends State<InviteScreen> {
         _busy = false;
         _error = e.message.contains('TOO_MANY_INVITES')
             ? l.inviteTooMany
-            : l.inviteFailed;
+            : userFacingErrorMessage(e, fallback: l.inviteFailed);
       });
     } catch (_) {
       if (!mounted) return;
@@ -166,6 +170,10 @@ class _InviteScreenState extends State<InviteScreen> {
   Future<void> _showCreateAccount() async {
     final s = AppScope.of(context);
     final l = AppLocalizations.of(context)!;
+    if (_memberLimitReached(s)) {
+      await _explorePlus();
+      return;
+    }
     if (!s.canInvite) {
       setState(() => _error = l.inviteOwnerOnly);
       return;
@@ -185,12 +193,29 @@ class _InviteScreenState extends State<InviteScreen> {
     await s.sync?.syncNow(force: true);
   }
 
+  bool _memberLimitReached(AppState state) {
+    if (state.hasPlus) return false;
+    final openInvites = _invites?.where((invite) => invite.isOpen).length ?? 0;
+    if (state.members.length + openInvites < freeFamilyMemberLimit) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _explorePlus() async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => const PlusScreen(),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final s = AppScope.of(context);
     final open = _invites?.where((i) => i.isOpen).toList() ?? [];
     final done = _invites?.where((i) => !i.isOpen).toList() ?? [];
+    final memberLimitReached =
+        !s.hasPlus && s.members.length + open.length >= freeFamilyMemberLimit;
 
     return Scaffold(
       appBar: AppBar(title: Text(l.inviteTitle)),
@@ -198,6 +223,45 @@ class _InviteScreenState extends State<InviteScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: context.hairline),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s.hasPlus
+                              ? '${s.members.length} active family members · Plus'
+                              : '${s.members.length + open.length} of $freeFamilyMemberLimit Free member places used',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          s.hasPlus
+                              ? 'This family can invite more than five members.'
+                              : 'Active members and open invitations count toward the limit.',
+                          style:
+                              TextStyle(fontSize: 11.5, color: context.inkSoft),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (memberLimitReached)
+                    TextButton(
+                      onPressed: _explorePlus,
+                      child: const Text('Explore Mhuri Plus'),
+                    ),
+                ],
+              ),
+            ),
             // ── new invite ────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(16),
@@ -235,7 +299,7 @@ class _InviteScreenState extends State<InviteScreen> {
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
-                    onPressed: _busy ? null : _create,
+                    onPressed: _busy || memberLimitReached ? null : _create,
                     icon: _busy
                         ? const SizedBox(
                             width: 16,
@@ -346,6 +410,10 @@ class _InviteScreenState extends State<InviteScreen> {
                             ],
                           ),
                         );
+                        return;
+                      }
+                      if (_memberLimitReached(s)) {
+                        _explorePlus();
                         return;
                       }
                       _showCreateAccount();

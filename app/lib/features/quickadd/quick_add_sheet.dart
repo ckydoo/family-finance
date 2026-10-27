@@ -23,8 +23,16 @@ import '../lists/lists_screen.dart';
 ///  · note & payment method behind "More details" (collapsed by default);
 ///  · Save is pinned above the keyboard (bottomNavigationBar + viewInsets);
 ///  · dismissing with entered data asks first - after save it never does.
-Future<void> showQuickAdd(BuildContext context, {TxType? initialType}) =>
-    _showTransactionEntry(context, initialType ?? TxType.expense);
+Future<void> showQuickAdd(
+  BuildContext context, {
+  TxType? initialType,
+  String? accountId,
+}) =>
+    _showTransactionEntry(
+      context,
+      initialType ?? TxType.expense,
+      accountId: accountId,
+    );
 
 Future<void> showQuickAddMenu(BuildContext context) async {
   {
@@ -56,11 +64,18 @@ Future<void> showQuickAddMenu(BuildContext context) async {
   }
 }
 
-Future<void> _showTransactionEntry(BuildContext context, TxType initialType) {
+Future<void> _showTransactionEntry(
+  BuildContext context,
+  TxType initialType, {
+  String? accountId,
+}) {
   return Navigator.of(context).push(
     MaterialPageRoute<void>(
       fullscreenDialog: true,
-      builder: (_) => _QuickAddSheet(initialType: initialType),
+      builder: (_) => _QuickAddSheet(
+        initialType: initialType,
+        initialAccountId: accountId,
+      ),
     ),
   );
 }
@@ -118,7 +133,8 @@ class _QuickActionMenu extends StatelessWidget {
 
 class _QuickAddSheet extends StatefulWidget {
   final TxType? initialType;
-  const _QuickAddSheet({this.initialType});
+  final String? initialAccountId;
+  const _QuickAddSheet({this.initialType, this.initialAccountId});
 
   @override
   State<_QuickAddSheet> createState() => _QuickAddSheetState();
@@ -130,6 +146,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   Method _method = Method.cash;
   String? _envelopeId;
   String? _memberId;
+  String? _accountId;
   bool _more = false;
   bool _saved = false;
   bool _saving = false;
@@ -143,14 +160,22 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   void initState() {
     super.initState();
     _type = widget.initialType ?? TxType.expense;
+    _accountId = widget.initialAccountId;
     // Post-frame so inherited widget is available.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final s = AppScope.of(context);
+      final initialAccount = widget.initialAccountId == null
+          ? null
+          : s.accounts
+              .where((account) => account.id == widget.initialAccountId)
+              .firstOrNull;
       setState(() {
-        _cur = s.displayCurrency;
-        _envelopeId = s.envelopes.isEmpty ? null : s.envelopes.first.id;
-        _memberId = s.user.id;
+        _cur = initialAccount?.balance.currency ?? s.displayCurrency;
+        _envelopeId = initialAccount == null
+            ? (s.envelopes.isEmpty ? null : s.envelopes.first.id)
+            : null;
+        _memberId = initialAccount == null ? s.user.id : s.realUser.id;
       });
     });
   }
@@ -237,6 +262,11 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     }
 
     final envelope = _type == TxType.expense ? s.envelope(_envelopeId) : null;
+    if (_accountId != null && _memberId != s.realUser.id) {
+      setState(
+          () => _amountError = 'Private entries can only be recorded for you.');
+      return;
+    }
     if (_allocations.isNotEmpty) {
       final splitTotal = _allocations.values.fold<int>(
           0, (sum, value) => sum + value.inCurrency(_cur, s.rate).minor);
@@ -304,6 +334,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       method: _method,
       note: note,
       envelopeId: envelope?.id,
+      accountId: _accountId,
       receiptUri: _receiptUri,
       allocations: _allocations.isEmpty ? null : _allocations,
     );
@@ -320,7 +351,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     const noBudget = '__no_budget__';
     String query = '';
     final recentIds = <String>[];
-    for (final tx in state.txs) {
+    for (final tx in state.familyTransactions) {
       final id = tx.envelopeId;
       if (tx.type == TxType.expense &&
           id != null &&
@@ -561,10 +592,12 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final l = AppLocalizations.of(context)!;
-    final members = <Member>[
-      s.user,
-      ...s.members.where((member) => member.id != s.user.id),
-    ];
+    final members = _accountId == null
+        ? <Member>[
+            s.user,
+            ...s.members.where((member) => member.id != s.user.id)
+          ]
+        : <Member>[s.user];
 
     return PopScope(
       canPop: !_dirty,
@@ -717,8 +750,50 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               ),
               const SizedBox(height: 6),
 
+              if (s.accounts.any((account) =>
+                  account.isPrivate &&
+                  account.ownerMemberId == s.realUser.id)) ...[
+                Text('Record in',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: context.inkSoft)),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _accountId ?? '__family__',
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: '__family__',
+                      child: Text('Family finances'),
+                    ),
+                    for (final account in s.accounts.where((account) =>
+                        account.isPrivate &&
+                        account.ownerMemberId == s.realUser.id))
+                      DropdownMenuItem(
+                        value: account.id,
+                        child: Text('${account.name} · Private'),
+                      ),
+                  ],
+                  onChanged: (value) => setState(() {
+                    _accountId = value == '__family__' ? null : value;
+                    if (_accountId != null) {
+                      _memberId = s.realUser.id;
+                      _envelopeId = null;
+                      _allocations = {};
+                    }
+                  }),
+                ),
+                const SizedBox(height: 12),
+              ],
+
               // Envelope (expenses only)
-              if (_type == TxType.expense && s.envelopes.isEmpty) ...[
+              if (_accountId == null &&
+                  _type == TxType.expense &&
+                  s.envelopes.isEmpty) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
@@ -733,7 +808,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 ),
                 const SizedBox(height: 12),
               ],
-              if (_type == TxType.expense && s.envelopes.isNotEmpty) ...[
+              if (_accountId == null &&
+                  _type == TxType.expense &&
+                  s.envelopes.isNotEmpty) ...[
                 Text('Which budget is this from?',
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
@@ -861,7 +938,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                         child: OutlinedButton.icon(
-                      onPressed: s.envelopes.length < 2
+                      onPressed: _accountId != null || s.envelopes.length < 2
                           ? null
                           : () => _configureSplit(s),
                       icon: const Icon(Icons.call_split_outlined),

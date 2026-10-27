@@ -90,6 +90,43 @@ void main() {
     expect(state.txs, isEmpty);
   });
 
+  test('family task points require approval and reward redemption is one-time',
+      () {
+    final state = adminState();
+    const kid =
+        Member(id: 'kid-points', name: 'Kid', emoji: 'person', role: Role.kid);
+    state.members.add(kid);
+    final task = FamilyTask(
+      id: 'task-points',
+      title: 'Tidy room',
+      assigneeMemberId: kid.id,
+      createdByMemberId: state.realUser.id,
+      createdAt: DateTime(2026, 9, 1),
+      points: 4,
+      requiresApproval: true,
+    );
+    state.addFamilyTask(task);
+    state.setRealUser(kid);
+    expect(state.submitFamilyTask(task), isTrue);
+    expect(state.familyTaskPoints, 0);
+    expect(state.familyTasks.single.isAwaitingApproval, isTrue);
+
+    state.setRealUser(
+        state.members.firstWhere((member) => member.id == 'admin-a'));
+    state.approveFamilyTask(state.familyTasks.single);
+    expect(state.familyTaskPoints, 4);
+    expect(state.pointsForMember(kid.id), 4);
+    state.approveFamilyTask(state.familyTasks.single);
+    expect(state.familyTaskPoints, 4);
+
+    expect(state.addFamilyReward(name: 'Movie night', pointsCost: 4), isTrue);
+    final reward = state.familyRewards.single;
+    state.setRealUser(kid);
+    expect(state.redeemFamilyReward(reward), isTrue);
+    expect(state.redeemFamilyReward(reward), isFalse);
+    expect(state.familyRewards.single.redeemedByMemberId, kid.id);
+  });
+
   test('shopping, savings, recurring and chore lifecycles are complete', () {
     final state = adminState();
     final item = ListItem(

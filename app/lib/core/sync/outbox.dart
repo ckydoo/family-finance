@@ -25,6 +25,31 @@ class Outbox {
     );
   }
 
+  /// Atomically enqueue related operations whose server rows must stay in
+  /// step (for example, a debt repayment and its cash-ledger transaction).
+  Future<void> enqueueBatch(
+      List<({String entity, String opId, Map<String, Object?> payload})>
+          operations,
+      {Future<void> Function(Transaction txn)? persist}) async {
+    if (operations.isEmpty) return;
+    await db.transaction((txn) async {
+      await persist?.call(txn);
+      final createdAt = DateTime.now().millisecondsSinceEpoch;
+      for (final operation in operations) {
+        await txn.insert(
+          'outbox',
+          {
+            'entity': operation.entity,
+            'op_id': operation.opId,
+            'payload': jsonEncode(operation.payload),
+            'created_ms': createdAt,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
   Future<int> count() async {
     final r = await db.rawQuery('SELECT COUNT(*) AS c FROM outbox');
     return Sqflite.firstIntValue(r) ?? 0;

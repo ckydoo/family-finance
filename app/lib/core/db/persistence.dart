@@ -25,6 +25,7 @@ class DbSnapshot {
   final List<BudgetCyclePlan> budgetPlans;
   final List<FamilyActivity> familyActivities;
   final List<FamilyTask> familyTasks;
+  final List<FamilyReward> familyRewards;
   final List<FinancialCommitment> financialCommitments;
   final List<CommitmentOccurrence> commitmentOccurrences;
   final List<CommitmentPayment> commitmentPayments;
@@ -71,6 +72,7 @@ class DbSnapshot {
     required this.budgetPlans,
     required this.familyActivities,
     required this.familyTasks,
+    required this.familyRewards,
     required this.financialCommitments,
     required this.commitmentOccurrences,
     required this.commitmentPayments,
@@ -243,6 +245,10 @@ class Persistence {
       batch.insert('family_task', _familyTaskRow(task),
           conflictAlgorithm: ConflictAlgorithm.replace);
     }
+    for (final reward in s.familyRewards) {
+      batch.insert('family_reward', _familyRewardRow(reward),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
     for (final value in s.financialCommitments) {
       batch.insert('financial_commitment', _commitmentRow(value),
           conflictAlgorithm: ConflictAlgorithm.replace);
@@ -360,6 +366,8 @@ class Persistence {
             orderBy: 'due_at_ms ASC, created_at_ms DESC'))
         .map(_familyTaskFrom)
         .toList();
+    final familyRewards =
+        (await _d.query('family_reward')).map(_familyRewardFrom).toList();
     final financialCommitments =
         (await _d.query('financial_commitment')).map(_commitmentFrom).toList();
     final commitmentOccurrences =
@@ -402,6 +410,7 @@ class Persistence {
       budgetPlans: budgetPlans,
       familyActivities: familyActivities,
       familyTasks: familyTasks,
+      familyRewards: familyRewards,
       financialCommitments: financialCommitments,
       commitmentOccurrences: commitmentOccurrences,
       commitmentPayments: commitmentPayments,
@@ -439,6 +448,10 @@ class Persistence {
 
   Future<void> saveTx(Tx t) async =>
       _d.insert('tx', _txRow(t), conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveAccount(Account account) async =>
+      _d.insert('account', _accountRow(account),
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
   Future<void> saveTxAllocation(TxAllocation a) async =>
       _d.insert('tx_allocation', _allocationRow(a),
@@ -505,6 +518,38 @@ class Persistence {
       _d.insert('debt_repayment', _repaymentRow(value),
           conflictAlgorithm: ConflictAlgorithm.replace);
 
+  /// Persist a repayment and its cash-ledger entry as one local commit. If the
+  /// app stops during a repayment, the database will contain both rows or
+  /// neither; AppState can then safely enqueue either operation for sync.
+  Future<void> saveDebtRepaymentAndTransaction({
+    required DebtRepayment repayment,
+    required Tx transaction,
+    FamilyDebt? updatedDebt,
+  }) async {
+    await _d.transaction((txn) => writeDebtRepaymentBundle(
+          txn,
+          repayment: repayment,
+          transaction: transaction,
+          updatedDebt: updatedDebt,
+        ));
+  }
+
+  Future<void> writeDebtRepaymentBundle(
+    DatabaseExecutor txn, {
+    required DebtRepayment repayment,
+    required Tx transaction,
+    FamilyDebt? updatedDebt,
+  }) async {
+    await txn.insert('debt_repayment', _repaymentRow(repayment),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+    await txn.insert('tx', _txRow(transaction),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+    if (updatedDebt != null) {
+      await txn.insert('family_debt', _debtRow(updatedDebt),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+  }
+
   Future<void> saveSavingsCircle(SavingsCircle m) async =>
       _d.insert('circle', _circleRow(m),
           conflictAlgorithm: ConflictAlgorithm.replace);
@@ -525,6 +570,10 @@ class Persistence {
 
   Future<void> saveFamilyTask(FamilyTask task) async =>
       _d.insert('family_task', _familyTaskRow(task),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> saveFamilyReward(FamilyReward reward) async =>
+      _d.insert('family_reward', _familyRewardRow(reward),
           conflictAlgorithm: ConflictAlgorithm.replace);
 
   Future<void> saveFinancialCommitment(FinancialCommitment value) async =>
@@ -562,7 +611,7 @@ class Persistence {
         if (id == null || row['deleted_at'] != null) continue;
         final existing = await _d.query(
           'tx',
-          columns: ['envelope_id'],
+          columns: ['envelope_id', 'account_id'],
           where: 'id = ?',
           whereArgs: [id],
           limit: 1,
@@ -591,6 +640,7 @@ class Persistence {
                 ? pulled
                 : Tx(
                     id: pulled.id,
+                    accountId: pulled.accountId,
                     envelopeId: envelopeId,
                     memberId: pulled.memberId,
                     type: pulled.type,
@@ -699,6 +749,10 @@ class Persistence {
           batch.insert(
               'family_task', _familyTaskRow(adapter.decode(row) as FamilyTask),
               conflictAlgorithm: ConflictAlgorithm.replace);
+        case 'family_reward':
+          batch.insert('family_reward',
+              _familyRewardRow(adapter.decode(row) as FamilyReward),
+              conflictAlgorithm: ConflictAlgorithm.replace);
         case 'financial_commitment':
           batch.insert('financial_commitment',
               _commitmentRow(adapter.decode(row) as FinancialCommitment),
@@ -763,6 +817,8 @@ class Persistence {
         'emoji': a.emoji,
         'currency': a.balance.currency.name,
         'minor': a.balance.minor,
+        'sharing': a.isPrivate ? 'private' : 'shared',
+        'owner_member_id': a.ownerMemberId,
       };
 
   Map<String, Object?> _envelopeRow(Envelope e) => {
@@ -883,9 +939,20 @@ class Persistence {
         'points': t.points,
         'requires_approval': t.requiresApproval ? 1 : 0,
         'approved_by_member_id': t.approvedByMemberId,
+        'completed_by_member_id': t.completedByMemberId,
         'approved_at_ms': t.approvedAt?.millisecondsSinceEpoch,
         'completed_at_ms': t.completedAt?.millisecondsSinceEpoch,
         'is_archived': t.isArchived ? 1 : 0,
+      };
+
+  Map<String, Object?> _familyRewardRow(FamilyReward reward) => {
+        'id': reward.id,
+        'name': reward.name,
+        'points_cost': reward.pointsCost,
+        'description': reward.description,
+        'is_archived': reward.isArchived ? 1 : 0,
+        'redeemed_by_member_id': reward.redeemedByMemberId,
+        'redeemed_at_ms': reward.redeemedAt?.millisecondsSinceEpoch,
       };
 
   Map<String, Object?> _commitmentRow(FinancialCommitment value) => {
@@ -935,6 +1002,7 @@ class Persistence {
 
   Map<String, Object?> _txRow(Tx t) => {
         'id': t.id,
+        'account_id': t.accountId,
         'envelope_id': t.envelopeId,
         'member_id': t.memberId,
         'type': t.type.name,
@@ -1105,6 +1173,8 @@ class Persistence {
           m['minor'] as int,
           Currency.values.byName(m['currency'] as String),
         ),
+        isPrivate: const {'private', 'personal'}.contains(m['sharing']),
+        ownerMemberId: m['owner_member_id'] as String?,
       );
 
   Envelope _envelopeFrom(Map<String, Object?> m) => Envelope(
@@ -1253,6 +1323,7 @@ class Persistence {
         points: m['points'] as int? ?? 1,
         requiresApproval: (m['requires_approval'] as int? ?? 1) == 1,
         approvedByMemberId: m['approved_by_member_id'] as String?,
+        completedByMemberId: m['completed_by_member_id'] as String?,
         approvedAt: m['approved_at_ms'] == null
             ? null
             : DateTime.fromMillisecondsSinceEpoch(m['approved_at_ms'] as int),
@@ -1260,6 +1331,18 @@ class Persistence {
             ? null
             : DateTime.fromMillisecondsSinceEpoch(m['completed_at_ms'] as int),
         isArchived: (m['is_archived'] as int? ?? 0) == 1,
+      );
+
+  FamilyReward _familyRewardFrom(Map<String, Object?> m) => FamilyReward(
+        id: m['id'] as String,
+        name: m['name'] as String,
+        pointsCost: m['points_cost'] as int,
+        description: m['description'] as String?,
+        isArchived: (m['is_archived'] as int? ?? 0) == 1,
+        redeemedByMemberId: m['redeemed_by_member_id'] as String?,
+        redeemedAt: m['redeemed_at_ms'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(m['redeemed_at_ms'] as int),
       );
 
   FinancialCommitment _commitmentFrom(Map<String, Object?> m) =>
@@ -1309,6 +1392,7 @@ class Persistence {
 
   Tx _txFrom(Map<String, Object?> m) => Tx(
         id: m['id'] as String,
+        accountId: m['account_id'] as String?,
         envelopeId: m['envelope_id'] as String?,
         memberId: m['member_id'] as String,
         type: TxType.values.byName(m['type'] as String),

@@ -296,7 +296,7 @@ class _RegularPaymentsScreen extends StatelessWidget {
         title: Text(l.recurringExpenses),
         actions: [
           IconButton(
-            tooltip: 'Smart Bills & Commitments',
+            tooltip: 'Plus: Smart Bills & Commitments',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const CommitmentsScreen(),
@@ -1138,8 +1138,10 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
     final spent = s.spentOn(e);
     final remaining = s.remainingOn(e);
     final effectiveLimit = s.effectiveLimit(e);
-    final inEnvelope =
-        s.txs.where((t) => t.envelopeId == e.id).take(4).toList();
+    final inEnvelope = s.familyTransactions
+        .where((t) => t.envelopeId == e.id)
+        .take(4)
+        .toList();
     final from = s.envelope(_fromId);
     final to = s.envelope(_toId);
 

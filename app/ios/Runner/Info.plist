@@ -90,5 +90,7 @@
 		<string>Mhuri uses the camera when you choose to photograph a receipt or share a photo with your family.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Mhuri accesses your photos when you choose a receipt image, profile picture, or family chat photo.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Mhuri uses the microphone only when you choose to record a family chat voice note.</string>
 	</dict>
 </plist>

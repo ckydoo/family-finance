@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
   const email = String(input.email ?? '').trim().toLowerCase();
   const password = String(input.temporary_password ?? '');
   const role = String(input.role ?? '');
+  const requestedSpaceId = String(input.space_id ?? '').trim();
   const roles = new Set(['adult', 'co_parent', 'teen', 'kid', 'viewer']);
   if (name.length < 2 || name.length > 80) {
     return json({ error: 'BAD_NAME' }, 400);
@@ -72,11 +73,15 @@ Deno.serve(async (req) => {
   membershipUrl.searchParams.set('select', 'space_id,role');
   membershipUrl.searchParams.set('user_id', `eq.${callerId}`);
   membershipUrl.searchParams.set('invite_status', 'eq.active');
-  membershipUrl.searchParams.set('limit', '1');
+  if (requestedSpaceId) membershipUrl.searchParams.set('space_id', `eq.${requestedSpaceId}`);
+  membershipUrl.searchParams.set('limit', '100');
   const membershipRes = await fetch(membershipUrl, { headers: adminHeaders });
   if (!membershipRes.ok) return json({ error: 'MEMBERSHIP_LOOKUP_FAILED' }, 502);
   const memberships = await membershipRes.json();
-  const membership = Array.isArray(memberships) ? memberships[0] : null;
+  const callerMemberships = Array.isArray(memberships) ? memberships : [];
+  const membership = requestedSpaceId
+    ? callerMemberships.find((item) => String(item.space_id) === requestedSpaceId)
+    : callerMemberships.length === 1 ? callerMemberships[0] : null;
   const callerRole = String(membership?.role ?? '');
   const spaceId = String(membership?.space_id ?? '');
   if (!spaceId || !['owner', 'co_parent'].includes(callerRole)) {
@@ -129,22 +134,22 @@ Deno.serve(async (req) => {
     return json({ error: 'PROFILE_CREATE_FAILED' }, 502);
   }
 
-  const memberRes = await fetch(`${baseUrl}/rest/v1/membership`, {
+  const memberRes = await fetch(`${baseUrl}/rest/v1/rpc/provision_family_member`, {
     method: 'POST',
     headers: adminHeaders,
     body: JSON.stringify({
-      space_id: spaceId,
-      user_id: newUserId,
-      role,
-      sharing_level: ['adult', 'co_parent'].includes(role)
-        ? 'full'
-        : 'shared_only',
-      invite_status: 'active',
-      joined_at: new Date().toISOString(),
+      p_space_id: spaceId,
+      p_user_id: newUserId,
+      p_actor_id: callerId,
+      p_role: role,
     }),
   });
   if (!memberRes.ok) {
+    const raw = await memberRes.text();
     await cleanup(); // auth cascade removes the profile too
+    if (raw.includes('FAMILY_MEMBER_LIMIT_REACHED')) {
+      return json({ error: 'FAMILY_MEMBER_LIMIT_REACHED' }, 409);
+    }
     return json({ error: 'MEMBERSHIP_CREATE_FAILED' }, 502);
   }
 

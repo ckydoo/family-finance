@@ -13,17 +13,23 @@ void main() {
       home: AppScope(notifier: state, child: const PaydayPlannerScreen()),
     ));
 
-    final opening = find.widgetWithText(TextField, 'Available opening money');
+    final opening = find.widgetWithText(TextField, 'Money available now');
     await tester.enterText(opening, '500');
-    final income = find.widgetWithText(TextField, 'Expected income');
-    await tester.ensureVisible(income);
-    await tester.enterText(income, '200');
-    final purchase = find.widgetWithText(TextField, 'What-if purchase');
-    await tester.ensureVisible(purchase);
-    await tester.enterText(purchase, '150');
-    await tester.ensureVisible(find.byType(CheckboxListTile));
     await tester.tap(find.byType(CheckboxListTile));
     await tester.pump();
+    await tester.drag(find.byType(ListView), const Offset(0, -450));
+    await tester.pumpAndSettle();
+    final income =
+        find.widgetWithText(TextField, 'Income expected in this period');
+    await tester.ensureVisible(income);
+    await tester.enterText(income, '200');
+    await tester.ensureVisible(find.text('Optional what-if scenarios'));
+    await tester.tap(find.text('Optional what-if scenarios'));
+    await tester.pumpAndSettle();
+    final purchase =
+        find.widgetWithText(TextField, 'What if I make this purchase?');
+    await tester.ensureVisible(purchase);
+    await tester.enterText(purchase, '150');
     await tester.drag(find.byType(ListView), const Offset(0, -500));
     await tester.pump();
 

@@ -12,6 +12,7 @@ import '../instructions/instructions_screen.dart';
 import '../legal/legal_screen.dart';
 import 'sync_screen.dart';
 import 'plus_screen.dart';
+import 'private_accounts_screen.dart';
 import '../../core/utils/error_messages.dart';
 import '../../core/widgets/ui.dart';
 
@@ -36,7 +37,8 @@ class SettingsScreen extends StatelessWidget {
               padding: kPageInsets,
               children: [
                 if (s.auth?.isLoggedIn ?? false) ...[
-                  _header(context, Icons.workspace_premium_outlined, 'Mhuri Plus'),
+                  _header(
+                      context, Icons.workspace_premium_outlined, 'Mhuri Plus'),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(Icons.workspace_premium_outlined,
@@ -44,7 +46,7 @@ class SettingsScreen extends StatelessWidget {
                     title: Text(
                       s.familyEntitlement?.plusActive == true
                           ? 'Plus is active'
-                          : 'Explore Plus',
+                          : 'Explore Mhuri Plus',
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
@@ -138,6 +140,34 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                 ],
+                _header(
+                    context, Icons.lock_outline_rounded, 'Private finances'),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.account_balance_wallet_outlined,
+                      color: context.primary),
+                  title: Text(
+                    'Private accounts',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(() {
+                    final count = s.accounts
+                        .where((account) =>
+                            account.isPrivate &&
+                            account.ownerMemberId == s.realUser.id)
+                        .length;
+                    return '$count ${count == 1 ? 'account' : 'accounts'} · Only you can see these finances';
+                  }(), style: TextStyle(fontSize: 12, color: context.inkSoft)),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const PrivateAccountsScreen(),
+                  )),
+                ),
+                const SizedBox(height: 16),
                 _header(context, Icons.notifications_outlined,
                     AppLocalizations.of(context)!.remindersTitle),
                 SwitchListTile.adaptive(

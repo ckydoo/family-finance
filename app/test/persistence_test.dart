@@ -55,6 +55,61 @@ void main() {
     expect(second.txs.length, first.txs.length);
   });
 
+  test('a locally persisted deletion stays out of balances after restart',
+      () async {
+    await db.raw.insert('tx', {
+      'id': 'deleted-offline-expense',
+      'member_id': 'member-a',
+      'type': 'expense',
+      'amount_minor': 25000,
+      'currency': 'usd',
+      'method': 'cash',
+      'note': 'Removed while offline',
+      'when_ms': DateTime(2026, 10, 1).millisecondsSinceEpoch,
+      'deleted_at': DateTime(2026, 10, 2).toIso8601String(),
+    });
+
+    final restarted = AppState(db: db);
+    await restarted.ready();
+
+    expect(restarted.txs, isEmpty);
+    expect(restarted.familyTransactions, isEmpty);
+    expect(restarted.poolCombined(Currency.usd).minor, 0);
+  });
+
+  test('debt repayment and cash entry remain paired after restart', () async {
+    final first = AppState(db: db);
+    await first.ready();
+    first.createDebt(
+      name: 'Restart test debt',
+      direction: DebtDirection.iOwe,
+      principal: const Money(4000, Currency.usd),
+    );
+    final debt = first.familyDebts.singleWhere(
+      (item) => item.name == 'Restart test debt',
+    );
+    expect(
+      first.recordDebtRepayment(
+        debt,
+        const Money(1500, Currency.usd),
+        id: '33333333-3333-4333-8333-333333333333',
+      ),
+      isTrue,
+    );
+    await first.flushWrites();
+
+    final restarted = AppState(db: db);
+    await restarted.ready();
+    expect(restarted.repaidOn(restarted.familyDebts.single).minor, 1500);
+    expect(restarted.remainingOnDebt(restarted.familyDebts.single).minor, 2500);
+    expect(
+      restarted.txs
+          .where((tx) => tx.note == 'Debt repayment: Restart test debt'),
+      hasLength(1),
+    );
+    expect(restarted.poolCombined(Currency.usd).minor, -1500);
+  });
+
   test('move money survives a restart', () async {
     final first = AppState(db: db);
     await first.ready();

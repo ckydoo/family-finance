@@ -5,6 +5,7 @@ import '../../core/money/money.dart';
 import '../../core/planning/financial_health.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/plus_ui.dart';
 
 class FinancialHealthScreen extends StatelessWidget {
   const FinancialHealthScreen({super.key});
@@ -18,7 +19,7 @@ class FinancialHealthScreen extends StatelessWidget {
       currency: state.displayCurrency,
       periodStart: start,
       periodEnd: end,
-      transactions: state.txs,
+      transactions: state.familyTransactions,
       envelopes: state.envelopes,
       commitments: state.financialCommitments,
       occurrences: state.commitmentOccurrences,
@@ -29,21 +30,28 @@ class FinancialHealthScreen extends StatelessWidget {
       debtRepayments: state.debtRepayments,
       txAllocations: state.txAllocations,
     );
-    final hasRecordedData = state.txs.any((value) =>
+    final hasRecordedData = state.familyTransactions.any((value) =>
         value.amount.currency == review.currency &&
         !value.when.isBefore(start) &&
         value.when.isBefore(end));
+    final orderedInsights = [...review.insights]..sort((a, b) {
+        final aAction = a.kind == HealthInsightKind.suggestedAction ? 0 : 1;
+        final bAction = b.kind == HealthInsightKind.suggestedAction ? 0 : 1;
+        return aAction.compareTo(bAction);
+      });
     return Scaffold(
       appBar: AppBar(title: const Text('Financial health check')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('${DateFormat.yMMMd().format(start)} – ${DateFormat.yMMMd().format(end.subtract(const Duration(days: 1)))}',
-              style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 6),
-          Text(
-            '${review.currency.short} only · recorded evidence, not financial advice',
-            style: TextStyle(color: context.inkSoft),
+          PlusHero(
+            eyebrow: 'Financial health',
+            title: hasRecordedData
+                ? 'Your period, explained clearly'
+                : 'Start building your financial picture',
+            description:
+                '${DateFormat.yMMMd().format(start)} – ${DateFormat.yMMMd().format(end.subtract(const Duration(days: 1)))} · ${review.currency.short}. Open a card for the supporting calculation.',
+            icon: Icons.health_and_safety_outlined,
           ),
           if (!hasRecordedData)
             Padding(
@@ -59,7 +67,7 @@ class FinancialHealthScreen extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 12),
-          for (final insight in review.insights)
+          for (final insight in orderedInsights)
             Card(
               child: ExpansionTile(
                 leading: Icon(_icon(insight.kind), color: context.primary),
@@ -68,7 +76,7 @@ class FinancialHealthScreen extends StatelessWidget {
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 expandedCrossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Calculation',
+                  Text('How this was calculated',
                       style: Theme.of(context).textTheme.labelLarge),
                   Text(insight.calculation),
                   const SizedBox(height: 10),
@@ -93,7 +101,7 @@ class FinancialHealthScreen extends StatelessWidget {
   }
 
   String _describeSource(AppState state, String id) {
-    for (final tx in state.txs) {
+    for (final tx in state.familyTransactions) {
       if (tx.id == id) {
         final label = tx.note.isEmpty ? tx.type.name : tx.note;
         return '$label · ${tx.amount.text} ($id)';

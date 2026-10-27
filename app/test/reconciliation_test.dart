@@ -416,5 +416,118 @@ void main() {
       expect(s.accounts, isEmpty);
       expect(s.poolCombined(Currency.usd).minor, 0);
     });
+
+    test('private account balances and transactions do not change family pool',
+        () {
+      final before = s.poolCombined(Currency.usd).minor;
+      final privateAccount = Account(
+        id: 'private-account',
+        name: 'Side hustle',
+        emoji: 'wallet',
+        balance: const Money(5000, Currency.usd),
+        isPrivate: true,
+        ownerMemberId: s.realUser.id,
+      );
+      s.accounts.add(privateAccount);
+
+      expect(
+        s.addTx(
+          id: 'private-income',
+          accountId: privateAccount.id,
+          type: TxType.income,
+          amount: const Money(2500, Currency.usd),
+          memberId: s.realUser.id,
+          method: Method.cash,
+          note: 'Side hustle payment',
+        ),
+        isTrue,
+      );
+
+      expect(s.poolCombined(Currency.usd).minor, before);
+      expect(s.txs.any((tx) => tx.id == 'private-income'), isTrue);
+      expect(
+        s.familyTransactions.any((tx) => tx.id == 'private-income'),
+        isFalse,
+      );
+      expect(s.privateAccountBalance(privateAccount).minor, 7500);
+
+      expect(
+        s.addTx(
+          id: 'private-expense',
+          accountId: privateAccount.id,
+          type: TxType.expense,
+          amount: const Money(1000, Currency.usd),
+          memberId: s.realUser.id,
+          method: Method.cash,
+          note: 'Side hustle supplies',
+        ),
+        isTrue,
+      );
+      expect(s.poolCombined(Currency.usd).minor, before);
+      expect(s.privateAccountBalance(privateAccount).minor, 6500);
+      expect(
+        s.familyTransactions.any((tx) => tx.id == 'private-expense'),
+        isFalse,
+      );
+
+      final privateTransaction =
+          s.txs.singleWhere((tx) => tx.id == 'private-income');
+      expect(
+        s.updateTx(
+          privateTransaction,
+          amount: const Money(2500, Currency.usd),
+          method: Method.cash,
+          note: 'Side hustle payment updated',
+          when: privateTransaction.when,
+        ),
+        isTrue,
+      );
+      expect(
+        s.activityFeed.any((activity) => activity.entityId == 'private-income'),
+        isFalse,
+      );
+    });
+
+    test(
+        'pulling a transaction without an account link preserves its private link',
+        () {
+      final account = Account(
+        id: 'private-account-pull',
+        name: 'Side hustle',
+        emoji: 'wallet',
+        balance: const Money(0, Currency.usd),
+        isPrivate: true,
+        ownerMemberId: s.realUser.id,
+      );
+      s.accounts.add(account);
+      s.addTx(
+        id: 'private-tx-pull',
+        accountId: account.id,
+        type: TxType.income,
+        amount: const Money(1200, Currency.usd),
+        memberId: s.realUser.id,
+        method: Method.cash,
+        note: 'Private income',
+      );
+
+      s.applyPulled('tx', [
+        {
+          'id': 'private-tx-pull',
+          'account_id': null,
+          'envelope_id': null,
+          'member_id': s.realUser.id,
+          'type': 'income',
+          'amount_minor': 1200,
+          'currency': 'USD',
+          'method': 'cash',
+          'note': 'Private income',
+          'occurred_at': DateTime.utc(2026, 10, 27).toIso8601String(),
+        },
+      ]);
+
+      final transaction = s.txs.singleWhere((tx) => tx.id == 'private-tx-pull');
+      expect(transaction.accountId, account.id);
+      expect(s.familyTransactions.contains(transaction), isFalse);
+    });
   });
 }

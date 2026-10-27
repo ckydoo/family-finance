@@ -649,7 +649,7 @@ class BusinessOperationDispatcher {
       currency: currency,
       periodStart: state.cycleStart,
       periodEnd: state.nextCycleStart,
-      transactions: state.txs,
+      transactions: state.familyTransactions,
       envelopes: state.envelopes,
       commitments: state.financialCommitments,
       occurrences: state.commitmentOccurrences,

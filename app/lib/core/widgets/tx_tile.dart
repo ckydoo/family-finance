@@ -26,6 +26,9 @@ class TxTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final env = s.envelope(tx.envelopeId);
+    final account = tx.accountId == null
+        ? null
+        : s.accounts.where((item) => item.id == tx.accountId).firstOrNull;
     final icon = tx.type == TxType.income
         ? Icons.savings
         : iconForKey(env?.emoji) ?? kFallbackSemanticIcon;
@@ -33,12 +36,16 @@ class TxTile extends StatelessWidget {
     final isIn = tx.type == TxType.income;
 
     final splits = s.txAllocations.where((a) => a.txId == tx.id).toList();
-    final budgetLabel = splits.isNotEmpty
-        ? 'Split (${splits.length})'
-        : (env?.name ?? (isIn ? null : 'Unbudgeted'));
+    final budgetLabel = account?.isPrivate == true
+        ? '${account!.name} · Private'
+        : splits.isNotEmpty
+            ? 'Split (${splits.length})'
+            : (env?.name ?? (isIn ? null : 'Unbudgeted'));
     final methodLabel = tx.method.label;
 
-    final canManage = tx.memberId == s.realUser.id || s.canAdmin;
+    final linkedDebtRepayment = s.isDebtRepaymentTransaction(tx);
+    final canManage =
+        !linkedDebtRepayment && (tx.memberId == s.realUser.id || s.canAdmin);
     return Material(
       color: surface ? context.card : Colors.transparent,
       borderRadius: surface ? kBRadiusL : null,
@@ -132,6 +139,9 @@ class TxTile extends StatelessWidget {
 
   void _showTransaction(BuildContext context, AppState state,
       {bool canManage = true}) {
+    final account = tx.accountId == null
+        ? null
+        : state.accounts.where((item) => item.id == tx.accountId).firstOrNull;
     final note = TextEditingController(text: tx.note);
     final amount =
         TextEditingController(text: (tx.amount.minor / 100).toStringAsFixed(2));
@@ -233,22 +243,25 @@ class TxTile extends StatelessWidget {
                     },
                   ),
                   if (tx.type == TxType.expense) ...[
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String?>(
-                      initialValue: envelopeId,
-                      isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Budget'),
-                      items: [
-                        const DropdownMenuItem<String?>(
-                            value: null, child: Text('No budget')),
-                        for (final budget in state.envelopes)
-                          DropdownMenuItem<String?>(
-                              value: budget.id,
-                              child: Text(budget.name,
-                                  overflow: TextOverflow.ellipsis)),
-                      ],
-                      onChanged: (value) => setSheet(() => envelopeId = value),
-                    ),
+                    if (account?.isPrivate != true) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String?>(
+                        initialValue: envelopeId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Budget'),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                              value: null, child: Text('No budget')),
+                          for (final budget in state.envelopes)
+                            DropdownMenuItem<String?>(
+                                value: budget.id,
+                                child: Text(budget.name,
+                                    overflow: TextOverflow.ellipsis)),
+                        ],
+                        onChanged: (value) =>
+                            setSheet(() => envelopeId = value),
+                      ),
+                    ],
                   ],
                   if (error != null) ErrorNotice(error!),
                   const SizedBox(height: 8),
@@ -280,6 +293,20 @@ class TxTile extends StatelessWidget {
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (state.isDebtRepaymentTransaction(tx))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          'This entry is linked to a debt repayment and cannot be edited or removed here.',
+                          style: TextStyle(
+                            color: sheetContext.inkSoft,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    if (account?.isPrivate == true)
+                      _detailRow(sheetContext, 'Account',
+                          '${account!.name} · Private'),
                     _detailRow(
                       sheetContext,
                       'Description',

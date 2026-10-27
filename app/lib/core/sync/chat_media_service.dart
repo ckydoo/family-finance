@@ -12,12 +12,18 @@ class ChatMediaUploader {
   })  : _base = baseUrl.replaceAll(RegExp(r'/+$'), ''),
         _anonKey = anonKey,
         _tokenGet = tokenGet,
+        _ownsClient = client == null,
         _client = client ?? http.Client();
 
   final String _base;
   final String _anonKey;
   final Future<String?> Function() _tokenGet;
+  final bool _ownsClient;
   final http.Client _client;
+
+  void close() {
+    if (_ownsClient) _client.close();
+  }
 
   Future<String> upload({
     required Uint8List bytes,
@@ -25,20 +31,30 @@ class ChatMediaUploader {
     required String messageId,
     required String extension,
   }) async {
-    if (bytes.isEmpty) throw const ChatMediaException('The photo is empty.');
+    if (bytes.isEmpty) throw const ChatMediaException('The attachment is empty.');
     final token = await _tokenGet();
     if (token == null || token.isEmpty) {
       throw const ChatMediaException('Your session expired. Sign in again.');
     }
-    final ext = extension.toLowerCase() == 'png' ? 'png' : 'jpg';
+    final ext = extension.toLowerCase();
+    if (!const {'png', 'jpg', 'jpeg', 'm4a'}.contains(ext)) {
+      throw const ChatMediaException(
+        'This chat attachment type is not supported.',
+      );
+    }
     final path = '$spaceId/$messageId.$ext';
+    final contentType = switch (ext) {
+      'png' => 'image/png',
+      'm4a' => 'audio/mp4',
+      _ => 'image/jpeg',
+    };
     final response = await _client
         .post(
           Uri.parse('$_base/storage/v1/object/chat-media/$path'),
           headers: {
             'apikey': _anonKey,
             'Authorization': 'Bearer $token',
-            'Content-Type': ext == 'png' ? 'image/png' : 'image/jpeg',
+            'Content-Type': contentType,
             'x-upsert': 'false',
           },
           body: bytes,
@@ -46,7 +62,8 @@ class ChatMediaUploader {
         .timeout(const Duration(seconds: 60));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ChatMediaException(
-          'Could not upload the photo (${response.statusCode}).');
+        'Could not upload the attachment (${response.statusCode}).',
+      );
     }
     // This is deliberately not a public URL. Reads must include the caller's
     // JWT so the storage.objects family-membership policy is enforced.

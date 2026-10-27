@@ -182,8 +182,11 @@ const String plusAnnualProductId = String.fromEnvironment(
   defaultValue: 'mhuri_plus_annual',
 );
 
+/// Free families include the owner in the five-member limit.
+const int freeFamilyMemberLimit = 5;
+
 const String plusFunctionalityDescription =
-    'Smart bills & commitments, payday-to-payday planner, automated period preparation, financial health check, savings & debt scenarios, and family polls, pins & advanced search';
+    'Smart bills & commitments, payday-to-payday planner, automated period preparation, financial health check, savings & debt scenarios, and enhanced family chat with voice notes';
 
 const Set<String> kPlusV2Features = {
   'smart_commitments',
@@ -194,6 +197,7 @@ const Set<String> kPlusV2Features = {
   'debt_planning',
   'family_polls_pins',
   'advanced_chat_search',
+  'enhanced_family_chat',
   'advanced_insights',
   'advanced_reports',
   'enhanced_reports',

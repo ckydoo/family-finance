@@ -9,6 +9,12 @@ import '../../core/billing/google_play_billing_provider.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/models.dart' show Role;
+import '../../core/widgets/plus_ui.dart';
+import '../budgets/period_preparation_screen.dart';
+import '../commitments/commitments_screen.dart';
+import '../planner/payday_planner_screen.dart';
+import '../reports/financial_health_screen.dart';
+import '../savings/advanced_planning_screen.dart';
 
 class PlusScreen extends StatefulWidget {
   const PlusScreen({super.key});
@@ -40,55 +46,55 @@ class _PlusScreenState extends State<PlusScreen> {
     if (billingEnabled) {
       setState(() => _loadingProducts = true);
       try {
-      final provider = GooglePlayBillingProvider();
-      final coordinator = BillingCoordinator(
-        provider: provider,
-        verifyPurchase: (token, productId) => state.refreshFamilyEntitlement(
-          purchaseToken: token,
-          productId: productId,
-        ),
-        onEntitlement: (_) {
+        final provider = GooglePlayBillingProvider();
+        final coordinator = BillingCoordinator(
+          provider: provider,
+          verifyPurchase: (token, productId) => state.refreshFamilyEntitlement(
+            purchaseToken: token,
+            productId: productId,
+          ),
+          onEntitlement: (_) {
+            if (!mounted) return;
+            setState(() {
+              _message = 'Purchase verified. Plus is available to your family.';
+              _messageIsError = false;
+              _busy = false;
+            });
+            _restoreResult?.complete();
+          },
+          onError: (error) {
+            if (!mounted) return;
+            setState(() {
+              _message = _readableError(error);
+              _messageIsError = true;
+              _busy = false;
+            });
+            _restoreResult?.complete();
+          },
+        );
+        _provider = provider;
+        _coordinator = coordinator;
+        _purchaseSubscription = provider.purchaseEvents.listen((event) {
           if (!mounted) return;
-          setState(() {
-            _message = 'Purchase verified. Plus is available to your family.';
-            _messageIsError = false;
-            _busy = false;
-          });
-          _restoreResult?.complete();
-        },
-        onError: (error) {
-          if (!mounted) return;
-          setState(() {
-            _message = _readableError(error);
-            _messageIsError = true;
-            _busy = false;
-          });
-          _restoreResult?.complete();
-        },
-      );
-      _provider = provider;
-      _coordinator = coordinator;
-      _purchaseSubscription = provider.purchaseEvents.listen((event) {
+          if (event.status == 'pending') {
+            setState(() {
+              _busy = true;
+              _message = 'Purchase pending in Google Play…';
+              _messageIsError = false;
+            });
+          } else if (event.status == 'error' || event.status == 'canceled') {
+            setState(() {
+              _busy = false;
+              _message = event.status == 'canceled'
+                  ? 'Purchase canceled.'
+                  : 'Google Play could not complete the purchase.';
+              _messageIsError = event.status == 'error';
+            });
+          }
+        });
+        final products = await provider.loadProducts();
         if (!mounted) return;
-        if (event.status == 'pending') {
-          setState(() {
-            _busy = true;
-            _message = 'Purchase pending in Google Play…';
-            _messageIsError = false;
-          });
-        } else if (event.status == 'error' || event.status == 'canceled') {
-          setState(() {
-            _busy = false;
-            _message = event.status == 'canceled'
-                ? 'Purchase canceled.'
-                : 'Google Play could not complete the purchase.';
-            _messageIsError = event.status == 'error';
-          });
-        }
-      });
-      final products = await provider.loadProducts();
-      if (!mounted) return;
-      setState(() => _products = products);
+        setState(() => _products = products);
       } catch (error) {
         if (mounted) {
           setState(() {
@@ -142,7 +148,7 @@ class _PlusScreenState extends State<PlusScreen> {
       _messageIsError = false;
     });
     try {
-      if (billingEnabled && _provider != null) {
+      if (billingEnabled && _provider != null && !state.hasPlus) {
         _restoreResult = Completer<void>();
         await _provider!.restorePurchases();
         await _restoreResult!.future.timeout(
@@ -187,8 +193,8 @@ class _PlusScreenState extends State<PlusScreen> {
       builder: (context, _) {
         final entitlement = state.familyEntitlement;
         final active = state.hasPlus;
-        final canPurchase = const {Role.owner, Role.admin, Role.adult}
-            .contains(state.authRole);
+        final canPurchase =
+            const {Role.owner, Role.admin, Role.adult}.contains(state.authRole);
         return Scaffold(
           backgroundColor: context.bg,
           appBar: AppBar(title: const Text('Mhuri Plus')),
@@ -196,78 +202,140 @@ class _PlusScreenState extends State<PlusScreen> {
             child: ListView(
               padding: kPageInsets,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: context.primarySoft,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.workspace_premium, color: context.primary, size: 34),
-                      const SizedBox(height: 12),
-                      Text(
-                        active ? 'Plus is active for your family' : 'More clarity for your whole family',
-                        style: TextStyle(
-                          color: context.ink,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        plusFunctionalityDescription,
-                        style: TextStyle(color: context.inkSoft, height: 1.4),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'One subscription covers your entire family space. Core family budgeting, expenses, savings, debts, shopping, tasks, and chat always remain free.',
-                        style: TextStyle(
-                          color: context.inkSoft,
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
+                PlusHero(
+                  eyebrow: active ? 'Membership active' : 'Mhuri Plus',
+                  title: active
+                      ? 'Your whole family has Plus'
+                      : 'Plan ahead with more confidence',
+                  description: active
+                      ? 'Use advanced planning tools and enhanced family chat across this family space.'
+                      : 'Plan ahead with cash-flow forecasts, goal scenarios, and enhanced family collaboration.',
+                  icon: active
+                      ? Icons.verified_rounded
+                      : Icons.workspace_premium_rounded,
+                  trailing: active
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                              color: context.accent,
+                              borderRadius: BorderRadius.circular(99)),
+                          child: Text('ACTIVE',
+                              style: MhuriType.caption.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSecondary)),
+                        )
+                      : null,
                 ),
                 const SizedBox(height: 20),
-                if (!state.hasSpace)
-                  const _Notice('Join or create a family before managing its subscription.'),
-                if (state.hasSpace && !canPurchase && !active)
-                  const _Notice('Ask a parent or family admin to manage the family subscription.'),
-                if (entitlement != null) _LifecycleBanner(entitlement: entitlement, active: active),
-                if (!billingEnabled)
-                  const _Notice('Purchases are not enabled in this build. Configure Google Play products and server verification before release.'),
-                if (billingEnabled && !Platform.isAndroid)
-                  const _Notice('Purchases are available in the Android app through Google Play.'),
-                if (billingEnabled && Platform.isAndroid) ...[
-                  if (_loadingProducts && _products.isEmpty)
-                    const Center(child: Padding(
-                      padding: EdgeInsets.all(20), child: CircularProgressIndicator(),
+                if (active) ...[
+                  Text('What would you like to do?',
+                      style: MhuriType.titleM.copyWith(color: context.ink)),
+                  const SizedBox(height: 10),
+                  _GoalEntry(
+                    icon: Icons.insights_rounded,
+                    title: 'Can we afford everything until payday?',
+                    subtitle: 'Build a simple cash outlook',
+                    onTap: () =>
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const PaydayPlannerScreen(),
                     )),
-                  for (final product in _products)
-                    Card(
-                      color: context.card,
-                      child: ListTile(
-                        title: Text(product.period == 'annual' ? 'Annual plan' : 'Monthly plan'),
-                        subtitle: Text('${product.title}\n${product.localizedPrice} / ${product.period}'),
-                        isThreeLine: true,
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: _busy || active || !canPurchase
-                            ? null
-                            : () => _purchase(product),
-                      ),
+                  ),
+                  _GoalEntry(
+                    icon: Icons.event_repeat_rounded,
+                    title: 'Keep track of rent and bills',
+                    subtitle: 'Set due dates, reminders and payments',
+                    onTap: () =>
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const CommitmentsScreen(),
+                    )),
+                  ),
+                  _GoalEntry(
+                    icon: Icons.savings_rounded,
+                    title: 'Plan a goal or clear a debt',
+                    subtitle: 'See realistic completion dates',
+                    onTap: () =>
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const AdvancedPlanningScreen(),
+                    )),
+                  ),
+                  _GoalEntry(
+                    icon: Icons.health_and_safety_outlined,
+                    title: 'See how the family is doing',
+                    subtitle: 'Review the current financial picture',
+                    onTap: () =>
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const FinancialHealthScreen(),
+                    )),
+                  ),
+                  _GoalEntry(
+                    icon: Icons.next_plan_outlined,
+                    title: 'Set up the next period',
+                    subtitle: 'Review and carry plans forward',
+                    onTap: () =>
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const PeriodPreparationScreen(),
+                    )),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (!state.hasSpace)
+                  const _Notice(
+                      'Join or create a family before managing its subscription.'),
+                if (state.hasSpace && !canPurchase && !active)
+                  const _Notice(
+                      'Ask a parent or family admin to manage the family subscription.'),
+                if (entitlement != null)
+                  _LifecycleBanner(entitlement: entitlement, active: active),
+                if (!billingEnabled)
+                  const _Notice(
+                      'Purchases are not enabled in this build. Configure Google Play products and server verification before release.'),
+                if (billingEnabled && !Platform.isAndroid)
+                  const _Notice(
+                      'Purchases are available in the Android app through Google Play.'),
+                if (!active && billingEnabled && Platform.isAndroid) ...[
+                  if (_loadingProducts && _products.isEmpty)
+                    const Center(
+                        child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(),
+                    )),
+                  for (final product in _products) ...[
+                    _PlanCard(
+                      product: product,
+                      recommended: product.period == 'annual',
+                      onTap: _busy || !canPurchase
+                          ? null
+                          : () => _purchase(product),
                     ),
+                    const SizedBox(height: 10),
+                  ],
                   if (!_loadingProducts && _products.isEmpty)
-                    const _Notice('No Plus plans are available from Google Play yet. Check the configured product IDs and Play Console availability.'),
+                    const _Notice(
+                        'No Plus plans are available from Google Play yet. Check the configured product IDs and Play Console availability.'),
                 ],
                 const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _busy || !state.hasSpace ? null : _restore,
-                  icon: const Icon(Icons.restore),
-                  label: const Text('Restore purchases / refresh status'),
+                PlusSectionCard(
+                  title: active ? 'Membership' : 'Already subscribed?',
+                  subtitle: active
+                      ? 'Plus is shared with everyone in this family.'
+                      : billingEnabled
+                          ? 'Restore a purchase made with this Google Play account.'
+                          : 'Check whether this family has an active Plus membership.',
+                  icon: active
+                      ? Icons.family_restroom_rounded
+                      : Icons.restore_rounded,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _busy || !state.hasSpace ? null : _restore,
+                      icon: const Icon(Icons.sync_rounded),
+                      label: Text(active || !billingEnabled
+                          ? 'Check Plus status'
+                          : 'Restore purchase'),
+                    ),
+                  ),
                 ),
                 if (_busy) ...[
                   const SizedBox(height: 12),
@@ -275,16 +343,19 @@ class _PlusScreenState extends State<PlusScreen> {
                 ],
                 if (_message != null) ...[
                   const SizedBox(height: 12),
-                  Text(_message!, style: TextStyle(
-                    color: _messageIsError ? context.danger : context.inkSoft,
-                  )),
+                  PlusInlineMessage(
+                      message: _message!,
+                      isError: _messageIsError,
+                      onRetry: _messageIsError ? _restore : null),
                 ],
                 const SizedBox(height: 20),
                 const _PlanComparisonCard(),
                 const SizedBox(height: 16),
                 Text(
-                  'Subscriptions renew through Google Play. Cancel or manage renewal in your Google Play account. Family access is granted only after server verification.',
-                  style: TextStyle(fontSize: 12, color: context.inkSoft, height: 1.4),
+                  'Google Play manages your subscription. While Plus is active, family spaces created through this account share Plus access; each space keeps its own finances and members.',
+                  textAlign: TextAlign.center,
+                  style: MhuriType.caption
+                      .copyWith(color: context.inkSoft, height: 1.4),
                 ),
               ],
             ),
@@ -309,8 +380,125 @@ class _PlusScreenState extends State<PlusScreen> {
     if (raw.contains('FAMILY_ALREADY_HAS_PURCHASE')) {
       return 'This family already has an active Plus subscription.';
     }
-    return raw.replaceFirst('Exception: ', '');
+    return friendlyPlusError(error);
   }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard(
+      {required this.product, required this.recommended, this.onTap});
+
+  final BillingProduct product;
+  final bool recommended;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: context.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: kBRadiusL,
+          side: BorderSide(
+              color: recommended ? context.accent : context.hairline,
+              width: recommended ? 1.5 : 1),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: kBRadiusL,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                      color: recommended
+                          ? context.accentSoft
+                          : context.primarySoft,
+                      borderRadius: kBRadiusM),
+                  child: Icon(
+                      recommended
+                          ? Icons.stars_rounded
+                          : Icons.calendar_month_rounded,
+                      color:
+                          recommended ? context.accentDark : context.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Text(product.period == 'annual' ? 'Annual' : 'Monthly',
+                            style:
+                                MhuriType.titleM.copyWith(color: context.ink)),
+                        if (recommended) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                                color: context.accentSoft,
+                                borderRadius: BorderRadius.circular(99)),
+                            child: Text('BEST VALUE',
+                                style: MhuriType.caption.copyWith(
+                                    color: context.accentDark, fontSize: 10)),
+                          ),
+                        ],
+                      ]),
+                      Text('${product.localizedPrice} / ${product.period}',
+                          style:
+                              MhuriType.body.copyWith(color: context.inkSoft)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_rounded, color: context.primary),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _GoalEntry extends StatelessWidget {
+  const _GoalEntry({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Material(
+          color: context.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: kBRadiusL,
+            side: BorderSide(color: context.hairline),
+          ),
+          child: ListTile(
+            onTap: onTap,
+            leading: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: context.accentSoft,
+                borderRadius: kBRadiusM,
+              ),
+              child: Icon(icon, color: context.accentDark),
+            ),
+            title: Text(title),
+            subtitle: Text(subtitle),
+            trailing: const Icon(Icons.arrow_forward_rounded),
+          ),
+        ),
+      );
 }
 
 class _LifecycleBanner extends StatelessWidget {
@@ -342,8 +530,7 @@ class _LifecycleBanner extends StatelessWidget {
         'Status: revoked. This subscription was refunded or revoked in Google Play.',
       EntitlementStatus.verificationPending =>
         'Status: verificationPending. Waiting for server verification.',
-      EntitlementStatus.free =>
-        'Current plan: Mhuri Free.',
+      EntitlementStatus.free => 'Current plan: Mhuri Free.',
       EntitlementStatus.unavailable =>
         'Subscription status is temporarily unavailable.',
     };
@@ -360,19 +547,23 @@ class _PlanComparisonCard extends StatelessWidget {
   static const _plusFeatures = [
     (
       'Smart Bills & Commitments',
-      'One-time & recurring obligations, due-date schedules, partial payments, and multiple reminders.',
+      'Track variable, one-time, and recurring obligations with due dates, partial payments, and reminders. Fixed recurring expense rules stay free.',
     ),
     (
       'Payday-to-Payday Planner',
       'Forward-looking cash outlook, shortfall detection, and non-destructive what-if scenarios.',
     ),
     (
-      'Automated Period Preparation',
-      'Preview-first preparation of budgets, commitments, savings plans, and reusable shopping items.',
+      'Prepare the Next Budget Period',
+      'Review a suggested carry-forward plan based on past activity, edit it, then apply it yourself.',
     ),
     (
       'Financial Health Check',
       'Actionable period reviews, comparisons, shortfalls, and drill-down supporting evidence.',
+    ),
+    (
+      'Enhanced Reports & Category Insights',
+      'Compare category spending across periods and explore deeper family reports. Standard reports and CSV export stay free.',
     ),
     (
       'Advanced Savings & Debt Planning',
@@ -380,14 +571,24 @@ class _PlanComparisonCard extends StatelessWidget {
     ),
     (
       'Premium Family Collaboration',
-      'Family chat polls, pinned messages hub, and advanced server-filtered chat search.',
+      'Photos and voice notes, emoji and stickers, message editing, task and budget references, polls, pinned messages, and advanced chat search. Family text chat, replies, and deleting your own messages stay free.',
+    ),
+    (
+      'Separate Family Spaces',
+      'Create additional family spaces with separate members and finances while Mhuri Plus is active.',
+    ),
+    (
+      'More Family Members',
+      'Invite more than five members to Plus family spaces.',
     ),
   ];
 
   static const _freeFeatures = [
     'Family space creation, invites, roles & permissions',
+    'One created family space with up to five members',
     'Income, expenses, split transactions, budgets & categories',
-    'Basic recurring bills & "Use last month" budget copy',
+    'Fixed recurring expenses (amount and frequency), with post or skip',
+    'Copy last month’s budget plan and review it before saving',
     'Savings goals, contributions, debts & repayments',
     'Shopping lists, checkout, family tasks, chat & CSV export',
   ];
@@ -496,7 +697,7 @@ class _Notice extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: context.hairline),
         ),
-        child: Text(message, style: TextStyle(color: context.inkSoft, height: 1.4)),
+        child: Text(message,
+            style: TextStyle(color: context.inkSoft, height: 1.4)),
       );
 }
-

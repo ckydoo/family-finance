@@ -32,6 +32,7 @@ Both `supabase/functions/verify-family-entitlement/index.ts`, `supabase/function
 6. `debt_planning` — Debt Payoff Scenarios & Comparisons
 7. `family_polls_pins` — Family Chat Polls and Pinned Messages
 8. `advanced_chat_search` — Family Chat Advanced Search & Filters
+9. `enhanced_family_chat` — Photos, emoji/stickers, message editing, and task/budget/shopping references. Family text chat, replies, and deleting your own messages stay free.
 9. `advanced_insights` — Advanced insight surfaces
 10. `advanced_reports` — Advanced reports
 11. `enhanced_reports` — Enhanced report surfaces

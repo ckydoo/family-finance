@@ -154,7 +154,23 @@ Deno.serve(async (req) => {
       const playRes = await fetch(playUrl, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      if (!playRes.ok) return json({ error: 'PURCHASE_NOT_VERIFIED' }, 422);
+      if (!playRes.ok) {
+        // Google explains whether verification failed because of permissions,
+        // package ownership, or an invalid token. Keep the purchase token and
+        // credentials out of logs while retaining that actionable response.
+        const playError = (await playRes.text()).slice(0, 1000);
+        console.error('PLAY_SUBSCRIPTION_VERIFICATION_FAILED', {
+          status: playRes.status,
+          packageName,
+          response: playError,
+        });
+        return json({
+          // Keep the status in the existing error field because released app
+          // versions surface that field but do not preserve extra JSON fields.
+          error: `PURCHASE_NOT_VERIFIED_GOOGLE_${playRes.status}`,
+          play_status: playRes.status,
+        }, 422);
+      }
       const subscription = await playRes.json() as Json;
       const lineItems = Array.isArray(subscription.lineItems) ? subscription.lineItems : [];
       const configuredProducts = new Set([
@@ -181,7 +197,8 @@ Deno.serve(async (req) => {
         ? ['smart_commitments', 'advanced_insights', 'advanced_reports', 'enhanced_reports',
           'cash_flow_forecast', 'savings_projections',
           'period_preparation', 'financial_health', 'debt_planning',
-          'family_polls_pins', 'advanced_chat_search']
+          'family_polls_pins', 'enhanced_family_chat',
+          'advanced_chat_search', 'ask_mhuri']
         : [];
       const verifiedAt = new Date().toISOString();
       const tokenHash = await hashToken(purchaseToken);
@@ -193,13 +210,27 @@ Deno.serve(async (req) => {
       if (!existingRes.ok) return json({ error: 'VERIFICATION_LOOKUP_FAILED' }, 502);
       const existingRows = await existingRes.json();
       const existing = Array.isArray(existingRows) ? existingRows[0] : null;
+      let entitlementFamilyId = familyId;
+      let inheritedRestore = false;
       if (existing && String(existing.space_id) !== familyId) {
-        return json({ error: 'PURCHASE_ALREADY_CLAIMED' }, 409);
+        const grantUrl = new URL(`${baseUrl}/rest/v1/family_plus_space_grant`);
+        grantUrl.searchParams.set('select', 'source_space_id');
+        grantUrl.searchParams.set('space_id', `eq.${familyId}`);
+        grantUrl.searchParams.set('limit', '1');
+        const grantRes = await fetch(grantUrl, { headers: adminHeaders });
+        if (!grantRes.ok) return json({ error: 'VERIFICATION_LOOKUP_FAILED' }, 502);
+        const grantRows = await grantRes.json();
+        const grant = Array.isArray(grantRows) ? grantRows[0] : null;
+        if (!grant || String(grant.source_space_id) !== String(existing.space_id)) {
+          return json({ error: 'PURCHASE_ALREADY_CLAIMED' }, 409);
+        }
+        entitlementFamilyId = String(existing.space_id);
+        inheritedRestore = true;
       }
       if (!existing) {
         const currentEntitlementUrl = new URL(`${baseUrl}/rest/v1/family_entitlement`);
         currentEntitlementUrl.searchParams.set('select', 'status,expires_at');
-        currentEntitlementUrl.searchParams.set('space_id', `eq.${familyId}`);
+        currentEntitlementUrl.searchParams.set('space_id', `eq.${entitlementFamilyId}`);
         currentEntitlementUrl.searchParams.set('limit', '1');
         const currentEntRes = await fetch(currentEntitlementUrl, { headers: adminHeaders });
         if (!currentEntRes.ok) return json({ error: 'VERIFICATION_LOOKUP_FAILED' }, 502);
@@ -213,7 +244,7 @@ Deno.serve(async (req) => {
         }
       }
       const verificationRow = {
-        space_id: familyId,
+        space_id: entitlementFamilyId,
         store: 'google_play',
         product_id: String(line.productId),
         purchase_token_hash: tokenHash,
@@ -233,6 +264,17 @@ Deno.serve(async (req) => {
         });
       if (!recordRes.ok) return json({ error: 'VERIFICATION_RECORD_FAILED' }, 502);
 
+      // A granted family uses the source family's subscription until the user
+      // starts a separate purchase for this space. Once verified, detach it so
+      // later lifecycle events for the old subscription cannot overwrite it.
+      if (!inheritedRestore) {
+        const detachGrantRes = await fetch(
+          `${baseUrl}/rest/v1/family_plus_space_grant?space_id=eq.${encodeURIComponent(familyId)}`,
+          { method: 'DELETE', headers: adminHeaders },
+        );
+        if (!detachGrantRes.ok) return json({ error: 'ENTITLEMENT_UPDATE_FAILED' }, 502);
+      }
+
       const entitlementRes = await fetch(`${baseUrl}/rest/v1/family_entitlement?on_conflict=space_id`, {
         method: 'POST',
         headers: {
@@ -241,7 +283,7 @@ Deno.serve(async (req) => {
           Prefer: 'resolution=merge-duplicates,return=representation',
         },
         body: JSON.stringify({
-          space_id: familyId,
+          space_id: entitlementFamilyId,
           status,
           features,
           product_id: String(line.productId),

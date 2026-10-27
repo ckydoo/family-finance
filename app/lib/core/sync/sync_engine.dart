@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart' show Database;
+import 'package:sqflite/sqflite.dart' show Database, Transaction;
 
 import '../db/persistence.dart';
 import '../models/models.dart' show FamilyChatMessage, Goal, InviteInfo, Role;
@@ -58,6 +58,26 @@ class FamilySpaceSummary {
         name: '${json['name'] ?? 'Family'}',
         role: '${json['role'] ?? 'adult'}',
         inviteCode: json['invite_code']?.toString(),
+      );
+}
+
+@immutable
+class FamilyCreationStatus {
+  const FamilyCreationStatus({
+    required this.ownedSpaces,
+    required this.hasPlus,
+    required this.canCreate,
+  });
+
+  final int ownedSpaces;
+  final bool hasPlus;
+  final bool canCreate;
+
+  factory FamilyCreationStatus.fromJson(Map<Object?, Object?> json) =>
+      FamilyCreationStatus(
+        ownedSpaces: int.tryParse('${json['owned_spaces'] ?? 0}') ?? 0,
+        hasPlus: json['has_plus'] == true,
+        canCreate: json['can_create'] == true,
       );
 }
 
@@ -341,6 +361,14 @@ class SyncEngine {
         .toList(growable: false);
   }
 
+  Future<FamilyCreationStatus> familyCreationStatus() async {
+    final result = await client.rpc('family_creation_status', {});
+    if (result is! Map) {
+      throw const SyncException(0, 'unexpected response from server');
+    }
+    return FamilyCreationStatus.fromJson(result);
+  }
+
   /// Changes the active family without ever mixing local rows. Pending writes
   /// must reach the old family first; only then is its local partition wiped
   /// and the selected family pulled from the server.
@@ -400,6 +428,39 @@ class SyncEngine {
       schedule();
     } catch (e) {
       debugPrint('Mhuri outbox warning: $e');
+      reportError?.call('outbox', e, StackTrace.current);
+    }
+  }
+
+  /// Atomically queues related domain writes so an offline retry cannot send
+  /// only one half of a multi-row financial operation.
+  Future<void> enqueueBatch(
+    List<(String, Object)> mutations, {
+    Future<void> Function(Transaction txn)? persist,
+  }) async {
+    final sid = _spaceId;
+    if (sid == null || mutations.isEmpty) return;
+    try {
+      final defaultListId = await _kvGet('default_list_id');
+      final ctx = SyncCtx(
+        spaceId: sid,
+        actorId: state.realUser.id,
+        defaultListId: defaultListId,
+        newId: newClientId,
+      );
+      final operations = [
+        for (final (entity, domain) in mutations)
+          (
+            entity: entity,
+            opId: newClientId(),
+            payload: kSyncAdapters[entity]!.encode(domain, ctx),
+          ),
+      ];
+      await _outbox.enqueueBatch(operations, persist: persist);
+      await state.refreshPending();
+      schedule();
+    } catch (e) {
+      debugPrint('Mhuri outbox batch warning: $e');
       reportError?.call('outbox', e, StackTrace.current);
     }
   }
@@ -540,6 +601,7 @@ class SyncEngine {
     String household = 'couple_kids',
     String baseCurrency = 'USD',
     String? preferredName,
+    bool additional = false,
   }) async {
     try {
       if (!await _flushBeforeChangingSpace()) return false;
@@ -548,7 +610,8 @@ class SyncEngine {
       if (taken == true) {
         throw const SyncException(409, 'FAMILY_NAME_TAKEN');
       }
-      final result = await client.rpc('create_space', {
+      final result = await client
+          .rpc(additional ? 'create_additional_space' : 'create_space', {
         'p_name': name,
         'p_household': household,
         'p_base_currency': baseCurrency,
@@ -568,6 +631,9 @@ class SyncEngine {
       if (e.message.contains('FAMILY_NAME_TAKEN')) {
         _setStatus(SyncStatus.error,
             'FAMILY_NAME_TAKEN: That family name is already taken - try another.');
+      } else if (e.message.contains('FAMILY_LIMIT_REACHED')) {
+        _setStatus(SyncStatus.error,
+            'FAMILY_LIMIT_REACHED: Free includes one created family space. Mhuri Plus unlocks additional family spaces.');
       } else {
         _setStatus(
           e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
@@ -746,6 +812,7 @@ class SyncEngine {
       'email': email,
       'temporary_password': temporaryPassword,
       'role': role,
+      'space_id': _spaceId,
     });
     // The Edge Function writes membership/profile rows directly, so there is
     // no local outbox mutation to trigger a roster refresh. Pull the roster
@@ -800,6 +867,27 @@ class SyncEngine {
     return entitlement;
   }
 
+  /// Sends a bounded, read-only question to Ask Mhuri. The server remains the
+  /// authority for family access, financial context, and AI usage limits.
+  Future<Map<String, Object?>> askMhuri(
+    String question, {
+    List<Map<String, Object?>> history = const [],
+  }) async {
+    final familyId = _spaceId;
+    if (familyId == null || familyId.isEmpty) {
+      throw const SyncException(0, 'FAMILY_REQUIRED');
+    }
+    final response = await client.invokeFunction('ask-mhuri', {
+      'family_id': familyId,
+      'question': question,
+      if (history.isNotEmpty) 'history': history,
+    });
+    if (response is! Map) {
+      throw const SyncException(0, 'INVALID_AI_RESPONSE');
+    }
+    return Map<String, Object?>.from(response);
+  }
+
   Future<List<Map<String, Object?>>> fetchFamilyChatPolls() async {
     final familyId = _spaceId;
     if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
@@ -819,9 +907,7 @@ class SyncEngine {
     bool allowMultiple = false,
     DateTime? closesAt,
   }) async {
-    if (!state.canWritePlusFeature('family_polls_pins')) {
-      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
-    }
+    _requireChatPlus('family_polls_pins');
     final familyId = _spaceId;
     if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
     await client.rpc('create_family_chat_poll', {
@@ -835,9 +921,7 @@ class SyncEngine {
 
   Future<void> voteFamilyChatPoll(
       String pollId, List<int> optionIndexes) async {
-    if (!state.canWritePlusFeature('family_polls_pins')) {
-      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
-    }
+    _requireChatPlus('family_polls_pins');
     await client.rpc('vote_family_chat_poll', {
       'p_poll_id': pollId,
       'p_option_indexes': optionIndexes,
@@ -845,17 +929,13 @@ class SyncEngine {
   }
 
   Future<void> closeFamilyChatPoll(String pollId) async {
-    if (!state.canWritePlusFeature('family_polls_pins')) {
-      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
-    }
+    _requireChatPlus('family_polls_pins');
     await client.rpc('close_family_chat_poll', {'p_poll_id': pollId});
   }
 
   Future<void> setFamilyChatPin(String messageId,
       {required bool pinned}) async {
-    if (!state.canWritePlusFeature('family_polls_pins')) {
-      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
-    }
+    if (pinned) _requireChatPlus('family_polls_pins');
     final familyId = _spaceId;
     if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
     await client.rpc('set_family_chat_pin', {
@@ -887,6 +967,7 @@ class SyncEngine {
     int limit = 50,
     int offset = 0,
   }) async {
+    _requireChatPlus('advanced_chat_search');
     final familyId = _spaceId;
     if (familyId == null) throw const SyncException(0, 'FAMILY_REQUIRED');
     final result = await client.rpc('search_family_chat_messages', {
@@ -906,6 +987,12 @@ class SyncEngine {
         if (raw is Map)
           adapter.decode(Map<String, Object?>.from(raw)) as FamilyChatMessage,
     ];
+  }
+
+  void _requireChatPlus(String feature) {
+    if (!state.canWritePlusFeature(feature)) {
+      throw const SyncException(403, 'PLUS_WRITE_REQUIRES_VERIFICATION');
+    }
   }
 
   /// Hands the family to another active member: roles swap, the family's
@@ -1245,6 +1332,7 @@ class SyncEngine {
     'family_debt',
     'contribution_campaign',
     'family_task',
+    'family_reward',
     'financial_commitment',
   };
 
@@ -1377,13 +1465,14 @@ class SyncEngine {
           final byId = {for (final t in state.txs) t.id: t};
           final links = <Map<String, Object?>>[
             for (final row in rows)
-              if (byId[row['id']]?.envelopeId case final envId?
-                  when envId.isNotEmpty)
+              if (byId[row['id']] case final transaction?
+                  when transaction.accountId == null &&
+                      transaction.envelopeId?.isNotEmpty == true)
                 {
-                  'envelope_id': envId,
+                  'envelope_id': transaction.envelopeId!,
                   'transaction_id': row['id'],
-                  'allocated_minor': byId[row['id']]!.amount.minor,
-                  'currency': byId[row['id']]!.amount.currency.code,
+                  'allocated_minor': transaction.amount.minor,
+                  'currency': transaction.amount.currency.code,
                 },
           ];
           if (links.isNotEmpty) {

@@ -24,6 +24,7 @@ import '../members/members_screen.dart';
 import '../quickadd/quick_add_sheet.dart';
 import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
+import '../settings/private_accounts_screen.dart';
 
 Future<void> _showFamilySpaceSwitcher(BuildContext context, AppState s) async {
   final sync = s.sync;
@@ -87,32 +88,6 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
         content: Text(userFacingErrorMessage(
           widget.state.sync?.lastError,
           fallback: 'Could not switch families. Please try again.',
-        )),
-      ));
-    }
-  }
-
-  Future<void> _createFamily() async {
-    final name = await showDialog<String>(
-      context: context,
-      builder: (_) => const _CreateFamilyDialog(),
-    );
-    if (name == null || name.isEmpty || !mounted) return;
-    setState(() => _switching = true);
-    final ok = await widget.state.sync!.createSpace(
-      name,
-      preferredName: widget.state.user.name,
-      baseCurrency: widget.state.primaryCurrency.code,
-    );
-    if (!mounted) return;
-    if (ok) {
-      Navigator.pop(context);
-    } else {
-      setState(() => _switching = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(userFacingErrorMessage(
-          widget.state.sync?.lastError,
-          fallback: 'Could not create family.',
         )),
       ));
     }
@@ -184,6 +159,15 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
     navigator.pop();
     await navigator.push<void>(
       MaterialPageRoute(builder: (_) => const MembersScreen()),
+    );
+  }
+
+  Future<void> _openPrivateFinances() async {
+    if (_switching || !mounted) return;
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    await navigator.push<void>(
+      MaterialPageRoute(builder: (_) => const PrivateAccountsScreen()),
     );
   }
 
@@ -366,30 +350,21 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
             },
           ),
           const SizedBox(height: 20),
-          Text('ADD A FAMILY',
+          Text('JOIN A FAMILY',
               style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
                   color: context.inkSoft)),
           const SizedBox(height: 9),
-          Row(children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _switching ? null : _joinFamily,
-                icon: const Icon(Icons.group_add_outlined),
-                label: const Text('Join with code'),
-              ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _switching ? null : _joinFamily,
+              icon: const Icon(Icons.group_add_outlined),
+              label: const Text('Join with code'),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: _switching ? null : _createFamily,
-                icon: const Icon(Icons.add_home_outlined),
-                label: const Text('Create family'),
-              ),
-            ),
-          ]),
+          ),
           const SizedBox(height: 10),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -398,6 +373,22 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
             title: const Text('Manage current family'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: _switching ? null : _openManageFamily,
+          ),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            minTileHeight: 54,
+            leading: const Icon(Icons.lock_outline_rounded),
+            title: const Text('My private finances'),
+            subtitle: Text(() {
+              final count = widget.state.accounts
+                  .where((account) =>
+                      account.isPrivate &&
+                      account.ownerMemberId == widget.state.realUser.id)
+                  .length;
+              return '$count private ${count == 1 ? 'account' : 'accounts'} · only you can see these';
+            }()),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: _switching ? null : _openPrivateFinances,
           ),
           if (widget.state.auth?.isLoggedIn ?? false)
             ListTile(
@@ -417,61 +408,6 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
       ),
     );
   }
-}
-
-class _CreateFamilyDialog extends StatefulWidget {
-  const _CreateFamilyDialog();
-
-  @override
-  State<_CreateFamilyDialog> createState() => _CreateFamilyDialogState();
-}
-
-class _CreateFamilyDialogState extends State<_CreateFamilyDialog> {
-  final _controller = TextEditingController();
-  String? _error;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final value = _controller.text.trim();
-    if (value.isEmpty) {
-      setState(() => _error = 'Enter a family name');
-      return;
-    }
-    Navigator.pop(context, value);
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-        title: const Text('Create another family'),
-        content: TextField(
-          controller: _controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            labelText: 'Family name',
-            errorText: _error,
-          ),
-          onChanged: (_) {
-            if (_error != null) setState(() => _error = null);
-          },
-          onSubmitted: (_) => _submit(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: _submit,
-            child: const Text('Create'),
-          ),
-        ],
-      );
 }
 
 String _displayFamilyRole(String role) => role
@@ -791,7 +727,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   padding: const EdgeInsets.only(top: 14, bottom: 6),
                 ),
-                if (s.txs.isEmpty)
+                if (s.familyTransactions.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
@@ -800,7 +736,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontSize: 12.5, color: context.inkSoft, height: 1.4),
                     ),
                   ),
-                for (final t in s.txs.take(6)) TxTile(tx: t, surface: false),
+                for (final t in s.familyTransactions.take(6))
+                  TxTile(tx: t, surface: false),
                 const SizedBox(height: 12),
               ],
             )),

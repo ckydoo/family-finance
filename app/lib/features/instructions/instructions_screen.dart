@@ -318,9 +318,9 @@ const List<_GuideItem> _allGuides = [
     category: GuideCategory.family,
     steps: [
       'Owner: The creator of the Family Space. Full administrative authority, invites, role assignment, and ownership transfer.',
-      'Adult (Parent / Admin): Full financial access, can approve chores and kid requests, manage envelopes, and invite members.',
+      'Adult (Parent / Admin): Access depends on the assigned role. Family admins can manage tasks, approve completed responsibilities, configure rewards, and manage invitations.',
       'Teen: Can propose budget expenses, record independent side earnings, and earn a 50% parental savings match in their jar.',
-      'Child (Kid): Signs in on a parent’s phone via Profile PIN. Can claim chores for star rewards and request pocket money into their Kid Jar.',
+      'Child (Kid): Uses a child profile on a parent’s device. Can submit assigned tasks for approval and use earned points toward family rewards. Financial access remains limited by family permissions.',
       'Viewer: Read-only observer (e.g. grandparents or family accountant); cannot post or edit transactions.',
     ],
     proTip:
@@ -357,19 +357,19 @@ const List<_GuideItem> _allGuides = [
         'Savings circle rounds are records only. All funds remain in the physical custody of the family or chosen club treasurer.',
   ),
   _GuideItem(
-    title: 'Chores & Star Rewards for Kids',
+    title: 'Tasks, Points & Family Rewards',
     summary:
-        'Teach financial literacy and responsibility through earned allowances.',
+        'Coordinate family responsibilities and let members earn points toward family-defined rewards.',
     icon: Icons.star_outline,
     category: GuideCategory.family,
     steps: [
-      'Parents create chores with star values (e.g. Wash dishes = 3 stars, Clean yard = 5 stars).',
-      'Kids switch to Kids Mode and tap "I did this!" to submit a chore for review.',
-      'Parents review completed tasks on the Home notification bell or in Kids Mode and tap "Confirm".',
-      'Kids can convert stars into pocket money requests that land directly in their digital savings jar!',
+      'A family admin creates a task, assigns a member, sets a due date, and chooses its point value.',
+      'The assigned child or teen submits the task when it is complete. Tasks marked as requiring approval wait for an admin to review them.',
+      'Approved points appear in Points & Rewards for the member who completed the task. Tasks that do not require approval are completed directly.',
+      'A family admin can add rewards with a point cost. Eligible members can redeem an available reward once they have enough approved points.',
     ],
     proTip:
-        'Kids Mode is protected by a 4-digit parent PIN so children cannot alter envelope budgets or account settings.',
+        'Points are an in-app family reward tally. They are not money, do not change account balances, and are not automatically converted into pocket money.',
   ),
   _GuideItem(
     title: 'Offline-First & Cloud Sync',

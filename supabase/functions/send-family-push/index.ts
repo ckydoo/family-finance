@@ -15,6 +15,7 @@ type ChatMessage = {
   sender_name?: string;
   text?: string;
   media_url?: string;
+  media_type?: string;
   sticker?: string;
   deleted?: boolean;
 };
@@ -50,6 +51,7 @@ Deno.serve(async (req) => {
         chat.sender_name?.trim() || 'New family message',
         chat.text?.trim() ||
           (chat.sticker ? `Sent a sticker ${chat.sticker}` : null) ||
+          (chat.media_type === 'audio' ? 'Sent a voice note.' : null) ||
           (chat.media_url ? 'Sent a photo.' : null) ||
           'A family member sent an update.',
       ]

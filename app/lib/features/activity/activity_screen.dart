@@ -13,7 +13,9 @@ import '../../core/widgets/ui.dart';
 
 /// Full transaction feed grouped by day (spec §7.4).
 class ActivityScreen extends StatefulWidget {
-  const ActivityScreen({super.key});
+  const ActivityScreen({super.key, this.initialAccountId});
+
+  final String? initialAccountId;
 
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
@@ -24,12 +26,22 @@ enum _ActivityPeriod { all, today, sevenDays, thirtyDays }
 class _ActivityScreenState extends State<ActivityScreen> {
   TxType? _type;
   String? _memberId;
+  String? _accountId;
   _ActivityPeriod _period = _ActivityPeriod.all;
   bool _searching = false;
   String _query = '';
 
+  @override
+  void initState() {
+    super.initState();
+    _accountId = widget.initialAccountId;
+  }
+
   bool get _hasFilters =>
-      _type != null || _memberId != null || _period != _ActivityPeriod.all;
+      _type != null ||
+      _memberId != null ||
+      _accountId != null ||
+      _period != _ActivityPeriod.all;
 
   bool _inPeriod(DateTime value, DateTime now) {
     final local = value.toLocal();
@@ -49,6 +61,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     setState(() {
       _type = null;
       _memberId = null;
+      _accountId = null;
       _period = _ActivityPeriod.all;
     });
   }
@@ -56,6 +69,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<void> _showFilters(BuildContext context, AppState state) async {
     var type = _type;
     var memberId = _memberId;
+    var accountId = _accountId;
     var period = _period;
     await showModalBottomSheet<void>(
       context: context,
@@ -86,6 +100,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     onPressed: () => setSheet(() {
                       type = null;
                       memberId = null;
+                      accountId = null;
                       period = _ActivityPeriod.all;
                     }),
                     child: const Text('Reset'),
@@ -135,6 +150,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 onChanged: (value) => setSheet(() => memberId = value),
               ),
               const SizedBox(height: 16),
+              DropdownButtonFormField<String?>(
+                initialValue: accountId,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Finance view'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Family finances'),
+                  ),
+                  for (final account in state.accounts.where((value) =>
+                      value.isPrivate &&
+                      value.ownerMemberId == state.realUser.id))
+                    DropdownMenuItem<String?>(
+                      value: account.id,
+                      child: Text('${account.name} · Private'),
+                    ),
+                ],
+                onChanged: (value) => setSheet(() => accountId = value),
+              ),
+              const SizedBox(height: 16),
               DropdownButtonFormField<_ActivityPeriod>(
                 initialValue: period,
                 decoration: const InputDecoration(labelText: 'Date'),
@@ -162,6 +197,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     setState(() {
                       _type = type;
                       _memberId = memberId;
+                      _accountId = accountId;
                       _period = period;
                     });
                     Navigator.pop(sheetContext);
@@ -181,16 +217,50 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final s = AppScope.of(context);
     final now = DateTime.now();
     final query = _query.trim().toLowerCase();
-    final activities = s.activityFeed.where((activity) {
+    final selectedAccount = _accountId == null
+        ? null
+        : s.accounts.where((account) => account.id == _accountId).firstOrNull;
+    final privateAccount = selectedAccount?.isPrivate == true &&
+            selectedAccount?.ownerMemberId == s.realUser.id
+        ? selectedAccount
+        : null;
+    final sourceActivities = privateAccount == null
+        ? s.activityFeed
+        : s.txs
+            .where((transaction) => transaction.accountId == privateAccount.id)
+            .map((transaction) => FamilyActivity(
+                  id: 'private-tx-${transaction.id}',
+                  actorId: transaction.memberId,
+                  action: 'tx.create',
+                  entity: 'transaction',
+                  entityId: transaction.id,
+                  at: transaction.when,
+                  detail: {
+                    'amount_minor': transaction.amount.minor,
+                    'currency': transaction.amount.currency.code,
+                  },
+                ));
+    final activities = sourceActivities.where((activity) {
       if (activity.action.startsWith('contribution.') ||
           activity.action.startsWith('contribution_campaign.')) {
         return false;
       }
       if (_memberId != null && activity.actorId != _memberId) return false;
+      if (privateAccount == null &&
+          activity.entity == 'transaction' &&
+          s.txs.any((tx) =>
+              tx.id == activity.entityId &&
+              tx.accountId != null &&
+              s.accounts.any((account) =>
+                  account.id == tx.accountId && account.isPrivate))) {
+        return false;
+      }
       if (!_inPeriod(activity.at, now)) return false;
       final searchable = [
         activity.action,
         activity.entity,
+        if (activity.entity == 'transaction')
+          s.txs.where((tx) => tx.id == activity.entityId).firstOrNull?.note,
         ...activity.detail.values.map((value) => '$value'),
       ].join(' ').toLowerCase();
       if (query.isNotEmpty && !searchable.contains(query)) {
@@ -200,6 +270,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
         if (activity.entity != 'transaction') return false;
         final tx = s.txs.where((t) => t.id == activity.entityId).firstOrNull;
         if (tx == null || tx.type != _type) return false;
+      }
+      if (privateAccount != null && activity.entity != 'transaction') {
+        return false;
       }
       return true;
     });
@@ -248,60 +321,102 @@ class _ActivityScreenState extends State<ActivityScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => s.refresh(),
-          child: rows.isEmpty
-              ? ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
-                  children: [
-                    if (_hasFilters) ...[
-                      const EmptyState(
-                        icon: Icons.filter_alt_off_outlined,
-                        title: 'No matching activity',
-                        subtitle: 'Try changing or clearing your filters.',
-                      ),
-                      Center(
-                        child: TextButton(
-                          onPressed: _clearFilters,
-                          child: const Text('Clear filters'),
+          child: Column(
+            children: [
+              if (privateAccount != null)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: context.card,
+                    borderRadius: kBRadiusM,
+                    border: Border.all(color: context.hairline),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_outline_rounded,
+                          color: context.primaryDark),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(privateAccount.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700)),
+                            const Text('Private account · only you can see it'),
+                          ],
                         ),
                       ),
-                    ] else
-                      EmptyState(
-                        icon: Icons.receipt_long,
-                        title: AppLocalizations.of(context)!.noActivityTitle,
-                        subtitle: AppLocalizations.of(context)!.noActivityHint,
-                      ),
-                  ],
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                  itemCount: rows.length,
-                  itemBuilder: (context, index) {
-                    final row = rows[index];
-                    if (row is String) {
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 14, bottom: 8),
-                        child: Text(
-                          row,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: context.inkSoft,
-                          ),
-                        ),
-                      );
-                    }
-                    final activity = row as FamilyActivity;
-                    if (activity.entity == 'transaction') {
-                      final tx = s.txs
-                          .where((t) => t.id == activity.entityId)
-                          .firstOrNull;
-                      if (tx != null) {
-                        return TxTile(tx: tx, dense: true, surface: false);
-                      }
-                    }
-                    return _FamilyActivityTile(activity: activity);
-                  },
+                      Text(s.privateAccountBalance(privateAccount).text,
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                    ],
+                  ),
                 ),
+              Expanded(
+                child: rows.isEmpty
+                    ? ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
+                        children: [
+                          if (_hasFilters) ...[
+                            const EmptyState(
+                              icon: Icons.filter_alt_off_outlined,
+                              title: 'No matching activity',
+                              subtitle:
+                                  'Try changing or clearing your filters.',
+                            ),
+                            Center(
+                              child: TextButton(
+                                onPressed: _clearFilters,
+                                child: const Text('Clear filters'),
+                              ),
+                            ),
+                          ] else
+                            EmptyState(
+                              icon: Icons.receipt_long,
+                              title:
+                                  AppLocalizations.of(context)!.noActivityTitle,
+                              subtitle:
+                                  AppLocalizations.of(context)!.noActivityHint,
+                            ),
+                        ],
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                        itemCount: rows.length,
+                        itemBuilder: (context, index) {
+                          final row = rows[index];
+                          if (row is String) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 14, bottom: 8),
+                              child: Text(
+                                row,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.inkSoft,
+                                ),
+                              ),
+                            );
+                          }
+                          final activity = row as FamilyActivity;
+                          if (activity.entity == 'transaction') {
+                            final tx = s.txs
+                                .where((t) => t.id == activity.entityId)
+                                .firstOrNull;
+                            if (tx != null) {
+                              return TxTile(
+                                  tx: tx, dense: true, surface: false);
+                            }
+                          }
+                          return _FamilyActivityTile(activity: activity);
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

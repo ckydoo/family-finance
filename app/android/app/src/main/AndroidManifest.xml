@@ -4,6 +4,7 @@
          devices. Debug builds can appear to work because Flutter's debug
          manifest supplies this permission; release/profile builds cannot. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Restore locally scheduled reminders after a reboot/app update. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

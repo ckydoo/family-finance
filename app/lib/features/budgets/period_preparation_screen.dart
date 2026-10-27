@@ -5,6 +5,7 @@ import '../../core/planning/period_preparation.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ids.dart';
+import '../../core/widgets/plus_ui.dart';
 
 class PeriodPreparationScreen extends StatefulWidget {
   const PeriodPreparationScreen({super.key});
@@ -31,12 +32,13 @@ class _PeriodPreparationScreenState extends State<PeriodPreparationScreen> {
     final state = AppScope.of(context);
     final operationId = uuidFromSeed(
         'prepare:${state.spaceName ?? state.space.name}:${state.cycleStart.toIso8601String()}');
-    _proposal = state.previewAdvancedPeriodPreparation(operationId: operationId);
+    _proposal =
+        state.previewAdvancedPeriodPreparation(operationId: operationId);
     final proposal = _proposal;
     if (proposal == null) return;
     for (final entry in proposal.allocations.entries) {
-      _allocationControllers[entry.key] =
-          TextEditingController(text: (entry.value.minor / 100).toStringAsFixed(2));
+      _allocationControllers[entry.key] = TextEditingController(
+          text: (entry.value.minor / 100).toStringAsFixed(2));
     }
     _incomeController.text = proposal.expectedIncome == null
         ? ''
@@ -105,8 +107,8 @@ class _PeriodPreparationScreenState extends State<PeriodPreparationScreen> {
     _message('The new period is ready. No transactions were created.');
   }
 
-  void _message(String value) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
+  void _message(String value) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(value)));
 
   @override
   Widget build(BuildContext context) {
@@ -128,15 +130,40 @@ class _PeriodPreparationScreenState extends State<PeriodPreparationScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text('Review before applying',
-                    style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 6),
-                Text(
-                  'This copies plans only. Completed expenses, debt principal, repayments, and savings history are never copied.',
-                  style: TextStyle(color: context.inkSoft),
+                const PlusHero(
+                  eyebrow: 'Next period',
+                  title: 'Carry forward what still matters',
+                  description:
+                      'Review the plan below, remove anything you do not need, then prepare the new period. Completed financial history stays untouched.',
+                  icon: Icons.next_plan_outlined,
+                ),
+                const SizedBox(height: 16),
+                PlusSectionCard(
+                  title: 'Your preparation summary',
+                  subtitle:
+                      'Everything is selected by default. Uncheck anything you do not want to carry forward.',
+                  icon: Icons.checklist_rounded,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Chip(
+                          label:
+                              Text('${proposal.allocations.length} budgets')),
+                      Chip(
+                          label:
+                              Text('${proposal.commitmentIds.length} bills')),
+                      Chip(
+                          label:
+                              Text('${proposal.savings.length} savings plans')),
+                      Chip(
+                          label: Text(
+                              '${proposal.shoppingItems.length} shopping items')),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 18),
-                Text('Budget allocations',
+                Text('1. Check budget amounts',
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 for (final entry in proposal.allocations.entries)
@@ -160,7 +187,7 @@ class _PeriodPreparationScreenState extends State<PeriodPreparationScreen> {
                       labelText: 'Expected income (optional)'),
                 ),
                 const SizedBox(height: 18),
-                _sectionTitle(context, 'Recurring commitments'),
+                _sectionTitle(context, '2. Choose bills to carry forward'),
                 if (proposal.commitmentIds.isEmpty)
                   const Text('No active commitments to prepare.'),
                 for (final id in proposal.commitmentIds)
@@ -168,14 +195,15 @@ class _PeriodPreparationScreenState extends State<PeriodPreparationScreen> {
                     contentPadding: EdgeInsets.zero,
                     value: _commitments.contains(id),
                     title: Text(state.financialCommitments
-                        .where((value) => value.id == id)
-                        .map((value) => value.name)
-                        .firstOrNull ?? id),
+                            .where((value) => value.id == id)
+                            .map((value) => value.name)
+                            .firstOrNull ??
+                        id),
                     onChanged: (selected) => setState(() => selected == true
                         ? _commitments.add(id)
                         : _commitments.remove(id)),
                   ),
-                _sectionTitle(context, 'Savings contribution plans'),
+                _sectionTitle(context, '3. Choose savings plans'),
                 if (proposal.savings.isEmpty)
                   const Text('No prior-period contributions to suggest.'),
                 for (final value in proposal.savings)
@@ -192,7 +220,7 @@ class _PeriodPreparationScreenState extends State<PeriodPreparationScreen> {
                         ? _savings.add(value.goalId)
                         : _savings.remove(value.goalId)),
                   ),
-                _sectionTitle(context, 'Reusable shopping items'),
+                _sectionTitle(context, '4. Choose reusable shopping items'),
                 if (proposal.shoppingItems.isEmpty)
                   const Text('No completed items to suggest.'),
                 for (final value in proposal.shoppingItems)
@@ -200,7 +228,8 @@ class _PeriodPreparationScreenState extends State<PeriodPreparationScreen> {
                     contentPadding: EdgeInsets.zero,
                     value: _shopping.contains(value.name),
                     title: Text(value.name),
-                    subtitle: Text('${value.quantity} × ${value.estimate.text}'),
+                    subtitle:
+                        Text('${value.quantity} × ${value.estimate.text}'),
                     onChanged: (selected) => setState(() => selected == true
                         ? _shopping.add(value.name)
                         : _shopping.remove(value.name)),
@@ -213,7 +242,7 @@ class _PeriodPreparationScreenState extends State<PeriodPreparationScreen> {
                   icon: const Icon(Icons.check_circle_outline),
                   label: Text(proposal.status == PreparationStatus.applied
                       ? 'Period prepared'
-                      : 'Apply reviewed plan'),
+                      : 'Prepare next period'),
                 ),
               ],
             ),

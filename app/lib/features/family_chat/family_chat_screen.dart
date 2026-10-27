@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:path/path.dart' as path_util;
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
@@ -16,6 +21,7 @@ import '../budgets/budgets_screen.dart' show showEnvelopeDetailSheet;
 import '../family_tasks/family_tasks_screen.dart';
 import '../lists/lists_screen.dart';
 import 'family_polls_sheet.dart';
+import 'family_chat_voice_note.dart';
 import '../settings/plus_screen.dart';
 
 class FamilyChatScreen extends StatefulWidget {
@@ -34,7 +40,14 @@ class FamilyChatScreen extends StatefulWidget {
   State<FamilyChatScreen> createState() => _FamilyChatScreenState();
 }
 
-enum _ChatMessageAction { edit, delete, pin, unpin, upgrade }
+enum _ChatMessageAction {
+  edit,
+  delete,
+  pin,
+  unpin,
+  upgradeEnhanced,
+  upgradePins
+}
 
 enum _ChatAttachmentAction { budget, shopping, gallery }
 
@@ -56,11 +69,19 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   final _controller = TextEditingController();
   final _composerFocus = FocusNode();
   final _scroll = ScrollController();
+  final AudioPlayer _voicePlayer = AudioPlayer();
   _PendingReference? _pendingReference;
   FamilyChatMessage? _replyingTo;
   bool _searching = false;
   bool _showExpressionTray = false;
   bool _uploadingMedia = false;
+  bool _recordingVoice = false;
+  bool _finishingVoiceNote = false;
+  Duration _recordingElapsed = Duration.zero;
+  DateTime? _recordingStartedAt;
+  String? _recordingPath;
+  AudioRecorder? _voiceRecorder;
+  Timer? _recordingTimer;
   String _query = '';
   String? _advancedSenderId;
   DateTime? _advancedFrom;
@@ -125,6 +146,273 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       });
     } catch (_) {
       // Existing chat stays usable if pin loading is unavailable.
+    }
+  }
+
+  bool _hasEnhancedChat(AppState state) =>
+      state.canWritePlusFeature('enhanced_family_chat');
+
+  Future<void> _showChatUpgrade(String feature) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('A Mhuri Plus feature'),
+        content: Text(
+            '$feature is included with Mhuri Plus. Your family text chat and replies stay free.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Maybe later'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PlusScreen()),
+              );
+            },
+            icon: const Icon(Icons.workspace_premium_outlined),
+            label: const Text('Explore Plus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _removePin(AppState state, String messageId) async {
+    try {
+      await state.sync?.setFamilyChatPin(messageId, pinned: false);
+      await _loadPinnedMessageIds(state);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(userFacingErrorMessage(
+          error,
+          fallback: 'Could not remove this pinned message. Please try again.',
+        )),
+      ));
+    }
+  }
+
+  static const _maxVoiceNoteDuration = Duration(seconds: 90);
+
+  String _voiceTime(Duration value) {
+    final seconds = value.inSeconds.clamp(0, 5999);
+    return '${(seconds ~/ 60).toString().padLeft(1, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _toggleVoiceNote(AppState state) async {
+    if (!_hasEnhancedChat(state)) {
+      await _showChatUpgrade('Voice notes');
+      return;
+    }
+    if (_recordingVoice) {
+      await _finishVoiceNote(state);
+      return;
+    }
+    if (_uploadingMedia || _finishingVoiceNote) return;
+    final spaceId = state.sync?.spaceId;
+    if (spaceId == null ||
+        state.env.supabaseUrl == null ||
+        state.auth == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Connect to your family before sending a voice note.'),
+      ));
+      return;
+    }
+    final recorder = AudioRecorder();
+    try {
+      if (!await recorder.hasPermission()) {
+        throw const ChatMediaException(
+          'Allow microphone access in your device settings to record a voice note.',
+        );
+      }
+      final temporaryDirectory = await getTemporaryDirectory();
+      final filePath = path_util.join(
+        temporaryDirectory.path,
+        'mhuri_voice_${newUuid()}.m4a',
+      );
+      await recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 64000,
+          sampleRate: 24000,
+          numChannels: 1,
+          echoCancel: true,
+          noiseSuppress: true,
+        ),
+        path: filePath,
+      );
+      if (!mounted) {
+        await recorder.cancel();
+        await recorder.dispose();
+        return;
+      }
+      setState(() {
+        _voiceRecorder = recorder;
+        _recordingPath = filePath;
+        _recordingStartedAt = DateTime.now();
+        _recordingElapsed = Duration.zero;
+        _recordingVoice = true;
+      });
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        final started = _recordingStartedAt;
+        if (!mounted || started == null || !_recordingVoice) return;
+        final elapsed = DateTime.now().difference(started);
+        setState(() => _recordingElapsed = elapsed);
+        if (elapsed >= _maxVoiceNoteDuration) {
+          unawaited(_finishVoiceNote(state));
+        }
+      });
+    } catch (error) {
+      await recorder.dispose();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(userFacingErrorMessage(
+            error,
+            fallback: 'Could not start recording. Please try again.',
+          )),
+        ));
+      }
+    }
+  }
+
+  Future<void> _cancelVoiceNote() async {
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+    final recorder = _voiceRecorder;
+    final filePath = _recordingPath;
+    _voiceRecorder = null;
+    _recordingPath = null;
+    if (mounted) {
+      setState(() {
+        _recordingVoice = false;
+        _recordingStartedAt = null;
+        _recordingElapsed = Duration.zero;
+      });
+    }
+    try {
+      await recorder?.cancel();
+    } catch (_) {
+      // Best-effort cleanup when the OS already interrupted recording.
+    }
+    await recorder?.dispose();
+    if (filePath != null) {
+      try {
+        await File(filePath).delete();
+      } catch (_) {
+        // A canceled recorder can delete its own temporary file.
+      }
+    }
+  }
+
+  Future<void> _finishVoiceNote(AppState state) async {
+    if (_finishingVoiceNote) return;
+    final recorder = _voiceRecorder;
+    final filePath = _recordingPath;
+    if (recorder == null || filePath == null) return;
+    _finishingVoiceNote = true;
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+    final duration = _recordingStartedAt == null
+        ? _recordingElapsed
+        : DateTime.now().difference(_recordingStartedAt!);
+    if (mounted) {
+      setState(() {
+        _recordingVoice = false;
+        _uploadingMedia = true;
+      });
+    }
+    _voiceRecorder = null;
+    _recordingPath = null;
+    ChatMediaUploader? uploader;
+    try {
+      final stoppedPath = await recorder.stop();
+      await recorder.dispose();
+      final finalPath = stoppedPath ?? filePath;
+      if (duration < const Duration(seconds: 1)) {
+        throw const ChatMediaException(
+          'Record at least one second before sending a voice note.',
+        );
+      }
+      final file = File(finalPath);
+      final bytes = await file.readAsBytes();
+      final spaceId = state.sync?.spaceId;
+      final baseUrl = state.env.supabaseUrl;
+      final auth = state.auth;
+      if (spaceId == null || baseUrl == null || auth == null) {
+        throw const ChatMediaException(
+          'Reconnect to your family before sending the voice note.',
+        );
+      }
+      final messageId = newUuid();
+      uploader = ChatMediaUploader(
+        baseUrl: baseUrl,
+        anonKey: state.env.supabaseAnonKey ?? '',
+        tokenGet: auth.validAccessToken,
+      );
+      final url = await uploader.upload(
+        bytes: bytes,
+        spaceId: spaceId,
+        messageId: messageId,
+        extension: 'm4a',
+      );
+      if (!mounted) return;
+      final message = _message(
+        state,
+        text: '',
+        mediaUrl: url,
+        mediaType: 'audio',
+      );
+      state.addChatMessage(FamilyChatMessage(
+        id: messageId,
+        familyId: message.familyId,
+        senderId: message.senderId,
+        text: message.text,
+        createdAt: message.createdAt,
+        senderName: message.senderName,
+        senderAvatar: message.senderAvatar,
+        status: message.status,
+        referenceType: message.referenceType,
+        referenceId: message.referenceId,
+        referenceTitle: message.referenceTitle,
+        referenceMeta: message.referenceMeta,
+        mediaUrl: message.mediaUrl,
+        mediaType: message.mediaType,
+        replyToId: message.replyToId,
+        replySenderName: message.replySenderName,
+        replyPreview: message.replyPreview,
+      ));
+      setState(() {
+        _pendingReference = null;
+        _replyingTo = null;
+        _recordingStartedAt = null;
+      });
+      _scrollToLatest();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(userFacingErrorMessage(
+            error,
+            fallback: 'Could not send the voice note. Please try again.',
+          )),
+        ));
+      }
+    } finally {
+      uploader?.close();
+      try {
+        await File(filePath).delete();
+      } catch (_) {
+        // Local recording is temporary and can be absent after plugin cleanup.
+      }
+      _finishingVoiceNote = false;
+      if (mounted) {
+        setState(() {
+          _uploadingMedia = false;
+          _recordingStartedAt = null;
+        });
+      }
     }
   }
 
@@ -227,11 +515,27 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
               if (_pins.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Text(
-                    state.hasPlusFeature('family_polls_pins')
-                        ? 'No pinned messages yet. Long-press any message to pin important family updates.'
-                        : 'Pinned messages are a Mhuri Plus feature.',
-                    style: TextStyle(color: context.inkSoft),
+                  child: Column(
+                    children: [
+                      Text(
+                        state.canWritePlusFeature('family_polls_pins')
+                            ? 'No pinned messages yet. Long-press any message to pin important family updates.'
+                            : 'Pinned messages are a Mhuri Plus feature. Family chat stays free.',
+                        style: TextStyle(color: context.inkSoft),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (!state.canWritePlusFeature('family_polls_pins'))
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.pop(sheetContext);
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const PlusScreen(),
+                            ));
+                          },
+                          icon: const Icon(Icons.workspace_premium_outlined),
+                          label: const Text('Explore Mhuri Plus'),
+                        ),
+                    ],
                   ),
                 )
               else
@@ -272,9 +576,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: isDeleted ? context.inkSoft : context.ink,
-                            fontStyle: isDeleted
-                                ? FontStyle.italic
-                                : FontStyle.normal,
+                            fontStyle:
+                                isDeleted ? FontStyle.italic : FontStyle.normal,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -289,17 +592,14 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                 Navigator.pop(sheetContext);
                                 _jumpToMessage(state, msgId);
                               },
-                        trailing: canUnpin &&
-                                state.hasPlusFeature('family_polls_pins')
-                            ? IconButton(
-                                tooltip: 'Unpin',
-                                icon: const Icon(Icons.close, size: 18),
+                        trailing: canUnpin
+                            ? TextButton.icon(
                                 onPressed: () async {
                                   Navigator.pop(sheetContext);
-                                  await state.sync
-                                      ?.setFamilyChatPin(msgId, pinned: false);
-                                  await _loadPinnedMessageIds(state);
+                                  await _removePin(state, msgId);
                                 },
+                                icon: const Icon(Icons.close, size: 16),
+                                label: const Text('Remove'),
                               )
                             : null,
                       );
@@ -416,12 +716,18 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     await _runAdvancedSearch(state);
   }
 
-  Future<void> _runAdvancedSearch(AppState state, {bool loadMore = false}) async {
-    if (!state.hasPlusFeature('advanced_chat_search')) {
+  Future<void> _runAdvancedSearch(AppState state,
+      {bool loadMore = false}) async {
+    if (!state.canWritePlusFeature('advanced_chat_search')) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:
-              Text('Advanced search requires an active Plus subscription.'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Advanced chat search is a Mhuri Plus feature.'),
+          action: SnackBarAction(
+            label: 'Explore Mhuri Plus',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const PlusScreen(),
+            )),
+          ),
         ));
       }
       return;
@@ -457,7 +763,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(error.toString().contains('PLUS_FEATURE_REQUIRED')
-              ? 'Advanced search requires Plus.'
+              ? 'Advanced search requires Mhuri Plus.'
               : 'Could not search server history. Check your connection and try again.'),
         ));
       }
@@ -469,6 +775,22 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   @override
   void dispose() {
     _chatRefreshTimer?.cancel();
+    _recordingTimer?.cancel();
+    final recorder = _voiceRecorder;
+    final recordingPath = _recordingPath;
+    if (recorder != null) {
+      unawaited(() async {
+        try {
+          await recorder.cancel();
+        } catch (_) {}
+        await recorder.dispose();
+      }());
+    }
+    if (recordingPath != null) {
+      unawaited(
+          File(recordingPath).delete().catchError((_) => File(recordingPath)));
+    }
+    unawaited(_voicePlayer.dispose());
     _controller.dispose();
     _composerFocus.dispose();
     _scroll.dispose();
@@ -593,6 +915,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     final text = message.text.trim();
     if (text.isNotEmpty) return text;
     if (message.sticker?.isNotEmpty == true) return message.sticker!;
+    if (message.mediaType == 'audio') return 'Voice note';
     if (message.mediaType == 'image') return 'Photo';
     if (message.referenceTitle?.isNotEmpty == true) {
       return message.referenceTitle!;
@@ -645,6 +968,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   ) async {
     if (message.isSystem) return;
     final isPinned = _pinnedMessageIds.contains(message.id);
+    final enhancedChat = _hasEnhancedChat(state);
+    final pollsAndPins = state.canWritePlusFeature('family_polls_pins');
     final canEditDelete = message.senderId == state.realUser.id;
     final canEdit = message.mediaUrl == null && message.sticker == null;
     final action = await showMhuriSheet<_ChatMessageAction>(
@@ -658,8 +983,12 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
                 title: const Text('Edit message'),
-                onTap: () =>
-                    Navigator.pop(sheetContext, _ChatMessageAction.edit),
+                trailing: enhancedChat ? null : const _PlusLock(),
+                onTap: () => Navigator.pop(
+                    sheetContext,
+                    enhancedChat
+                        ? _ChatMessageAction.edit
+                        : _ChatMessageAction.upgradeEnhanced),
               ),
             if (canEditDelete)
               ListTile(
@@ -676,31 +1005,35 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                 leading:
                     Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
                 title: Text(isPinned ? 'Unpin message' : 'Pin message'),
+                trailing: isPinned || pollsAndPins ? null : const _PlusLock(),
                 onTap: () => Navigator.pop(
                     sheetContext,
                     isPinned
-                        ? state.hasPlusFeature('family_polls_pins')
-                            ? _ChatMessageAction.unpin
-                            : _ChatMessageAction.upgrade
-                        : state.hasPlusFeature('family_polls_pins')
+                        ? _ChatMessageAction.unpin
+                        : pollsAndPins
                             ? _ChatMessageAction.pin
-                            : _ChatMessageAction.upgrade),
+                            : _ChatMessageAction.upgradePins),
               ),
           ],
         ),
       ),
     );
     if (!mounted || action == null) return;
-    if (action == _ChatMessageAction.upgrade) {
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => const PlusScreen()));
+    if (action == _ChatMessageAction.upgradeEnhanced ||
+        action == _ChatMessageAction.upgradePins) {
+      await _showChatUpgrade(action == _ChatMessageAction.upgradeEnhanced
+          ? 'Editing messages'
+          : 'Pinned messages');
       return;
     }
     if (action == _ChatMessageAction.pin ||
         action == _ChatMessageAction.unpin) {
+      if (action == _ChatMessageAction.unpin) {
+        await _removePin(state, message.id);
+        return;
+      }
       try {
-        await state.sync?.setFamilyChatPin(message.id,
-            pinned: action == _ChatMessageAction.pin);
+        await state.sync?.setFamilyChatPin(message.id, pinned: true);
         await _loadPinnedMessageIds(state);
       } catch (error) {
         if (mounted) {
@@ -773,6 +1106,10 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   void _send(AppState state) {
     final text = _controller.text.trim();
     if (text.isEmpty && _pendingReference == null) return;
+    if (_pendingReference != null && !_hasEnhancedChat(state)) {
+      unawaited(_showChatUpgrade('Sharing a chat reference'));
+      return;
+    }
     final reference = _pendingReference;
     final message = _message(
       state,
@@ -791,6 +1128,10 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   }
 
   void _sendSticker(AppState state, String sticker) {
+    if (!_hasEnhancedChat(state)) {
+      unawaited(_showChatUpgrade('Emoji and stickers'));
+      return;
+    }
     state.addChatMessage(_message(state, text: '', sticker: sticker));
     setState(() {
       _pendingReference = null;
@@ -812,6 +1153,10 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   }
 
   Future<void> _attachmentMenu(AppState state) async {
+    if (!_hasEnhancedChat(state)) {
+      await _showChatUpgrade('Photo sharing and chat references');
+      return;
+    }
     final action = await showMhuriSheet<_ChatAttachmentAction>(
       context: context,
       builder: (sheetContext) => MhuriSheetShell(
@@ -917,6 +1262,10 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   }
 
   Future<void> _pickAndSendPhoto(AppState state) async {
+    if (!_hasEnhancedChat(state)) {
+      await _showChatUpgrade('Photo sharing');
+      return;
+    }
     final spaceId = state.sync?.spaceId;
     final baseUrl = state.env.supabaseUrl;
     final anonKey = state.env.supabaseAnonKey;
@@ -934,13 +1283,16 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     if (file == null || !mounted) return;
     setState(() => _uploadingMedia = true);
     final messageId = newUuid();
+    ChatMediaUploader? uploader;
     try {
-      final extension = file.name.split('.').last;
-      final url = await ChatMediaUploader(
+      final extension =
+          file.name.toLowerCase().endsWith('.png') ? 'png' : 'jpg';
+      uploader = ChatMediaUploader(
         baseUrl: baseUrl,
         anonKey: anonKey ?? '',
         tokenGet: auth.validAccessToken,
-      ).upload(
+      );
+      final url = await uploader.upload(
         bytes: await file.readAsBytes(),
         spaceId: spaceId,
         messageId: messageId,
@@ -984,6 +1336,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
         ));
       }
     } finally {
+      uploader?.close();
       if (mounted) setState(() => _uploadingMedia = false);
     }
   }
@@ -999,9 +1352,26 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     });
   }
 
-  String _privateMediaUrl(String url) => url.replaceFirst(
+  String _privateMediaUrl(AppState state, String url) {
+    final base = Uri.tryParse(state.env.supabaseUrl ?? '');
+    final target = Uri.tryParse(url);
+    if (base == null ||
+        !base.hasAuthority ||
+        target == null ||
+        !target.hasAuthority ||
+        target.origin != base.origin) {
+      final origin = base?.hasAuthority == true ? base!.origin : '';
+      return '$origin/storage/v1/object/authenticated/chat-media/invalid';
+    }
+    final path = target.path.replaceFirst(
       '/storage/v1/object/public/chat-media/',
-      '/storage/v1/object/authenticated/chat-media/');
+      '/storage/v1/object/authenticated/chat-media/',
+    );
+    if (!path.startsWith('/storage/v1/object/authenticated/chat-media/')) {
+      return '${base.origin}/storage/v1/object/authenticated/chat-media/invalid';
+    }
+    return target.replace(path: path).toString();
+  }
 
   Future<Map<String, String>> _mediaHeaders(AppState state) {
     return _mediaHeaderFuture ??= (() async {
@@ -1016,6 +1386,20 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
         'Authorization': 'Bearer $token',
       };
     })();
+  }
+
+  Future<Map<String, String>> _freshMediaHeaders(AppState state) async {
+    final auth = state.auth;
+    final token = auth == null ? null : await auth.validAccessToken();
+    if (token == null || token.isEmpty) {
+      throw const ChatMediaException(
+        'Your session expired. Sign in again to play this voice note.',
+      );
+    }
+    return {
+      'apikey': state.env.supabaseAnonKey ?? '',
+      'Authorization': 'Bearer $token',
+    };
   }
 
   @override
@@ -1084,16 +1468,38 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
             icon: Badge(
               isLabelVisible: _pinnedMessageIds.isNotEmpty,
               label: Text('${_pinnedMessageIds.length}'),
-              child: const Icon(Icons.push_pin_outlined),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.push_pin_outlined),
+                  if (!state.canWritePlusFeature('family_polls_pins'))
+                    const Positioned(
+                      right: -5,
+                      bottom: -4,
+                      child: _PlusLock(size: 10),
+                    ),
+                ],
+              ),
             ),
           ),
           IconButton(
             tooltip: 'Family polls',
             onPressed: () =>
                 showFamilyPollsSheet(context, AppScope.of(context)),
-            icon: const Icon(Icons.poll_outlined),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.poll_outlined),
+                if (!state.canWritePlusFeature('family_polls_pins'))
+                  const Positioned(
+                    right: -5,
+                    bottom: -4,
+                    child: _PlusLock(size: 10),
+                  ),
+              ],
+            ),
           ),
-          if (_searching && state.hasPlusFeature('advanced_chat_search'))
+          if (_searching && state.canWritePlusFeature('advanced_chat_search'))
             IconButton(
               tooltip: 'Advanced search filters',
               onPressed: _advancedSearchRunning
@@ -1182,8 +1588,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                     Expanded(
                       child: Text(
                         'Server filters active (${_advancedKind != 'any' ? _advancedKind : 'filtered'})',
-                        style:
-                            TextStyle(fontSize: 12, color: context.inkSoft),
+                        style: TextStyle(fontSize: 12, color: context.inkSoft),
                       ),
                     ),
                     TextButton(
@@ -1226,7 +1631,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                               : 0),
                       itemBuilder: (context, index) {
                         if ((hasEarlier ||
-                                (advancedResults != null && _advancedHasMore)) &&
+                                (advancedResults != null &&
+                                    _advancedHasMore)) &&
                             index == messages.length) {
                           return Center(
                             child: TextButton(
@@ -1354,16 +1760,16 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                             Radius.circular(isMine ? 5 : 14),
                                       ),
                                       border: Border.all(
-                                        color: _highlightedMessageId ==
-                                                message.id
-                                            ? context.primary
-                                            : isMine
+                                        color:
+                                            _highlightedMessageId == message.id
                                                 ? context.primary
-                                                : context.hairline,
-                                        width: _highlightedMessageId ==
-                                                message.id
-                                            ? 2.2
-                                            : 1.0,
+                                                : isMine
+                                                    ? context.primary
+                                                    : context.hairline,
+                                        width:
+                                            _highlightedMessageId == message.id
+                                                ? 2.2
+                                                : 1.0,
                                       ),
                                     ),
                                     child: Column(
@@ -1433,7 +1839,21 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                           ),
                                           const SizedBox(height: 8),
                                         ],
-                                        if (message.mediaUrl != null) ...[
+                                        if (message.mediaUrl != null &&
+                                            message.mediaType == 'audio') ...[
+                                          FamilyChatVoiceNote(
+                                            key: ValueKey(message.mediaUrl),
+                                            url: _privateMediaUrl(
+                                                state, message.mediaUrl!),
+                                            headersGet: () =>
+                                                _freshMediaHeaders(state),
+                                            player: _voicePlayer,
+                                            isMine: isMine,
+                                          ),
+                                          if (message.text.isNotEmpty)
+                                            const SizedBox(height: 8),
+                                        ] else if (message.mediaUrl !=
+                                            null) ...[
                                           ClipRRect(
                                             borderRadius:
                                                 BorderRadius.circular(10),
@@ -1456,7 +1876,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                                 }
                                                 return Image.network(
                                                   _privateMediaUrl(
-                                                      message.mediaUrl!),
+                                                      state, message.mediaUrl!),
                                                   headers: snapshot.data,
                                                   width: 240,
                                                   height: 220,
@@ -1786,66 +2206,152 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                           ),
                         ),
                       ),
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: _uploadingMedia
-                              ? null
-                              : () => _attachmentMenu(state),
-                          tooltip: 'Add photo or reference',
-                          icon: _uploadingMedia
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2.2),
-                                )
-                              : const Icon(Icons.add_rounded),
+                    if (_recordingVoice)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: context.card,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: context.hairline),
                         ),
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            focusNode: _composerFocus,
-                            minLines: 1,
-                            maxLines: 4,
-                            textCapitalization: TextCapitalization.sentences,
-                            decoration: InputDecoration(
-                              hintText: 'Message the family…',
-                              filled: true,
-                              fillColor: context.bg,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(18),
-                                borderSide: BorderSide.none,
+                        child: Row(
+                          children: [
+                            IconButton(
+                              tooltip: 'Discard voice note',
+                              onPressed: _cancelVoiceNote,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                            Icon(Icons.fiber_manual_record,
+                                size: 14, color: context.danger),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Recording ${_voiceTime(_recordingElapsed)} · max 1:30',
+                                style: TextStyle(
+                                    color: context.ink,
+                                    fontWeight: FontWeight.w600),
                               ),
                             ),
-                            onSubmitted: (_) => _send(state),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => setState(
-                              () => _showExpressionTray = !_showExpressionTray),
-                          tooltip: 'Emoji and stickers',
-                          icon: Icon(_showExpressionTray
-                              ? Icons.keyboard_rounded
-                              : Icons.sentiment_satisfied_alt_rounded),
-                        ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: () => _send(state),
-                          style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                            IconButton.filled(
+                              tooltip: 'Send voice note',
+                              onPressed: _finishingVoiceNote
+                                  ? null
+                                  : () => _finishVoiceNote(state),
+                              icon: const Icon(Icons.send_rounded),
                             ),
-                            minimumSize: const Size(54, 48),
-                          ),
-                          child: const Icon(Icons.send_rounded),
+                          ],
                         ),
-                      ],
-                    ),
+                      )
+                    else
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: _uploadingMedia
+                                ? null
+                                : () => _attachmentMenu(state),
+                            tooltip: 'Add photo or reference',
+                            icon: _uploadingMedia
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.2),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        const Icon(Icons.add_rounded),
+                                        if (!_hasEnhancedChat(state)) ...[
+                                          const SizedBox(width: 2),
+                                          const _PlusLock(size: 12),
+                                        ],
+                                      ]),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              focusNode: _composerFocus,
+                              minLines: 1,
+                              maxLines: 4,
+                              textCapitalization: TextCapitalization.sentences,
+                              decoration: InputDecoration(
+                                hintText: 'Message the family…',
+                                filled: true,
+                                fillColor: context.bg,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onSubmitted: (_) => _send(state),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _uploadingMedia
+                                ? null
+                                : () => _toggleVoiceNote(state),
+                            tooltip: _hasEnhancedChat(state)
+                                ? 'Record voice note'
+                                : 'Voice notes · Mhuri Plus',
+                            icon: _uploadingMedia
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.2),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        const Icon(Icons.mic_none_rounded),
+                                        if (!_hasEnhancedChat(state)) ...[
+                                          const SizedBox(width: 2),
+                                          const _PlusLock(size: 12),
+                                        ],
+                                      ]),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              if (!_hasEnhancedChat(state)) {
+                                unawaited(
+                                    _showChatUpgrade('Emoji and stickers'));
+                                return;
+                              }
+                              setState(() =>
+                                  _showExpressionTray = !_showExpressionTray);
+                            },
+                            tooltip: 'Emoji and stickers',
+                            icon:
+                                Row(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(_showExpressionTray
+                                  ? Icons.keyboard_rounded
+                                  : Icons.sentiment_satisfied_alt_rounded),
+                              if (!_hasEnhancedChat(state)) ...[
+                                const SizedBox(width: 2),
+                                const _PlusLock(size: 12),
+                              ],
+                            ]),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed:
+                                _uploadingMedia ? null : () => _send(state),
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              minimumSize: const Size(54, 48),
+                            ),
+                            child: const Icon(Icons.send_rounded),
+                          ),
+                        ],
+                      ),
                     if (_showExpressionTray) ...[
                       const SizedBox(height: 8),
                       _ExpressionTray(
@@ -2047,5 +2553,17 @@ class _ChatDayLabel extends StatelessWidget {
             color: context.inkSoft,
           ),
         ),
+      );
+}
+
+class _PlusLock extends StatelessWidget {
+  const _PlusLock({this.size = 16});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Icon(
+        Icons.lock_outline_rounded,
+        size: size,
+        color: context.primary,
       );
 }

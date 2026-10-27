@@ -517,10 +517,11 @@ CREATE TABLE public.family_task (
   created_by uuid NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   due_at timestamp with time zone,
-  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'inProgress'::text, 'done'::text])),
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'inProgress'::text, 'awaitingApproval'::text, 'done'::text])),
   points integer NOT NULL DEFAULT 1 CHECK (points >= 0 AND points <= 20),
   requires_approval boolean NOT NULL DEFAULT true,
   approved_by_member_id uuid,
+  completed_by_member_id uuid,
   approved_at timestamp with time zone,
   completed_at timestamp with time zone,
   is_archived boolean NOT NULL DEFAULT false,
@@ -529,8 +530,24 @@ CREATE TABLE public.family_task (
   CONSTRAINT family_task_approved_by_member_id_fkey FOREIGN KEY (approved_by_member_id) REFERENCES public.user_profile(id),
   CONSTRAINT family_task_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id),
   CONSTRAINT family_task_assignee_member_id_fkey FOREIGN KEY (assignee_member_id) REFERENCES public.user_profile(id),
+  CONSTRAINT family_task_completed_by_member_id_fkey FOREIGN KEY (completed_by_member_id) REFERENCES public.user_profile(id),
   CONSTRAINT family_task_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profile(id)
 );
+CREATE TABLE public.family_reward (
+  id uuid NOT NULL,
+  space_id uuid NOT NULL,
+  name text NOT NULL,
+  points_cost integer NOT NULL CHECK (points_cost > 0),
+  description text,
+  is_archived boolean NOT NULL DEFAULT false,
+  redeemed_by_member_id uuid,
+  redeemed_at timestamp with time zone,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT family_reward_pkey PRIMARY KEY (id),
+  CONSTRAINT family_reward_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.family_space(id) ON DELETE CASCADE,
+  CONSTRAINT family_reward_redeemed_by_member_id_fkey FOREIGN KEY (redeemed_by_member_id) REFERENCES public.user_profile(id) ON DELETE SET NULL
+);
+ALTER TABLE public.family_task ADD COLUMN IF NOT EXISTS completed_by_member_id uuid;
 CREATE TABLE public.mukando_payment (
   id uuid NOT NULL,
   space_id uuid NOT NULL,

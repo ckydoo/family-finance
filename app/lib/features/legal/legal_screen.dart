@@ -138,12 +138,22 @@ class _LegalScreenState extends State<LegalScreen> {
         _cardItem(
           title: 'Family Financial Content',
           description:
-              'Envelopes, income, expense transactions, shopping lists, bills, savings goals, and Mukando records. This content is isolated and scoped strictly to your unique Family Space ID.',
+              'Envelopes, income and expense transactions, shopping lists, bills, savings goals, family tasks, task completion and approval records, points, and reward redemptions. Shared items are visible to authorized members of the relevant Family Space. Private account transactions are restricted to their owner.',
+        ),
+        _cardItem(
+          title: 'Ask Mhuri (temporarily unavailable)',
+          description:
+              'Ask Mhuri is currently unavailable and cannot be used in the app. If restored in a future release, this policy will be updated to explain how questions and financial data are handled before the feature is enabled.',
         ),
         _cardItem(
           title: 'Children & Minor Profiles',
           description:
               'Kids and teens have display names and avatar icons. Kids authenticate locally on a parent’s device using a local profile PIN. We do NOT collect phone numbers, email addresses, or marketing identifiers from children.',
+        ),
+        _cardItem(
+          title: 'Family Tasks, Points & Rewards',
+          description:
+              'Task titles, notes, assignees, due dates, completion and approval status, point values, and reward redemption status are processed as shared family-space data. Members with the required role can see this information. Points are an in-app tally and are not cash or a financial account balance.',
         ),
         _cardItem(
           title: 'Diagnostics, Usage & Notifications',
@@ -205,7 +215,14 @@ class _LegalScreenState extends State<LegalScreen> {
               TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.45),
         ),
         const SizedBox(height: 16),
-        _sectionTitle('3. Availability & Service Continuity'),
+        _sectionTitle('3. Family Tasks, Points & Rewards'),
+        Text(
+          'Task details, completion and approval status, points, and reward redemptions are shared with authorized members of the relevant Family Space. Points are an in-app tally with no cash value and do not move money or alter account balances. Families are responsible for agreeing on and providing any real-world rewards.',
+          style:
+              TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.45),
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('4. Availability & Service Continuity'),
         Text(
           'Mhuri operates under an offline-first architecture. Local mutations are preserved on your physical device '
           'even when internet access is unavailable. While we strive for continuous cloud synchronization, '
@@ -214,7 +231,7 @@ class _LegalScreenState extends State<LegalScreen> {
               TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.45),
         ),
         const SizedBox(height: 16),
-        _sectionTitle('4. Limitation of Liability'),
+        _sectionTitle('5. Limitation of Liability'),
         Text(
           'To the fullest extent permitted by applicable law, Mhuri and its contributors shall not be liable '
           'for indirect, incidental, or consequential damages resulting from user budgeting calculations, '
@@ -287,13 +304,21 @@ class _LegalScreenState extends State<LegalScreen> {
         Text(
           'Content, envelope recommendations, safe-per-day spending limits, and reports within Mhuri '
           'are computational estimations for educational and organizational purposes only. '
+          'Ask Mhuri is currently unavailable. '
           'Nothing in the app constitutes certified financial, legal, tax, or investment advice. '
           'Consult a licensed financial professional for individual financial planning decisions.',
           style:
               TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.45),
         ),
         const SizedBox(height: 16),
-        _sectionTitle('3. Currency & Exchange Rate Disclosures'),
+        _sectionTitle('3. Family Points & Rewards'),
+        Text(
+          'Points are a family-defined recognition system attached to approved tasks. They have no cash value in Mhuri and do not move money, change account balances, or guarantee that a reward will be provided. Family members should agree on reward terms outside the app. Reward redemption is recorded for family coordination.',
+          style:
+              TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.45),
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('4. Currency & Exchange Rate Disclosures'),
         Text(
           'Exchange rates across supported global currencies (USD, EUR, GBP, ZAR, CAD, AUD, KES, NGN, INR, ZiG) '
           'are pulled periodically from published financial market indicators or set manually by your family administrator. '
@@ -303,7 +328,7 @@ class _LegalScreenState extends State<LegalScreen> {
               TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.45),
         ),
         const SizedBox(height: 16),
-        _sectionTitle('4. Community Savings (Mukando / ROSCAs)'),
+        _sectionTitle('5. Community Savings (Mukando / ROSCAs)'),
         Text(
           'The Mukando feature is an administrative tally for traditional rotating savings and credit associations. '
           'Mhuri does not escrow or guarantee member contributions, rounds, or payouts. '

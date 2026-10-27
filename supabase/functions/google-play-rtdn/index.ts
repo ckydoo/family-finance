@@ -154,8 +154,9 @@ Deno.serve(async (req) => {
       (!expiresAt || Date.parse(expiresAt) > Date.now());
     const features = active ? ['smart_commitments', 'advanced_insights', 'advanced_reports', 'enhanced_reports',
       'cash_flow_forecast', 'savings_projections', 'family_polls_pins',
+      'enhanced_family_chat',
       'period_preparation', 'financial_health', 'debt_planning',
-      'advanced_chat_search'] : [];
+      'advanced_chat_search', 'ask_mhuri'] : [];
     const verifiedAt = new Date().toISOString();
     const update = await fetch(`${baseUrl}/rest/v1/family_entitlement?on_conflict=space_id`, {
       method: 'POST',

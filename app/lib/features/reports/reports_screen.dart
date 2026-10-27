@@ -52,7 +52,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final periodStart = _cycleStart(s, _cycleOffset);
     final periodEnd = _cycleStart(s, _cycleOffset - 1);
     final periodLabel = _periodLabel(context, periodStart, periodEnd);
-    final transactions = s.txs
+    final transactions = s.familyTransactions
         .where((tx) =>
             !tx.when.isBefore(periodStart) && tx.when.isBefore(periodEnd))
         .toList();
@@ -61,7 +61,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             (tx) => !tx.at.isBefore(periodStart) && tx.at.isBefore(periodEnd))
         .toList();
     final previousStart = _cycleStart(s, _cycleOffset + 1);
-    final previousTransactions = s.txs
+    final previousTransactions = s.familyTransactions
         .where((tx) =>
             !tx.when.isBefore(previousStart) && tx.when.isBefore(periodStart))
         .toList();
@@ -640,7 +640,8 @@ class _PlusInsightsCard extends StatelessWidget {
     final totals = <String, int>{};
     final txIds = rows.map((tx) => tx.id).toSet();
     final allocations = <String, List<TxAllocation>>{};
-    for (final allocation in state.txAllocations.where((a) => txIds.contains(a.txId))) {
+    for (final allocation
+        in state.txAllocations.where((a) => txIds.contains(a.txId))) {
       allocations.putIfAbsent(allocation.txId, () => []).add(allocation);
     }
     for (final tx in rows.where((tx) => tx.type == TxType.expense)) {
@@ -651,8 +652,11 @@ class _PlusInsightsCard extends StatelessWidget {
           if (envelope == null) continue;
           totals.update(
             envelope.id,
-            (value) => value + part.amount.inCurrency(displayCurrency, state.rate).minor,
-            ifAbsent: () => part.amount.inCurrency(displayCurrency, state.rate).minor,
+            (value) =>
+                value +
+                part.amount.inCurrency(displayCurrency, state.rate).minor,
+            ifAbsent: () =>
+                part.amount.inCurrency(displayCurrency, state.rate).minor,
           );
         }
       } else if (state.envelope(tx.envelopeId) case final envelope?) {
@@ -672,7 +676,8 @@ class _PlusInsightsCard extends StatelessWidget {
     final previousTotals = _categoryTotals(previous);
     final envelopeById = {for (final e in state.envelopes) e.id: e};
     final categoryIds = {...currentTotals.keys, ...previousTotals.keys}.toList()
-      ..sort((a, b) => (currentTotals[b] ?? 0).compareTo(currentTotals[a] ?? 0));
+      ..sort(
+          (a, b) => (currentTotals[b] ?? 0).compareTo(currentTotals[a] ?? 0));
     final rows = categoryIds.take(4).toList();
     return Container(
       padding: const EdgeInsets.all(18),
@@ -683,9 +688,13 @@ class _PlusInsightsCard extends StatelessWidget {
           Row(children: [
             Icon(Icons.auto_awesome, color: context.primary, size: 19),
             const SizedBox(width: 8),
-            Expanded(child: Text('Plus · category insights', style: TextStyle(
-              color: context.ink, fontWeight: FontWeight.w700, fontSize: 15,
-            ))),
+            Expanded(
+                child: Text('Plus · category insights',
+                    style: TextStyle(
+                      color: context.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ))),
             if (!active) const Icon(Icons.lock_outline, size: 18),
           ]),
           const SizedBox(height: 8),
@@ -699,7 +708,8 @@ class _PlusInsightsCard extends StatelessWidget {
             if (rows.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text('Add expenses in at least one category to see a comparison.',
+                child: Text(
+                    'Add expenses in at least one category to see a comparison.',
                     style: TextStyle(color: context.inkSoft, fontSize: 12)),
               )
             else
@@ -707,12 +717,18 @@ class _PlusInsightsCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: Row(children: [
-                    Expanded(child: Text(envelopeById[id]?.name ?? 'Category',
-                        style: TextStyle(color: context.ink, fontSize: 12))),
+                    Expanded(
+                        child: Text(envelopeById[id]?.name ?? 'Category',
+                            style:
+                                TextStyle(color: context.ink, fontSize: 12))),
                     Text(Money(currentTotals[id] ?? 0, displayCurrency).text,
-                        style: TextStyle(color: context.ink, fontWeight: FontWeight.w700, fontSize: 12)),
+                        style: TextStyle(
+                            color: context.ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12)),
                     const SizedBox(width: 8),
-                    _changeLabel(context, currentTotals[id] ?? 0, previousTotals[id] ?? 0),
+                    _changeLabel(context, currentTotals[id] ?? 0,
+                        previousTotals[id] ?? 0),
                   ]),
                 ),
             if (state.hasPlusFeature('financial_health'))
@@ -737,7 +753,7 @@ class _PlusInsightsCard extends StatelessWidget {
                   builder: (_) => const PlusScreen(),
                 )),
                 icon: const Icon(Icons.workspace_premium_outlined, size: 18),
-                label: const Text('Explore Plus'),
+                label: const Text('Explore Mhuri Plus'),
               ),
             ),
           ],
@@ -747,10 +763,15 @@ class _PlusInsightsCard extends StatelessWidget {
   }
 
   Widget _changeLabel(BuildContext context, int now, int before) {
-    if (before == 0) return Text(now == 0 ? '—' : 'new', style: TextStyle(color: context.inkSoft, fontSize: 11));
+    if (before == 0) {
+      return Text(now == 0 ? '—' : 'new',
+          style: TextStyle(color: context.inkSoft, fontSize: 11));
+    }
     final pct = ((now - before) * 100 / before).round();
     final color = pct > 0 ? context.danger : context.successSoft;
-    return Text('${pct > 0 ? '+' : ''}$pct%', style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11));
+    return Text('${pct > 0 ? '+' : ''}$pct%',
+        style:
+            TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11));
   }
 }
 
@@ -763,15 +784,16 @@ class _CashflowForecastCard extends StatelessWidget {
     final active = state.hasPlusFeature('cash_flow_forecast');
     final now = DateTime.now();
     final since = now.subtract(const Duration(days: 90));
-    final recent = state.txs.where((tx) =>
-        !tx.when.isBefore(since) && !tx.when.isAfter(now));
+    final recent = state.familyTransactions
+        .where((tx) => !tx.when.isBefore(since) && !tx.when.isAfter(now));
     var incomeMinor = 0;
     var expenseMinor = 0;
     final dataDays = <DateTime>[
       for (final tx in recent) tx.when,
     ];
     for (final tx in recent) {
-      final amount = tx.amount.inCurrency(state.displayCurrency, state.rate).minor;
+      final amount =
+          tx.amount.inCurrency(state.displayCurrency, state.rate).minor;
       if (tx.type == TxType.income) {
         incomeMinor += amount;
       } else {
@@ -780,11 +802,14 @@ class _CashflowForecastCard extends StatelessWidget {
     }
     final observedDays = dataDays.isEmpty
         ? 0
-        : now.difference(dataDays.reduce((a, b) => a.isBefore(b) ? a : b)).inDays;
+        : now
+            .difference(dataDays.reduce((a, b) => a.isBefore(b) ? a : b))
+            .inDays;
     final enoughData = observedDays >= 30;
     final days = observedDays.clamp(30, 90);
     final projectedIncome = enoughData ? (incomeMinor * 30 / days).round() : 0;
-    final projectedExpense = enoughData ? (expenseMinor * 30 / days).round() : 0;
+    final projectedExpense =
+        enoughData ? (expenseMinor * 30 / days).round() : 0;
     final projectedNet = projectedIncome - projectedExpense;
     return Container(
       padding: const EdgeInsets.all(18),
@@ -793,9 +818,13 @@ class _CashflowForecastCard extends StatelessWidget {
         Row(children: [
           Icon(Icons.query_stats, color: context.primary, size: 19),
           const SizedBox(width: 8),
-          Expanded(child: Text('Plus · 30-day cash-flow estimate', style: TextStyle(
-            color: context.ink, fontWeight: FontWeight.w700, fontSize: 15,
-          ))),
+          Expanded(
+              child: Text('Plus · 30-day cash-flow estimate',
+                  style: TextStyle(
+                    color: context.ink,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ))),
           if (!active) const Icon(Icons.lock_outline, size: 18),
         ]),
         const SizedBox(height: 8),
@@ -810,11 +839,16 @@ class _CashflowForecastCard extends StatelessWidget {
         if (active && enoughData) ...[
           const SizedBox(height: 14),
           Row(children: [
-            Expanded(child: _forecastMetric(context, 'Income trend', projectedIncome)),
+            Expanded(
+                child:
+                    _forecastMetric(context, 'Income trend', projectedIncome)),
             const SizedBox(width: 10),
-            Expanded(child: _forecastMetric(context, 'Spending trend', projectedExpense)),
+            Expanded(
+                child: _forecastMetric(
+                    context, 'Spending trend', projectedExpense)),
             const SizedBox(width: 10),
-            Expanded(child: _forecastMetric(context, 'Net trend', projectedNet)),
+            Expanded(
+                child: _forecastMetric(context, 'Net trend', projectedNet)),
           ]),
         ],
         if (active)
@@ -836,22 +870,32 @@ class _CashflowForecastCard extends StatelessWidget {
                 builder: (_) => const PlusScreen(),
               )),
               icon: const Icon(Icons.workspace_premium_outlined, size: 18),
-              label: const Text('Explore Plus'),
+              label: const Text('Explore Mhuri Plus'),
             ),
           ),
       ]),
     );
   }
 
-  Widget _forecastMetric(BuildContext context, String label, int minor) => Column(
+  Widget _forecastMetric(BuildContext context, String label, int minor) =>
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(color: context.inkSoft, fontSize: 10)),
           const SizedBox(height: 3),
-          Text(state.hideAmounts ? '•••••' : Money(minor, state.displayCurrency).text,
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: context.ink, fontWeight: FontWeight.w700, fontSize: 11)),
+          Text(
+              state.hideAmounts
+                  ? '•••••'
+                  : Money(minor, state.displayCurrency).text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: context.ink,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11)),
         ],
       );
 }
@@ -1120,19 +1164,22 @@ class _CommitmentsCard extends StatelessWidget {
     final overdue = state.recurring
             .where((rule) =>
                 rule.active &&
-                DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
+                DateTime(
+                        rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
                     .isBefore(today))
             .length +
         state.overdueCommitments(at: today).length;
     final upcoming = state.recurring
             .where((rule) =>
                 rule.active &&
-                !DateTime(rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
+                !DateTime(
+                        rule.nextDue.year, rule.nextDue.month, rule.nextDue.day)
                     .isBefore(today))
             .length +
         state.upcomingCommitments(at: today).length;
     final paid = transactions
-            .where((tx) => tx.recurringRuleId != null && tx.type == TxType.expense)
+            .where(
+                (tx) => tx.recurringRuleId != null && tx.type == TxType.expense)
             .length +
         state.commitmentOccurrences
             .where((occ) =>
@@ -1414,7 +1461,7 @@ class _TrendCard extends StatelessWidget {
     final firstMonth = DateTime(now.year, now.month - 5, 1);
     final afterLastMonth = DateTime(now.year, now.month + 1, 1);
     final totals = <int, double>{};
-    for (final tx in s.txs) {
+    for (final tx in s.familyTransactions) {
       if (tx.when.isBefore(firstMonth) || !tx.when.isBefore(afterLastMonth)) {
         continue;
       }

@@ -5,6 +5,7 @@ import '../../core/planning/commitments.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ids.dart';
+import '../../core/widgets/plus_ui.dart';
 import '../settings/plus_screen.dart';
 
 class CommitmentsScreen extends StatefulWidget {
@@ -19,8 +20,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
 
   bool _isUnlocked(AppState state) =>
       state.hasPlusFeature('smart_commitments') ||
-      state.hasPlusFeature('cash_flow_forecast') ||
-      state.hasPlus;
+      state.hasPlusFeature('cash_flow_forecast');
 
   void _extendHorizon(AppState state) {
     final horizon = state.now.add(const Duration(days: 60));
@@ -219,7 +219,8 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                     children: [
                       for (final day in const [0, 1, 3, 7])
                         FilterChip(
-                          label: Text(day == 0 ? 'On due date' : '${day}d before'),
+                          label:
+                              Text(day == 0 ? 'On due date' : '${day}d before'),
                           selected: selectedReminders.contains(day),
                           onSelected: (selected) {
                             setSheetState(() {
@@ -264,8 +265,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                         final ok = state.addFinancialCommitment(commitment);
                         if (ok) {
                           state.generateCommitmentOccurrences(
-                            through:
-                                firstDue.add(const Duration(days: 60)),
+                            through: firstDue.add(const Duration(days: 60)),
                           );
                           Navigator.pop(sheetContext);
                         }
@@ -288,7 +288,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
     FinancialCommitment? commitment,
   ) async {
     final outstanding = state.commitmentOutstanding(occurrence);
-    final eligibleTxs = state.txs.where((tx) {
+    final eligibleTxs = state.familyTransactions.where((tx) {
       if (tx.deletedAt != null ||
           tx.type.name != 'expense' ||
           tx.amount.currency != occurrence.amount.currency) {
@@ -299,9 +299,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
 
     String? selectedTxId = eligibleTxs.isNotEmpty ? eligibleTxs.first.id : null;
     final initialMinor = eligibleTxs.isNotEmpty
-        ? (state
-                    .transactionUnallocatedForCommitments(eligibleTxs.first)
-                    .minor <
+        ? (state.transactionUnallocatedForCommitments(eligibleTxs.first).minor <
                 outstanding.minor
             ? state
                 .transactionUnallocatedForCommitments(eligibleTxs.first)
@@ -408,8 +406,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                           return;
                         }
                         final minor = (parsed * 100).round();
-                        final amount =
-                            Money(minor, occurrence.amount.currency);
+                        final amount = Money(minor, occurrence.amount.currency);
                         final paymentId = uuidFromSeed(
                           'payment:${occurrence.id}:$txId:${state.commitmentPayments.length}:$minor',
                         );
@@ -481,49 +478,19 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
               ? ListView(
                   padding: kPageInsets,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: context.card,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: context.hairline),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.workspace_premium,
-                            color: context.primary,
-                            size: 32,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Smart Bills & Commitments is a Mhuri Plus feature',
-                            style: TextStyle(
-                              color: context.ink,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Track one-time and recurring obligations, generate due-date occurrences, link partial or full payments from real expenses, and configure multi-day reminders. Basic manual recurring bills remain free.',
-                            style: TextStyle(
-                              color: context.inkSoft,
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          FilledButton.icon(
-                            onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const PlusScreen(),
-                              ),
-                            ),
-                            icon: const Icon(Icons.workspace_premium),
-                            label: const Text('Explore Mhuri Plus'),
-                          ),
-                        ],
+                    PlusEmptyState(
+                      icon: Icons.event_repeat_rounded,
+                      title:
+                          'Smart Bills & Commitments is a Mhuri Plus feature',
+                      message:
+                          'Your fixed recurring expenses remain free. Plus adds flexible due dates, one-time obligations, partial payments, and reminders without recording an expense before it is paid.',
+                      action: FilledButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                              builder: (_) => const PlusScreen()),
+                        ),
+                        icon: const Icon(Icons.workspace_premium_rounded),
+                        label: const Text('Explore Mhuri Plus'),
                       ),
                     ),
                   ],
@@ -531,6 +498,14 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
               : ListView(
                   padding: kPageInsets,
                   children: [
+                    const PlusHero(
+                      eyebrow: 'Smart commitments',
+                      title: 'Stay ahead of every due date',
+                      description:
+                          'Track what is due, connect real payments and keep recurring obligations visible.',
+                      icon: Icons.event_repeat_rounded,
+                    ),
+                    const SizedBox(height: 16),
                     _SummaryHeader(
                       overdueCount: overdue.length,
                       upcomingCount: upcoming.length,
@@ -586,7 +561,8 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                               occ,
                               byId[occ.commitmentId],
                             ),
-                            onSkip: () => state.updateCommitmentOccurrenceStatus(
+                            onSkip: () =>
+                                state.updateCommitmentOccurrenceStatus(
                               occ.id,
                               CommitmentOccurrenceStatus.skipped,
                             ),
@@ -615,7 +591,8 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                               occ,
                               byId[occ.commitmentId],
                             ),
-                            onSkip: () => state.updateCommitmentOccurrenceStatus(
+                            onSkip: () =>
+                                state.updateCommitmentOccurrenceStatus(
                               occ.id,
                               CommitmentOccurrenceStatus.skipped,
                             ),

@@ -604,8 +604,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
                   TextButton.icon(
                     onPressed: () {
                       final unlocked = s.hasPlusFeature('debt_planning') ||
-                          s.hasPlusFeature('savings_projections') ||
-                          s.hasPlus;
+                          s.hasPlusFeature('savings_projections');
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => unlocked
@@ -1979,10 +1978,14 @@ class _SavingsProjectionCard extends StatelessWidget {
           total += tx.amount.inCurrency(goal.target.currency, state.rate).minor;
         }
         final monthlyAverage = total ~/ 3;
-        final remaining = (goal.target.minor - saved.minor).clamp(0, goal.target.minor);
+        final remaining =
+            (goal.target.minor - saved.minor).clamp(0, goal.target.minor);
         if (remaining > 0 && monthlyAverage > 0) {
-          projections.add((goal, (remaining / monthlyAverage).ceil(),
-              (remaining / (monthlyAverage * 1.25)).ceil()));
+          projections.add((
+            goal,
+            (remaining / monthlyAverage).ceil(),
+            (remaining / (monthlyAverage * 1.25)).ceil()
+          ));
         }
       }
       projections.sort((a, b) => a.$2.compareTo(b.$2));
@@ -1997,9 +2000,13 @@ class _SavingsProjectionCard extends StatelessWidget {
           Row(children: [
             Icon(Icons.insights_outlined, color: context.primary, size: 20),
             const SizedBox(width: 8),
-            Expanded(child: Text('Plus · savings projections', style: TextStyle(
-              color: context.ink, fontWeight: FontWeight.w700, fontSize: 15,
-            ))),
+            Expanded(
+                child: Text('Plus · savings projections',
+                    style: TextStyle(
+                      color: context.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ))),
             if (!unlocked) const Icon(Icons.lock_outline, size: 18),
           ]),
           const SizedBox(height: 7),
@@ -2017,7 +2024,7 @@ class _SavingsProjectionCard extends StatelessWidget {
                   builder: (_) => const PlusScreen(),
                 )),
                 icon: const Icon(Icons.workspace_premium_outlined, size: 18),
-                label: const Text('Explore Plus'),
+                label: const Text('Explore Mhuri Plus'),
               ),
             )
           else if (projections.isEmpty)
@@ -2035,17 +2042,25 @@ class _SavingsProjectionCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Row(children: [
-                  Expanded(child: Text(projection.$1.name,
-                      style: TextStyle(color: context.ink, fontSize: 12))),
+                  Expanded(
+                      child: Text(projection.$1.name,
+                          style: TextStyle(color: context.ink, fontSize: 12))),
                   const SizedBox(width: 8),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                     Text(
-                      state.hideAmounts ? '•••••' : _projectionLabel(now, projection.$2),
-                      style: TextStyle(color: context.primary, fontWeight: FontWeight.w700, fontSize: 12),
+                      state.hideAmounts
+                          ? '•••••'
+                          : _projectionLabel(now, projection.$2),
+                      style: TextStyle(
+                          color: context.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12),
                     ),
                     if (!state.hideAmounts)
-                      Text('+25% contribution: ${_projectionLabel(now, projection.$3)}',
-                          style: TextStyle(color: context.inkSoft, fontSize: 10)),
+                      Text(
+                          '+25% contribution: ${_projectionLabel(now, projection.$3)}',
+                          style:
+                              TextStyle(color: context.inkSoft, fontSize: 10)),
                   ]),
                 ]),
               ),

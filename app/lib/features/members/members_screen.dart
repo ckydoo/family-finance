@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/widgets/ui.dart';
 
+import '../../core/billing/entitlement.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/observability/reporter.dart';
 import '../../core/auth/pin_store.dart';
@@ -13,6 +14,7 @@ import '../activity/activity_screen.dart';
 import '../family_chat/family_chat_screen.dart';
 import '../family_tasks/family_tasks_screen.dart';
 import 'invite_screen.dart';
+import '../settings/plus_screen.dart';
 import '../../core/widgets/app_icons.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/money/money.dart';
@@ -172,78 +174,6 @@ class _LargeAvatar extends StatelessWidget {
         icon: iconForKey(member.emoji) ?? kFallbackSemanticIcon,
         imageUrl: member.avatarUrl,
       );
-}
-
-Future<void> _addChoreSheet(BuildContext context, AppState s) async {
-  final l = AppLocalizations.of(context)!;
-  var name = '';
-  var stars = '3';
-  String? error;
-  await showMhuriSheet<void>(
-    context: context,
-    builder: (sheetContext) => StatefulBuilder(
-      builder: (sheetContext, setSheet) => MhuriSheetShell(
-        title: l.addChore,
-        subtitle: l.addChoreHint,
-        footer: PrimaryButton(
-          label: l.addChore,
-          onPressed: () {
-            final reward = int.tryParse(stars.trim());
-            if (name.trim().isEmpty || reward == null || reward < 1) {
-              setSheet(() => error = l.choreFieldsRequired);
-              return;
-            }
-            final added = s.addChore(
-              name: name,
-              starsReward: reward,
-            );
-            if (added == null) {
-              setSheet(() => error = l.choreFieldsRequired);
-              return;
-            }
-            Navigator.pop(sheetContext);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l.choreAdded(added.name)),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(labelText: l.choreName),
-              onChanged: (value) {
-                name = value;
-                if (error != null) setSheet(() => error = null);
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              initialValue: stars,
-              keyboardType: TextInputType.number,
-              inputFormatters: integerInputFormatters,
-              decoration: InputDecoration(labelText: l.starReward),
-              onChanged: (value) {
-                stars = value;
-                if (error != null) setSheet(() => error = null);
-              },
-            ),
-            if (error != null) ...[
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(error!, style: TextStyle(color: context.danger)),
-              ),
-            ],
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 void _editProfileSheet(BuildContext context, AppState s, Member m) {
@@ -566,6 +496,51 @@ class MembersScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.card,
+                borderRadius: kBRadiusM,
+                border: Border.all(color: context.hairline),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.groups_2_outlined, color: context.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s.hasPlus
+                              ? '${s.members.length} active family members · Plus'
+                              : '${s.members.length} of $freeFamilyMemberLimit Free family members',
+                          style: TextStyle(
+                              color: context.ink, fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          s.hasPlus
+                              ? 'More than five members can join this Plus family.'
+                              : 'Open invitations also reserve a place.',
+                          style:
+                              TextStyle(color: context.inkSoft, fontSize: 11.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!s.hasPlus && s.members.length >= freeFamilyMemberLimit)
+                    TextButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const PlusScreen()),
+                      ),
+                      child: const Text('Explore Mhuri Plus'),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // ── Members ───────────────────────────────────────────────────
             for (final m in s.members) ...[
               _MemberRow(m: m),
@@ -611,7 +586,7 @@ class MembersScreen extends StatelessWidget {
               context,
               icon: Icons.workspace_premium_outlined,
               title: 'Points & rewards',
-              subtitle: '${s.stars} family points',
+              subtitle: '${s.familyTaskPoints} family points',
               screen: const _PointsRewardsScreen(),
             ),
             _familyDestination(
@@ -827,32 +802,17 @@ class MembersScreen extends StatelessWidget {
                   TextStyle(fontSize: 12, color: context.inkSoft, height: 1.35),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _createSpaceDialog(context, s),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.primary,
-                      foregroundColor: context.onSolid,
-                      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-                    ),
-                    child: Text(AppLocalizations.of(context)!.createSpace),
-                  ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _joinSpaceDialog(context, s),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.primary,
+                  foregroundColor: context.onSolid,
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _joinSpaceDialog(context, s),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.primary,
-                      side: BorderSide(color: context.primary),
-                      shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-                    ),
-                    child: Text(AppLocalizations.of(context)!.joinWithCode),
-                  ),
-                ),
-              ],
+                child: Text(AppLocalizations.of(context)!.joinWithCode),
+              ),
             ),
             if (s.syncLastError != null &&
                 (s.syncStatus == SyncStatus.error ||
@@ -963,56 +923,6 @@ class MembersScreen extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Future<void> _createSpaceDialog(BuildContext context, AppState s) async {
-    final engine = s.sync;
-    if (engine == null) return;
-    final l = AppLocalizations.of(context)!;
-    final name = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-        title: Text(l.createFamilySpace),
-        content: MhuriField(
-          controller: name,
-          label: l.familyName,
-          hint: l.hintFamilyExample,
-          fillColor: context.bg,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.primary,
-              foregroundColor: context.onSolid,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l.btnCreate),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    final ok = await engine.createSpace(
-      name.text.trim().isEmpty ? l.myFamily : name.text.trim(),
-    );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? l.spaceCreated(s.inviteCode ?? '?')
-              : userFacingErrorMessage(s.syncLastError, fallback: l.createFail),
-        ),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -1876,22 +1786,62 @@ class MembersScreen extends StatelessWidget {
 class _PointsRewardsScreen extends StatelessWidget {
   const _PointsRewardsScreen();
 
+  Future<void> _addReward(BuildContext context, AppState state) async {
+    final name = TextEditingController();
+    final cost = TextEditingController(text: '10');
+    final note = TextEditingController();
+    await showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => MhuriSheetShell(
+        title: 'Add family reward',
+        subtitle: 'Set a reward and how many approved points it costs.',
+        footer: PrimaryButton(
+          label: 'Save reward',
+          onPressed: () {
+            final points = int.tryParse(cost.text.trim());
+            if (name.text.trim().isEmpty || points == null || points < 1) {
+              return;
+            }
+            if (!state.addFamilyReward(
+              name: name.text,
+              pointsCost: points,
+              description: note.text,
+            )) {
+              return;
+            }
+            Navigator.pop(sheetContext);
+          },
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+              controller: name,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Reward name')),
+          const SizedBox(height: 12),
+          TextField(
+              controller: cost,
+              keyboardType: TextInputType.number,
+              inputFormatters: integerInputFormatters,
+              decoration: const InputDecoration(labelText: 'Points required')),
+          const SizedBox(height: 12),
+          TextField(
+              controller: note,
+              decoration: const InputDecoration(labelText: 'Optional details')),
+        ]),
+      ),
+    );
+    name.dispose();
+    cost.dispose();
+    note.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final pointsByMember = <String, int>{
-      for (final member in state.members) member.id: 0,
+      for (final member in state.members)
+        member.id: state.pointsForMember(member.id),
     };
-    for (final task in state.familyTasks) {
-      if (!task.isArchived &&
-          task.isDone &&
-          task.approvedByMemberId != null &&
-          task.assigneeMemberId != null) {
-        pointsByMember.update(
-            task.assigneeMemberId!, (value) => value + task.points,
-            ifAbsent: () => task.points);
-      }
-    }
     final ranking = state.members.toList()
       ..sort((a, b) =>
           (pointsByMember[b.id] ?? 0).compareTo(pointsByMember[a.id] ?? 0));
@@ -1901,8 +1851,8 @@ class _PointsRewardsScreen extends StatelessWidget {
         actions: [
           if (state.canApprove)
             IconButton(
-              tooltip: 'Add legacy chore',
-              onPressed: () => _addChoreSheet(context, state),
+              tooltip: 'Add reward',
+              onPressed: () => _addReward(context, state),
               icon: const Icon(Icons.add_rounded),
             ),
         ],
@@ -1910,7 +1860,8 @@ class _PointsRewardsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
-          Text('This week', style: Theme.of(context).textTheme.titleMedium),
+          Text('Approved task points',
+              style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           for (var index = 0; index < ranking.length; index++)
             ListTile(
@@ -1926,33 +1877,50 @@ class _PointsRewardsScreen extends StatelessWidget {
           const Divider(height: 28),
           Text('Rewards', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Text(
-            'No family rewards have been configured yet.',
-            style: TextStyle(color: context.inkSoft),
-          ),
-          if (state.chores.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text('Legacy chores',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
+          if (state.familyRewards.where((reward) => !reward.isArchived).isEmpty)
             Text(
-              'Existing chore records are preserved here while new responsibilities use Family Tasks.',
-              style: TextStyle(color: context.inkSoft, fontSize: 12),
+              state.canApprove
+                  ? 'Add a reward for family members to work toward.'
+                  : 'No family rewards have been added yet.',
+              style: TextStyle(color: context.inkSoft),
             ),
-            for (final chore in state.chores)
-              ListTile(
+          for (final reward
+              in state.familyRewards.where((item) => !item.isArchived))
+            Builder(builder: (context) {
+              final redeemedBy = reward.redeemedByMemberId == null
+                  ? null
+                  : state.member(reward.redeemedByMemberId!);
+              final memberPoints = state.pointsForMember(state.realUser.id);
+              final canRedeem = state.canSubmitFamilyTasks &&
+                  reward.redeemedAt == null &&
+                  memberPoints >= reward.pointsCost;
+              return ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(chore.name),
-                subtitle: Text('${chore.stars} pts'),
-                trailing: state.canApprove
-                    ? IconButton(
-                        tooltip: 'Edit chore',
-                        onPressed: () => _editChoreSheet(context, state, chore),
-                        icon: const Icon(Icons.edit_outlined),
-                      )
-                    : null,
-              ),
-          ],
+                leading: const Icon(Icons.card_giftcard_outlined),
+                title: Text(reward.name),
+                subtitle: Text(reward.description?.isNotEmpty == true
+                    ? '${reward.description} · ${reward.pointsCost} pts'
+                    : '${reward.pointsCost} pts'),
+                trailing: reward.redeemedAt != null
+                    ? Text('Redeemed by ${redeemedBy?.name ?? 'member'}')
+                    : state.canApprove
+                        ? IconButton(
+                            tooltip: 'Archive reward',
+                            onPressed: () => state.archiveFamilyReward(reward),
+                            icon: const Icon(Icons.archive_outlined),
+                          )
+                        : state.canSubmitFamilyTasks
+                            ? FilledButton.tonal(
+                                onPressed: canRedeem
+                                    ? () => state.redeemFamilyReward(reward)
+                                    : null,
+                                child: Text(canRedeem
+                                    ? 'Redeem'
+                                    : '${(reward.pointsCost - memberPoints).clamp(0, reward.pointsCost)} more'),
+                              )
+                            : null,
+              );
+            }),
         ],
       ),
     );
@@ -2012,67 +1980,6 @@ Future<void> _editFamilySheet(
             errorText: error,
           ),
         ),
-      ),
-    ),
-  );
-}
-
-Future<void> _editChoreSheet(
-    BuildContext context, AppState state, Chore chore) async {
-  final name = TextEditingController(text: chore.name);
-  final stars = TextEditingController(text: '${chore.stars}');
-  var assignee = chore.assigneeMemberId;
-  String? error;
-  await showMhuriSheet<void>(
-    context: context,
-    builder: (sheetContext) => StatefulBuilder(
-      builder: (sheetContext, setSheet) => MhuriSheetShell(
-        title: 'Edit chore',
-        footer: PrimaryButton(
-          label: 'Save changes',
-          onPressed: () {
-            final reward = int.tryParse(stars.text);
-            if (name.text.trim().isEmpty || reward == null || reward < 1) {
-              setSheet(() => error = 'Enter a chore name and star reward.');
-              return;
-            }
-            state.updateChore(chore,
-                name: name.text, starsReward: reward, assigneeId: assignee);
-            final messenger = ScaffoldMessenger.of(context);
-            Navigator.pop(sheetContext);
-            messenger.showSnackBar(const SnackBar(
-                content: Text('Chore updated'),
-                behavior: SnackBarBehavior.floating));
-          },
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-              controller: name,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: 'Chore name')),
-          const SizedBox(height: 12),
-          TextField(
-              controller: stars,
-              keyboardType: TextInputType.number,
-              inputFormatters: integerInputFormatters,
-              decoration: const InputDecoration(labelText: 'Star reward')),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: assignee,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Assign to'),
-            items: [
-              const DropdownMenuItem<String?>(
-                  value: null, child: Text('Any child')),
-              for (final member in state.members
-                  .where((m) => m.role == Role.kid || m.role == Role.teen))
-                DropdownMenuItem<String?>(
-                    value: member.id, child: Text(member.name)),
-            ],
-            onChanged: (value) => setSheet(() => assignee = value),
-          ),
-          if (error != null) ErrorNotice(error!),
-        ]),
       ),
     ),
   );

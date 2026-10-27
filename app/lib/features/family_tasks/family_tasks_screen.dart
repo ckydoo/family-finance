@@ -45,7 +45,22 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
         FamilyTaskStatus.open => 'Open',
         FamilyTaskStatus.inProgress => 'In progress',
         FamilyTaskStatus.done => 'Done',
+        FamilyTaskStatus.awaitingApproval => 'Awaiting approval',
       };
+
+  void _submitTask(AppState state, FamilyTask task) {
+    final submitted = state.submitFamilyTask(task);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(submitted
+            ? (task.requiresApproval
+                ? 'Task submitted for family approval.'
+                : 'Task completed. You earned ${task.points} points.')
+            : 'This task could not be submitted. Refresh and try again.'),
+      ),
+    );
+  }
 
   Future<void> _taskSheet(AppState state, FamilyTask task) async {
     final assignee = task.assigneeMemberId == null
@@ -107,7 +122,9 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                   if (task.requiresApproval)
                     Chip(
                         label: Text(task.approvedByMemberId == null
-                            ? 'Approval pending'
+                            ? (task.isAwaitingApproval
+                                ? 'Approval pending'
+                                : 'Approval required')
                             : 'Approved')),
                 ],
               ),
@@ -125,22 +142,40 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  if (task.status != FamilyTaskStatus.done)
+                  if (!task.isComplete)
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: state.canManageFamilyTasks
+                        onPressed: state.canManageFamilyTasks ||
+                                state.canSubmitFamilyTasks
                             ? () {
                                 Navigator.of(sheetContext).pop();
+                                if (!state.canManageFamilyTasks) {
+                                  _submitTask(state, task);
+                                  return;
+                                }
                                 final nextStatus =
                                     task.status == FamilyTaskStatus.inProgress
-                                        ? FamilyTaskStatus.done
+                                        ? (task.requiresApproval
+                                            ? FamilyTaskStatus.awaitingApproval
+                                            : FamilyTaskStatus.done)
                                         : FamilyTaskStatus.inProgress;
                                 state.updateFamilyTask(
                                   task.copyWith(
                                     status: nextStatus,
                                     completedAt:
-                                        nextStatus == FamilyTaskStatus.done
+                                        nextStatus == FamilyTaskStatus.done ||
+                                                nextStatus ==
+                                                    FamilyTaskStatus
+                                                        .awaitingApproval
                                             ? DateTime.now()
+                                            : null,
+                                    completedByMemberId:
+                                        nextStatus == FamilyTaskStatus.done ||
+                                                nextStatus ==
+                                                    FamilyTaskStatus
+                                                        .awaitingApproval
+                                            ? (task.assigneeMemberId ??
+                                                state.realUser.id)
                                             : null,
                                     approvedByMemberId:
                                         nextStatus == FamilyTaskStatus.done
@@ -155,20 +190,24 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                               }
                             : null,
                         icon: Icon(
-                          task.status == FamilyTaskStatus.inProgress
-                              ? Icons.check_rounded
-                              : Icons.play_arrow_rounded,
+                          !state.canManageFamilyTasks
+                              ? Icons.upload_rounded
+                              : task.status == FamilyTaskStatus.inProgress
+                                  ? Icons.check_rounded
+                                  : Icons.play_arrow_rounded,
                         ),
                         label: Text(
-                          task.status == FamilyTaskStatus.inProgress
-                              ? (task.requiresApproval
-                                  ? 'Submit for approval'
-                                  : 'Mark done')
-                              : 'Start task',
+                          !state.canManageFamilyTasks
+                              ? 'Submit for approval'
+                              : task.status == FamilyTaskStatus.inProgress
+                                  ? (task.requiresApproval
+                                      ? 'Submit for approval'
+                                      : 'Mark done')
+                                  : 'Start task',
                         ),
                       ),
                     ),
-                  if (task.status == FamilyTaskStatus.done)
+                  if (task.isComplete && state.canManageFamilyTasks)
                     Expanded(
                       child: FilledButton.icon(
                         onPressed: state.canManageFamilyTasks
@@ -180,6 +219,7 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                     approvedByMemberId: null,
                                     approvedAt: null,
                                     completedAt: null,
+                                    completedByMemberId: null,
                                   ),
                                 );
                               }
@@ -191,7 +231,7 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                 ],
               ),
               if (task.requiresApproval &&
-                  task.status == FamilyTaskStatus.done &&
+                  task.status == FamilyTaskStatus.awaitingApproval &&
                   task.approvedByMemberId == null) ...[
                 const SizedBox(height: 8),
                 SizedBox(
@@ -247,6 +287,7 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
 
   Future<void> _taskEditor(AppState state, {FamilyTask? task}) async {
     final editing = task != null;
+    if (!state.canManageFamilyTasks) return;
     final titleController = TextEditingController(text: task?.title ?? '');
     final noteController = TextEditingController(text: task?.note ?? '');
     String? assigneeId = task?.assigneeMemberId ??
@@ -288,7 +329,7 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                     ),
                     const SizedBox(height: 12),
                     if (state.members.isNotEmpty)
-                      DropdownButtonFormField<String>(
+                      DropdownButtonFormField<String?>(
                         initialValue: assigneeId,
                         decoration:
                             const InputDecoration(labelText: 'Assignee'),
@@ -437,6 +478,12 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
         status: status,
         points: points,
         requiresApproval: requiresApproval,
+        completedAt: status == FamilyTaskStatus.open ? null : task.completedAt,
+        completedByMemberId:
+            status == FamilyTaskStatus.open ? null : task.completedByMemberId,
+        approvedByMemberId:
+            status == FamilyTaskStatus.open ? null : task.approvedByMemberId,
+        approvedAt: status == FamilyTaskStatus.open ? null : task.approvedAt,
       ));
       return;
     }
@@ -452,7 +499,9 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
         createdByMemberId: state.user.id,
         createdAt: DateTime.now(),
         dueDate: dueDate,
-        status: status,
+        status: status == FamilyTaskStatus.done && requiresApproval
+            ? FamilyTaskStatus.awaitingApproval
+            : status,
         points: points,
         requiresApproval: requiresApproval,
       ),
@@ -623,11 +672,14 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Checkbox(
-                                  value: task.isDone,
+                                  value: task.isComplete,
                                   onChanged: state.canManageFamilyTasks
                                       ? (_) =>
                                           state.toggleFamilyTaskCompletion(task)
-                                      : null,
+                                      : state.canSubmitFamilyTasks &&
+                                              !task.isComplete
+                                          ? (_) => _submitTask(state, task)
+                                          : null,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -640,10 +692,10 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
-                                          color: task.isDone
+                                          color: task.isComplete
                                               ? context.inkSoft
                                               : context.ink,
-                                          decoration: task.isDone
+                                          decoration: task.isComplete
                                               ? TextDecoration.lineThrough
                                               : TextDecoration.none,
                                         ),
@@ -670,6 +722,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                           if (task.status ==
                                               FamilyTaskStatus.inProgress)
                                             'In progress',
+                                          if (task.isAwaitingApproval)
+                                            'Awaiting approval',
                                         ].join(' · '),
                                         style: TextStyle(
                                           fontSize: 12,

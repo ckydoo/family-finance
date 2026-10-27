@@ -5,6 +5,7 @@ import '../../core/planning/commitments.dart';
 import '../../core/planning/financial_planner.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/plus_ui.dart';
 import '../commitments/commitments_screen.dart';
 
 class PaydayPlannerScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class _PaydayPlannerScreenState extends State<PaydayPlannerScreen> {
   var _days = 30;
   var _incomeShiftDays = 0;
   var _confirmed = false;
+  var _showOptions = false;
   String? _error;
 
   @override
@@ -59,13 +61,15 @@ class _PaydayPlannerScreenState extends State<PaydayPlannerScreen> {
     final end = start.add(Duration(days: _days));
     FinancialForecast? forecast;
     final entries = <PlanningEntry>[
-      ...const CommitmentSchedule().toPlanningEntries(
-        commitments: state.financialCommitments,
-        occurrences: state.commitmentOccurrences,
-        payments: state.commitmentPayments,
-        periodStart: start,
-        periodEnd: end,
-      ).where((entry) => entry.amount.currency == currency),
+      ...const CommitmentSchedule()
+          .toPlanningEntries(
+            commitments: state.financialCommitments,
+            occurrences: state.commitmentOccurrences,
+            payments: state.commitmentPayments,
+            periodStart: start,
+            periodEnd: end,
+          )
+          .where((entry) => entry.amount.currency == currency),
     ];
     void addInput(TextEditingController input, String id, String label,
         PlanningValueKind kind, PlanningDirection direction) {
@@ -217,14 +221,17 @@ class _PaydayPlannerScreenState extends State<PaydayPlannerScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Plan without changing your ledger',
-              style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 6),
-          Text(
-            'Values here are planned estimates. Scenarios never post transactions.',
-            style: TextStyle(color: context.inkSoft),
+          const PlusHero(
+            eyebrow: 'Payday planner',
+            title: 'See the month before it happens',
+            description:
+                'Explore income, essentials, savings and purchases safely. Nothing here changes your ledger.',
+            icon: Icons.insights_rounded,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
+          Text('Build your outlook',
+              style: MhuriType.titleM.copyWith(color: context.ink)),
+          const SizedBox(height: 12),
           Row(children: [
             Expanded(
               child: DropdownButtonFormField<Currency>(
@@ -255,17 +262,103 @@ class _PaydayPlannerScreenState extends State<PaydayPlannerScreen> {
             ),
           ]),
           const SizedBox(height: 12),
-          _amount(_opening, 'Available opening money', currency),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _confirmed,
-            title: const Text('I confirm this opening amount is available'),
-            onChanged: (value) => setState(() => _confirmed = value ?? false),
+          PlusSectionCard(
+            title: '1. Start with money available now',
+            subtitle: 'Use your recorded balance or enter a different amount.',
+            icon: Icons.account_balance_wallet_outlined,
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    onPressed: state.availableToSpend(currency).minor < 0
+                        ? null
+                        : () => setState(() {
+                              final recorded = state.availableToSpend(currency);
+                              _opening.text =
+                                  (recorded.minor / 100).toStringAsFixed(2);
+                              _confirmed = true;
+                            }),
+                    icon: const Icon(Icons.auto_fix_high_rounded),
+                    label: Text(
+                        'Use recorded balance (${state.availableToSpend(currency).text})'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _amount(_opening, 'Money available now', currency),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _confirmed,
+                  title: const Text('This amount is available to plan with'),
+                  subtitle: const Text(
+                      'Required before Mhuri calculates an outlook.'),
+                  onChanged: (value) =>
+                      setState(() => _confirmed = value ?? false),
+                ),
+              ],
+            ),
           ),
-          _amount(_income, 'Expected income', currency),
-          _amount(_essential, 'Planned essentials', currency),
-          _amount(_savings, 'Savings allocation', currency),
-          _amount(_purchase, 'What-if purchase', currency),
+          const SizedBox(height: 16),
+          PlusSectionCard(
+            title: '2. Add what you expect',
+            subtitle: 'Rough estimates are enough. You can refine them later.',
+            icon: Icons.edit_calendar_outlined,
+            child: Column(
+              children: [
+                _amount(_income, 'Income expected in this period', currency),
+                _amount(_essential, 'Essential spending', currency),
+                _amount(_savings, 'Amount you want to save', currency),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ExpansionTile(
+              initiallyExpanded: _showOptions,
+              onExpansionChanged: (value) => _showOptions = value,
+              leading: const Icon(Icons.tune_rounded),
+              title: const Text('Optional what-if scenarios'),
+              subtitle: const Text(
+                  'Test a purchase, delayed income or unexpected costs.'),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                _amount(_purchase, 'What if I make this purchase?', currency),
+                _AdvancedScenarioSection(
+                  currency: currency,
+                  recordedAvailable: state.availableToSpend(currency),
+                  incomeShiftDays: _incomeShiftDays,
+                  essentialDeltaController: _essentialDelta,
+                  extraSavingsController: _extraSavings,
+                  irregularIncomes: _irregularIncomes,
+                  onPrefillOpening: () {
+                    final recorded = state.availableToSpend(currency);
+                    if (recorded.minor >= 0) {
+                      setState(() {
+                        _opening.text =
+                            (recorded.minor / 100).toStringAsFixed(2);
+                        _confirmed = true;
+                      });
+                    }
+                  },
+                  onShiftChanged: (days) =>
+                      setState(() => _incomeShiftDays = days),
+                  onAddIrregularIncome: (label, minor, dayOffset) =>
+                      setState(() {
+                    _irregularIncomes.add((
+                      id: 'irregular-${_irregularIncomes.length + 1}',
+                      label: label,
+                      minor: minor,
+                      dayOffset: dayOffset,
+                    ));
+                  }),
+                  onRemoveIrregularIncome: (id) => setState(() {
+                    _irregularIncomes.removeWhere((item) => item.id == id);
+                  }),
+                  onChanged: () => setState(() {}),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 14),
           if (_error != null)
             Text(_error!, style: TextStyle(color: context.danger))
@@ -274,38 +367,10 @@ class _PaydayPlannerScreenState extends State<PaydayPlannerScreen> {
           else if (openingMinor == null)
             const Text('Enter a valid opening amount.')
           else if (forecast != null) ...[
+            Text('3. Your outlook',
+                style: MhuriType.titleM.copyWith(color: context.ink)),
+            const SizedBox(height: 10),
             _ForecastCard(forecast: forecast),
-            const SizedBox(height: 18),
-            _AdvancedScenarioSection(
-              currency: currency,
-              recordedAvailable: state.availableToSpend(currency),
-              incomeShiftDays: _incomeShiftDays,
-              essentialDeltaController: _essentialDelta,
-              extraSavingsController: _extraSavings,
-              irregularIncomes: _irregularIncomes,
-              onPrefillOpening: () {
-                final recorded = state.availableToSpend(currency);
-                if (recorded.minor >= 0) {
-                  setState(() {
-                    _opening.text = (recorded.minor / 100).toStringAsFixed(2);
-                  });
-                }
-              },
-              onShiftChanged: (days) =>
-                  setState(() => _incomeShiftDays = days),
-              onAddIrregularIncome: (label, minor, dayOffset) => setState(() {
-                _irregularIncomes.add((
-                  id: 'irregular-${_irregularIncomes.length + 1}',
-                  label: label,
-                  minor: minor,
-                  dayOffset: dayOffset,
-                ));
-              }),
-              onRemoveIrregularIncome: (id) => setState(() {
-                _irregularIncomes.removeWhere((item) => item.id == id);
-              }),
-              onChanged: () => setState(() {}),
-            ),
           ],
         ],
       ),
@@ -319,7 +384,8 @@ class _PaydayPlannerScreenState extends State<PaydayPlannerScreen> {
       child: TextField(
         controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: InputDecoration(labelText: label, prefixText: '${currency.short} '),
+        decoration:
+            InputDecoration(labelText: label, prefixText: '${currency.short} '),
         onChanged: (_) => setState(() {}),
       ),
     );
@@ -334,7 +400,8 @@ class _ForecastCard extends StatelessWidget {
   Widget build(BuildContext context) => Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Projected closing balance',
                 style: TextStyle(color: context.inkSoft)),
             Text(forecast.closingBalance.text,
@@ -347,7 +414,8 @@ class _ForecastCard extends StatelessWidget {
             const Divider(height: 24),
             Text('${forecast.points.length} dated planning entries included.'),
             const SizedBox(height: 4),
-            const Text('Recorded balances, plans, estimates, and scenarios remain separately labelled.'),
+            const Text(
+                'Recorded balances, plans, estimates, and scenarios remain separately labelled.'),
             if (forecast.points.isNotEmpty) ...[
               const SizedBox(height: 12),
               for (final point in forecast.points)
@@ -358,7 +426,8 @@ class _ForecastCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           '${point.entry.date.toLocal().toString().split(' ').first} · ${point.entry.evidence.label} (${point.entry.kind.name})',
-                          style: TextStyle(fontSize: 12, color: context.inkSoft),
+                          style:
+                              TextStyle(fontSize: 12, color: context.inkSoft),
                         ),
                       ),
                       Text(
@@ -427,7 +496,8 @@ class _AdvancedScenarioSection extends StatelessWidget {
                   ),
                   TextButton.icon(
                     onPressed: onPrefillOpening,
-                    icon: const Icon(Icons.account_balance_wallet_outlined, size: 16),
+                    icon: const Icon(Icons.account_balance_wallet_outlined,
+                        size: 16),
                     label: Text('Use ledger (${recordedAvailable.text})'),
                   ),
                 ],

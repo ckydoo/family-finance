@@ -194,7 +194,8 @@ final kSyncAdapters = <String, SyncAdapter>{
         'name': a.name,
         'kind': 'other',
         'currency': a.balance.currency.code,
-        'sharing': 'shared',
+        'sharing': a.isPrivate ? 'private' : 'shared',
+        'owner_member_id': a.isPrivate ? a.ownerMemberId ?? ctx.actorId : null,
         'opening_balance_minor': a.balance.minor,
         'is_archived': false,
       };
@@ -210,6 +211,8 @@ final kSyncAdapters = <String, SyncAdapter>{
         _ => 'wallet',
       },
       balance: _moneyOf(j, 'opening_balance_minor', 'currency'),
+      isPrivate: const {'private', 'personal'}.contains(j['sharing']),
+      ownerMemberId: j['owner_member_id'] as String?,
     ),
   ),
   'family_task': SyncAdapter(
@@ -231,6 +234,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'points': task.points,
         'requires_approval': task.requiresApproval,
         'approved_by_member_id': task.approvedByMemberId,
+        'completed_by_member_id': task.completedByMemberId,
         'approved_at': task.approvedAt?.toUtc().toIso8601String(),
         'completed_at': task.completedAt?.toUtc().toIso8601String(),
         'is_archived': task.isArchived,
@@ -248,9 +252,37 @@ final kSyncAdapters = <String, SyncAdapter>{
       points: j['points'] as int? ?? 1,
       requiresApproval: j['requires_approval'] as bool? ?? true,
       approvedByMemberId: j['approved_by_member_id'] as String?,
+      completedByMemberId: j['completed_by_member_id'] as String?,
       approvedAt: _iso(j['approved_at']),
       completedAt: _iso(j['completed_at']),
       isArchived: j['is_archived'] as bool? ?? false,
+    ),
+  ),
+  'family_reward': SyncAdapter(
+    entity: 'family_reward',
+    table: 'family_reward',
+    spaceScoped: true,
+    encode: (d, ctx) {
+      final reward = d as FamilyReward;
+      return {
+        'id': reward.id,
+        'space_id': ctx.spaceId,
+        'name': reward.name,
+        'points_cost': reward.pointsCost,
+        'description': reward.description,
+        'is_archived': reward.isArchived,
+        'redeemed_by_member_id': reward.redeemedByMemberId,
+        'redeemed_at': reward.redeemedAt?.toUtc().toIso8601String(),
+      };
+    },
+    decode: (j) => FamilyReward(
+      id: j['id'] as String,
+      name: j['name'] as String? ?? '',
+      pointsCost: j['points_cost'] as int? ?? 1,
+      description: j['description'] as String?,
+      isArchived: j['is_archived'] as bool? ?? false,
+      redeemedByMemberId: j['redeemed_by_member_id'] as String?,
+      redeemedAt: _iso(j['redeemed_at']),
     ),
   ),
   'tx_allocation': SyncAdapter(
@@ -543,6 +575,7 @@ final kSyncAdapters = <String, SyncAdapter>{
       return {
         'id': t.id,
         'space_id': ctx.spaceId,
+        'account_id': t.accountId,
         'type': t.type.name,
         'amount_minor': t.amount.minor,
         'currency': t.amount.currency.code,
@@ -560,6 +593,7 @@ final kSyncAdapters = <String, SyncAdapter>{
     },
     decode: (j) => Tx(
       id: j['id'] as String,
+      accountId: j['account_id'] as String?,
       envelopeId: j['envelope_id'] as String?,
       memberId: j['member_id'] as String,
       type: TxType.values.byName(j['type'] as String),
@@ -966,7 +1000,8 @@ const kPullOrder = [
   'recurring', 'chore', 'mukando', 'mukando_payment',
   'family_activity', // immutable server-authored audit trail
   'family_chat_message', // family-scoped conversation thread
-  'family_task', // shared responsibilities; kid memberships cannot read it
+  'family_task', // shared responsibilities
+  'family_reward', // family rewards and redemption status
   'financial_commitment', 'commitment_occurrence', 'commitment_payment',
   'contribution_campaign', 'contribution_pledge', 'contribution_payment',
   'family_debt', 'debt_repayment',

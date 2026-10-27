@@ -6,6 +6,7 @@ import '../../core/money/money.dart';
 import '../../core/planning/savings_debt_planner.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/plus_ui.dart';
 
 class AdvancedPlanningScreen extends StatefulWidget {
   const AdvancedPlanningScreen({super.key});
@@ -22,6 +23,8 @@ class _AdvancedPlanningScreenState extends State<AdvancedPlanningScreen> {
   Goal? _goal;
   FamilyDebt? _debt;
   DateTime? _whatIfTargetDate;
+  bool _planningSavings = true;
+  bool _showComparison = false;
 
   @override
   void dispose() {
@@ -34,9 +37,11 @@ class _AdvancedPlanningScreenState extends State<AdvancedPlanningScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
-    _goal ??= state.goals.where((value) => value.status == 'active').firstOrNull;
-    _debt ??=
-        state.familyDebts.where((value) => value.status != 'archived').firstOrNull;
+    _goal ??=
+        state.goals.where((value) => value.status == 'active').firstOrNull;
+    _debt ??= state.familyDebts
+        .where((value) => value.status != 'archived')
+        .firstOrNull;
     final amountMajor = double.tryParse(_amount.text.trim());
     final compareMajor = double.tryParse(_compareAmount.text.trim());
     final targetOverrideMajor = double.tryParse(_whatIfTarget.text.trim());
@@ -115,27 +120,52 @@ class _AdvancedPlanningScreenState extends State<AdvancedPlanningScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Explore without posting payments',
-              style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 6),
-          Text(
-            'Changing these values never changes balances or creates transactions.',
-            style: TextStyle(color: context.inkSoft),
+          const PlusHero(
+            eyebrow: 'Savings & debt',
+            title: 'Turn goals into a timeline',
+            description:
+                'Compare contribution and repayment scenarios safely. Your balances and transactions stay unchanged.',
+            icon: Icons.savings_rounded,
           ),
-          const SizedBox(height: 18),
-          TextField(
-            controller: _amount,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration:
-                const InputDecoration(labelText: 'Recurring amount per payment'),
-            onChanged: (_) => setState(() {}),
+          const SizedBox(height: 20),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(
+                value: true,
+                icon: Icon(Icons.savings_outlined),
+                label: Text('Reach a goal'),
+              ),
+              ButtonSegment(
+                value: false,
+                icon: Icon(Icons.account_balance_outlined),
+                label: Text('Clear a debt'),
+              ),
+            ],
+            selected: {_planningSavings},
+            onSelectionChanged: (value) =>
+                setState(() => _planningSavings = value.first),
+          ),
+          const SizedBox(height: 16),
+          Text(
+              _planningSavings
+                  ? 'How much can you save?'
+                  : 'How much can you repay?',
+              style: MhuriType.titleM.copyWith(color: context.ink)),
+          const SizedBox(height: 4),
+          Text(
+            _planningSavings
+                ? 'Choose a goal and a comfortable regular contribution.'
+                : 'Choose a debt and a comfortable regular payment.',
+            style: MhuriType.body.copyWith(color: context.inkSoft),
           ),
           const SizedBox(height: 12),
           TextField(
-            controller: _compareAmount,
+            controller: _amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Compare alternative payment (optional what-if)',
+            decoration: InputDecoration(
+              labelText: _planningSavings
+                  ? 'Amount to save each time'
+                  : 'Amount to repay each time',
             ),
             onChanged: (_) => setState(() {}),
           ),
@@ -144,62 +174,70 @@ class _AdvancedPlanningScreenState extends State<AdvancedPlanningScreen> {
             initialValue: _frequency,
             decoration: const InputDecoration(labelText: 'Frequency'),
             items: ContributionFrequency.values
-                .map((value) => DropdownMenuItem(
-                    value: value, child: Text(value.name)))
+                .map((value) =>
+                    DropdownMenuItem(value: value, child: Text(value.name)))
                 .toList(),
             onChanged: (value) =>
                 setState(() => _frequency = value ?? _frequency),
           ),
-          const SizedBox(height: 22),
-          _heading(context, 'Savings goal'),
-          if (state.goals.isEmpty)
-            const Text('Create a savings goal to model contributions.')
-          else ...[
+          const SizedBox(height: 16),
+          if (_planningSavings && state.goals.isEmpty)
+            const PlusEmptyState(
+              title: 'Create a savings goal first',
+              message:
+                  'Mhuri needs a target before it can estimate a completion date.',
+              icon: Icons.flag_outlined,
+            )
+          else if (_planningSavings) ...[
             DropdownButtonFormField<Goal>(
               initialValue: _goal,
+              decoration: const InputDecoration(labelText: 'Savings goal'),
               items: state.goals
-                  .map((value) => DropdownMenuItem(
-                      value: value, child: Text(value.name)))
+                  .map((value) =>
+                      DropdownMenuItem(value: value, child: Text(value.name)))
                   .toList(),
               onChanged: (value) => setState(() => _goal = value),
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
+            const SizedBox(height: 12),
+            Card(
+              child: ExpansionTile(
+                title: const Text('Try a different target'),
+                subtitle: const Text('Optional amount or date'),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                children: [
+                  TextField(
                     controller: _whatIfTarget,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
-                      labelText: 'What-if target amount (optional)',
-                    ),
+                        labelText: 'Different target amount'),
                     onChanged: (_) => setState(() {}),
                   ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _whatIfTargetDate ??
-                          _goal?.deadline ??
-                          state.now.add(const Duration(days: 180)),
-                      firstDate: state.now,
-                      lastDate: DateTime(state.now.year + 15),
-                    );
-                    if (picked != null) {
-                      setState(() => _whatIfTargetDate = picked);
-                    }
-                  },
-                  icon: const Icon(Icons.event, size: 16),
-                  label: Text(
-                    _whatIfTargetDate == null
-                        ? 'Target date'
-                        : DateFormat.yMMMd().format(_whatIfTargetDate!),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _whatIfTargetDate ??
+                              _goal?.deadline ??
+                              state.now.add(const Duration(days: 180)),
+                          firstDate: state.now,
+                          lastDate: DateTime(state.now.year + 15),
+                        );
+                        if (picked != null) {
+                          setState(() => _whatIfTargetDate = picked);
+                        }
+                      },
+                      icon: const Icon(Icons.event, size: 16),
+                      label: Text(_whatIfTargetDate == null
+                          ? 'Choose a different target date'
+                          : DateFormat.yMMMd().format(_whatIfTargetDate!)),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             if (savingsProjection != null)
               _result(
@@ -208,17 +246,20 @@ class _AdvancedPlanningScreenState extends State<AdvancedPlanningScreen> {
                 'Estimated goal completion',
                 comparison: savingsCompare,
               ),
-          ],
-          const SizedBox(height: 22),
-          _heading(context, 'Debt repayment'),
-          if (state.familyDebts.isEmpty)
-            const Text('Add a recorded debt to model repayments.')
+          ] else if (state.familyDebts.isEmpty)
+            const PlusEmptyState(
+              title: 'Add a debt first',
+              message:
+                  'Mhuri needs a recorded balance before it can estimate a payoff date.',
+              icon: Icons.account_balance_outlined,
+            )
           else ...[
             DropdownButtonFormField<FamilyDebt>(
               initialValue: _debt,
+              decoration: const InputDecoration(labelText: 'Debt to clear'),
               items: state.familyDebts
-                  .map((value) => DropdownMenuItem(
-                      value: value, child: Text(value.name)))
+                  .map((value) =>
+                      DropdownMenuItem(value: value, child: Text(value.name)))
                   .toList(),
               onChanged: (value) => setState(() => _debt = value),
             ),
@@ -230,6 +271,23 @@ class _AdvancedPlanningScreenState extends State<AdvancedPlanningScreen> {
                 comparison: debtCompare,
               ),
           ],
+          const SizedBox(height: 12),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            value: _showComparison,
+            title: const Text('Compare another amount'),
+            subtitle: const Text(
+                'See how a larger or smaller regular amount changes the date.'),
+            onChanged: (value) => setState(() => _showComparison = value),
+          ),
+          if (_showComparison)
+            TextField(
+              controller: _compareAmount,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Amount to compare'),
+              onChanged: (_) => setState(() {}),
+            ),
           if (error != null)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -239,9 +297,6 @@ class _AdvancedPlanningScreenState extends State<AdvancedPlanningScreen> {
       ),
     );
   }
-
-  Widget _heading(BuildContext context, String value) => Text(value,
-      style: Theme.of(context).textTheme.titleLarge);
 
   Widget _result(
     BuildContext context,
@@ -253,11 +308,13 @@ class _AdvancedPlanningScreenState extends State<AdvancedPlanningScreen> {
         margin: const EdgeInsets.only(top: 10),
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(heading, style: Theme.of(context).textTheme.labelLarge),
             Text(DateFormat.yMMMd().format(value.completionDate),
                 style: Theme.of(context).textTheme.headlineSmall),
-            Text('${value.paymentCount} payments · final ${value.finalPayment.text}'),
+            Text(
+                '${value.paymentCount} payments · final ${value.finalPayment.text}'),
             if (value.meetsTargetDate != null)
               Text(value.meetsTargetDate!
                   ? 'Meets the recorded target date.'

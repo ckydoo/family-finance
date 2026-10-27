@@ -16,7 +16,7 @@ enum ChoreState { todo, waiting, confirmed }
 
 enum ChatMessageStatus { pending, failed, sent, delivered, read }
 
-enum FamilyTaskStatus { open, inProgress, done }
+enum FamilyTaskStatus { open, inProgress, done, awaitingApproval }
 
 enum ChatReferenceType {
   task,
@@ -168,18 +168,23 @@ class Member {
   });
 }
 
-/// Cash / mobile-money / bank balances. Money is *tagged*, never held.
+/// Cash / mobile-money / bank balances. A private account is visible only to
+/// its owner; money is *tagged*, never held.
 class Account {
   final String id;
   final String name;
   final String emoji;
   final Money balance;
+  final bool isPrivate;
+  final String? ownerMemberId;
 
   const Account({
     required this.id,
     required this.name,
     required this.emoji,
     required this.balance,
+    this.isPrivate = false,
+    this.ownerMemberId,
   });
 }
 
@@ -400,6 +405,7 @@ class FamilyTask {
   int points;
   bool requiresApproval;
   String? approvedByMemberId;
+  String? completedByMemberId;
   DateTime? approvedAt;
   DateTime? completedAt;
   bool isArchived;
@@ -416,6 +422,7 @@ class FamilyTask {
     this.points = 1,
     this.requiresApproval = true,
     this.approvedByMemberId,
+    this.completedByMemberId,
     this.approvedAt,
     this.completedAt,
     this.isArchived = false,
@@ -433,6 +440,7 @@ class FamilyTask {
     int? points,
     bool? requiresApproval,
     String? approvedByMemberId,
+    String? completedByMemberId,
     DateTime? approvedAt,
     DateTime? completedAt,
     bool? isArchived,
@@ -449,20 +457,45 @@ class FamilyTask {
         points: points ?? this.points,
         requiresApproval: requiresApproval ?? this.requiresApproval,
         approvedByMemberId: approvedByMemberId ?? this.approvedByMemberId,
+        completedByMemberId: completedByMemberId ?? this.completedByMemberId,
         approvedAt: approvedAt ?? this.approvedAt,
         completedAt: completedAt ?? this.completedAt,
         isArchived: isArchived ?? this.isArchived,
       );
 
   bool get isDone => status == FamilyTaskStatus.done;
+  bool get isComplete =>
+      status == FamilyTaskStatus.done ||
+      status == FamilyTaskStatus.awaitingApproval;
   bool get isAwaitingApproval =>
       requiresApproval &&
-      status == FamilyTaskStatus.done &&
+      status == FamilyTaskStatus.awaitingApproval &&
       approvedByMemberId == null;
+}
+
+class FamilyReward {
+  final String id;
+  final String name;
+  final int pointsCost;
+  final String? description;
+  final bool isArchived;
+  final String? redeemedByMemberId;
+  final DateTime? redeemedAt;
+
+  const FamilyReward({
+    required this.id,
+    required this.name,
+    required this.pointsCost,
+    this.description,
+    this.isArchived = false,
+    this.redeemedByMemberId,
+    this.redeemedAt,
+  });
 }
 
 class Tx {
   final String id;
+  final String? accountId;
   final String? envelopeId;
   final String memberId;
   final TxType type;
@@ -482,6 +515,7 @@ class Tx {
     required this.method,
     required this.note,
     required this.when,
+    this.accountId,
     this.envelopeId,
     this.deletedAt,
     this.receiptUri,

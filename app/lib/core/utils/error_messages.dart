@@ -112,6 +112,14 @@ String _cleanRawErrorMessage(String raw, {required String fallback}) {
     return 'Maximum open invites reached. Revoke an old invite or wait for it to expire.';
   }
 
+  if (text.contains('FAMILY_LIMIT_REACHED')) {
+    return 'Free includes one created family space. Explore Mhuri Plus to create more.';
+  }
+
+  if (text.contains('FAMILY_MEMBER_LIMIT_REACHED')) {
+    return 'Free families can have up to five members, including pending invitations. Explore Mhuri Plus to add more.';
+  }
+
   if (text.contains('EMAIL_EXISTS')) {
     return 'An account with this email already exists.';
   }
