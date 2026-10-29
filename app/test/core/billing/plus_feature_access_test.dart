@@ -27,7 +27,9 @@ void main() {
     );
     expect(state.hasPlusFeature('advanced_insights'), isTrue);
     expect(state.canWritePlusFeature('advanced_insights'), isTrue);
-    expect(state.hasPlusFeature('savings_projections'), isFalse);
+    expect(state.hasPlusFeature('savings_projections'), isTrue,
+        reason: 'active Plus includes every currently advertised capability');
+    expect(state.hasPlusFeature('not_a_real_plus_feature'), isFalse);
 
     state.familyEntitlement = const FamilyEntitlement(
       familyId: 'family-1',
@@ -37,6 +39,22 @@ void main() {
     expect(state.hasPlus, isFalse);
     expect(state.hasPlusFeature('advanced_insights'), isFalse);
     state.dispose();
+  });
+
+  test('legacy active entitlement unlocks newer chat and commitment features',
+      () {
+    final state = AppState();
+    state.familyEntitlement = const FamilyEntitlement(
+      familyId: 'family-legacy',
+      status: EntitlementStatus.active,
+      features: {},
+    );
+
+    expect(state.hasPlusFeature('smart_commitments'), isTrue);
+    expect(state.canWritePlusFeature('smart_commitments'), isTrue);
+    expect(state.canWritePlusFeature('enhanced_family_chat'), isTrue);
+    expect(state.canWritePlusFeature('family_polls_pins'), isTrue);
+    expect(state.canWritePlusFeature('advanced_chat_search'), isTrue);
   });
 
   test(

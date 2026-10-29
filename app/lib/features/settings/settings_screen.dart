@@ -14,6 +14,7 @@ import 'sync_screen.dart';
 import 'plus_screen.dart';
 import 'private_accounts_screen.dart';
 import '../../core/utils/error_messages.dart';
+import '../../core/widgets/app_icons.dart';
 import '../../core/widgets/ui.dart';
 
 /// Settings (spec §7 Settings: notifications J3, month start, data).
@@ -71,9 +72,11 @@ class SettingsScreen extends StatelessWidget {
                       AppLocalizations.of(context)!.accountTitle),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
+                    leading: MemberAvatar(
+                      radius: 22,
                       backgroundColor: context.primarySoft,
-                      child: Icon(Icons.person_outline, color: context.primary),
+                      icon: iconForKey(s.user.emoji) ?? kFallbackSemanticIcon,
+                      imageUrl: s.user.avatarUrl,
                     ),
                     title: Text(
                       s.user.name,

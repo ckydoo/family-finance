@@ -9,7 +9,8 @@ import 'package:mhuri_money/core/theme/app_theme.dart';
 import 'package:mhuri_money/features/commitments/commitments_screen.dart';
 
 void main() {
-  testWidgets('CommitmentsScreen gates on Plus and supports partial payment linking',
+  testWidgets(
+      'CommitmentsScreen gates on Plus and supports partial payment linking',
       (tester) async {
     final now = DateTime(2026, 10, 22);
     final state = AppState(clock: () => now);
@@ -57,6 +58,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final addButton = tester.widget<FloatingActionButton>(
+      find.byKey(const Key('add_commitment_fab')),
+    );
+    expect(addButton.backgroundColor, isNotNull);
+    expect(addButton.foregroundColor, isNotNull);
     expect(find.text('Rent'), findsOneWidget);
     expect(find.text('Link Payment'), findsOneWidget);
 
@@ -74,4 +80,3 @@ void main() {
     state.dispose();
   });
 }
-

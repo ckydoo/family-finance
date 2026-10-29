@@ -288,7 +288,7 @@ class _PlusScreenState extends State<PlusScreen> {
                       'Ask a parent or family admin to manage the family subscription.'),
                 if (entitlement != null)
                   _LifecycleBanner(entitlement: entitlement, active: active),
-                if (!billingEnabled)
+                if (!active && !billingEnabled)
                   const _Notice(
                       'Purchases are not enabled in this build. Configure Google Play products and server verification before release.'),
                 if (billingEnabled && !Platform.isAndroid)

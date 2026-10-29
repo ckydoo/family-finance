@@ -69,7 +69,11 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   final _controller = TextEditingController();
   final _composerFocus = FocusNode();
   final _scroll = ScrollController();
-  final AudioPlayer _voicePlayer = AudioPlayer();
+  // Voice notes require Supabase auth headers. Send them through the native
+  // player so Android does not need just_audio's cleartext localhost proxy.
+  final AudioPlayer _voicePlayer = AudioPlayer(
+    useProxyForRequestHeaders: false,
+  );
   _PendingReference? _pendingReference;
   FamilyChatMessage? _replyingTo;
   bool _searching = false;
@@ -150,7 +154,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   }
 
   bool _hasEnhancedChat(AppState state) =>
-      state.canWritePlusFeature('enhanced_family_chat');
+      state.hasPlusFeature('enhanced_family_chat');
 
   Future<void> _showChatUpgrade(String feature) async {
     await showDialog<void>(
@@ -518,13 +522,13 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                   child: Column(
                     children: [
                       Text(
-                        state.canWritePlusFeature('family_polls_pins')
+                        state.hasPlusFeature('family_polls_pins')
                             ? 'No pinned messages yet. Long-press any message to pin important family updates.'
                             : 'Pinned messages are a Mhuri Plus feature. Family chat stays free.',
                         style: TextStyle(color: context.inkSoft),
                         textAlign: TextAlign.center,
                       ),
-                      if (!state.canWritePlusFeature('family_polls_pins'))
+                      if (!state.hasPlusFeature('family_polls_pins'))
                         TextButton.icon(
                           onPressed: () {
                             Navigator.pop(sheetContext);
@@ -718,7 +722,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
 
   Future<void> _runAdvancedSearch(AppState state,
       {bool loadMore = false}) async {
-    if (!state.canWritePlusFeature('advanced_chat_search')) {
+    if (!state.hasPlusFeature('advanced_chat_search')) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('Advanced chat search is a Mhuri Plus feature.'),
@@ -969,7 +973,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     if (message.isSystem) return;
     final isPinned = _pinnedMessageIds.contains(message.id);
     final enhancedChat = _hasEnhancedChat(state);
-    final pollsAndPins = state.canWritePlusFeature('family_polls_pins');
+    final pollsAndPins = state.hasPlusFeature('family_polls_pins');
     final canEditDelete = message.senderId == state.realUser.id;
     final canEdit = message.mediaUrl == null && message.sticker == null;
     final action = await showMhuriSheet<_ChatMessageAction>(
@@ -1150,6 +1154,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       text: next,
       selection: TextSelection.collapsed(offset: start + emoji.length),
     );
+    setState(() {});
   }
 
   Future<void> _attachmentMenu(AppState state) async {
@@ -1472,7 +1477,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   const Icon(Icons.push_pin_outlined),
-                  if (!state.canWritePlusFeature('family_polls_pins'))
+                  if (!state.hasPlusFeature('family_polls_pins'))
                     const Positioned(
                       right: -5,
                       bottom: -4,
@@ -1490,7 +1495,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
               clipBehavior: Clip.none,
               children: [
                 const Icon(Icons.poll_outlined),
-                if (!state.canWritePlusFeature('family_polls_pins'))
+                if (!state.hasPlusFeature('family_polls_pins'))
                   const Positioned(
                     right: -5,
                     bottom: -4,
@@ -1499,7 +1504,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
               ],
             ),
           ),
-          if (_searching && state.canWritePlusFeature('advanced_chat_search'))
+          if (_searching && state.hasPlusFeature('advanced_chat_search'))
             IconButton(
               tooltip: 'Advanced search filters',
               onPressed: _advancedSearchRunning
@@ -1663,34 +1668,52 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                         final dayLabel = DateFormat('EEEE, MMM d')
                             .format(message.createdAt.toLocal());
                         if (message.isSystem) {
+                          final opensTask =
+                              message.referenceType == ChatReferenceType.task &&
+                                  message.referenceId != null;
                           return Column(
                             children: [
                               if (showDay) _ChatDayLabel(dayLabel),
                               Semantics(
-                                label: 'Mhuri update: ${message.text}',
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 8, horizontal: 20),
-                                  child: Column(children: [
-                                    Text(
-                                      message.text,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: context.inkSoft,
-                                      ),
-                                    ),
-                                    if (message.referenceMeta?.isNotEmpty ==
-                                        true)
+                                button: opensTask,
+                                label: opensTask
+                                    ? 'Open task ${message.referenceTitle ?? message.text}'
+                                    : 'Mhuri update: ${message.text}',
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: opensTask
+                                      ? () =>
+                                          _openReferencedTask(state, message)
+                                      : null,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8, horizontal: 20),
+                                    child: Column(children: [
                                       Text(
-                                        message.referenceMeta!,
+                                        message.text,
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          fontSize: 11,
-                                          color: context.inkFaint,
+                                          fontSize: 12,
+                                          color: opensTask
+                                              ? context.primary
+                                              : context.inkSoft,
+                                          decoration: opensTask
+                                              ? TextDecoration.underline
+                                              : TextDecoration.none,
                                         ),
                                       ),
-                                  ]),
+                                      if (message.referenceMeta?.isNotEmpty ==
+                                          true)
+                                        Text(
+                                          message.referenceMeta!,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: context.inkFaint,
+                                          ),
+                                        ),
+                                    ]),
+                                  ),
                                 ),
                               ),
                             ],
@@ -1910,15 +1933,11 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                                     fontSize: 54)),
                                           ),
                                         if (message.text.isNotEmpty)
-                                          Text(
-                                            message.text,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: isMine
-                                                  ? context.onSolid
-                                                  : context.ink,
-                                              height: 1.4,
-                                            ),
+                                          _ExpandableChatText(
+                                            key: ValueKey(
+                                                'chat-text-${message.id}'),
+                                            text: message.text,
+                                            isMine: isMine,
                                           ),
                                         if (message.referenceType != null &&
                                             message.referenceTitle != null) ...[
@@ -2239,6 +2258,14 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                               onPressed: _finishingVoiceNote
                                   ? null
                                   : () => _finishVoiceNote(state),
+                              style: IconButton.styleFrom(
+                                backgroundColor: context.primary,
+                                foregroundColor: context.onSolid,
+                                disabledBackgroundColor:
+                                    context.primary.withValues(alpha: 0.45),
+                                disabledForegroundColor:
+                                    context.onSolid.withValues(alpha: 0.7),
+                              ),
                               icon: const Icon(Icons.send_rounded),
                             ),
                           ],
@@ -2246,109 +2273,137 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                       )
                     else
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          IconButton(
-                            onPressed: _uploadingMedia
-                                ? null
-                                : () => _attachmentMenu(state),
-                            tooltip: 'Add photo or reference',
-                            icon: _uploadingMedia
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2.2),
-                                  )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                        const Icon(Icons.add_rounded),
-                                        if (!_hasEnhancedChat(state)) ...[
-                                          const SizedBox(width: 2),
-                                          const _PlusLock(size: 12),
-                                        ],
-                                      ]),
-                          ),
                           Expanded(
-                            child: TextField(
-                              controller: _controller,
-                              focusNode: _composerFocus,
-                              minLines: 1,
-                              maxLines: 4,
-                              textCapitalization: TextCapitalization.sentences,
-                              decoration: InputDecoration(
-                                hintText: 'Message the family…',
-                                filled: true,
-                                fillColor: context.bg,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                  borderSide: BorderSide.none,
-                                ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: context.bg,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: context.hairline),
                               ),
-                              onSubmitted: (_) => _send(state),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  _ComposerIconButton(
+                                    tooltip: 'Emoji and stickers',
+                                    locked: !_hasEnhancedChat(state),
+                                    onPressed: () {
+                                      if (!_hasEnhancedChat(state)) {
+                                        unawaited(_showChatUpgrade(
+                                            'Emoji and stickers'));
+                                        return;
+                                      }
+                                      setState(() => _showExpressionTray =
+                                          !_showExpressionTray);
+                                    },
+                                    icon: _showExpressionTray
+                                        ? Icons.keyboard_rounded
+                                        : Icons.sentiment_satisfied_alt_rounded,
+                                  ),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _controller,
+                                      focusNode: _composerFocus,
+                                      minLines: 1,
+                                      maxLines: 4,
+                                      textCapitalization:
+                                          TextCapitalization.sentences,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Message',
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 13,
+                                        ),
+                                        border: InputBorder.none,
+                                      ),
+                                      onChanged: (_) => setState(() {}),
+                                      onSubmitted: (_) => _send(state),
+                                    ),
+                                  ),
+                                  _ComposerIconButton(
+                                    tooltip: 'Add photo or reference',
+                                    locked: !_hasEnhancedChat(state),
+                                    onPressed: _uploadingMedia
+                                        ? null
+                                        : () => _attachmentMenu(state),
+                                    icon: Icons.add_rounded,
+                                    loading: _uploadingMedia,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: _uploadingMedia
-                                ? null
-                                : () => _toggleVoiceNote(state),
-                            tooltip: _hasEnhancedChat(state)
-                                ? 'Record voice note'
-                                : 'Voice notes · Mhuri Plus',
-                            icon: _uploadingMedia
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2.2),
-                                  )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                        const Icon(Icons.mic_none_rounded),
-                                        if (!_hasEnhancedChat(state)) ...[
-                                          const SizedBox(width: 2),
-                                          const _PlusLock(size: 12),
-                                        ],
-                                      ]),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              if (!_hasEnhancedChat(state)) {
-                                unawaited(
-                                    _showChatUpgrade('Emoji and stickers'));
-                                return;
-                              }
-                              setState(() =>
-                                  _showExpressionTray = !_showExpressionTray);
-                            },
-                            tooltip: 'Emoji and stickers',
-                            icon:
-                                Row(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(_showExpressionTray
-                                  ? Icons.keyboard_rounded
-                                  : Icons.sentiment_satisfied_alt_rounded),
-                              if (!_hasEnhancedChat(state)) ...[
-                                const SizedBox(width: 2),
-                                const _PlusLock(size: 12),
-                              ],
-                            ]),
                           ),
                           const SizedBox(width: 8),
-                          FilledButton(
-                            onPressed:
-                                _uploadingMedia ? null : () => _send(state),
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              minimumSize: const Size(54, 48),
-                            ),
-                            child: const Icon(Icons.send_rounded),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 160),
+                            transitionBuilder: (child, animation) =>
+                                ScaleTransition(scale: animation, child: child),
+                            child: _controller.text.trim().isNotEmpty ||
+                                    _pendingReference != null
+                                ? IconButton.filled(
+                                    key: const ValueKey('send-message'),
+                                    onPressed: _uploadingMedia
+                                        ? null
+                                        : () => _send(state),
+                                    tooltip: 'Send message',
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: context.primary,
+                                      foregroundColor: context.onSolid,
+                                      disabledBackgroundColor: context.primary
+                                          .withValues(alpha: 0.45),
+                                      disabledForegroundColor: context.onSolid
+                                          .withValues(alpha: 0.7),
+                                      minimumSize: const Size(48, 48),
+                                      maximumSize: const Size(48, 48),
+                                    ),
+                                    icon: const Icon(Icons.send_rounded),
+                                  )
+                                : Stack(
+                                    key: const ValueKey('record-voice-note'),
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      IconButton.filled(
+                                        onPressed: _uploadingMedia
+                                            ? null
+                                            : () => _toggleVoiceNote(state),
+                                        tooltip: _hasEnhancedChat(state)
+                                            ? 'Record voice note'
+                                            : 'Voice notes · Mhuri Plus',
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: context.primary,
+                                          foregroundColor: context.onSolid,
+                                          disabledBackgroundColor: context
+                                              .primary
+                                              .withValues(alpha: 0.45),
+                                          disabledForegroundColor: context
+                                              .onSolid
+                                              .withValues(alpha: 0.7),
+                                          minimumSize: const Size(48, 48),
+                                          maximumSize: const Size(48, 48),
+                                        ),
+                                        icon: _uploadingMedia
+                                            ? SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2.2,
+                                                  color: context.onSolid,
+                                                ),
+                                              )
+                                            : const Icon(
+                                                Icons.mic_none_rounded),
+                                      ),
+                                      if (!_hasEnhancedChat(state))
+                                        const Positioned(
+                                          right: -2,
+                                          bottom: -2,
+                                          child: _PlusLock(size: 12),
+                                        ),
+                                    ],
+                                  ),
                           ),
                         ],
                       ),
@@ -2451,35 +2506,252 @@ class _ChatImageError extends StatelessWidget {
       );
 }
 
-class _ExpressionTray extends StatelessWidget {
+class _ExpandableChatText extends StatefulWidget {
+  const _ExpandableChatText({
+    super.key,
+    required this.text,
+    required this.isMine,
+  });
+
+  final String text;
+  final bool isMine;
+
+  @override
+  State<_ExpandableChatText> createState() => _ExpandableChatTextState();
+}
+
+class _ExpandableChatTextState extends State<_ExpandableChatText> {
+  static const _collapsedLines = 6;
+  bool _expanded = false;
+
+  @override
+  void didUpdateWidget(covariant _ExpandableChatText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) _expanded = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontSize: 14,
+      color: widget.isMine ? context.onSolid : context.ink,
+      height: 1.4,
+    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final painter = TextPainter(
+        text: TextSpan(text: widget.text, style: style),
+        maxLines: _collapsedLines,
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        locale: Localizations.maybeLocaleOf(context),
+      )..layout(maxWidth: constraints.maxWidth);
+      final canExpand = painter.didExceedMaxLines;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.text,
+            maxLines: _expanded ? null : _collapsedLines,
+            overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+            style: style,
+          ),
+          if (canExpand || _expanded) ...[
+            const SizedBox(height: 2),
+            Semantics(
+              button: true,
+              label: _expanded
+                  ? 'Show less message text'
+                  : 'Read more message text',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () => setState(() => _expanded = !_expanded),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Text(
+                    _expanded ? 'Show less' : 'Read more',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: widget.isMine ? context.onSolid : context.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    });
+  }
+}
+
+class _ComposerIconButton extends StatelessWidget {
+  const _ComposerIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+    this.locked = false,
+    this.loading = false,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool locked;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 48,
+        height: 48,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              tooltip: tooltip,
+              constraints: const BoxConstraints.tightFor(
+                width: 48,
+                height: 48,
+              ),
+              padding: const EdgeInsets.all(12),
+              onPressed: onPressed,
+              icon: loading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(icon),
+            ),
+            if (locked)
+              const Positioned(
+                right: 1,
+                bottom: 1,
+                child: _PlusLock(size: 11),
+              ),
+          ],
+        ),
+      );
+}
+
+class _ExpressionTray extends StatefulWidget {
   const _ExpressionTray({required this.onEmoji, required this.onSticker});
 
   final ValueChanged<String> onEmoji;
   final ValueChanged<String> onSticker;
 
+  @override
+  State<_ExpressionTray> createState() => _ExpressionTrayState();
+}
+
+class _ExpressionTrayState extends State<_ExpressionTray> {
+  bool _showStickers = false;
+
   static const emojis = [
     '😀',
+    '😃',
+    '😄',
+    '😁',
     '😂',
+    '🤣',
     '🥰',
+    '😍',
     '😊',
+    '🙂',
+    '😉',
+    '😌',
+    '🤗',
+    '🤩',
+    '🥳',
+    '😎',
+    '🤔',
+    '🫡',
+    '😅',
+    '😭',
+    '😢',
+    '😡',
+    '😴',
+    '🤯',
     '🙏',
     '👏',
     '👍',
+    '👎',
+    '👌',
+    '✌️',
+    '🤞',
+    '💯',
     '❤️',
+    '💚',
+    '💙',
+    '💕',
+    '💔',
+    '🫶',
     '🎉',
+    '🎂',
+    '🎁',
     '💪',
     '🤝',
     '💡',
     '💰',
+    '💸',
+    '💳',
     '🛒',
     '🏠',
     '✅',
+    '❌',
+    '⭐',
+    '🔥',
+    '🏆',
+    '📌',
+    '📅',
+    '🍽️',
+    '🧹',
+    '👕',
+    '🚗',
+    '📚',
+    '🎮',
   ];
-  static const stickers = ['🎉', '🙌', '💚', '💸', '🫶', '🔥', '👏🏾', '🏆'];
+  static const stickers = [
+    '🎉',
+    '🙌',
+    '💚',
+    '💸',
+    '🫶',
+    '🔥',
+    '👏🏾',
+    '🏆',
+    '🥳',
+    '🤩',
+    '😂',
+    '🤣',
+    '😍',
+    '😎',
+    '🤗',
+    '🤝',
+    '💪🏾',
+    '👍🏾',
+    '🙏🏾',
+    '✌🏾',
+    '💯',
+    '⭐',
+    '✅',
+    '🎁',
+    '🎂',
+    '💰',
+    '🛒',
+    '🏠',
+    '🍽️',
+    '🧹',
+    '👕',
+    '📚',
+  ];
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
         decoration: BoxDecoration(
           color: context.bg,
           borderRadius: kBRadiusM,
@@ -2488,52 +2760,103 @@ class _ExpressionTray extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Emoji',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: context.inkSoft)),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 2,
-              runSpacing: 2,
+            Row(
               children: [
-                for (final emoji in emojis)
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Insert $emoji',
-                    onPressed: () => onEmoji(emoji),
-                    icon: Text(emoji, style: const TextStyle(fontSize: 22)),
-                  ),
+                _ExpressionTab(
+                  label: 'Emoji',
+                  icon: Icons.sentiment_satisfied_alt_rounded,
+                  selected: !_showStickers,
+                  onTap: () => setState(() => _showStickers = false),
+                ),
+                const SizedBox(width: 6),
+                _ExpressionTab(
+                  label: 'Stickers',
+                  icon: Icons.sticky_note_2_outlined,
+                  selected: _showStickers,
+                  onTap: () => setState(() => _showStickers = true),
+                ),
+                const Spacer(),
+                Text(
+                  '${_showStickers ? stickers.length : emojis.length} choices',
+                  style: TextStyle(fontSize: 10.5, color: context.inkFaint),
+                ),
               ],
             ),
-            Divider(height: 14, color: context.hairline),
-            Text('Stickers',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: context.inkSoft)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             SizedBox(
-              height: 50,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: stickers.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 4),
-                itemBuilder: (_, index) => InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () => onSticker(stickers[index]),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Center(
-                      child: Text(stickers[index],
-                          style: const TextStyle(fontSize: 34)),
-                    ),
-                  ),
+              height: 190,
+              child: GridView.builder(
+                padding: EdgeInsets.zero,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: _showStickers ? 6 : 8,
+                  mainAxisSpacing: 2,
+                  crossAxisSpacing: 2,
                 ),
+                itemCount: _showStickers ? stickers.length : emojis.length,
+                itemBuilder: (_, index) {
+                  final expression =
+                      _showStickers ? stickers[index] : emojis[index];
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => _showStickers
+                        ? widget.onSticker(expression)
+                        : widget.onEmoji(expression),
+                    child: Center(
+                      child: Text(
+                        expression,
+                        style: TextStyle(fontSize: _showStickers ? 30 : 24),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
+        ),
+      );
+}
+
+class _ExpressionTab extends StatelessWidget {
+  const _ExpressionTab({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? context.primarySoft : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,
+                  size: 16,
+                  color: selected ? context.primary : context.inkSoft),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? context.primary : context.inkSoft,
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }

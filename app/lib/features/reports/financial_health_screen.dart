@@ -104,30 +104,49 @@ class FinancialHealthScreen extends StatelessWidget {
     for (final tx in state.familyTransactions) {
       if (tx.id == id) {
         final label = tx.note.isEmpty ? tx.type.name : tx.note;
-        return '$label · ${tx.amount.text} ($id)';
+        return '$label · ${tx.amount.text} · ${DateFormat.yMMMd().format(tx.when)}';
       }
     }
     for (final env in state.envelopes) {
       if (env.id == id) {
-        return 'Budget: ${env.name} · ${env.limit.text} ($id)';
+        return 'Budget: ${env.name} · ${env.limit.text}';
       }
     }
     for (final occ in state.commitmentOccurrences) {
       if (occ.id == id) {
-        return 'Commitment due ${occ.occurrenceKey} · ${occ.amount.text} ($id)';
+        final commitment = state.financialCommitments
+            .where((value) => value.id == occ.commitmentId)
+            .firstOrNull;
+        return '${commitment?.name ?? 'Commitment'} · ${occ.amount.text} · due ${DateFormat.yMMMd().format(occ.dueDate)}';
       }
     }
     for (final goal in state.goals) {
       if (goal.id == id) {
-        return 'Goal: ${goal.name} · ${goal.target.text} ($id)';
+        return 'Goal: ${goal.name} · ${goal.target.text}';
+      }
+    }
+    for (final contribution in state.goalTxs) {
+      if (contribution.id == id) {
+        final goal = state.goals
+            .where((value) => value.id == contribution.goalId)
+            .firstOrNull;
+        return '${goal?.name ?? 'Savings'} contribution · ${contribution.amount.text} · ${DateFormat.yMMMd().format(contribution.at)}';
       }
     }
     for (final debt in state.familyDebts) {
       if (debt.id == id) {
-        return 'Debt: ${debt.name} · ${debt.principal.text} ($id)';
+        return 'Debt: ${debt.name} · ${debt.principal.text}';
       }
     }
-    return id;
+    for (final repayment in state.debtRepayments) {
+      if (repayment.id == id) {
+        final debt = state.familyDebts
+            .where((value) => value.id == repayment.debtId)
+            .firstOrNull;
+        return '${debt?.name ?? 'Debt'} repayment · ${repayment.amount.text} · ${DateFormat.yMMMd().format(repayment.paidAt)}';
+      }
+    }
+    return 'Supporting financial record';
   }
 
   IconData _icon(HealthInsightKind kind) => switch (kind) {

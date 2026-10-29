@@ -470,6 +470,10 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
               ? FloatingActionButton.extended(
                   key: const Key('add_commitment_fab'),
                   onPressed: () => _showAddCommitmentSheet(state),
+                  backgroundColor: context.accent,
+                  foregroundColor: context.primaryDark,
+                  elevation: 4,
+                  shape: const StadiumBorder(),
                   icon: const Icon(Icons.add),
                   label: const Text('Add Commitment'),
                 )

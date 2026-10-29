@@ -304,8 +304,13 @@ class AppState extends ChangeNotifier {
 
   bool get hasPlus => familyEntitlement?.isActiveAt(now) == true;
 
+  /// Mhuri Plus is sold as one complete family plan. Older verified
+  /// entitlements may predate newer feature keys, so an active Plus status
+  /// unlocks every capability currently included in that plan.
   bool hasPlusFeature(String feature) =>
-      hasPlus && familyEntitlement!.features.contains(feature);
+      hasPlus &&
+      (kPlusV2Features.contains(feature) ||
+          familyEntitlement!.features.contains(feature));
 
   /// Premium reads may use a short-lived offline entitlement snapshot, but
   /// premium writes always require a currently verified online entitlement.

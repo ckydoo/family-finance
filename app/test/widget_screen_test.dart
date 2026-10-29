@@ -231,6 +231,41 @@ void main() {
     expect(find.text('Start task'), findsOneWidget);
   });
 
+  testWidgets('tapping a task approval chat update opens approval detail',
+      (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    final task = FamilyTask(
+      id: 'dishes-approval',
+      title: 'Dishes',
+      createdAt: DateTime(2026, 10, 27),
+      status: FamilyTaskStatus.awaitingApproval,
+      points: 2,
+      requiresApproval: true,
+    );
+    s.familyTasks.add(task);
+    s.familyChatMessages.add(FamilyChatMessage(
+      id: 'dishes-approval-message',
+      familyId: 'family',
+      senderId: s.user.id,
+      text: 'Ready for approval: Dishes',
+      createdAt: DateTime(2026, 10, 27, 22, 15),
+      isSystem: true,
+      referenceType: ChatReferenceType.task,
+      referenceId: task.id,
+      referenceTitle: task.title,
+      referenceMeta: 'Awaiting family approval',
+    ));
+
+    await tester.pumpWidget(harness(s, const FamilyChatScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ready for approval: Dishes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Approval pending'), findsOneWidget);
+    expect(find.text('Approve reward'), findsOneWidget);
+  });
+
   testWidgets('swiping a chat message creates a durable reply', (tester) async {
     sizeWindow(tester);
     final s = AppState();
@@ -255,7 +290,8 @@ void main() {
     expect(find.byTooltip('Cancel reply'), findsOneWidget);
     expect(find.text('Dee'), findsAtLeastNWidgets(1));
     await tester.enterText(find.byType(TextField), 'Yes, I can.');
-    await tester.tap(find.byIcon(Icons.send_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Send message'));
     await tester.pumpAndSettle();
 
     final reply = s.familyChatMessages.first;
@@ -308,6 +344,37 @@ void main() {
     expect(find.text('Edited message'), findsNothing);
     expect(find.text('Message was deleted'), findsOneWidget);
     expect(find.text('Edit message'), findsNothing);
+  });
+
+  testWidgets('long chat messages can expand and collapse', (tester) async {
+    sizeWindow(tester);
+    final s = AppState();
+    final longMessage = List.filled(
+      18,
+      'This is a detailed family update with important information.',
+    ).join(' ');
+    s.familyChatMessages.add(FamilyChatMessage(
+      id: 'long-message',
+      familyId: 'family',
+      senderId: 'dee',
+      senderName: 'Dee',
+      text: longMessage,
+      createdAt: DateTime(2026, 10, 12, 14),
+    ));
+
+    await tester.pumpWidget(harness(s, const FamilyChatScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Read more'), findsOneWidget);
+    expect(find.text('Show less'), findsNothing);
+
+    await tester.tap(find.text('Read more'));
+    await tester.pumpAndSettle();
+    expect(find.text('Show less'), findsOneWidget);
+
+    await tester.tap(find.text('Show less'));
+    await tester.pumpAndSettle();
+    expect(find.text('Read more'), findsOneWidget);
   });
 
   testWidgets('long press does not offer edit for a media message',
@@ -631,6 +698,7 @@ void main() {
     expect(find.text('Signed in as'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
     expect(find.text('Delete account'), findsOneWidget);
+    expect(find.byType(CircleAvatar), findsOneWidget);
 
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
