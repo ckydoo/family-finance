@@ -862,10 +862,10 @@ void main() {
         (r) => r.url.path == '/rest/v1/transaction' && r.method == 'POST',
       ) as http.Request;
       expect(push.url.queryParameters['on_conflict'], 'id');
-      expect(push.headers['prefer'], contains('merge-duplicates'));
+      expect(push.headers['prefer'], contains('ignore-duplicates'));
+      expect(push.headers['prefer'], contains('return=representation'));
       expect(push.headers['authorization'], 'Bearer test-token');
-      final body = jsonDecode(push.body) as List;
-      final row = body.first as Map<String, dynamic>;
+      final row = jsonDecode(push.body) as Map<String, dynamic>;
       expect(row['note'], 'Synced expense');
       expect(row['method'], 'mobile_money');
       expect(row.containsKey('space_id'), isTrue);
@@ -1530,7 +1530,8 @@ void main() {
             '/rest/v1/recurring_rule',
             '/rest/v1/mukando',
           }.contains(r.url.path))) {
-        final body = jsonDecode((r as http.Request).body) as List;
+        final decoded = jsonDecode((r as http.Request).body);
+        final body = decoded is List ? decoded : [decoded];
         for (final row in body) {
           expect(uuidRe.hasMatch((row as Map<String, dynamic>)['id'] as String),
               isTrue,

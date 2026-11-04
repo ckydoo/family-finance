@@ -102,6 +102,35 @@ class Outbox {
         whereArgs: [rowId],
       );
 
+  /// Rebase an explicitly approved local change onto the exact server version
+  /// shown in conflict review. This keeps "use this device" intentional while
+  /// preserving server-side compare-and-swap semantics on the retry.
+  Future<void> rebaseConflict(int rowId, String serverUpdatedAt) async {
+    final rows = await db.query(
+      'outbox',
+      columns: ['payload'],
+      where: 'id = ?',
+      whereArgs: [rowId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return;
+    final payload =
+        jsonDecode(rows.first['payload'] as String) as Map<String, dynamic>;
+    payload['_base_updated_at'] = serverUpdatedAt;
+    await db.update(
+      'outbox',
+      {
+        'payload': jsonEncode(payload),
+        'conflict_reason': null,
+        'server_payload': null,
+        'attempts': 0,
+        'created_ms': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [rowId],
+    );
+  }
+
   /// Repeatedly failing ops ([minAttempts] attempts or more), surfaced in
   /// Sync & data for visibility. They remain eligible for automatic retries.
   Future<List<OutboxOp>> parked(int minAttempts) async {

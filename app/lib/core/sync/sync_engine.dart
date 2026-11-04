@@ -92,12 +92,14 @@ class SyncEngine {
     this.retryAuth,
     this.autoSchedule = true,
   })  : _persistence = persistence,
+        _database = database,
         _outbox = Outbox(database),
         _kvGet = kvGet,
         _kvSet = kvSet;
 
   final SupabaseSyncClient client;
   final Persistence _persistence;
+  final Database _database;
   final AppState state;
   final Future<String?> Function(String key) _kvGet;
   final Future<void> Function(String key, String value) _kvSet;
@@ -271,7 +273,17 @@ class SyncEngine {
 
   Future<int> conflictCount() => _outbox.countConflicts();
 
-  Future<void> keepLocalConflict(int rowId) => _outbox.clearConflict(rowId);
+  Future<void> keepLocalConflict(int rowId) async {
+    final conflict = (await _outbox.conflicts())
+        .where((value) => value.rowId == rowId)
+        .firstOrNull;
+    final updatedAt = conflict?.serverPayload?['updated_at']?.toString();
+    if (updatedAt == null || updatedAt.isEmpty) {
+      throw const SyncException(
+          409, 'The server version is missing. Reload family data first.');
+    }
+    await _outbox.rebaseConflict(rowId, updatedAt);
+  }
 
   Future<void> acceptServerConflict(OutboxOp op) async {
     final server = op.serverPayload;
@@ -423,6 +435,7 @@ class SyncEngine {
           newId: newClientId,
         ),
       );
+      await _stampBaseVersion(entity, payload);
       await _outbox.enqueue(entity, newClientId(), payload);
       state.refreshPending();
       schedule();
@@ -456,12 +469,34 @@ class SyncEngine {
             payload: kSyncAdapters[entity]!.encode(domain, ctx),
           ),
       ];
+      for (final operation in operations) {
+        await _stampBaseVersion(operation.entity, operation.payload);
+      }
       await _outbox.enqueueBatch(operations, persist: persist);
       await state.refreshPending();
       schedule();
     } catch (e) {
       debugPrint('Mhuri outbox batch warning: $e');
       reportError?.call('outbox', e, StackTrace.current);
+    }
+  }
+
+  Future<void> _stampBaseVersion(
+      String entity, Map<String, Object?> payload) async {
+    final id = payload['id']?.toString();
+    if (!_conflictEntities.contains(entity) || id == null || id.isEmpty) {
+      return;
+    }
+    final versions = await _database.query(
+      'sync_version',
+      columns: ['server_updated_at'],
+      where: 'entity = ? AND row_id = ?',
+      whereArgs: [entity, id],
+      limit: 1,
+    );
+    if (versions.isNotEmpty) {
+      payload['_base_updated_at'] =
+          versions.first['server_updated_at']?.toString();
     }
   }
 
@@ -1382,15 +1417,14 @@ class SyncEngine {
       for (final op in entry.value) {
         final remote = byId['${op.payload['id']}'];
         if (remote == null || _samePayload(op.payload, remote)) continue;
-        final updated = DateTime.tryParse('${remote['updated_at']}');
-        if (updated == null) continue;
-        final queued =
-            DateTime.fromMillisecondsSinceEpoch(op.createdMs).toUtc();
-        // The server row changing even a millisecond after this operation was
-        // queued means another device won the race while this device was
-        // offline. Do not add a grace window here: fast reconnects are the
-        // exact case where silent last-write-wins data loss is most likely.
-        if (updated.toUtc().isAfter(queued)) {
+        final serverVersion = remote['updated_at']?.toString();
+        final baseVersion = op.payload['_base_updated_at']?.toString();
+        // Never trust a device clock to order writes. A mutation may update an
+        // existing row only when it names the exact server version it was
+        // based on. Legacy/stale outbox rows have no base and fail closed.
+        if (serverVersion == null ||
+            baseVersion == null ||
+            serverVersion != baseVersion) {
           await _outbox.markConflict(
               op.rowId, 'This record changed on another device.', remote);
         }
@@ -1400,7 +1434,9 @@ class SyncEngine {
 
   bool _samePayload(Map<String, Object?> local, Map<String, Object?> remote) {
     for (final entry in local.entries) {
-      if (entry.key == 'updated_at') continue;
+      if (entry.key == 'updated_at' || entry.key == '_base_updated_at') {
+        continue;
+      }
       if ('${entry.value ?? ''}' != '${remote[entry.key] ?? ''}') return false;
     }
     return true;
@@ -1448,14 +1484,59 @@ class SyncEngine {
     final doneRowIds = <int>[];
     for (final entry in byEntity.entries) {
       final adapter = kSyncAdapters[entry.key]!;
+      final entryDoneRowIds = <int>[];
       // Several edits to the same record (e.g. a list item moved to the
       // cart, then checked out) queue several ops. One upsert statement may
       // not touch a row twice - Postgres rejects the whole batch with
       // "ON CONFLICT DO UPDATE command cannot affect row a second time" - so
       // collapse them in queue order, later fields winning.
-      final rows = _collapseById([for (final o in entry.value) o.payload]);
+      final versionedRows = _collapseById(
+          [for (final operation in entry.value) operation.payload]);
+      var rows = <Map<String, Object?>>[];
       try {
-        await client.pushRows(adapter.table, rows);
+        if (_conflictEntities.contains(entry.key)) {
+          for (final versioned in versionedRows) {
+            final base = versioned['_base_updated_at']?.toString();
+            final row = Map<String, Object?>.of(versioned)
+              ..remove('_base_updated_at');
+            final applied = await client.pushRowCompareAndSwap(
+              adapter.table,
+              row,
+              baseUpdatedAt: base,
+            );
+            final matchingOps = entry.value
+                .where((operation) => operation.payload['id'] == row['id']);
+            if (applied) {
+              rows.add(row);
+              entryDoneRowIds
+                  .addAll(matchingOps.map((operation) => operation.rowId));
+              continue;
+            }
+            final remoteRows = await client.pullRows(
+              adapter.table,
+              orderCol: 'updated_at',
+              eqFilters: {'id': 'eq.${row['id']}'},
+              limit: 1,
+            );
+            final remote = remoteRows.firstOrNull;
+            if (remote == null) {
+              throw const SyncException(
+                  409, 'The server rejected a versioned mutation.');
+            }
+            for (final operation in matchingOps) {
+              await _outbox.markConflict(operation.rowId,
+                  'This record changed on another device.', remote);
+            }
+          }
+        } else {
+          rows = [
+            for (final versioned in versionedRows)
+              Map<String, Object?>.of(versioned)..remove('_base_updated_at')
+          ];
+          await client.pushRows(adapter.table, rows);
+          entryDoneRowIds
+              .addAll(entry.value.map((operation) => operation.rowId));
+        }
         if (entry.key == 'family_chat_message') {
           state.markChatMessagesSent(rows.map((row) => row['id'].toString()));
         }
@@ -1485,7 +1566,7 @@ class SyncEngine {
         }
         // A transaction is complete only after its envelope attribution is
         // durable too. Both idempotent writes retry together on failure.
-        doneRowIds.addAll(entry.value.map((o) => o.rowId));
+        doneRowIds.addAll(entryDoneRowIds);
       } on SyncException catch (e) {
         if (e.isAuthError) rethrow;
         debugPrint('Mhuri push failed [${entry.key} → ${adapter.table}, '

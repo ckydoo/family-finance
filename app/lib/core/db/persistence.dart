@@ -622,6 +622,22 @@ class Persistence {
     }
     final batch = _d.batch();
     for (final row in rows) {
+      final rowId = row['id']?.toString();
+      final serverUpdatedAt = row['updated_at']?.toString();
+      if (rowId != null &&
+          rowId.isNotEmpty &&
+          serverUpdatedAt != null &&
+          serverUpdatedAt.isNotEmpty) {
+        batch.insert(
+          'sync_version',
+          {
+            'entity': entity,
+            'row_id': rowId,
+            'server_updated_at': serverUpdatedAt,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
       switch (entity) {
         case 'account':
           if (row['is_archived'] == true) {
@@ -782,6 +798,7 @@ class Persistence {
       'goal_tx',
       'shopping_list',
       'list_item',
+      'sync_version',
       'kid_request',
       'proposal',
       'earning',

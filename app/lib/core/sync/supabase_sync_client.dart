@@ -77,6 +77,52 @@ class SupabaseSyncClient {
     throw SyncException(r.statusCode, _msg(r));
   }
 
+  /// Atomically creates a row only when its id is absent, or updates it only
+  /// when [baseUpdatedAt] still matches the authoritative server version.
+  /// A false result is a data conflict, not a network failure.
+  Future<bool> pushRowCompareAndSwap(
+    String table,
+    Map<String, Object?> row, {
+    String? baseUpdatedAt,
+  }) async {
+    if (row['id'] == null) {
+      throw const SyncException(400, 'A versioned mutation requires an id.');
+    }
+    final headers = await _headers();
+    late final http.Response response;
+    if (baseUpdatedAt == null || baseUpdatedAt.isEmpty) {
+      response = await _call(() => _client.post(
+            Uri.parse('$_base/rest/v1/$table?on_conflict=id'),
+            headers: {
+              ...headers,
+              'Prefer': 'resolution=ignore-duplicates,return=representation',
+            },
+            body: jsonEncode(row),
+          ));
+    } else {
+      final uri = Uri.parse('$_base/rest/v1/$table').replace(
+        queryParameters: {
+          'id': 'eq.${row['id']}',
+          'updated_at': 'eq.$baseUpdatedAt',
+        },
+      );
+      response = await _call(() => _client.patch(
+            uri,
+            headers: {...headers, 'Prefer': 'return=representation'},
+            body: jsonEncode(row),
+          ));
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SyncException(response.statusCode, _msg(response));
+    }
+    final decoded =
+        response.body.isEmpty ? const [] : jsonDecode(response.body);
+    // Lightweight fake servers may acknowledge writes with JSON null.
+    // Production PostgREST returns [] when the predicate matched nothing and
+    // [row] when the compare-and-swap succeeded.
+    return decoded == null || (decoded is List && decoded.isNotEmpty);
+  }
+
   /// Pull rows changed after [sinceIso] (empty/null → everything RLS allows).
   Future<List<Map<String, Object?>>> pullRows(
     String table, {

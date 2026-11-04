@@ -42,6 +42,7 @@ class AppDatabase {
     'goal_tx',
     'recurring',
     'outbox',
+    'sync_version',
     'shopping_list',
     'list_item',
     'chore',
@@ -166,7 +167,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 27,
+        version: 28,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -278,6 +279,14 @@ class AppDatabase {
       attempts INTEGER NOT NULL DEFAULT 0,
       conflict_reason TEXT,
       server_payload TEXT
+    )
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS sync_version (
+      entity TEXT NOT NULL,
+      row_id TEXT NOT NULL,
+      server_updated_at TEXT NOT NULL,
+      PRIMARY KEY (entity, row_id)
     )
     ''',
     '''

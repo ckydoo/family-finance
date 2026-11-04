@@ -106,6 +106,28 @@ class MockCloudBackend extends http.BaseClient {
           }
           final body = await request.finalize().bytesToString();
           final decoded = jsonDecode(body);
+          final incomingRows = decoded is List
+              ? decoded.cast<Map<String, Object?>>()
+              : [decoded.cast<String, Object?>()];
+          if (request.headers['prefer']
+                  ?.contains('resolution=ignore-duplicates') ==
+              true) {
+            final inserted = <Map<String, Object?>>[];
+            for (final incoming in incomingRows) {
+              final exists =
+                  tables[table]!.any((row) => row['id'] == incoming['id']);
+              if (!exists) {
+                upsertRows(table, [incoming]);
+                inserted.add(tables[table]!
+                    .singleWhere((row) => row['id'] == incoming['id']));
+              }
+            }
+            return http.StreamedResponse(
+              Stream.value(utf8.encode(jsonEncode(inserted))),
+              201,
+              headers: {'content-type': 'application/json'},
+            );
+          }
           if (decoded is List) {
             upsertRows(table, decoded.cast<Map<String, Object?>>());
           } else if (decoded is Map) {
@@ -114,6 +136,34 @@ class MockCloudBackend extends http.BaseClient {
           return http.StreamedResponse(
             Stream.value(utf8.encode(jsonEncode(null))),
             201,
+            headers: {'content-type': 'application/json'},
+          );
+        } else if (request.method == 'PATCH') {
+          final idFilter = request.url.queryParameters['id'];
+          final versionFilter = request.url.queryParameters['updated_at'];
+          final id = idFilter?.replaceFirst('eq.', '');
+          final version = versionFilter?.replaceFirst('eq.', '');
+          final index = tables[table]!.indexWhere((row) =>
+              row['id']?.toString() == id &&
+              row['updated_at']?.toString() == version);
+          if (index < 0) {
+            return http.StreamedResponse(
+              Stream.value(utf8.encode('[]')),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          final body = await request.finalize().bytesToString();
+          final incoming = (jsonDecode(body) as Map).cast<String, Object?>();
+          final updated = <String, Object?>{
+            ...tables[table]![index],
+            ...incoming,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          };
+          tables[table]![index] = updated;
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode([updated]))),
+            200,
             headers: {'content-type': 'application/json'},
           );
         }
@@ -400,6 +450,13 @@ void main() {
       envB.limit = const Money(40000, Currency.usd);
       await deviceA.syncEngine.enqueue('envelope', envA);
       await deviceB.syncEngine.enqueue('envelope', envB);
+
+      // A device clock can be wrong or deliberately set far into the future.
+      // Conflict safety must use the server version, never this timestamp.
+      await deviceB.db.raw.update(
+        'outbox',
+        {'created_ms': DateTime.utc(2099).millisecondsSinceEpoch},
+      );
 
       // A reaches the family space first. B must not silently overwrite it.
       await deviceA.sync();
