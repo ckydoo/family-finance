@@ -298,9 +298,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       if (!mounted || !_auth.isLoggedIn || !_state.onboardingComplete) return;
       final navigator = _navKey.currentState;
       if (navigator == null) return;
-      navigator.push(MaterialPageRoute<void>(
-        builder: (_) => const FamilyChatScreen(),
-      ));
+      openFamilyChat(navigator.context);
     });
   }
 

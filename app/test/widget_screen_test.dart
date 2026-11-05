@@ -215,6 +215,11 @@ void main() {
       points: 1,
     );
     s.familyTasks.add(task);
+    s.familyEntitlement = const FamilyEntitlement(
+      familyId: 'family',
+      status: EntitlementStatus.active,
+      features: kPlusV2Features,
+    );
     s.familyChatMessages.add(FamilyChatMessage(
       id: 'task-message',
       familyId: 'family',
@@ -249,6 +254,11 @@ void main() {
       requiresApproval: true,
     );
     s.familyTasks.add(task);
+    s.familyEntitlement = const FamilyEntitlement(
+      familyId: 'family',
+      status: EntitlementStatus.active,
+      features: kPlusV2Features,
+    );
     s.familyChatMessages.add(FamilyChatMessage(
       id: 'dishes-approval-message',
       familyId: 'family',
@@ -273,7 +283,12 @@ void main() {
 
   testWidgets('swiping a chat message creates a durable reply', (tester) async {
     sizeWindow(tester);
-    final s = AppState();
+    final s = AppState()
+      ..familyEntitlement = const FamilyEntitlement(
+        familyId: 'family',
+        status: EntitlementStatus.active,
+        features: kPlusV2Features,
+      );
     s.familyChatMessages.add(FamilyChatMessage(
       id: 'original-message',
       familyId: 'family',
@@ -358,7 +373,12 @@ void main() {
 
   testWidgets('long chat messages can expand and collapse', (tester) async {
     sizeWindow(tester);
-    final s = AppState();
+    final s = AppState()
+      ..familyEntitlement = const FamilyEntitlement(
+        familyId: 'family',
+        status: EntitlementStatus.active,
+        features: kPlusV2Features,
+      );
     final longMessage = List.filled(
       18,
       'This is a detailed family update with important information.',
@@ -390,7 +410,12 @@ void main() {
   testWidgets('long press does not offer edit for a media message',
       (tester) async {
     sizeWindow(tester);
-    final s = AppState();
+    final s = AppState()
+      ..familyEntitlement = const FamilyEntitlement(
+        familyId: 'family',
+        status: EntitlementStatus.active,
+        features: kPlusV2Features,
+      );
     s.familyChatMessages.add(FamilyChatMessage(
       id: 'own-photo-message',
       familyId: 'family',

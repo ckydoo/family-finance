@@ -255,11 +255,7 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.of(sheetContext).pop();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => FamilyChatScreen(initialTask: task),
-                          ),
-                        );
+                        openFamilyChat(context, initialTask: task);
                       },
                       icon: const Icon(Icons.chat_bubble_outline_rounded),
                       label: const Text('Discuss'),
@@ -737,13 +733,9 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      onPressed: () =>
-                                          Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => FamilyChatScreen(
-                                            initialTask: task,
-                                          ),
-                                        ),
+                                      onPressed: () => openFamilyChat(
+                                        context,
+                                        initialTask: task,
                                       ),
                                       icon: const Icon(
                                           Icons.chat_bubble_outline_rounded),

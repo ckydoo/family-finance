@@ -764,11 +764,7 @@ class _ItemRow extends StatelessWidget {
             tooltip: 'Item actions',
             onSelected: (action) async {
               if (action == 'discuss') {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => FamilyChatScreen(initialShoppingItem: item),
-                  ),
-                );
+                openFamilyChat(context, initialShoppingItem: item);
                 return;
               }
               if (action == 'edit') {

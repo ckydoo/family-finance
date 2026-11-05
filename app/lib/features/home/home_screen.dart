@@ -561,10 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       tooltip: 'Family chat',
                       icon: Icons.chat_bubble_outline_rounded,
                       badgeCount: s.unreadChatCount,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const FamilyChatScreen()),
-                      ),
+                      onTap: () => openFamilyChat(context),
                     ),
                     const SizedBox(width: 6),
                     _PremiumHeaderAction(

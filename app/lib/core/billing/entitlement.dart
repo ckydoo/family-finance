@@ -186,7 +186,7 @@ const String plusAnnualProductId = String.fromEnvironment(
 const int freeFamilyMemberLimit = 5;
 
 const String plusFunctionalityDescription =
-    'Smart bills & commitments, payday-to-payday planner, automated period preparation, financial health check, savings & debt scenarios, and enhanced family chat with voice notes';
+    'Smart bills & commitments, payday-to-payday planner, automated period preparation, financial health check, savings & debt scenarios, and family chat with messages, photos, voice notes, and shared references';
 
 const Set<String> kPlusV2Features = {
   'smart_commitments',

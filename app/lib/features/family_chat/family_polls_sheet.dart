@@ -273,7 +273,7 @@ class _FamilyPollsSheetState extends State<_FamilyPollsSheet> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Column(children: [
                 Text(
-                    'Polls are a Mhuri Plus feature. Existing family chat stays free.',
+                    'Polls and family messaging are included with Mhuri Plus.',
                     style: TextStyle(color: context.inkSoft)),
                 TextButton.icon(
                   onPressed: () {
