@@ -244,6 +244,15 @@ void main() {
     expect(state.chores.single.name, 'Wash the car');
     expect(state.chores.single.stars, 3);
     expect(find.text('Wash the car added for the kids.'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.tap(find.text('Wash the car'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'Wash the truck');
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(state.chores.single.name, 'Wash the truck');
+    expect(find.text('Chore updated.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

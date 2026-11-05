@@ -1786,6 +1786,66 @@ class MembersScreen extends StatelessWidget {
 class _PointsRewardsScreen extends StatelessWidget {
   const _PointsRewardsScreen();
 
+  Future<void> _editLegacyChore(
+    BuildContext context,
+    AppState state, {
+    Chore? chore,
+  }) async {
+    var name = chore?.name ?? '';
+    var stars = chore?.stars ?? 3;
+    await showMhuriSheet<void>(
+      context: context,
+      builder: (sheetContext) => MhuriSheetShell(
+        title: chore == null ? 'Add Kids Mode chore' : 'Edit Kids Mode chore',
+        subtitle: 'Legacy chores award stars in Kids Mode.',
+        footer: PrimaryButton(
+          label: chore == null ? 'Add chore' : 'Save changes',
+          onPressed: () {
+            if (name.trim().isEmpty || stars < 1) {
+              return;
+            }
+            final saved = chore == null
+                ? state.addChore(name: name, starsReward: stars) != null
+                : state.updateChore(
+                    chore,
+                    name: name,
+                    starsReward: stars,
+                    assigneeId: chore.assigneeMemberId,
+                  );
+            if (!saved) return;
+            final messenger = ScaffoldMessenger.of(context);
+            Navigator.pop(sheetContext);
+            messenger.showSnackBar(SnackBar(
+              content: Text(chore == null
+                  ? '${name.trim()} added for the kids.'
+                  : 'Chore updated.'),
+            ));
+          },
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              initialValue: name,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Chore name'),
+              onChanged: (value) => name = value,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              initialValue: '$stars',
+              keyboardType: TextInputType.number,
+              inputFormatters: integerInputFormatters,
+              decoration: const InputDecoration(labelText: 'Stars'),
+              onChanged: (value) => stars = int.tryParse(value.trim()) ?? 0,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _addReward(BuildContext context, AppState state) async {
     final name = TextEditingController();
     final cost = TextEditingController(text: '10');
@@ -1873,6 +1933,40 @@ class _PointsRewardsScreen extends StatelessWidget {
               ),
               title: Text(ranking[index].name),
               trailing: Text('${pointsByMember[ranking[index].id] ?? 0} pts'),
+            ),
+          const Divider(height: 28),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Kids Mode chores',
+                    style: Theme.of(context).textTheme.titleMedium),
+              ),
+              if (state.canApprove)
+                IconButton(
+                  tooltip: 'Add legacy chore',
+                  onPressed: () => _editLegacyChore(context, state),
+                  icon: const Icon(Icons.add_rounded),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          if (state.chores.isEmpty)
+            Text(
+              'No Kids Mode chores yet.',
+              style: TextStyle(color: context.inkSoft),
+            ),
+          for (final chore in state.chores)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.star_outline_rounded),
+              title: Text(chore.name),
+              subtitle: Text('${chore.stars} stars'),
+              trailing: state.canApprove
+                  ? const Icon(Icons.edit_outlined, size: 20)
+                  : null,
+              onTap: state.canApprove
+                  ? () => _editLegacyChore(context, state, chore: chore)
+                  : null,
             ),
           const Divider(height: 28),
           Text('Rewards', style: Theme.of(context).textTheme.titleMedium),

@@ -185,7 +185,12 @@ void main() {
   testWidgets('Family Chat task action opens Tasks even when none exist',
       (tester) async {
     sizeWindow(tester);
-    final s = AppState();
+    final s = AppState()
+      ..familyEntitlement = const FamilyEntitlement(
+        familyId: 'family',
+        status: EntitlementStatus.active,
+        features: kPlusV2Features,
+      );
     await tester.pumpWidget(harness(s, const FamilyChatScreen()));
     await tester.pumpAndSettle();
 
@@ -305,7 +310,12 @@ void main() {
   testWidgets('long press edits and deletes an own text message',
       (tester) async {
     sizeWindow(tester);
-    final s = AppState();
+    final s = AppState()
+      ..familyEntitlement = const FamilyEntitlement(
+        familyId: 'family',
+        status: EntitlementStatus.active,
+        features: kPlusV2Features,
+      );
     s.familyChatMessages.add(FamilyChatMessage(
       id: 'own-text-message',
       familyId: 'family',

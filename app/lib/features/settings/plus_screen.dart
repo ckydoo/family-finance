@@ -10,11 +10,7 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/models.dart' show Role;
 import '../../core/widgets/plus_ui.dart';
-import '../budgets/period_preparation_screen.dart';
-import '../commitments/commitments_screen.dart';
-import '../planner/payday_planner_screen.dart';
-import '../reports/financial_health_screen.dart';
-import '../savings/advanced_planning_screen.dart';
+import '../planner/planning_hub_screen.dart';
 
 class PlusScreen extends StatefulWidget {
   const PlusScreen({super.key});
@@ -230,52 +226,17 @@ class _PlusScreenState extends State<PlusScreen> {
                 ),
                 const SizedBox(height: 20),
                 if (active) ...[
-                  Text('What would you like to do?',
+                  Text('Your Plus tools',
                       style: MhuriType.titleM.copyWith(color: context.ink)),
                   const SizedBox(height: 10),
                   _GoalEntry(
-                    icon: Icons.insights_rounded,
-                    title: 'Can we afford everything until payday?',
-                    subtitle: 'Build a simple cash outlook',
+                    icon: Icons.event_note_rounded,
+                    title: 'Plan Ahead',
+                    subtitle:
+                        'Bills, forecasts, savings, debt and the next period',
                     onTap: () =>
                         Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const PaydayPlannerScreen(),
-                    )),
-                  ),
-                  _GoalEntry(
-                    icon: Icons.event_repeat_rounded,
-                    title: 'Keep track of rent and bills',
-                    subtitle: 'Set due dates, reminders and payments',
-                    onTap: () =>
-                        Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const CommitmentsScreen(),
-                    )),
-                  ),
-                  _GoalEntry(
-                    icon: Icons.savings_rounded,
-                    title: 'Plan a goal or clear a debt',
-                    subtitle: 'See realistic completion dates',
-                    onTap: () =>
-                        Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const AdvancedPlanningScreen(),
-                    )),
-                  ),
-                  _GoalEntry(
-                    icon: Icons.health_and_safety_outlined,
-                    title: 'See how the family is doing',
-                    subtitle: 'Review the current financial picture',
-                    onTap: () =>
-                        Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const FinancialHealthScreen(),
-                    )),
-                  ),
-                  _GoalEntry(
-                    icon: Icons.next_plan_outlined,
-                    title: 'Set up the next period',
-                    subtitle: 'Review and carry plans forward',
-                    onTap: () =>
-                        Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const PeriodPreparationScreen(),
+                      builder: (_) => const PlanningHubScreen(),
                     )),
                   ),
                   const SizedBox(height: 8),
@@ -546,40 +507,16 @@ class _PlanComparisonCard extends StatelessWidget {
 
   static const _plusFeatures = [
     (
-      'Smart Bills & Commitments',
-      'Track variable, one-time, and recurring obligations with due dates, partial payments, and reminders. Fixed recurring expense rules stay free.',
+      'Plan Ahead',
+      'Cash outlooks, upcoming bills, next-period preparation, and advanced savings and debt scenarios.',
     ),
     (
-      'Payday-to-Payday Planner',
-      'Forward-looking cash outlook, shortfall detection, and non-destructive what-if scenarios.',
+      'Smart Insights',
+      'Deeper category analysis, financial health signals and useful recommendations based on your family records.',
     ),
     (
-      'Prepare the Next Budget Period',
-      'Review a suggested carry-forward plan based on past activity, edit it, then apply it yourself.',
-    ),
-    (
-      'Financial Health Check',
-      'Actionable period reviews, comparisons, shortfalls, and drill-down supporting evidence.',
-    ),
-    (
-      'Enhanced Reports & Category Insights',
-      'Compare category spending across periods and explore deeper family reports. Standard reports and CSV export stay free.',
-    ),
-    (
-      'Advanced Savings & Debt Planning',
-      'Contribution schedules, payoff timelines, and what-if target comparisons.',
-    ),
-    (
-      'Premium Family Collaboration',
-      'Photos and voice notes, emoji and stickers, message editing, task and budget references, polls, pinned messages, and advanced chat search. Family text chat, replies, and deleting your own messages stay free.',
-    ),
-    (
-      'Separate Family Spaces',
-      'Create additional family spaces with separate members and finances while Mhuri Plus is active.',
-    ),
-    (
-      'More Family Members',
-      'Invite more than five members to Plus family spaces.',
+      'More Family Capacity',
+      'More than five members and additional family spaces, with each space keeping separate finances and members.',
     ),
   ];
 
