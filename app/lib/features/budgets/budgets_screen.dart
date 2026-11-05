@@ -1469,11 +1469,7 @@ class _EnvelopeDetailState extends State<_EnvelopeDetail> {
               onPressed: () {
                 final navigator = Navigator.of(context);
                 navigator.pop();
-                navigator.push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => FamilyChatScreen(initialBudget: e),
-                  ),
-                );
+                openFamilyChat(context, initialBudget: e);
               },
               icon: const Icon(Icons.chat_bubble_outline_rounded),
               label: const Text('Discuss this budget'),

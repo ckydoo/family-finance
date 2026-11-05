@@ -597,6 +597,7 @@ class MembersScreen extends StatelessWidget {
                   ? '${s.unreadChatCount > 99 ? '99+' : s.unreadChatCount} unread ${s.unreadChatCount == 1 ? 'message' : 'messages'}'
                   : 'Messages and shared task discussions',
               screen: const FamilyChatScreen(),
+              onTap: () => openFamilyChat(context),
               badgeCount: s.unreadChatCount,
             ),
             _familyDestination(
@@ -669,6 +670,7 @@ class MembersScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required Widget screen,
+    VoidCallback? onTap,
     int badgeCount = 0,
   }) =>
       ListTile(
@@ -684,9 +686,10 @@ class MembersScreen extends StatelessWidget {
         title: Text(title),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => screen),
-        ),
+        onTap: onTap ??
+            () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => screen),
+                ),
       );
 
   Widget _languageRow(BuildContext context, AppState s) => InkWell(

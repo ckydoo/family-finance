@@ -1648,6 +1648,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _taskSystemMessage(String text, FamilyTask task, String meta) {
+    if (!hasPlusFeature('enhanced_family_chat')) return;
     final actor = user;
     addChatMessage(FamilyChatMessage(
       id: newUuid(),
@@ -1850,20 +1851,22 @@ class AppState extends ChangeNotifier {
     familyRewards[index] = redeemed;
     if (_store != null) _fire(_store!.saveFamilyReward(redeemed));
     _queue('family_reward', redeemed);
-    addChatMessage(FamilyChatMessage(
-      id: newUuid(),
-      familyId: sync?.spaceId ?? space.name,
-      senderId: actorId,
-      text: '${user.name} redeemed ${current.name}',
-      createdAt: now,
-      senderName: user.name,
-      status: ChatMessageStatus.sent,
-      isSystem: true,
-      referenceType: ChatReferenceType.task,
-      referenceId: current.id,
-      referenceTitle: current.name,
-      referenceMeta: '${current.pointsCost} pts',
-    ));
+    if (hasPlusFeature('enhanced_family_chat')) {
+      addChatMessage(FamilyChatMessage(
+        id: newUuid(),
+        familyId: sync?.spaceId ?? space.name,
+        senderId: actorId,
+        text: '${user.name} redeemed ${current.name}',
+        createdAt: now,
+        senderName: user.name,
+        status: ChatMessageStatus.sent,
+        isSystem: true,
+        referenceType: ChatReferenceType.task,
+        referenceId: current.id,
+        referenceTitle: current.name,
+        referenceMeta: '${current.pointsCost} pts',
+      ));
+    }
     notifyListeners();
     return true;
   }

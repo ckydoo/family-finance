@@ -17,12 +17,31 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/error_messages.dart';
 import '../../core/utils/ids.dart';
 import '../../core/widgets/ui.dart';
+import '../../core/widgets/plus_ui.dart';
 import '../budgets/budgets_screen.dart' show showEnvelopeDetailSheet;
 import '../family_tasks/family_tasks_screen.dart';
 import '../lists/lists_screen.dart';
 import 'family_polls_sheet.dart';
 import 'family_chat_voice_note.dart';
+import 'chat_text_input.dart';
 import '../settings/plus_screen.dart';
+
+/// Single entry point for Home, notifications, tasks, budgets, shopping, and
+/// family management. The screen also enforces access itself for deep links.
+Future<void> openFamilyChat(
+  BuildContext context, {
+  FamilyTask? initialTask,
+  Envelope? initialBudget,
+  ListItem? initialShoppingItem,
+}) {
+  return Navigator.of(context).push(MaterialPageRoute<void>(
+    builder: (_) => FamilyChatScreen(
+      initialTask: initialTask,
+      initialBudget: initialBudget,
+      initialShoppingItem: initialShoppingItem,
+    ),
+  ));
+}
 
 class FamilyChatScreen extends StatefulWidget {
   const FamilyChatScreen({
@@ -102,6 +121,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   List<Map<String, Object?>> _pins = const [];
   String? _highlightedMessageId;
   int _refreshTick = 0;
+  bool _chatActivityStarted = false;
 
   @override
   void initState() {
@@ -118,23 +138,29 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final state = AppScope.of(context);
-      state.markFamilyChatRead();
-      unawaited(state.sync?.refreshChat());
-      unawaited(_loadPinnedMessageIds(state));
-      _chatRefreshTimer = Timer.periodic(
-        const Duration(milliseconds: 1200),
-        (_) {
-          if (!mounted) return;
-          final currentState = AppScope.of(context);
-          unawaited(currentState.sync?.refreshChat());
-          _refreshTick++;
-          if (_refreshTick % 4 == 0) {
-            unawaited(_loadPinnedMessageIds(currentState));
-          }
-        },
-      );
+      _startChatActivity(AppScope.of(context));
     });
+  }
+
+  void _startChatActivity(AppState state) {
+    if (_chatActivityStarted || !_hasEnhancedChat(state)) return;
+    _chatActivityStarted = true;
+    state.markFamilyChatRead();
+    unawaited(state.sync?.refreshChat());
+    unawaited(_loadPinnedMessageIds(state));
+    _chatRefreshTimer = Timer.periodic(
+      const Duration(milliseconds: 1200),
+      (_) {
+        if (!mounted) return;
+        final currentState = AppScope.of(context);
+        if (!_hasEnhancedChat(currentState)) return;
+        unawaited(currentState.sync?.refreshChat());
+        _refreshTick++;
+        if (_refreshTick % 4 == 0) {
+          unawaited(_loadPinnedMessageIds(currentState));
+        }
+      },
+    );
   }
 
   Future<void> _loadPinnedMessageIds(AppState state) async {
@@ -162,7 +188,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('A Mhuri Plus feature'),
         content: Text(
-            '$feature is included with Mhuri Plus. Your family text chat and replies stay free.'),
+            '$feature is included with Mhuri Plus. Family messaging is available while the family subscription is active.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -524,7 +550,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                       Text(
                         state.hasPlusFeature('family_polls_pins')
                             ? 'No pinned messages yet. Long-press any message to pin important family updates.'
-                            : 'Pinned messages are a Mhuri Plus feature. Family chat stays free.',
+                            : 'Pinned messages are included with Mhuri Plus family chat.',
                         style: TextStyle(color: context.inkSoft),
                         textAlign: TextAlign.center,
                       ),
@@ -1077,6 +1103,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
           minLines: 1,
           maxLines: 5,
           textCapitalization: TextCapitalization.sentences,
+          inputFormatters: const [NoEmojiTextInputFormatter()],
           decoration: const InputDecoration(labelText: 'Message'),
           onChanged: (value) => draft = value,
           onFieldSubmitted: (value) =>
@@ -1110,8 +1137,8 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   void _send(AppState state) {
     final text = _controller.text.trim();
     if (text.isEmpty && _pendingReference == null) return;
-    if (_pendingReference != null && !_hasEnhancedChat(state)) {
-      unawaited(_showChatUpgrade('Sharing a chat reference'));
+    if (!_hasEnhancedChat(state)) {
+      unawaited(_showChatUpgrade('Family messaging'));
       return;
     }
     final reference = _pendingReference;
@@ -1410,6 +1437,12 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    if (!_hasEnhancedChat(state)) return const _FamilyChatPlusGate();
+    if (!_chatActivityStarted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startChatActivity(AppScope.of(context));
+      });
+    }
     if (state.unreadChatCount > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) AppScope.of(context).markFamilyChatRead();
@@ -2309,6 +2342,9 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                       maxLines: 4,
                                       textCapitalization:
                                           TextCapitalization.sentences,
+                                      inputFormatters: const [
+                                        NoEmojiTextInputFormatter(),
+                                      ],
                                       decoration: const InputDecoration(
                                         hintText: 'Message',
                                         isDense: true,
@@ -2423,6 +2459,47 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       ),
     );
   }
+}
+
+class _FamilyChatPlusGate extends StatelessWidget {
+  const _FamilyChatPlusGate();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: context.bg,
+        appBar: AppBar(title: const Text('Family chat')),
+        body: SafeArea(
+          child: ListView(
+            padding: kPageInsets,
+            children: [
+              const PlusHero(
+                eyebrow: 'Mhuri Plus',
+                title: 'Family conversations, connected to your money',
+                description:
+                    'Message your household, reply to updates, and share photos, voice notes, budgets, tasks, and shopping items in one place.',
+                icon: Icons.chat_bubble_outline_rounded,
+              ),
+              const SizedBox(height: 20),
+              PlusEmptyState(
+                icon: Icons.workspace_premium_outlined,
+                title: 'Family chat is a Mhuri Plus feature',
+                message:
+                    'Activate Plus for this family space to read and send messages. Existing conversations remain saved if the subscription ends.',
+                action: FilledButton.icon(
+                  key: const ValueKey('family-chat-explore-plus'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PlusScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.workspace_premium_outlined),
+                  label: const Text('Explore Mhuri Plus'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _DeletedChatMessage extends StatelessWidget {
