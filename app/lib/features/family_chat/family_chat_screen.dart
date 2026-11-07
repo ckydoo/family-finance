@@ -17,7 +17,6 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/error_messages.dart';
 import '../../core/utils/ids.dart';
 import '../../core/widgets/ui.dart';
-import '../../core/widgets/plus_ui.dart';
 import '../budgets/budgets_screen.dart' show showEnvelopeDetailSheet;
 import '../family_tasks/family_tasks_screen.dart';
 import '../lists/lists_screen.dart';
@@ -182,19 +181,49 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   bool _hasEnhancedChat(AppState state) =>
       state.hasPlusFeature('enhanced_family_chat');
 
+  void _handleBlockedKeyboardEmoji(AppState state) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            _hasEnhancedChat(state)
+                ? 'Keyboard emojis are locked. Use the in-app emoji button.'
+                : 'Keyboard emojis are locked. Unlock emojis and stickers with Mhuri Plus.',
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+          duration: const Duration(seconds: 3),
+          action: _hasEnhancedChat(state)
+              ? null
+              : SnackBarAction(
+                  label: 'Explore Plus',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PlusScreen()),
+                    );
+                  },
+                ),
+        ),
+      );
+  }
+
   Future<void> _showChatUpgrade(String feature) async {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('A Mhuri Plus feature'),
         content: Text(
-            '$feature is included with Mhuri Plus. Family messaging is available while the family subscription is active.'),
+            '$feature is included with Mhuri Plus. Basic family chat and search are always free, while enhanced chat features unlock with Mhuri Plus.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Maybe later'),
           ),
           FilledButton.icon(
+            key: const ValueKey('family-chat-explore-plus'),
             onPressed: () {
               Navigator.pop(dialogContext);
               Navigator.of(context).push(
@@ -1135,12 +1164,24 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   }
 
   void _send(AppState state) {
-    final text = _controller.text.trim();
-    if (text.isEmpty && _pendingReference == null) return;
-    if (!_hasEnhancedChat(state)) {
-      unawaited(_showChatUpgrade('Family messaging'));
-      return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final rawText = _controller.text.trim();
+    if (!_hasEnhancedChat(state) && containsChatEmoji(rawText)) {
+      final cleaned = stripChatEmoji(rawText).trim();
+      _controller.value = TextEditingValue(
+        text: cleaned,
+        selection: TextSelection.collapsed(offset: cleaned.length),
+      );
+      if (cleaned.isEmpty && _pendingReference == null) {
+        unawaited(_showChatUpgrade('Emoji and stickers'));
+        setState(() {});
+        return;
+      }
     }
+    final text = _hasEnhancedChat(state)
+        ? rawText
+        : stripChatEmoji(rawText).trim();
+    if (text.isEmpty && _pendingReference == null) return;
     final reference = _pendingReference;
     final message = _message(
       state,
@@ -1437,7 +1478,6 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
-    if (!_hasEnhancedChat(state)) return const _FamilyChatPlusGate();
     if (!_chatActivityStarted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _startChatActivity(AppScope.of(context));
@@ -1479,6 +1519,11 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
         title: _searching
             ? TextField(
                 autofocus: true,
+                inputFormatters: [
+                  NoEmojiTextInputFormatter(
+                    onEmojiBlocked: () => _handleBlockedKeyboardEmoji(state),
+                  ),
+                ],
                 decoration: const InputDecoration(
                   hintText: 'Search messages',
                   border: InputBorder.none,
@@ -2342,8 +2387,12 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                       maxLines: 4,
                                       textCapitalization:
                                           TextCapitalization.sentences,
-                                      inputFormatters: const [
-                                        NoEmojiTextInputFormatter(),
+                                      inputFormatters: [
+                                        NoEmojiTextInputFormatter(
+                                          onEmojiBlocked: () =>
+                                              _handleBlockedKeyboardEmoji(
+                                                  state),
+                                        ),
                                       ],
                                       decoration: const InputDecoration(
                                         hintText: 'Message',
@@ -2354,7 +2403,20 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                                         ),
                                         border: InputBorder.none,
                                       ),
-                                      onChanged: (_) => setState(() {}),
+                                      onChanged: (value) {
+                                        if (!_hasEnhancedChat(state) &&
+                                            containsChatEmoji(value)) {
+                                          final cleaned = stripChatEmoji(value);
+                                          _controller.value = TextEditingValue(
+                                            text: cleaned,
+                                            selection: TextSelection.collapsed(
+                                              offset: cleaned.length,
+                                            ),
+                                          );
+                                          _handleBlockedKeyboardEmoji(state);
+                                        }
+                                        setState(() {});
+                                      },
                                       onSubmitted: (_) => _send(state),
                                     ),
                                   ),
@@ -2459,47 +2521,6 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       ),
     );
   }
-}
-
-class _FamilyChatPlusGate extends StatelessWidget {
-  const _FamilyChatPlusGate();
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: context.bg,
-        appBar: AppBar(title: const Text('Family chat')),
-        body: SafeArea(
-          child: ListView(
-            padding: kPageInsets,
-            children: [
-              const PlusHero(
-                eyebrow: 'Mhuri Plus',
-                title: 'Family conversations, connected to your money',
-                description:
-                    'Message your household, reply to updates, and share photos, voice notes, budgets, tasks, and shopping items in one place.',
-                icon: Icons.chat_bubble_outline_rounded,
-              ),
-              const SizedBox(height: 20),
-              PlusEmptyState(
-                icon: Icons.workspace_premium_outlined,
-                title: 'Family chat is a Mhuri Plus feature',
-                message:
-                    'Activate Plus for this family space to read and send messages. Existing conversations remain saved if the subscription ends.',
-                action: FilledButton.icon(
-                  key: const ValueKey('family-chat-explore-plus'),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const PlusScreen(),
-                    ),
-                  ),
-                  icon: const Icon(Icons.workspace_premium_outlined),
-                  label: const Text('Explore Mhuri Plus'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 }
 
 class _DeletedChatMessage extends StatelessWidget {

@@ -541,6 +541,18 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     applicationName: 'Mhuri',
                     applicationVersion: kAppVersion,
+                    applicationIcon: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.asset(
+                          'assets/branding/app-icon.jpeg',
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
                     applicationLegalese: '© 2026 Mhuri. All rights reserved.\n'
                         'Built for African family financial collaboration.',
                   ),

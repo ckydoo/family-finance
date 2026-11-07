@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/models/models.dart';
 import '../../core/money/money.dart';
+import '../../core/observability/reporter.dart';
 import '../../core/state/app_state.dart';
 import '../../core/sync/avatar_service.dart';
 import '../../core/theme/app_theme.dart';
@@ -106,6 +107,10 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         _step = _Step.ready;
       }
     }
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepStarted,
+      {'step': _step.name, 'locale': widget.state.localeCode},
+    );
 
     // State A: Pending family invitation detection (via email or deep link code).
     final sync = widget.state.sync;
@@ -264,12 +269,132 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       ..setMyName(person)
       ..setPrimaryCurrency(_currency);
     await _uploadPhotoIfNeeded();
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepCompleted,
+      {'step': 'create', 'locale': widget.state.localeCode},
+    );
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepStarted,
+      {'step': 'currencies', 'locale': widget.state.localeCode},
+    );
 
     if (!mounted) return;
     setState(() {
       _busy = false;
       _step = _Step.currencies;
     });
+  }
+
+  Future<void> _handleQuickStartFamily() async {
+    if (_busy) return;
+    final l = AppLocalizations.of(context)!;
+    final person = _personName.text.trim();
+    final family = _familyName.text.trim();
+
+    if (person.length < 2 || family.length < 2) {
+      setState(() => _error = l.setupEnterBoth);
+      return;
+    }
+    if (family.length > 80) {
+      setState(() => _error = 'Family name must be under 80 characters.');
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    final engine = widget.state.sync;
+    if (engine != null) {
+      if (await engine.familyNameTaken(family)) {
+        if (!mounted) return;
+        setState(() {
+          _busy = false;
+          _error = l.setupNameTaken;
+        });
+        return;
+      }
+
+      final ok = await engine.createSpace(
+        family,
+        baseCurrency: _currency.code,
+        preferredName: person,
+      );
+      if (!mounted) return;
+      if (!ok) {
+        setState(() {
+          _busy = false;
+          _error = userFacingErrorMessage(
+            engine.lastError,
+            fallback: 'Could not create the family.',
+          );
+        });
+        return;
+      }
+    }
+
+    widget.state
+      ..setMyName(person)
+      ..setPrimaryCurrency(_currency)
+      ..setSecondaryCurrency(_secondaryCurrency)
+      ..setMonthStartDay(_monthStartDay);
+    await _uploadPhotoIfNeeded();
+
+    final selected = _allTemplates
+        .where((t) => _selectedTemplateKeys.contains(t.key))
+        .toList();
+    if (engine != null) {
+      final saved = await engine.saveFamilySetup(
+        primary: _currency,
+        secondary: _secondaryCurrency,
+        monthStart: _monthStartDay,
+        templates: _selectedTemplatePayload,
+        stage: 'complete',
+      );
+      if (!mounted) return;
+      if (!saved) {
+        setState(() {
+          _busy = false;
+          _error = userFacingErrorMessage(
+            engine.lastError,
+            fallback:
+                'We could not finish your setup. Your previous steps are still safe.',
+          );
+        });
+        return;
+      }
+    } else {
+      for (final template in selected) {
+        final exists = widget.state.envelopes.any(
+          (e) =>
+              !e.isPersonal &&
+              e.name.toLowerCase() == template.name.toLowerCase(),
+        );
+        if (!exists) {
+          widget.state.addEnvelope(
+            name: template.name,
+            limit: Money(0, _currency),
+            emoji: template.iconKey,
+          );
+        }
+      }
+      await widget.state.applyFamilySetupSettings(
+        stage: 'complete',
+        primary: _currency.code,
+        secondary: _secondaryCurrency?.code,
+        monthStart: _monthStartDay,
+        templates: _selectedTemplatePayload,
+      );
+    }
+    widget.state.deduplicateEnvelopes();
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepCompleted,
+      {'step': 'quick_start', 'locale': widget.state.localeCode},
+    );
+    await widget.state.completeOnboarding();
+    if (!mounted) return;
+    setState(() => _busy = false);
   }
 
   // ── Step 2: Currencies & Month Start ───────────────────────────────────────
@@ -335,6 +460,14 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     }
 
     if (!mounted) return;
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepCompleted,
+      {'step': 'currencies', 'locale': widget.state.localeCode},
+    );
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepStarted,
+      {'step': 'spending', 'locale': widget.state.localeCode},
+    );
     setState(() {
       _busy = false;
       _step = _Step.spending;
@@ -423,6 +556,14 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     widget.state.deduplicateEnvelopes();
 
     if (!mounted) return;
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepCompleted,
+      {'step': 'spending', 'locale': widget.state.localeCode},
+    );
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepStarted,
+      {'step': 'ready', 'locale': widget.state.localeCode},
+    );
     setState(() {
       _busy = false;
       _step = _Step.ready;
@@ -457,6 +598,10 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       }
     }
     widget.state.deduplicateEnvelopes();
+    mhuriEvent(
+      MhuriAnalyticsEvents.onboardingStepCompleted,
+      {'step': 'ready', 'locale': widget.state.localeCode},
+    );
     await widget.state.completeOnboarding();
     return true;
   }
@@ -490,9 +635,17 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         await widget.state.sync?.joinSpace(code, preferredName: name) ?? false;
     if (!mounted) return;
     if (ok) {
+      mhuriEvent(
+        MhuriAnalyticsEvents.familyInviteAccepted,
+        {'locale': widget.state.localeCode},
+      );
       widget.state.setMyName(name);
       await widget.state.completeOnboarding();
     } else {
+      mhuriEvent(
+        MhuriAnalyticsEvents.familyInviteFailed,
+        {'locale': widget.state.localeCode, 'error_category': 'join_failed'},
+      );
       setState(() {
         _busy = false;
         _error = userFacingErrorMessage(
@@ -505,6 +658,10 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
 
   Future<bool> _confirmLeave() async {
     if (_personName.text.trim().isEmpty && _familyName.text.trim().isEmpty) {
+      mhuriEvent(
+        MhuriAnalyticsEvents.onboardingStepAbandoned,
+        {'step': _step.name, 'locale': widget.state.localeCode},
+      );
       return true;
     }
     final l = AppLocalizations.of(context)!;
@@ -514,6 +671,12 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       body: l.discardChangesBody,
       confirmLabel: l.leave,
     );
+    if (leave) {
+      mhuriEvent(
+        MhuriAnalyticsEvents.onboardingStepAbandoned,
+        {'step': _step.name, 'locale': widget.state.localeCode},
+      );
+    }
     return leave;
   }
 
@@ -742,28 +905,92 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             style: TextStyle(color: context.inkSoft, fontSize: 13.5),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         _title(
           'Create your family',
           'Mhuri helps your household plan spending, save and manage money together.',
         ),
-        const SizedBox(height: 16),
-        _field(_personName, 'Preferred name', hintText: 'e.g. Mac'),
         const SizedBox(height: 12),
+        _field(_personName, 'Preferred name', hintText: 'e.g. Mac'),
+        const SizedBox(height: 10),
         _field(_familyName, 'Family name', hintText: 'e.g. Chikangaiso Family'),
+        const SizedBox(height: 12),
+        Text(
+          'Primary currency',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: context.ink,
+          ),
+        ),
+        const SizedBox(height: 6),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final c in [
+                Currency.usd,
+                Currency.zwg,
+                Currency.zar,
+                ...Currency.values.where(
+                  (x) => x != Currency.usd && x != Currency.zwg && x != Currency.zar,
+                ),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    key: ValueKey('onboarding_primary_currency_${c.name}'),
+                    label: Text('${c.code} (${c.symbol})'),
+                    selected: _currency == c,
+                    visualDensity: VisualDensity.compact,
+                    onSelected: (_) => setState(() {
+                      _currency = c;
+                      if (_secondaryCurrency == c) _secondaryCurrency = null;
+                    }),
+                  ),
+                ),
+            ],
+          ),
+        ),
         if (_error != null) _errorBox(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         Center(
           child: TextButton(
-            onPressed: () => setState(() {
-              _step = _Step.join;
-              _error = null;
-            }),
+            onPressed: () {
+              mhuriEvent(
+                MhuriAnalyticsEvents.familyInviteOpened,
+                {'locale': widget.state.localeCode},
+              );
+              setState(() {
+                _step = _Step.join;
+                _error = null;
+              });
+            },
             child: Text(l.setupHaveCode),
           ),
         ),
       ],
-      _primaryButton('Continue  →', _busy ? null : _handleCreateFamily),
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _primaryButton('Continue  →', _busy ? null : _handleCreateFamily),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            key: const ValueKey('onboarding_quick_start_button'),
+            onPressed: _busy ? null : _handleQuickStartFamily,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: context.primary,
+              side: BorderSide(color: context.hairline),
+              minimumSize: const Size.fromHeight(44),
+              shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+            ),
+            child: const Text(
+              'Quick start with defaults',
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

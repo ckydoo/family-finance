@@ -18,7 +18,7 @@ void main() {
 
     test('preserves ordinary multilingual text and punctuation', () {
       const text =
-          'Mhuri · USD/ZiG $25.00 → bank\nMãi, niño, Français, 中文. مرحبا';
+          'Mhuri · USD/ZiG \$25.00 → bank\nMãi, niño, Français, 中文. مرحبا';
       expect(stripChatEmoji(text), text);
     });
 

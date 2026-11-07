@@ -143,18 +143,21 @@ class _AdultShellState extends State<AdultShell> {
         ),
       ),
       floatingActionButton: s.canAuthorTransact
-          ? FloatingActionButton(
-              key: _addTourKey,
-              tooltip: AppLocalizations.of(context)!.addTransaction,
-              onPressed: () => showQuickAddMenu(context),
-              backgroundColor: context.accent,
-              elevation: 2,
-              child: Icon(
-                Icons.add_rounded,
-                size: 26,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? context.onSolid
-                    : context.primaryDark,
+          ? GestureDetector(
+              onLongPress: () => showQuickAddMenu(context),
+              child: FloatingActionButton(
+                key: _addTourKey,
+                tooltip: AppLocalizations.of(context)!.addTransaction,
+                onPressed: () => showQuickAdd(context),
+                backgroundColor: context.accent,
+                elevation: 2,
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 26,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? context.onSolid
+                      : context.primaryDark,
+                ),
               ),
             )
           : null,

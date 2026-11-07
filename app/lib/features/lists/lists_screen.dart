@@ -47,7 +47,9 @@ class _ListsScreenState extends State<ListsScreen> {
     final query = _query.trim().toLowerCase();
     final visible = s.items
         .where((item) =>
-            (_filter == null || item.state == _filter) &&
+            (_filter == null ||
+                item.state == _filter ||
+                (_filter == ItemState.tobuy && !item.checkedOut)) &&
             (query.isEmpty || item.name.toLowerCase().contains(query)))
         .toList();
 
@@ -55,12 +57,21 @@ class _ListsScreenState extends State<ListsScreen> {
     final estSecondary =
         s.secondaryCurrency != null ? s.estFor(s.secondaryCurrency!) : null;
     final actualPrimary = s.actualShoppingFor(s.primaryCurrency);
+    final unloggedPrimary = s.unloggedShoppingFor(s.primaryCurrency);
     final groceries = s.envelopes
-        .where((e) => e.name.toLowerCase().contains('grocer'))
+        .where((e) => !e.isPersonal && e.name.toLowerCase().contains('grocer'))
         .firstOrNull;
-    final budgetUse = groceries != null && s.effectiveLimit(groceries).minor > 0
-        ? estPrimary.minor /
-            groceries.limit.inCurrency(s.primaryCurrency, s.rate).minor
+    final groceriesSpent = groceries != null
+        ? s.spentOn(groceries).inCurrency(s.primaryCurrency, s.rate)
+        : Money(0, s.primaryCurrency);
+    final groceriesRemaining = groceries != null
+        ? s.remainingOn(groceries).inCurrency(s.primaryCurrency, s.rate)
+        : Money(0, s.primaryCurrency);
+    final groceriesLimitMinor = groceries != null
+        ? s.effectiveLimit(groceries).inCurrency(s.primaryCurrency, s.rate).minor
+        : 0;
+    final budgetUse = groceries != null && groceriesLimitMinor > 0
+        ? (groceriesSpent.minor + estPrimary.minor) / groceriesLimitMinor
         : 0.0;
     final hasUnloggedShopping = s.items.any(
       (i) =>
@@ -271,8 +282,20 @@ class _ListsScreenState extends State<ListsScreen> {
                                 style: TextStyle(
                                     fontSize: 12.5, color: context.inkSoft),
                               ),
-                            if (actualPrimary.minor > 0) ...[
+                            if (hasUnloggedShopping &&
+                                unloggedPrimary.minor > 0) ...[
                               const SizedBox(height: 8),
+                              Text(
+                                'Ready to deduct as expense: ${unloggedPrimary.text}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.primary,
+                                ),
+                              ),
+                            ],
+                            if (actualPrimary.minor > 0) ...[
+                              const SizedBox(height: 6),
                               Text(
                                 'Actual so far: ${actualPrimary.text}',
                                 style: TextStyle(
@@ -307,6 +330,20 @@ class _ListsScreenState extends State<ListsScreen> {
                                 style: TextStyle(
                                     fontSize: 12, color: context.inkSoft),
                               ),
+                              if (groceriesSpent.minor > 0 ||
+                                  groceriesLimitMinor > 0) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  groceriesLimitMinor > 0
+                                      ? 'Deducted from ${groceries.name}: ${groceriesSpent.text} · Remaining: ${groceriesRemaining.text}'
+                                      : 'Deducted from ${groceries.name}: ${groceriesSpent.text}',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.ink,
+                                  ),
+                                ),
+                              ],
                             ],
                           ],
                         ),
@@ -324,6 +361,7 @@ class _ListsScreenState extends State<ListsScreen> {
             child: ElevatedButton.icon(
               onPressed: (hasUnloggedShopping && !_finishingShopping)
                   ? () async {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       setState(() => _finishingShopping = true);
                       try {
                         final checkout = await _checkoutSheet(context, s);
@@ -333,7 +371,9 @@ class _ListsScreenState extends State<ListsScreen> {
                           txId: newUuid(),
                           envelopeId: checkout.envelopeId,
                           method: checkout.method,
+                          customTotal: checkout.customTotal,
                         );
+                        if (total.isZero) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -360,15 +400,7 @@ class _ListsScreenState extends State<ListsScreen> {
                 shape: RoundedRectangleBorder(borderRadius: kBRadiusS),
                 elevation: 0,
               ),
-              icon: _finishingShopping
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator.adaptive(
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(Icons.receipt_long),
+              icon: const Icon(Icons.receipt_long),
               label: Text(
                 hasUnloggedShopping
                     ? AppLocalizations.of(context)!.finishShop
@@ -605,64 +637,121 @@ class _ListsScreenState extends State<ListsScreen> {
   }
 }
 
-Future<({String envelopeId, Method method})?> _checkoutSheet(
-    BuildContext context, AppState state) async {
+Future<({String? envelopeId, Method method, Money customTotal})?>
+    _checkoutSheet(BuildContext context, AppState state) async {
   final available = state.envelopes.where((e) => !e.isPersonal).toList();
-  if (available.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Create a budget before recording shopping.'),
-      behavior: SnackBarBehavior.floating,
-    ));
-    return null;
-  }
-  var envelopeId = available
+  String? envelopeId = available
       .where((e) => e.name.toLowerCase().contains('grocer'))
       .map((e) => e.id)
       .firstOrNull;
-  envelopeId ??= available.first.id;
-  var method = Method.cash;
-  return showMhuriSheet<({String envelopeId, Method method})>(
+  if (envelopeId == null && available.isNotEmpty) {
+    envelopeId = available.first.id;
+  }
+  var method = state.lastUsedPaymentMethod;
+  Currency selectedCurrency() =>
+      state.envelope(envelopeId)?.limit.currency ?? state.displayCurrency;
+  final initialTotal = state.unloggedShoppingFor(selectedCurrency());
+  final amountController = TextEditingController(
+    text: initialTotal.minor > 0
+        ? (initialTotal.minor / 100).toStringAsFixed(2)
+        : '',
+  );
+  String? amountError;
+
+  return showMhuriSheet<
+      ({String? envelopeId, Method method, Money customTotal})>(
     context: context,
     builder: (sheetContext) => StatefulBuilder(
-      builder: (sheetContext, setSheet) => MhuriSheetShell(
-        title: 'Finish shopping',
-        subtitle: 'Confirm where this purchase should be recorded.',
-        footer: PrimaryButton(
-          label: 'Record expense',
-          onPressed: () => Navigator.pop(
-            sheetContext,
-            (envelopeId: envelopeId!, method: method),
-          ),
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          DropdownButtonFormField<String>(
-            initialValue: envelopeId,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Budget category'),
-            items: [
-              for (final envelope in available)
-                DropdownMenuItem(
-                    value: envelope.id, child: Text(envelope.name)),
-            ],
-            onChanged: (value) {
-              if (value != null) setSheet(() => envelopeId = value);
+      builder: (sheetContext, setSheet) {
+        final cur = selectedCurrency();
+        return MhuriSheetShell(
+          title: 'Finish shopping',
+          subtitle:
+              'Confirm the total spent so this purchase is deducted as an expense.',
+          footer: PrimaryButton(
+            label: 'Record expense',
+            onPressed: () {
+              final raw = amountController.text.trim().replaceAll(',', '');
+              final parsed = double.tryParse(raw);
+              if (parsed == null || parsed <= 0) {
+                setSheet(() => amountError =
+                    'Enter the total amount spent to deduct this shopping expense.');
+                return;
+              }
+              Navigator.pop(
+                sheetContext,
+                (
+                  envelopeId: envelopeId,
+                  method: method,
+                  customTotal: Money.fromMajor(parsed, cur),
+                ),
+              );
             },
           ),
-          const SizedBox(height: 14),
-          DropdownButtonFormField<Method>(
-            initialValue: method,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Payment method'),
-            items: [
-              for (final value in Method.values)
-                DropdownMenuItem(value: value, child: Text(value.label)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                key: const ValueKey('shopping_checkout_amount'),
+                controller: amountController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: amountInputFormatters,
+                onChanged: (_) {
+                  if (amountError != null) setSheet(() => amountError = null);
+                },
+                decoration: InputDecoration(
+                  labelText: 'Total amount spent (${cur.symbol})',
+                  hintText: '0.00',
+                  errorText: amountError,
+                ),
+              ),
+              const SizedBox(height: 14),
+              if (available.isNotEmpty) ...[
+                DropdownButtonFormField<String>(
+                  initialValue: envelopeId,
+                  isExpanded: true,
+                  decoration:
+                      const InputDecoration(labelText: 'Budget category'),
+                  items: [
+                    for (final envelope in available)
+                      DropdownMenuItem(
+                          value: envelope.id, child: Text(envelope.name)),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setSheet(() {
+                        envelopeId = value;
+                        final updatedCur = selectedCurrency();
+                        final updatedEst =
+                            state.unloggedShoppingFor(updatedCur);
+                        if (updatedEst.minor > 0) {
+                          amountController.text =
+                              (updatedEst.minor / 100).toStringAsFixed(2);
+                        }
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 14),
+              ],
+              DropdownButtonFormField<Method>(
+                initialValue: method,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Payment method'),
+                items: [
+                  for (final value in Method.values)
+                    DropdownMenuItem(value: value, child: Text(value.label)),
+                ],
+                onChanged: (value) {
+                  if (value != null) setSheet(() => method = value);
+                },
+              ),
             ],
-            onChanged: (value) {
-              if (value != null) setSheet(() => method = value);
-            },
           ),
-        ]),
-      ),
+        );
+      },
     ),
   );
 }
@@ -679,6 +768,7 @@ class _ItemRow extends StatelessWidget {
     final assignedTo = s.member(item.assignedToId ?? '');
     final purchasedBy = s.member(item.purchasedById ?? '');
     final done = item.state == ItemState.done;
+    final checked = item.state != ItemState.tobuy;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -688,7 +778,7 @@ class _ItemRow extends StatelessWidget {
       child: Row(
         children: [
           Checkbox(
-            value: done,
+            value: checked,
             activeColor: context.primary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
@@ -707,6 +797,7 @@ class _ItemRow extends StatelessWidget {
                     '${item.name} moved to ${item.state.label}',
                   ),
                   behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 80),
                   action: SnackBarAction(
                     label: 'Undo',
                     onPressed: () => s.restoreItemStage(

@@ -1,6 +1,7 @@
 import '../models/models.dart';
 import '../money/money.dart';
 import '../planning/commitments.dart';
+import '../planning/weekly_summary.dart';
 
 /// M5 - smart notifications (spec J2/J3), computed device-side.
 ///
@@ -158,6 +159,7 @@ class ReminderPlanner {
     List<FinancialCommitment> commitments = const [],
     List<CommitmentOccurrence> commitmentOccurrences = const [],
     List<CommitmentPayment> commitmentPayments = const [],
+    WeeklyFamilySummary? weeklySummary,
     List<Reminder> extra = const [],
   }) {
     if (!config.enabled) return const [];
@@ -338,6 +340,20 @@ class ReminderPlanner {
           when: dueNow ? _nextDailyAt(now, 9) : _atHour(deadline, 9),
         ));
       }
+    }
+
+    // 6. Weekly Mhuri summary (only when real household activity exists).
+    if (config.allows(ReminderCategory.family) &&
+        weeklySummary != null &&
+        weeklySummary.hasActivity) {
+      out.add(Reminder(
+        key: 'weekly_mhuri_summary',
+        category: ReminderCategory.family,
+        title: 'Weekly Mhuri summary',
+        body: '${weeklySummary.supportiveHeadline} ${weeklySummary.supportiveNextStep}',
+        when: _nextSundayAt(now, 18),
+        weekly: true,
+      ));
     }
 
     // Event extras (goal milestones, kid answers) are explicit real events.

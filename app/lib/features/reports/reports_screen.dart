@@ -19,6 +19,7 @@ import '../../core/widgets/ui.dart';
 import '../settings/plus_screen.dart';
 import '../planner/payday_planner_screen.dart';
 import 'financial_health_screen.dart';
+import 'weekly_summary_sheet.dart';
 
 /// Monthly report card (spec Module I1/I2) - one screen the family can
 /// review together at the monthly Family Meeting.
@@ -317,6 +318,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                if (s.weeklySummary.hasActivity) ...[
+                  const WeeklySummaryPreviewCard(),
+                  const SizedBox(height: 16),
+                ],
 
                 _CycleComparisonCard(
                   income: income,

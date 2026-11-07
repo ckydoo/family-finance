@@ -22,17 +22,42 @@ void _phoneSize(WidgetTester tester) {
 }
 
 void main() {
-  testWidgets('Free family sees the Plus gate instead of chat or a composer',
+  testWidgets(
+      'Free family can use basic chat while enhanced chat features remain gated on Plus',
       (tester) async {
     _phoneSize(tester);
     final state = AppState();
+    state.members.add(state.user);
 
     await tester.pumpWidget(_chatHarness(state));
     await tester.pump();
 
-    expect(find.text('Family chat is a Mhuri Plus feature'), findsOneWidget);
-    expect(find.byType(TextField), findsNothing);
-    expect(find.byTooltip('Send message'), findsNothing);
+    // Basic chat composer and message search are available for free
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byTooltip('Search messages'), findsOneWidget);
+    expect(find.byTooltip('Voice notes · Mhuri Plus'), findsOneWidget);
+
+    // Attempting to enter a keyboard emoji on Free strips the emoji and shows the lock notice
+    await tester.enterText(find.byType(TextField), 'Hello 😀 family for free');
+    await tester.pumpAndSettle();
+    expect(find.text('Hello  family for free'), findsOneWidget);
+    expect(
+      find.text(
+        'Keyboard emojis are locked. Unlock emojis and stickers with Mhuri Plus.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Send message'), findsOneWidget);
+    await tester.tap(find.byTooltip('Send message'));
+    await tester.pumpAndSettle();
+
+    expect(state.familyChatMessages.single.text, 'Hello  family for free');
+    expect(find.text('Hello  family for free'), findsOneWidget);
+
+    // Tapping an enhanced chat control (e.g. voice notes or attachments) opens the Plus upgrade prompt
+    await tester.tap(find.byTooltip('Voice notes · Mhuri Plus'));
+    await tester.pumpAndSettle();
+    expect(find.text('A Mhuri Plus feature'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('family-chat-explore-plus')));
     await tester.pumpAndSettle();
@@ -95,7 +120,7 @@ void main() {
     await tester.pump();
 
     await tester.enterText(find.byType(TextField), 'Hello 😀 family');
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('Hello  family'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Send message'));

@@ -515,8 +515,8 @@ class _PlanComparisonCard extends StatelessWidget {
       'Deeper category analysis, financial health signals and useful recommendations based on your family records.',
     ),
     (
-      'Family Chat',
-      'Text messages, replies, photos, voice notes, polls, pins, advanced search, and shared task, budget and shopping references.',
+      'Enhanced Family Chat',
+      'Photos, voice notes, stickers, message editing, polls, pins, advanced search, and shared task, budget and shopping references.',
     ),
     (
       'More Family Capacity',
@@ -532,6 +532,7 @@ class _PlanComparisonCard extends StatelessWidget {
     'Copy last month’s budget plan and review it before saving',
     'Savings goals, contributions, debts & repayments',
     'Shopping lists, checkout, family tasks & CSV export',
+    'Basic family chat, replies & message search',
   ];
 
   @override

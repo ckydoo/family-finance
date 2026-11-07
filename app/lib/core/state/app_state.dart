@@ -19,6 +19,7 @@ import '../notifications/reminders.dart';
 import '../money/money.dart';
 import '../planning/commitments.dart';
 import '../planning/period_preparation.dart';
+import '../planning/weekly_summary.dart';
 import '../utils/ids.dart';
 
 /// Exposes [AppState] to the widget tree. Lightweight stand-in for Riverpod
@@ -160,6 +161,12 @@ class AppState extends ChangeNotifier {
   Currency primaryCurrency = Currency.usd;
   Currency? secondaryCurrency;
   Currency displayCurrency = Currency.usd;
+
+  /// Space-scoped remembered defaults for effortless expense entry.
+  /// Cleared whenever switching family spaces or accounts.
+  Currency? lastUsedExpenseCurrency;
+  Method lastUsedPaymentMethod = Method.cash;
+  String? lastUsedExpenseEnvelopeId;
 
   List<Currency> get activeCurrencies => [
         primaryCurrency,
@@ -718,6 +725,22 @@ class AppState extends ChangeNotifier {
         for (final p in OverspendPolicy.values) {
           if (p.name == op) overspendPolicy = p;
         }
+      }
+      final lastCur = await db?.kvGet('last_tx_currency');
+      if (lastCur != null && lastCur.isNotEmpty) {
+        for (final c in Currency.values) {
+          if (c.name == lastCur) lastUsedExpenseCurrency = c;
+        }
+      }
+      final lastMethod = await db?.kvGet('last_tx_method');
+      if (lastMethod != null && lastMethod.isNotEmpty) {
+        for (final m in Method.values) {
+          if (m.name == lastMethod) lastUsedPaymentMethod = m;
+        }
+      }
+      final lastEnv = await db?.kvGet('last_tx_envelope');
+      if (lastEnv != null && lastEnv.isNotEmpty) {
+        lastUsedExpenseEnvelopeId = lastEnv;
       }
       final chatRead = await db?.kvGet('chat_last_read_ms');
       final chatReadMs = int.tryParse(chatRead ?? '');
@@ -1278,9 +1301,14 @@ class AppState extends ChangeNotifier {
       commitments: financialCommitments,
       commitmentOccurrences: commitmentOccurrences,
       commitmentPayments: commitmentPayments,
+      weeklySummary: WeeklySummaryPlanner.compute(this, nowOverride: n),
       extra: List.of(_reminderExtras),
     );
   }
+
+  /// Authoritative weekly household review grounded in real transactions,
+  /// budgets, goals, debts, and upcoming bills.
+  WeeklyFamilySummary get weeklySummary => WeeklySummaryPlanner.compute(this);
 
   /// Push a new plan to the OS bridge - only when it actually changed
   /// (sync ticks call this often; dedupe keeps it free).
@@ -1871,12 +1899,22 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
+  void clearRecentEntryDefaults() {
+    lastUsedExpenseCurrency = null;
+    lastUsedPaymentMethod = Method.cash;
+    lastUsedExpenseEnvelopeId = null;
+    _persistKv('last_tx_currency', '');
+    _persistKv('last_tx_method', '');
+    _persistKv('last_tx_envelope', '');
+  }
+
   /// Engine wiped local synced tables after adopting a family space - the
   /// in-memory image follows so the UI is honest until the first pull lands.
   /// Called by the sync engine after create_space / join_space. Clears all
   /// synced data and bootstraps the REAL device-local
   /// family identity: one owner member derived from the signed-in email.
   void onSpaceAdopted({String? spaceName}) {
+    clearRecentEntryDefaults();
     txs.clear();
     txAllocations.clear();
     envelopes.clear();
@@ -2175,6 +2213,7 @@ class AppState extends ChangeNotifier {
   /// allowed to render. The database/outbox boundary is cleared by
   /// [SyncEngine.ensureUserIsolation].
   void resetForAccount(String userId, {String? email}) {
+    clearRecentEntryDefaults();
     familyTasks.clear();
     familyRewards.clear();
     txs.clear();
@@ -3633,6 +3672,49 @@ class AppState extends ChangeNotifier {
     return account;
   }
 
+  /// Returns up to [limit] shared household budgets ordered by most recently
+  /// used in expense transactions. When the family has a compact budget list
+  /// (5 or fewer shared budgets), all shared budgets are included so new
+  /// households see their starter budgets immediately; for larger budget
+  /// lists, only budgets with recorded expense activity are returned as
+  /// quick chips while the rest are accessed via search.
+  List<Envelope> recentExpenseBudgets({int limit = 5}) {
+    final shared = envelopes
+        .where((e) => !e.isPersonal && !e.isArchived)
+        .toList(growable: false);
+    if (shared.isEmpty || limit <= 0) return const [];
+    final byId = {for (final e in shared) e.id: e};
+    final ordered = <Envelope>[];
+    final seen = <String>{};
+
+    if (lastUsedExpenseEnvelopeId != null) {
+      final last = byId[lastUsedExpenseEnvelopeId!];
+      if (last != null && seen.add(last.id)) {
+        ordered.add(last);
+      }
+    }
+
+    for (final tx in familyTransactions) {
+      if (ordered.length >= limit) break;
+      if (tx.type != TxType.expense) continue;
+      final envId = tx.envelopeId;
+      if (envId != null && byId.containsKey(envId) && seen.add(envId)) {
+        ordered.add(byId[envId]!);
+      }
+    }
+
+    if (shared.length <= 5) {
+      for (final env in shared) {
+        if (ordered.length >= limit) break;
+        if (seen.add(env.id)) {
+          ordered.add(env);
+        }
+      }
+    }
+
+    return ordered;
+  }
+
   /// Client row ids must be well-formed uuids - server id columns are
   /// uuid and a sequential 'tx0' would fail the cast on real Postgres.
   String _seq(String p) => newUuid();
@@ -3687,12 +3769,15 @@ class AppState extends ChangeNotifier {
     if (type == TxType.expense && envelopeId != null && !force) {
       final env = envelope(envelopeId);
       if (env != null && overspendPolicy == OverspendPolicy.block) {
-        final remaining = remainingOn(env);
-        final entered = amount.inCurrency(env.limit.currency, rate);
-        if (entered.minor > remaining.minor) {
-          debugPrint(
-              'Mhuri: transaction blocked by envelope overspend policy: $txId');
-          return false;
+        final limit = effectiveLimit(env);
+        if (limit.minor > 0) {
+          final remaining = remainingOn(env);
+          final entered = amount.inCurrency(env.limit.currency, rate);
+          if (entered.minor > remaining.minor) {
+            debugPrint(
+                'Mhuri: transaction blocked by envelope overspend policy: $txId');
+            return false;
+          }
         }
       }
     }
@@ -3707,13 +3792,23 @@ class AppState extends ChangeNotifier {
       amount: amount,
       method: method,
       note: note,
-      when: when ?? DateTime.now(),
+      when: when ?? now,
       receiptUri: receiptUri,
       recurringRuleId: recurringRuleId,
     );
     txs.insert(0, t);
     _persistTx(t);
     _queue('tx', t);
+    if (accountId == null) {
+      lastUsedExpenseCurrency = amount.currency;
+      lastUsedPaymentMethod = method;
+      _persistKv('last_tx_currency', amount.currency.name);
+      _persistKv('last_tx_method', method.name);
+      if (type == TxType.expense && envelopeId != null) {
+        lastUsedExpenseEnvelopeId = envelopeId;
+        _persistKv('last_tx_envelope', envelopeId);
+      }
+    }
     if (allocations != null) {
       for (final entry in allocations.entries) {
         final allocation = TxAllocation(
@@ -3852,6 +3947,19 @@ class AppState extends ChangeNotifier {
     return Money(sum, c);
   }
 
+  /// Total of items currently in cart or done that have not yet been recorded
+  /// as an expense transaction via [finishShopping].
+  Money unloggedShoppingFor(Currency c) {
+    var sum = 0;
+    for (final i in items) {
+      if (!i.checkedOut &&
+          (i.state == ItemState.done || i.state == ItemState.incart)) {
+        sum += (i.actual ?? i.est).inCurrency(c, rate).minor * i.qty;
+      }
+    }
+    return Money(sum, c);
+  }
+
   void addItem(String name, int qty, Money est, {String? assignedToId}) {
     if (!canEditLists) {
       debugPrint('Mhuri: unauthorized addItem for role: ${authRole.name}');
@@ -3958,6 +4066,8 @@ class AppState extends ChangeNotifier {
     String? txId,
     String? envelopeId,
     Method method = Method.bankCard,
+    Money? customTotal,
+    String? note,
   }) {
     // Prefer a Groceries envelope; fall back to the first shared one.
     Envelope? target;
@@ -3978,37 +4088,59 @@ class AppState extends ChangeNotifier {
         }
       }
     }
-    final cur = target?.limit.currency ?? primaryCurrency;
+    final cur = target?.limit.currency ??
+        customTotal?.currency ??
+        primaryCurrency;
 
     if (!canAuthorTransact) {
       debugPrint(
           'Mhuri: unauthorized finishShopping for role: ${authRole.name}');
       return Money(0, cur);
     }
+
+    final eligible = items
+        .where((i) =>
+            !i.checkedOut &&
+            (i.state == ItemState.done || i.state == ItemState.incart))
+        .toList(growable: false);
+    if (eligible.isEmpty) return Money(0, cur);
+
     var sum = 0;
-    for (final i in items) {
-      if (!i.checkedOut &&
-          (i.state == ItemState.done || i.state == ItemState.incart)) {
-        sum += (i.actual ?? i.est).inCurrency(cur, rate).minor * i.qty;
-        i.state = ItemState.done;
-        i.checkedOut = true;
-        i.purchasedById = _user.id;
-        _persistItem(i);
-        _queue('list_item', i);
-      }
+    for (final i in eligible) {
+      sum += (i.actual ?? i.est).inCurrency(cur, rate).minor * i.qty;
     }
-    final total = Money(sum, cur);
+    final total = (customTotal != null && customTotal.minor > 0)
+        ? customTotal.inCurrency(cur, rate)
+        : Money(sum, cur);
     if (total.isZero) return total;
 
-    addTx(
+    final recorded = addTx(
       id: txId,
       type: TxType.expense,
       amount: total,
       memberId: _user.id,
       method: method,
-      note: 'Groceries run - FreshMart',
+      note: (note != null && note.trim().isNotEmpty)
+          ? note.trim()
+          : 'Groceries run - FreshMart',
       envelopeId: target?.id,
+      force: true,
     );
+    if (!recorded) return Money(0, cur);
+
+    if (customTotal != null &&
+        customTotal.minor > 0 &&
+        eligible.length == 1 &&
+        eligible.first.qty == 1) {
+      eligible.first.actual = total;
+    }
+    for (final i in eligible) {
+      i.state = ItemState.done;
+      i.checkedOut = true;
+      i.purchasedById = _user.id;
+      _persistItem(i);
+      _queue('list_item', i);
+    }
     return total;
   }
 

@@ -5,6 +5,7 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/plus_ui.dart';
 import '../settings/plus_screen.dart';
+import 'chat_text_input.dart';
 
 Future<void> showFamilyPollsSheet(BuildContext context, AppState state) async {
   await showModalBottomSheet<void>(
@@ -80,11 +81,13 @@ class _FamilyPollsSheetState extends State<_FamilyPollsSheet> {
               TextField(
                   controller: question,
                   maxLength: 240,
+                  inputFormatters: const [NoEmojiTextInputFormatter()],
                   decoration: const InputDecoration(labelText: 'Question')),
               for (var i = 0; i < options.length; i++)
                 TextField(
                     controller: options[i],
                     maxLength: 80,
+                    inputFormatters: const [NoEmojiTextInputFormatter()],
                     decoration: InputDecoration(labelText: 'Option ${i + 1}')),
               if (options.length < 6)
                 Align(

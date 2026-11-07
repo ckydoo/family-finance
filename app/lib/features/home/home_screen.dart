@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/money/money.dart';
+import '../../core/observability/reporter.dart';
 import 'reminders_sheet.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
@@ -23,6 +24,7 @@ import '../family_tasks/family_tasks_screen.dart';
 import '../members/members_screen.dart';
 import '../quickadd/quick_add_sheet.dart';
 import '../reports/reports_screen.dart';
+import '../reports/weekly_summary_sheet.dart';
 import '../settings/settings_screen.dart';
 import '../settings/private_accounts_screen.dart';
 
@@ -648,6 +650,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const _CycleBoundaryNotice(),
+                  const _SyncRecoveryNotice(),
                   const _MonthlySummary(),
                   const _NeedsAttention(),
                   const _ComingUp(),
@@ -713,6 +716,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 8),
                 const SmartCard(),
+                if (!isNewHousehold && s.weeklySummary.hasActivity) ...[
+                  const SizedBox(height: 10),
+                  const WeeklySummaryPreviewCard(),
+                ],
 
                 // Activity intentionally closes the page: the current money
                 // position and budgets come first, then the audit trail.
@@ -733,11 +740,89 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontSize: 12.5, color: context.inkSoft, height: 1.4),
                     ),
                   ),
-                for (final t in s.familyTransactions.take(6))
+                for (final t in s.familyTransactions.take(3))
                   TxTile(tx: t, surface: false),
                 const SizedBox(height: 12),
               ],
             )),
+      ),
+    );
+  }
+}
+
+class _SyncRecoveryNotice extends StatelessWidget {
+  const _SyncRecoveryNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    if (s.syncHealth != SyncHealthState.needsAttention) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Material(
+        color: context.warningSoft,
+        borderRadius: kBRadiusM,
+        child: InkWell(
+          key: const ValueKey('home_sync_recovery_notice'),
+          borderRadius: kBRadiusM,
+          onTap: () {
+            mhuriEvent(
+              MhuriAnalyticsEvents.syncRecoveryOpened,
+              {
+                'sync_status': s.syncStatus?.name ?? 'unknown',
+                'role': s.authRole.name,
+                'locale': s.localeCode,
+              },
+            );
+            s.syncNow(force: true);
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            child: Row(
+              children: [
+                Icon(Icons.sync_problem_rounded,
+                    size: 18, color: context.expenseRed),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Sync needs attention',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.ink,
+                        ),
+                      ),
+                      Text(
+                        'Your data is safe on this device. Tap to review and retry sync.',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: context.inkSoft,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  'Fix sync',
+                  style: TextStyle(
+                    color: context.primaryDark,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1028,7 +1113,18 @@ class _NeedsAttentionState extends State<_NeedsAttention> {
             color: alertColor,
             borderRadius: kBRadiusM,
             child: InkWell(
-              onTap: () => _openAttentionIssues(context, visibleIssues),
+              onTap: () {
+                mhuriEvent(
+                  MhuriAnalyticsEvents.homeNextActionOpened,
+                  {
+                    'action_type': 'budget_attention',
+                    'issue_count': visibleIssues.length,
+                    'role': s.authRole.name,
+                    'locale': s.localeCode,
+                  },
+                );
+                _openAttentionIssues(context, visibleIssues);
+              },
               borderRadius: kBRadiusM,
               child: Padding(
                 padding:
@@ -1398,7 +1494,17 @@ class _FirstStepsCard extends StatelessWidget {
           const SizedBox(height: 16),
           Center(
             child: TextButton.icon(
-              onPressed: () => s.dismissGettingStarted(),
+              onPressed: () {
+                mhuriEvent(
+                  MhuriAnalyticsEvents.guidedFirstJourneyCompleted,
+                  {
+                    'outcome': 'dismissed',
+                    'role': s.authRole.name,
+                    'locale': s.localeCode,
+                  },
+                );
+                s.dismissGettingStarted();
+              },
               icon: Icon(Icons.visibility_off_outlined,
                   size: 16, color: context.inkSoft),
               label: Text(
@@ -1518,6 +1624,17 @@ class _HomeBudgets extends StatelessWidget {
         if (aOver && bOver) return aRem.compareTo(bRem);
         if (aOver != bOver) return aOver ? -1 : 1;
 
+        final aPace = s.paceOf(a);
+        final bPace = s.paceOf(b);
+        int paceRank(Pace p) => switch (p) {
+              Pace.over => 0,
+              Pace.reached => 1,
+              Pace.watch => 2,
+              Pace.onTrack => 3,
+            };
+        final byPace = paceRank(aPace).compareTo(paceRank(bPace));
+        if (byPace != 0) return byPace;
+
         final aLimit = s.effectiveLimit(a).minor;
         final bLimit = s.effectiveLimit(b).minor;
         final aHasLimit = aLimit > 0;
@@ -1535,8 +1652,9 @@ class _HomeBudgets extends StatelessWidget {
 
         return aRem.compareTo(bRem);
       });
+    final topBudgets = sorted.take(3).toList(growable: false);
     final allUnconfigured =
-        sorted.every((budget) => s.effectiveLimit(budget).minor <= 0);
+        topBudgets.every((budget) => s.effectiveLimit(budget).minor <= 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1557,14 +1675,14 @@ class _HomeBudgets extends StatelessWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: sorted.length,
+            itemCount: topBudgets.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, index) => SizedBox(
               width: (MediaQuery.sizeOf(context).width * 0.38)
                   .clamp(136.0, 172.0)
                   .toDouble(),
               child: _HomeBudgetCard(
-                budget: sorted[index],
+                budget: topBudgets[index],
                 compactEmpty: allUnconfigured,
               ),
             ),

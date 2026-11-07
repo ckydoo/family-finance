@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/utils/ids.dart';
+import '../../core/observability/reporter.dart';
 
 import '../../core/money/money.dart';
 import '../../core/models/models.dart';
@@ -40,6 +41,7 @@ Future<void> showQuickAddMenu(BuildContext context) async {
       context: context,
       builder: (_) => const MhuriSheetShell(
         title: 'Quick add',
+        subtitle: 'Choose what to record for your household',
         child: _QuickActionMenu(),
       ),
     );
@@ -83,49 +85,156 @@ Future<void> _showTransactionEntry(
 enum _QuickAction { expense, income, shopping, task }
 
 class _QuickActionMenu extends StatelessWidget {
-  const _QuickActionMenu();
+  final _QuickAction? currentAction;
+  const _QuickActionMenu({this.currentAction});
 
   @override
   Widget build(BuildContext context) {
-    final actions = <(_QuickAction, IconData, String, String)>[
+    final actions = <(_QuickAction, IconData, String, String, Color, Color)>[
       (
         _QuickAction.expense,
-        Icons.remove_circle_outline,
+        Icons.arrow_upward_rounded,
         'Expense',
-        'Record money spent'
+        'Record money spent from a budget or cash',
+        context.dangerSoft,
+        context.expenseRed,
       ),
       (
         _QuickAction.income,
-        Icons.add_circle_outline,
+        Icons.arrow_downward_rounded,
         'Income',
-        'Record money received'
+        'Record salary, side income, or money received',
+        context.successSoft,
+        context.incomeGreen,
       ),
       (
         _QuickAction.shopping,
-        Icons.shopping_cart_outlined,
+        Icons.shopping_bag_outlined,
         'Shopping item',
-        'Add something the family needs'
+        'Add groceries or supplies the family needs',
+        context.primarySoft,
+        context.primaryDark,
       ),
       (
         _QuickAction.task,
-        Icons.task_alt_outlined,
+        Icons.task_alt_rounded,
         'Task',
-        'Assign a responsibility'
+        'Assign a household chore or responsibility',
+        context.warningSoft,
+        context.warning,
       ),
     ];
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final action in actions)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            minTileHeight: 54,
-            leading: Icon(action.$2, color: context.primaryDark),
-            title: Text(action.$3),
-            subtitle: Text(action.$4),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => Navigator.pop(context, action.$1),
+        for (var i = 0; i < actions.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          Builder(
+            builder: (context) {
+              final action = actions[i];
+              final isCurrent = currentAction == action.$1;
+              return Material(
+                color: isCurrent ? context.card : context.bg,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  key: ValueKey('quick_action_option_${action.$1.name}'),
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => Navigator.pop(context, action.$1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isCurrent ? action.$6 : context.hairline,
+                        width: isCurrent ? 1.4 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: action.$5,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            action.$2,
+                            color: action.$6,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                action.$3,
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                action.$4,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.inkSoft,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (isCurrent)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: action.$5,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'Current',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: action.$6,
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: context.card,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: context.hairline),
+                            ),
+                            child: Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: context.inkSoft,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
+        ],
       ],
     );
   }
@@ -154,7 +263,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   final _amount = TextEditingController();
   final _note = TextEditingController();
   String? _receiptUri;
+  DateTime? _when;
   Map<String, Money> _allocations = {};
+  late final DateTime _openedAt = DateTime.now();
 
   @override
   void initState() {
@@ -170,13 +281,29 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
           : s.accounts
               .where((account) => account.id == widget.initialAccountId)
               .firstOrNull;
+      final rememberedCur = s.lastUsedExpenseCurrency;
+      final rememberedEnvId = s.lastUsedExpenseEnvelopeId;
       setState(() {
-        _cur = initialAccount?.balance.currency ?? s.displayCurrency;
+        _cur = initialAccount?.balance.currency ??
+            (rememberedCur != null && s.activeCurrencies.contains(rememberedCur)
+                ? rememberedCur
+                : s.displayCurrency);
+        _method = s.lastUsedPaymentMethod;
         _envelopeId = initialAccount == null
-            ? (s.envelopes.isEmpty ? null : s.envelopes.first.id)
+            ? (rememberedEnvId != null && s.envelope(rememberedEnvId) != null
+                ? rememberedEnvId
+                : (s.envelopes.isEmpty ? null : s.envelopes.first.id))
             : null;
         _memberId = initialAccount == null ? s.user.id : s.realUser.id;
       });
+      mhuriEvent(
+        MhuriAnalyticsEvents.quickAddOpened,
+        {
+          'entry_type': _type.name,
+          'role': s.authRole.name,
+          'locale': s.localeCode,
+        },
+      );
     });
   }
 
@@ -224,14 +351,71 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     return keep ?? true;
   }
 
+  void _recordCancelled() {
+    if (!mounted) return;
+    final s = AppScope.of(context);
+    mhuriEvent(
+      MhuriAnalyticsEvents.transactionCancelled,
+      {
+        'entry_type': _type.name,
+        'duration_ms': DateTime.now().difference(_openedAt).inMilliseconds,
+        'dirty': _dirty,
+        'role': s.authRole.name,
+        'locale': s.localeCode,
+      },
+    );
+  }
+
   Future<void> _close() async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (!_dirty) {
+      _recordCancelled();
       Navigator.of(context).pop();
       return;
     }
     if (!await _confirmDiscard()) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        _recordCancelled();
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  Future<void> _openAddSomethingElse() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final current =
+        _type == TxType.income ? _QuickAction.income : _QuickAction.expense;
+    final action = await showMhuriSheet<_QuickAction>(
+      context: context,
+      builder: (_) => MhuriSheetShell(
+        title: 'Add something else',
+        subtitle: 'Switch entry type or add a household item',
+        child: _QuickActionMenu(currentAction: current),
+      ),
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _QuickAction.expense:
+        setState(() => _type = TxType.expense);
+        return;
+      case _QuickAction.income:
+        setState(() => _type = TxType.income);
+        return;
+      case _QuickAction.shopping:
+        await Navigator.of(context).pushReplacement<void, void>(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                const ListsScreen(standalone: true, startAdding: true),
+          ),
+        );
+        return;
+      case _QuickAction.task:
+        await Navigator.of(context).pushReplacement<void, void>(
+          MaterialPageRoute<void>(
+            builder: (_) => const FamilyTasksScreen(startAdding: true),
+          ),
+        );
+        return;
     }
   }
 
@@ -321,28 +505,76 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     final note = _note.text.trim().isEmpty
         ? (_type == TxType.income ? l.income : l.expense)
         : _note.text.trim();
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    final savedOffline = l.savedOffline;
-    _saved = true;
-    navigator.pop();
-    s.addTx(
-      id: newUuid(),
+    final txId = newUuid();
+    final added = s.addTx(
+      id: txId,
       type: _type,
       amount: Money.fromMajor(amt, _cur),
       memberId: member.id,
       method: _method,
       note: note,
+      when: _when,
       envelopeId: envelope?.id,
       accountId: _accountId,
       receiptUri: _receiptUri,
       allocations: _allocations.isEmpty ? null : _allocations,
     );
+    if (!added) {
+      if (mounted) setState(() => _saving = false);
+      return;
+    }
+    final durationMs = DateTime.now().difference(_openedAt).inMilliseconds;
+    final entryType = _type.name;
+    final roleName = s.authRole.name;
+    final localeCode = s.localeCode;
+    mhuriEvent(
+      MhuriAnalyticsEvents.transactionSaved,
+      {
+        'entry_type': entryType,
+        'duration_ms': durationMs,
+        'has_budget': envelope != null,
+        'is_private': _accountId != null,
+        'role': roleName,
+        'locale': localeCode,
+      },
+    );
+    mhuriEvent(
+      MhuriAnalyticsEvents.quickAddCompleted,
+      {
+        'entry_type': entryType,
+        'duration_ms': durationMs,
+        'role': roleName,
+        'locale': localeCode,
+      },
+    );
+    final savedTx = s.txs.where((t) => t.id == txId).firstOrNull;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final savedOffline = l.savedOffline;
+    final undoLabel = l.undo;
+    _saved = true;
+    navigator.pop();
     HapticFeedback.mediumImpact();
     messenger.showSnackBar(
       SnackBar(
         content: Text(savedOffline),
         behavior: SnackBarBehavior.floating,
+        action: savedTx == null
+            ? null
+            : SnackBarAction(
+                label: undoLabel,
+                onPressed: () {
+                  s.deleteTx(savedTx);
+                  mhuriEvent(
+                    MhuriAnalyticsEvents.transactionUndoSelected,
+                    {
+                      'entry_type': entryType,
+                      'role': roleName,
+                      'locale': localeCode,
+                    },
+                  );
+                },
+              ),
       ),
     );
   }
@@ -605,6 +837,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
         if (didPop) return;
         final navigator = Navigator.of(context);
         if (!await _confirmDiscard() && navigator.mounted) {
+          _recordCancelled();
           navigator.pop();
         }
       },
@@ -651,15 +884,83 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'What are you adding?',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: context.ink,
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'What are you adding?',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: context.inkSoft,
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: 'Add something else',
+                      child: Material(
+                        color: context.card,
+                        borderRadius: BorderRadius.circular(999),
+                        child: InkWell(
+                          key: const ValueKey('quick_add_other_action'),
+                          onTap: _openAddSomethingElse,
+                          borderRadius: BorderRadius.circular(999),
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(6, 5, 10, 5),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: context.hairline),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 22,
+                                  height: 22,
+                                  decoration: BoxDecoration(
+                                    color: context.primarySoft,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.grid_view_rounded,
+                                    size: 13,
+                                    color: context.primaryDark,
+                                  ),
+                                ),
+                                const SizedBox(width: 7),
+                                Flexible(
+                                  child: Text(
+                                    'Add something else',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.ink,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 16,
+                                  color: context.inkSoft,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
@@ -739,6 +1040,16 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       onSelected: (_) => setState(() => _cur = c),
                     ),
                   ],
+                  ActionChip(
+                    key: const ValueKey('quick_add_payment_method_chip'),
+                    avatar: Icon(Icons.payments_outlined,
+                        size: 16, color: context.primaryDark),
+                    label: Text(
+                      '${l.paidWithLabel}: ${methodLabel(l, _method)}',
+                      style: const TextStyle(fontSize: 12.5),
+                    ),
+                    onPressed: () => setState(() => _more = true),
+                  ),
                   if (s.activeCurrencies.length > 1)
                     Text(
                       _parsedAmount == null
@@ -826,6 +1137,33 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       : s.remainingOn(s.envelope(_envelopeId)!),
                   onTap: () => _pickBudget(s),
                 ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (_envelopeId != null)
+                      ChoiceChip(
+                        key: const ValueKey('quick_add_no_budget_chip'),
+                        label: Text(l.recNoEnvelope),
+                        selected: false,
+                        onSelected: (_) => setState(() => _envelopeId = null),
+                      ),
+                    for (final env in s
+                        .recentExpenseBudgets(limit: 5)
+                        .where((e) => e.id != _envelopeId)
+                        .take(4))
+                      ChoiceChip(
+                        key: ValueKey('quick_add_budget_chip_${env.id}'),
+                        label: Text(env.name),
+                        selected: false,
+                        onSelected: (_) => setState(() {
+                          _envelopeId = env.id;
+                          _allocations = {};
+                        }),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 if (s.envelope(_envelopeId) case final envelope?)
                   _EnvelopeLimitNotice(
@@ -907,6 +1245,31 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     fillColor: context.card,
                     border:
                         const OutlineInputBorder(borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('quick_add_date_button'),
+                    onPressed: () async {
+                      final now = s.now;
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _when ?? now,
+                        firstDate: DateTime(now.year - 2),
+                        lastDate: now.add(const Duration(days: 1)),
+                      );
+                      if (picked != null && mounted) {
+                        setState(() => _when = picked);
+                      }
+                    },
+                    icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                    label: Text(
+                      _when == null
+                          ? 'Date: Today'
+                          : 'Date: ${_when!.year}-${_when!.month.toString().padLeft(2, '0')}-${_when!.day.toString().padLeft(2, '0')}',
+                    ),
                   ),
                 ),
                 if (_type == TxType.expense) ...[
