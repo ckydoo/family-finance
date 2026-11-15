@@ -654,42 +654,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const _CycleBoundaryNotice(),
                   const _SyncRecoveryNotice(),
                   const _MonthlySummary(),
-                  const _NeedsAttention(),
-                  const _ComingUp(),
-                ],
-                if (!isNewHousehold) ...[
-                  // ── Today Section (Family Tasks due today/overdue) ──────────
-                  Builder(
-                    builder: (ctx) {
-                      final dueTasks = s.familyTasks
-                          .where((t) =>
-                              !t.isArchived && !t.isDone && t.dueDate != null)
-                          .toList()
-                        ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
-                      final homeTasks = dueTasks.take(2).toList();
-                      if (homeTasks.isEmpty) return const SizedBox.shrink();
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SectionLabel(
-                            title: 'Tasks coming up',
-                            actionLabel: 'See all',
-                            onAction: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => const FamilyTasksScreen()),
-                            ),
-                            padding: const EdgeInsets.only(top: 14, bottom: 6),
-                          ),
-                          for (int i = 0; i < homeTasks.length; i++)
-                            _HomeTaskRow(
-                              task: homeTasks[i],
-                              isLast: i == homeTasks.length - 1,
-                            ),
-                          const SizedBox(height: 8),
-                        ],
-                      );
-                    },
-                  ),
+                  const SmartCard(),
+                  const _HomeAttentionSlot(),
                 ],
 
                 if (s.pendingOps > 0)
@@ -716,8 +682,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 if (!isNewHousehold) _HomeBudgets(budgets: householdBudgets),
 
-                const SizedBox(height: 8),
-                const SmartCard(),
                 if (!isNewHousehold && s.weeklySummary.hasActivity) ...[
                   const SizedBox(height: 10),
                   const WeeklySummaryPreviewCard(),
@@ -1017,13 +981,10 @@ class _MonthlySummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final l = AppLocalizations.of(context)!;
     final income = s.monthIncome;
     final spent = s.monthSpend;
     final saved = s.monthSaved;
-    final left = Money(
-      income.minor - spent.minor - saved.minor,
-      s.displayCurrency,
-    );
     final masked = s.hideAmounts;
 
     String value(Money amount) => masked ? '•••••' : amount.text;
@@ -1040,24 +1001,24 @@ class _MonthlySummary extends StatelessWidget {
             child: Row(children: [
               _SummaryStat(
                   width: cardWidth,
-                  label: 'Income',
+                  label: l.income,
                   value: value(income),
                   icon: Icons.arrow_upward_rounded,
                   color: context.incomeGreen),
               const SizedBox(width: 8),
               _SummaryStat(
                   width: cardWidth,
-                  label: 'Spent',
+                  label: l.spent,
                   value: value(spent),
                   icon: Icons.arrow_downward_rounded,
                   color: context.expenseRed),
               const SizedBox(width: 8),
               _SummaryStat(
                   width: cardWidth,
-                  label: 'Remaining',
-                  value: value(left),
+                  label: l.saved,
+                  value: value(saved),
                   icon: Icons.savings_outlined,
-                  color: left.minor < 0 ? context.expenseRed : context.primary),
+                  color: context.primary),
             ]),
           );
         },
@@ -1066,15 +1027,16 @@ class _MonthlySummary extends StatelessWidget {
   }
 }
 
-class _NeedsAttention extends StatefulWidget {
-  const _NeedsAttention();
+class _HomeAttentionSlot extends StatefulWidget {
+  const _HomeAttentionSlot();
 
   @override
-  State<_NeedsAttention> createState() => _NeedsAttentionState();
+  State<_HomeAttentionSlot> createState() => _HomeAttentionSlotState();
 }
 
-class _NeedsAttentionState extends State<_NeedsAttention> {
+class _HomeAttentionSlotState extends State<_HomeAttentionSlot> {
   final Set<String> _dismissedKeys = {};
+  final Set<String> _dismissedRecurringIds = {};
 
   @override
   Widget build(BuildContext context) {
@@ -1094,7 +1056,74 @@ class _NeedsAttentionState extends State<_NeedsAttention> {
         .where(
             (issue) => !_dismissedKeys.contains(_issueKey(issue.$1, issue.$2)))
         .toList();
-    if (visibleIssues.isEmpty) return const SizedBox.shrink();
+
+    final upcoming = s.recurring
+        .where((r) => r.active && !_dismissedRecurringIds.contains(r.id))
+        .toList()
+      ..sort((a, b) => a.nextDue.compareTo(b.nextDue));
+
+    final dueTasks = s.familyTasks
+        .where((t) => !t.isArchived && !t.isDone && t.dueDate != null)
+        .toList()
+      ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+    final homeTasks = dueTasks.take(2).toList();
+
+    if (visibleIssues.isEmpty) {
+      if (upcoming.isNotEmpty) {
+        final rule = upcoming.first;
+        final hiddenCount = upcoming.length - 1;
+        return Padding(
+          padding: const EdgeInsets.only(top: 14, bottom: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionTitle(context, 'Coming up'),
+              const SizedBox(height: 8),
+              Dismissible(
+                key: ValueKey('coming-up-${rule.id}'),
+                direction: DismissDirection.endToStart,
+                onDismissed: (_) =>
+                    setState(() => _dismissedRecurringIds.add(rule.id)),
+                background: _dismissBackground(context),
+                child: _ComingUpCard(rule: rule),
+              ),
+              if (hiddenCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 1, bottom: 4),
+                  child: Text(
+                    '$hiddenCount more coming up',
+                    style: TextStyle(fontSize: 11.5, color: context.inkSoft),
+                  ),
+                ),
+            ],
+          ),
+        );
+      }
+
+      if (homeTasks.isNotEmpty) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionLabel(
+              title: 'Tasks coming up',
+              actionLabel: 'See all',
+              onAction: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FamilyTasksScreen()),
+              ),
+              padding: const EdgeInsets.only(top: 14, bottom: 6),
+            ),
+            for (int i = 0; i < homeTasks.length; i++)
+              _HomeTaskRow(
+                task: homeTasks[i],
+                isLast: i == homeTasks.length - 1,
+              ),
+            const SizedBox(height: 8),
+          ],
+        );
+      }
+
+      return const SizedBox.shrink();
+    }
 
     final message = visibleIssues.length == 1
         ? _attentionMessage(visibleIssues.single.$1, visibleIssues.single.$2)
@@ -1275,43 +1304,48 @@ class _SummaryStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = width < 112;
-    return Container(
-      width: width,
-      height: 104,
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 9 : 11,
-        vertical: 9,
-      ),
-      decoration: BoxDecoration(
-        color: context.card,
-        borderRadius: kBRadiusL,
-        border: Border.all(color: context.hairline.withValues(alpha: 0.7)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: compact ? 19 : 21, color: color),
-        SizedBox(height: compact ? 5 : 6),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: compact ? 10.5 : 11.5,
-            fontWeight: FontWeight.w500,
-            color: context.inkSoft,
-          ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 98),
+      child: Container(
+        width: width,
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 9 : 11,
+          vertical: 9,
         ),
-        const SizedBox(height: 1),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: AlignmentDirectional.centerStart,
-          child: Text(value,
-              style: TextStyle(
-                  color: context.ink,
-                  fontSize: compact ? 13.5 : 15,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: compact ? -0.35 : -0.2)),
+        decoration: BoxDecoration(
+          color: context.card,
+          borderRadius: kBRadiusL,
+          border: Border.all(color: context.hairline.withValues(alpha: 0.7)),
         ),
-      ]),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: compact ? 19 : 21, color: color),
+              SizedBox(height: compact ? 5 : 6),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 10.5 : 11.5,
+                  fontWeight: FontWeight.w500,
+                  color: context.inkSoft,
+                ),
+              ),
+              const SizedBox(height: 1),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(value,
+                    style: TextStyle(
+                        color: context.ink,
+                        fontSize: compact ? 13.5 : 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: compact ? -0.35 : -0.2)),
+              ),
+            ]),
+      ),
     );
   }
 }
@@ -1812,54 +1846,6 @@ class _HomeBudgetCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ComingUp extends StatefulWidget {
-  const _ComingUp();
-
-  @override
-  State<_ComingUp> createState() => _ComingUpState();
-}
-
-class _ComingUpState extends State<_ComingUp> {
-  final Set<String> _dismissedIds = {};
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final upcoming = s.recurring
-        .where((r) => r.active && !_dismissedIds.contains(r.id))
-        .toList()
-      ..sort((a, b) => a.nextDue.compareTo(b.nextDue));
-    if (upcoming.isEmpty) return const SizedBox.shrink();
-    final rule = upcoming.first;
-    final hiddenCount = upcoming.length - 1;
-    return Padding(
-      padding: const EdgeInsets.only(top: 14, bottom: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionTitle(context, 'Coming up'),
-          const SizedBox(height: 8),
-          Dismissible(
-            key: ValueKey('coming-up-${rule.id}'),
-            direction: DismissDirection.endToStart,
-            onDismissed: (_) => setState(() => _dismissedIds.add(rule.id)),
-            background: _dismissBackground(context),
-            child: _ComingUpCard(rule: rule),
-          ),
-          if (hiddenCount > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 1, bottom: 4),
-              child: Text(
-                '$hiddenCount more coming up',
-                style: TextStyle(fontSize: 11.5, color: context.inkSoft),
-              ),
-            ),
-        ],
       ),
     );
   }
