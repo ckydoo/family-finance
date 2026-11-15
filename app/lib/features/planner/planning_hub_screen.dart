@@ -31,6 +31,7 @@ class PlanningHubScreen extends StatelessWidget {
         title: 'Bills and commitments',
         subtitle: 'Track due dates, reminders and partial payments.',
         screen: CommitmentsScreen(),
+        alwaysOpenScreen: true,
       ),
       const _PlanningTool(
         feature: 'savings_projections',
@@ -138,7 +139,6 @@ class _PlanningTool {
   final bool alwaysOpenScreen;
 
   bool isAvailable(AppState state) =>
-      alwaysOpenScreen ||
       state.hasPlusFeature(feature) ||
       (alternateFeature != null && state.hasPlusFeature(alternateFeature!));
 }

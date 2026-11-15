@@ -6,6 +6,8 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ids.dart';
 import '../../core/widgets/plus_ui.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../budgets/recurring_ui.dart';
 import '../settings/plus_screen.dart';
 
 class CommitmentsScreen extends StatefulWidget {
@@ -456,8 +458,19 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
         return Scaffold(
           backgroundColor: context.bg,
           appBar: AppBar(
-            title: const Text('Smart Bills & Commitments'),
+            title: const Text('Upcoming Bills'),
             actions: [
+              if (state.canAuthorTransact &&
+                  AppLocalizations.of(context) != null)
+                IconButton(
+                  key: const ValueKey('add_regular_bill_action'),
+                  tooltip: AppLocalizations.of(context)!.addRecurringTip,
+                  onPressed: () => showAddRecurringSheet(context),
+                  icon: Icon(
+                    Icons.add_circle_outline_rounded,
+                    color: context.primary,
+                  ),
+                ),
               if (unlocked && state.canAuthorTransact)
                 IconButton(
                   tooltip: 'Generate next 60 days',
@@ -482,6 +495,8 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
               ? ListView(
                   padding: kPageInsets,
                   children: [
+                    _RegularBillsSection(state: state, showWhenEmpty: true),
+                    const SizedBox(height: 16),
                     PlusEmptyState(
                       icon: Icons.event_repeat_rounded,
                       title:
@@ -617,6 +632,13 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                           onStatusChanged: (nextStatus) =>
                               state.setCommitmentStatus(item.id, nextStatus),
                         ),
+                    ],
+                    if (state.recurring.isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      _RegularBillsSection(
+                        state: state,
+                        showWhenEmpty: false,
+                      ),
                     ],
                     const SizedBox(height: 80),
                   ],
@@ -914,3 +936,85 @@ String _recurrenceLabel(CommitmentRecurrence recurrence) =>
 
 String _dateText(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+class _RegularBillsSection extends StatelessWidget {
+  const _RegularBillsSection({
+    required this.state,
+    required this.showWhenEmpty,
+  });
+
+  final AppState state;
+  final bool showWhenEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final bills = state.sortedBills;
+    if (bills.isEmpty && !showWhenEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.autorenew_rounded, size: 19, color: context.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l?.recurringExpenses ?? 'Recurring expenses',
+                  style: TextStyle(
+                    color: context.ink,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (state.canAuthorTransact && l != null)
+                TextButton.icon(
+                  onPressed: () => showAddRecurringSheet(context),
+                  icon: const Icon(Icons.add_rounded, size: 17),
+                  label: const Text('Add bill'),
+                ),
+            ],
+          ),
+          if (bills.isEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              l?.recurringHint ??
+                  'Track regular monthly bills for free and post them with one tap when paid.',
+              style: TextStyle(
+                color: context.inkSoft,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+          ] else if (l != null)
+            for (final rule in bills) RecurringRow(rule: rule)
+          else
+            for (final rule in bills)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  rule.name,
+                  style: TextStyle(
+                    color: context.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  '${rule.amount.text} · ${_dateText(rule.nextDue)}',
+                  style: TextStyle(color: context.inkSoft, fontSize: 12),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}

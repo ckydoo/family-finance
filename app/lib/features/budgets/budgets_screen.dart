@@ -15,7 +15,6 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/tx_tile.dart';
 import '../commitments/commitments_screen.dart';
 import '../family_chat/family_chat_screen.dart';
-import 'recurring_ui.dart';
 
 Future<void> _showBudgetRestriction(BuildContext context) => showDialog<void>(
       context: context,
@@ -230,7 +229,11 @@ class _RegularPaymentsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final active = state.recurring.where((rule) => rule.active).length;
+    final activeRecurring = state.recurring.where((rule) => rule.active).length;
+    final activeCommitments = state.financialCommitments
+        .where((item) => item.status.name == 'active')
+        .length;
+    final totalActive = activeRecurring + activeCommitments;
     return Material(
       color: context.card,
       borderRadius: kBRadiusM,
@@ -238,7 +241,7 @@ class _RegularPaymentsCard extends StatelessWidget {
         borderRadius: kBRadiusM,
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => const _RegularPaymentsScreen(),
+            builder: (_) => const CommitmentsScreen(),
           ),
         ),
         child: Container(
@@ -252,7 +255,7 @@ class _RegularPaymentsCard extends StatelessWidget {
               width: 38,
               height: 38,
               child: Center(
-                child: Icon(Icons.autorenew_rounded,
+                child: Icon(Icons.event_repeat_rounded,
                     size: 22, color: context.primary),
               ),
             ),
@@ -268,9 +271,9 @@ class _RegularPaymentsCard extends StatelessWidget {
                           color: context.ink)),
                   const SizedBox(height: 2),
                   Text(
-                    state.recurring.isEmpty
+                    totalActive == 0
                         ? l.noRecurring
-                        : '$active active ${active == 1 ? 'payment' : 'payments'}',
+                        : '$totalActive active ${totalActive == 1 ? 'bill' : 'bills'}',
                     style: TextStyle(fontSize: 12, color: context.inkSoft),
                   ),
                 ],
@@ -280,58 +283,6 @@ class _RegularPaymentsCard extends StatelessWidget {
           ]),
         ),
       ),
-    );
-  }
-}
-
-class _RegularPaymentsScreen extends StatelessWidget {
-  const _RegularPaymentsScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    final state = AppScope.of(context);
-    final l = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l.recurringExpenses),
-        actions: [
-          IconButton(
-            tooltip: 'Plus: Smart Bills & Commitments',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const CommitmentsScreen(),
-              ),
-            ),
-            icon: Icon(
-              Icons.event_repeat_rounded,
-              color: context.primary,
-            ),
-          ),
-          IconButton(
-            tooltip: l.addRecurringTip,
-            onPressed: () => showAddRecurringSheet(context),
-            icon: Icon(
-              Icons.add_circle_rounded,
-              color: context.primary,
-              size: 30,
-            ),
-          ),
-        ],
-      ),
-      body: state.recurring.isEmpty
-          ? EmptyState(
-              icon: Icons.autorenew,
-              title: l.noRecurring,
-              subtitle: l.recurringHint,
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              itemCount: state.sortedBills.length,
-              itemBuilder: (_, index) =>
-                  RecurringRow(rule: state.sortedBills[index]),
-              separatorBuilder: (_, __) =>
-                  Divider(height: 1, color: context.hairline),
-            ),
     );
   }
 }
