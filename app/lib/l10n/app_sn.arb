@@ -626,5 +626,22 @@
   "reminderDigest": "Pfupiso yevhiki (Svondo 6pm)",
   "notificationsDenied": "Zviziviso zveMhuri zvakadzimwa. Zvibvumidze mumasetingi efoni yako.",
   "testNotificationSent": "Chiziviso chekuyedza chatumirwa.",
-  "testNotificationFailed": "Hatina kukwanisa kutumira chiziviso chekuyedza."
+  "testNotificationFailed": "Hatina kukwanisa kutumira chiziviso chekuyedza.",
+  "planAheadTitle": "Ronga Mberi",
+  "reportsShortcut": "Mishumo",
+  "tasksShortcut": "Mabasa",
+  "askMhuriTitle": "Bvunza Mhuri",
+  "upcomingBillsTitle": "Zvikwereti Zviri Kuuya",
+  "needsAttentionLabel": "Zvinoda kutariswa",
+  "comingUpLabel": "Zviri kuuya",
+  "tasksComingUpLabel": "Mabasa ari kuuya",
+  "weeklySummaryTitle": "Pfupiso yeMhuri yevhiki",
+  "weeklySummarySubtitle": "Mazuva 7 apfuura · mamiriro emhuri",
+  "quickAddWhatAdding": "Uri kuwedzera chii?",
+  "quickAddShoppingOrTask": "Zvekutenga kana basa",
+  "quickAddAmountSpent": "Mari yashandiswa",
+  "quickAddAmountReceived": "Mari yatambirwa",
+  "quickAddWhichBudget": "Mari iyi inobva mubhajeti ripi?",
+  "quickAddSavedLabel": "Yachengetedzwa",
+  "appAndCurrencySettings": "Zvirongwa zveApp nemari"
 }

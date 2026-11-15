@@ -2125,4 +2125,55 @@ class AppLocalizationsSn extends AppLocalizations {
   @override
   String get testNotificationFailed =>
       'Hatina kukwanisa kutumira chiziviso chekuyedza.';
+
+  @override
+  String get planAheadTitle => 'Ronga Mberi';
+
+  @override
+  String get reportsShortcut => 'Mishumo';
+
+  @override
+  String get tasksShortcut => 'Mabasa';
+
+  @override
+  String get askMhuriTitle => 'Bvunza Mhuri';
+
+  @override
+  String get upcomingBillsTitle => 'Zvikwereti Zviri Kuuya';
+
+  @override
+  String get needsAttentionLabel => 'Zvinoda kutariswa';
+
+  @override
+  String get comingUpLabel => 'Zviri kuuya';
+
+  @override
+  String get tasksComingUpLabel => 'Mabasa ari kuuya';
+
+  @override
+  String get weeklySummaryTitle => 'Pfupiso yeMhuri yevhiki';
+
+  @override
+  String get weeklySummarySubtitle => 'Mazuva 7 apfuura · mamiriro emhuri';
+
+  @override
+  String get quickAddWhatAdding => 'Uri kuwedzera chii?';
+
+  @override
+  String get quickAddShoppingOrTask => 'Zvekutenga kana basa';
+
+  @override
+  String get quickAddAmountSpent => 'Mari yashandiswa';
+
+  @override
+  String get quickAddAmountReceived => 'Mari yatambirwa';
+
+  @override
+  String get quickAddWhichBudget => 'Mari iyi inobva mubhajeti ripi?';
+
+  @override
+  String get quickAddSavedLabel => 'Yachengetedzwa';
+
+  @override
+  String get appAndCurrencySettings => 'Zvirongwa zveApp nemari';
 }

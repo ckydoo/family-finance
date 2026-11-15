@@ -2127,4 +2127,55 @@ class AppLocalizationsNd extends AppLocalizations {
   @override
   String get testNotificationFailed =>
       'Asenelisanga ukuthumela isaziso sokuhlola.';
+
+  @override
+  String get planAheadTitle => 'Hlela Phambili';
+
+  @override
+  String get reportsShortcut => 'Imibiko';
+
+  @override
+  String get tasksShortcut => 'Imisebenzi';
+
+  @override
+  String get askMhuriTitle => 'Buza uMhuri';
+
+  @override
+  String get upcomingBillsTitle => 'Izikwelede Ezizayo';
+
+  @override
+  String get needsAttentionLabel => 'Okudinga ukukhangelwa';
+
+  @override
+  String get comingUpLabel => 'Okuzayo';
+
+  @override
+  String get tasksComingUpLabel => 'Imisebenzi ezayo';
+
+  @override
+  String get weeklySummaryTitle => 'Isifinqo seMhuri seveki';
+
+  @override
+  String get weeklySummarySubtitle => 'Insuku eziyi-7 ezedlule · isimo somuzi';
+
+  @override
+  String get quickAddWhatAdding => 'Ufakani?';
+
+  @override
+  String get quickAddShoppingOrTask => 'Okokuthenga kumbe umsebenzi';
+
+  @override
+  String get quickAddAmountSpent => 'Imali esetshenzisiweyo';
+
+  @override
+  String get quickAddAmountReceived => 'Imali etholakeleyo';
+
+  @override
+  String get quickAddWhichBudget => 'Imali le ivela kuyiphi ibhajethi?';
+
+  @override
+  String get quickAddSavedLabel => 'Kulondoloziwe';
+
+  @override
+  String get appAndCurrencySettings => 'Izilungiselelo ze-App lemali';
 }

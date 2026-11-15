@@ -2119,4 +2119,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get testNotificationFailed => 'Could not send the test notification.';
+
+  @override
+  String get planAheadTitle => 'Plan Ahead';
+
+  @override
+  String get reportsShortcut => 'Reports';
+
+  @override
+  String get tasksShortcut => 'Tasks';
+
+  @override
+  String get askMhuriTitle => 'Ask Mhuri';
+
+  @override
+  String get upcomingBillsTitle => 'Upcoming Bills';
+
+  @override
+  String get needsAttentionLabel => 'Needs attention';
+
+  @override
+  String get comingUpLabel => 'Coming up';
+
+  @override
+  String get tasksComingUpLabel => 'Tasks coming up';
+
+  @override
+  String get weeklySummaryTitle => 'Weekly Mhuri summary';
+
+  @override
+  String get weeklySummarySubtitle => 'Last 7 days · household snapshot';
+
+  @override
+  String get quickAddWhatAdding => 'What are you adding?';
+
+  @override
+  String get quickAddShoppingOrTask => 'Shopping or task';
+
+  @override
+  String get quickAddAmountSpent => 'Amount spent';
+
+  @override
+  String get quickAddAmountReceived => 'Amount received';
+
+  @override
+  String get quickAddWhichBudget => 'Which budget is this from?';
+
+  @override
+  String get quickAddSavedLabel => 'Saved';
+
+  @override
+  String get appAndCurrencySettings => 'App & currency settings';
 }

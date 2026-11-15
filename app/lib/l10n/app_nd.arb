@@ -626,5 +626,22 @@
   "reminderDigest": "Isifinyezo seviki (ngeSonto 6pm)",
   "notificationsDenied": "Izaziso zeMhuri zivaliwe. Zivumele kuzilungiselelo zefoni yakho.",
   "testNotificationSent": "Isaziso sokuhlola sithunyelwe.",
-  "testNotificationFailed": "Asenelisanga ukuthumela isaziso sokuhlola."
+  "testNotificationFailed": "Asenelisanga ukuthumela isaziso sokuhlola.",
+  "planAheadTitle": "Hlela Phambili",
+  "reportsShortcut": "Imibiko",
+  "tasksShortcut": "Imisebenzi",
+  "askMhuriTitle": "Buza uMhuri",
+  "upcomingBillsTitle": "Izikwelede Ezizayo",
+  "needsAttentionLabel": "Okudinga ukukhangelwa",
+  "comingUpLabel": "Okuzayo",
+  "tasksComingUpLabel": "Imisebenzi ezayo",
+  "weeklySummaryTitle": "Isifinqo seMhuri seveki",
+  "weeklySummarySubtitle": "Insuku eziyi-7 ezedlule · isimo somuzi",
+  "quickAddWhatAdding": "Ufakani?",
+  "quickAddShoppingOrTask": "Okokuthenga kumbe umsebenzi",
+  "quickAddAmountSpent": "Imali esetshenzisiweyo",
+  "quickAddAmountReceived": "Imali etholakeleyo",
+  "quickAddWhichBudget": "Imali le ivela kuyiphi ibhajethi?",
+  "quickAddSavedLabel": "Kulondoloziwe",
+  "appAndCurrencySettings": "Izilungiselelo ze-App lemali"
 }

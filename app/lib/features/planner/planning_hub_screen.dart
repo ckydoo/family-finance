@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../budgets/period_preparation_screen.dart';
 import '../commitments/commitments_screen.dart';
 import '../reports/financial_health_screen.dart';
@@ -59,10 +60,11 @@ class PlanningHubScreen extends StatelessWidget {
     final available = tools.where((tool) => tool.isAvailable(state)).toList();
     final visibleTools = available.isNotEmpty ? available : tools;
     final lockedPreview = available.isEmpty;
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: context.bg,
-      appBar: AppBar(title: const Text('Plan Ahead')),
+      appBar: AppBar(title: Text(l?.planAheadTitle ?? 'Plan Ahead')),
       body: SafeArea(
         child: ListView(
           padding: kPageInsets,

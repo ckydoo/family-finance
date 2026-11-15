@@ -3867,6 +3867,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not send the test notification.'**
   String get testNotificationFailed;
+
+  /// No description provided for @planAheadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan Ahead'**
+  String get planAheadTitle;
+
+  /// No description provided for @reportsShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reportsShortcut;
+
+  /// No description provided for @tasksShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get tasksShortcut;
+
+  /// No description provided for @askMhuriTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Mhuri'**
+  String get askMhuriTitle;
+
+  /// No description provided for @upcomingBillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Bills'**
+  String get upcomingBillsTitle;
+
+  /// No description provided for @needsAttentionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get needsAttentionLabel;
+
+  /// No description provided for @comingUpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming up'**
+  String get comingUpLabel;
+
+  /// No description provided for @tasksComingUpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks coming up'**
+  String get tasksComingUpLabel;
+
+  /// No description provided for @weeklySummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Mhuri summary'**
+  String get weeklySummaryTitle;
+
+  /// No description provided for @weeklySummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days · household snapshot'**
+  String get weeklySummarySubtitle;
+
+  /// No description provided for @quickAddWhatAdding.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you adding?'**
+  String get quickAddWhatAdding;
+
+  /// No description provided for @quickAddShoppingOrTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping or task'**
+  String get quickAddShoppingOrTask;
+
+  /// No description provided for @quickAddAmountSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount spent'**
+  String get quickAddAmountSpent;
+
+  /// No description provided for @quickAddAmountReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount received'**
+  String get quickAddAmountReceived;
+
+  /// No description provided for @quickAddWhichBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Which budget is this from?'**
+  String get quickAddWhichBudget;
+
+  /// No description provided for @quickAddSavedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get quickAddSavedLabel;
+
+  /// No description provided for @appAndCurrencySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'App & currency settings'**
+  String get appAndCurrencySettings;
 }
 
 class _AppLocalizationsDelegate

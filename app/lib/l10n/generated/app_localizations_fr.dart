@@ -2146,4 +2146,55 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get testNotificationFailed =>
       'Impossible d’envoyer la notification de test.';
+
+  @override
+  String get planAheadTitle => 'Planifier';
+
+  @override
+  String get reportsShortcut => 'Rapports';
+
+  @override
+  String get tasksShortcut => 'Tâches';
+
+  @override
+  String get askMhuriTitle => 'Demander à Mhuri';
+
+  @override
+  String get upcomingBillsTitle => 'Factures à venir';
+
+  @override
+  String get needsAttentionLabel => 'À vérifier';
+
+  @override
+  String get comingUpLabel => 'À venir';
+
+  @override
+  String get tasksComingUpLabel => 'Tâches à venir';
+
+  @override
+  String get weeklySummaryTitle => 'Résumé hebdomadaire Mhuri';
+
+  @override
+  String get weeklySummarySubtitle => '7 derniers jours · aperçu du foyer';
+
+  @override
+  String get quickAddWhatAdding => 'Que souhaitez-vous ajouter ?';
+
+  @override
+  String get quickAddShoppingOrTask => 'Courses ou tâche';
+
+  @override
+  String get quickAddAmountSpent => 'Montant dépensé';
+
+  @override
+  String get quickAddAmountReceived => 'Montant reçu';
+
+  @override
+  String get quickAddWhichBudget => 'De quel budget cela provient-il ?';
+
+  @override
+  String get quickAddSavedLabel => 'Enregistré';
+
+  @override
+  String get appAndCurrencySettings => 'Paramètres et devises';
 }

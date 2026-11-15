@@ -626,5 +626,22 @@
   "reminderDigest": "Résumé hebdomadaire (dimanche 18 h)",
   "notificationsDenied": "Les notifications sont désactivées pour Mhuri. Active-les dans les réglages de l’appareil.",
   "testNotificationSent": "Notification de test envoyée.",
-  "testNotificationFailed": "Impossible d’envoyer la notification de test."
+  "testNotificationFailed": "Impossible d’envoyer la notification de test.",
+  "planAheadTitle": "Planifier",
+  "reportsShortcut": "Rapports",
+  "tasksShortcut": "Tâches",
+  "askMhuriTitle": "Demander à Mhuri",
+  "upcomingBillsTitle": "Factures à venir",
+  "needsAttentionLabel": "À vérifier",
+  "comingUpLabel": "À venir",
+  "tasksComingUpLabel": "Tâches à venir",
+  "weeklySummaryTitle": "Résumé hebdomadaire Mhuri",
+  "weeklySummarySubtitle": "7 derniers jours · aperçu du foyer",
+  "quickAddWhatAdding": "Que souhaitez-vous ajouter ?",
+  "quickAddShoppingOrTask": "Courses ou tâche",
+  "quickAddAmountSpent": "Montant dépensé",
+  "quickAddAmountReceived": "Montant reçu",
+  "quickAddWhichBudget": "De quel budget cela provient-il ?",
+  "quickAddSavedLabel": "Enregistré",
+  "appAndCurrencySettings": "Paramètres et devises"
 }

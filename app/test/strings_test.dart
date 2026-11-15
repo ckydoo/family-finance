@@ -109,12 +109,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Presupuestos'), findsOneWidget);
+    expect(find.text('Planificar'), findsOneWidget);
     expect(AppLocalizations.of(context)!.localeName, 'es');
 
     // And to chiShona.
     s.setLocale('sn');
     await tester.pumpAndSettle();
     expect(find.text('Bhajeti'), findsOneWidget);
+    expect(find.text('Ronga Mberi'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 5));
   });

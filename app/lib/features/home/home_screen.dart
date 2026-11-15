@@ -1068,6 +1068,7 @@ class _HomeAttentionSlotState extends State<_HomeAttentionSlot> {
       ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
     final homeTasks = dueTasks.take(2).toList();
 
+    final l = AppLocalizations.of(context);
     if (visibleIssues.isEmpty) {
       if (upcoming.isNotEmpty) {
         final rule = upcoming.first;
@@ -1077,7 +1078,7 @@ class _HomeAttentionSlotState extends State<_HomeAttentionSlot> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sectionTitle(context, 'Coming up'),
+              _sectionTitle(context, l?.comingUpLabel ?? 'Coming up'),
               const SizedBox(height: 8),
               Dismissible(
                 key: ValueKey('coming-up-${rule.id}'),
@@ -1105,7 +1106,7 @@ class _HomeAttentionSlotState extends State<_HomeAttentionSlot> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionLabel(
-              title: 'Tasks coming up',
+              title: l?.tasksComingUpLabel ?? 'Tasks coming up',
               actionLabel: 'See all',
               onAction: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const FamilyTasksScreen()),
@@ -1175,7 +1176,7 @@ class _HomeAttentionSlotState extends State<_HomeAttentionSlot> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Needs attention',
+                            l?.needsAttentionLabel ?? 'Needs attention',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -2685,28 +2686,29 @@ class _HomeToolShortcuts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final items = <(String, String, IconData, Widget)>[
       (
         'home_shortcut_plan_ahead',
-        'Plan Ahead',
+        l?.planAheadTitle ?? 'Plan Ahead',
         Icons.event_note_outlined,
         const PlanningHubScreen(),
       ),
       (
         'home_shortcut_reports',
-        'Reports',
+        l?.reportsShortcut ?? 'Reports',
         Icons.bar_chart_rounded,
         const ReportsScreen(),
       ),
       (
         'home_shortcut_tasks',
-        'Tasks',
+        l?.tasksShortcut ?? 'Tasks',
         Icons.task_alt_outlined,
         const FamilyTasksScreen(),
       ),
       (
         'home_shortcut_ask_mhuri',
-        'Ask Mhuri',
+        l?.askMhuriTitle ?? 'Ask Mhuri',
         Icons.auto_awesome_outlined,
         const AskMhuriScreen(),
       ),

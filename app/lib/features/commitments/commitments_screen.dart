@@ -458,7 +458,10 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
         return Scaffold(
           backgroundColor: context.bg,
           appBar: AppBar(
-            title: const Text('Upcoming Bills'),
+            title: Text(
+              AppLocalizations.of(context)?.upcomingBillsTitle ??
+                  'Upcoming Bills',
+            ),
             actions: [
               if (state.canAuthorTransact &&
                   AppLocalizations.of(context) != null)

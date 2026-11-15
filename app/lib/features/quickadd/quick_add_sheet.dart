@@ -554,7 +554,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     final savedAmountText = Money.fromMajor(amt, _cur).text;
     final confirmationText = s.syncStatus == SyncStatus.offline
         ? l.savedOffline
-        : 'Saved · $savedAmountText';
+        : '${l.quickAddSavedLabel} · $savedAmountText';
     final undoLabel = l.undo;
     _saved = true;
     navigator.pop();
@@ -897,7 +897,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
-                      'What are you adding?',
+                      l.quickAddWhatAdding,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -939,7 +939,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                                 const SizedBox(width: 7),
                                 Flexible(
                                   child: Text(
-                                    'Shopping or task',
+                                    l.quickAddShoppingOrTask,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -1012,8 +1012,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   filled: true,
                   fillColor: context.card,
                   labelText: _type == TxType.expense
-                      ? 'Amount spent'
-                      : 'Amount received',
+                      ? l.quickAddAmountSpent
+                      : l.quickAddAmountReceived,
                   errorText: _amountError,
                   errorStyle: TextStyle(
                     color: context.danger,
@@ -1126,7 +1126,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               if (_accountId == null &&
                   _type == TxType.expense &&
                   s.envelopes.isNotEmpty) ...[
-                Text('Which budget is this from?',
+                Text(l.quickAddWhichBudget,
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,

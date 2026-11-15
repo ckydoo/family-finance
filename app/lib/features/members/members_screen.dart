@@ -604,7 +604,7 @@ class MembersScreen extends StatelessWidget {
             _familyDestination(
               context,
               icon: Icons.event_note_outlined,
-              title: 'Plan Ahead',
+              title: AppLocalizations.of(context)!.planAheadTitle,
               subtitle: 'Bills, payday outlook, and next period',
               screen: const PlanningHubScreen(),
             ),
@@ -618,7 +618,7 @@ class MembersScreen extends StatelessWidget {
             _familyDestination(
               context,
               icon: Icons.auto_awesome_outlined,
-              title: 'Ask Mhuri',
+              title: AppLocalizations.of(context)!.askMhuriTitle,
               subtitle: 'Answers from your household numbers',
               screen: const AskMhuriScreen(),
             ),
@@ -644,7 +644,7 @@ class MembersScreen extends StatelessWidget {
             _familyDestination(
               context,
               icon: Icons.settings_outlined,
-              title: 'App & currency settings',
+              title: AppLocalizations.of(context)!.appAndCurrencySettings,
               subtitle:
                   'Currency (${s.primaryCurrency.short}), language, notifications, privacy & PIN',
               screen: const SettingsScreen(),
