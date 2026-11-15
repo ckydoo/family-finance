@@ -8,6 +8,7 @@ import '../../core/observability/reporter.dart';
 import '../../core/money/money.dart';
 import '../../core/models/models.dart';
 import '../../core/state/app_state.dart';
+import '../../core/sync/sync_engine.dart' show SyncStatus;
 import '../../core/widgets/app_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ui.dart';
@@ -550,14 +551,17 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     final savedTx = s.txs.where((t) => t.id == txId).firstOrNull;
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
-    final savedOffline = l.savedOffline;
+    final savedAmountText = Money.fromMajor(amt, _cur).text;
+    final confirmationText = s.syncStatus == SyncStatus.offline
+        ? l.savedOffline
+        : 'Saved · $savedAmountText';
     final undoLabel = l.undo;
     _saved = true;
     navigator.pop();
     HapticFeedback.mediumImpact();
     messenger.showSnackBar(
       SnackBar(
-        content: Text(savedOffline),
+        content: Text(confirmationText),
         behavior: SnackBarBehavior.floating,
         action: savedTx == null
             ? null
@@ -935,7 +939,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                                 const SizedBox(width: 7),
                                 Flexible(
                                   child: Text(
-                                    'Add something else',
+                                    'Shopping or task',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -1174,38 +1178,43 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 const SizedBox(height: 8),
               ],
 
-              // Who
-              Text(l.whoLabel,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: context.inkSoft)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final m in members)
-                    ChoiceChip(
-                      label: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(iconForKey(m.emoji) ?? kFallbackSemanticIcon,
-                            size: 16, color: context.primaryDark),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: (MediaQuery.sizeOf(context).width - 140)
-                              .clamp(100, 260),
-                          child: Text(
-                            m.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+              // Who (only shown when choosing between multiple household members)
+              if (members.length > 1) ...[
+                Text(l.whoLabel,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: context.inkSoft)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final m in members)
+                      ChoiceChip(
+                        label: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(iconForKey(m.emoji) ?? kFallbackSemanticIcon,
+                              size: 16, color: context.primaryDark),
+                          const SizedBox(width: 6),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: (MediaQuery.sizeOf(context).width - 140)
+                                  .clamp(100, 220),
+                            ),
+                            child: Text(
+                              m.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ]),
-                      selected: _memberId == m.id,
-                      onSelected: (_) => setState(() => _memberId = m.id),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
+                        ]),
+                        selected: _memberId == m.id,
+                        onSelected: (_) => setState(() => _memberId = m.id),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+              ],
 
               // ── More details ────────────────────────────────────────────
               TextButton.icon(

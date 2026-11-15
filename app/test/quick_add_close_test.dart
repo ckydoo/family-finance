@@ -140,4 +140,42 @@ void main() {
     expect(find.text('Amount must be greater than zero.'), findsOneWidget);
     expect(state.txs, isEmpty);
   });
+
+  testWidgets('Quick Add shows calm Saved confirmation when online',
+      (tester) async {
+    final state = AppState();
+    state.members.add(state.user);
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => showQuickAdd(context),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Shopping or task'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Amount spent'),
+      '12.50',
+    );
+    await tester.tap(find.text('Add expense'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Saved ·'), findsOneWidget);
+    expect(find.textContaining('works offline'), findsNothing);
+    expect(find.text('Undo'), findsOneWidget);
+  });
 }
