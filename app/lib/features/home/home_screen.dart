@@ -17,11 +17,13 @@ import '../../core/widgets/ring_progress.dart';
 import '../../core/widgets/tx_tile.dart';
 import '../../core/widgets/ui.dart';
 import '../activity/activity_screen.dart';
+import '../ai/ask_mhuri_screen.dart';
 import '../budgets/budgets_screen.dart'
     show BudgetsScreen, showEnvelopeDetailSheet, showEditEnvelopeSheet;
 import '../family_chat/family_chat_screen.dart';
 import '../family_tasks/family_tasks_screen.dart';
 import '../members/members_screen.dart';
+import '../planner/planning_hub_screen.dart';
 import '../quickadd/quick_add_sheet.dart';
 import '../reports/reports_screen.dart';
 import '../reports/weekly_summary_sheet.dart';
@@ -719,6 +721,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (!isNewHousehold && s.weeklySummary.hasActivity) ...[
                   const SizedBox(height: 10),
                   const WeeklySummaryPreviewCard(),
+                ],
+                if (!isNewHousehold) ...[
+                  const SizedBox(height: 10),
+                  const _HomeToolShortcuts(),
                 ],
 
                 // Activity intentionally closes the page: the current money
@@ -2682,6 +2688,91 @@ class SmartCard extends StatelessWidget {
             ),
             child: Text(actionLabel),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeToolShortcuts extends StatelessWidget {
+  const _HomeToolShortcuts();
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <(String, String, IconData, Widget)>[
+      (
+        'home_shortcut_plan_ahead',
+        'Plan Ahead',
+        Icons.event_note_outlined,
+        const PlanningHubScreen(),
+      ),
+      (
+        'home_shortcut_reports',
+        'Reports',
+        Icons.bar_chart_rounded,
+        const ReportsScreen(),
+      ),
+      (
+        'home_shortcut_tasks',
+        'Tasks',
+        Icons.task_alt_outlined,
+        const FamilyTasksScreen(),
+      ),
+      (
+        'home_shortcut_ask_mhuri',
+        'Ask Mhuri',
+        Icons.auto_awesome_outlined,
+        const AskMhuriScreen(),
+      ),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Material(
+              color: context.card,
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                key: ValueKey(items[i].$1),
+                borderRadius: BorderRadius.circular(999),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => items[i].$4),
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: context.hairline),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(items[i].$3, size: 17, color: context.primaryDark),
+                        const SizedBox(width: 7),
+                        Text(
+                          items[i].$2,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: context.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

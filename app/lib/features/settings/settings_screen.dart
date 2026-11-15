@@ -10,6 +10,11 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../instructions/instructions_screen.dart';
 import '../legal/legal_screen.dart';
+import '../members/members_screen.dart'
+    show
+        showCurrencySettingsSheet,
+        showParentPinDialog,
+        showPrivacySettingsSheet;
 import 'sync_screen.dart';
 import 'plus_screen.dart';
 import 'private_accounts_screen.dart';
@@ -336,6 +341,68 @@ class SettingsScreen extends StatelessWidget {
                     'carry unused money, and savings keep accumulating.',
                     style: TextStyle(fontSize: 12, color: context.inkSoft),
                   ),
+                ),
+                const SizedBox(height: 8),
+                _header(
+                  context,
+                  Icons.currency_exchange_rounded,
+                  AppLocalizations.of(context)!.setCurrency,
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.currency_exchange, size: 20),
+                  title: Text(
+                    AppLocalizations.of(context)!.setCurrency,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(
+                    s.secondaryCurrency == null
+                        ? '${s.primaryCurrency.short} · Single currency mode'
+                        : '${s.primaryCurrency.short} primary · ${s.secondaryCurrency!.short} secondary · ${s.rateLabel}',
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => showCurrencySettingsSheet(context, s),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.visibility_off_outlined, size: 20),
+                  title: Text(
+                    AppLocalizations.of(context)!.setPrivacy,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.setPrivacySub,
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => showPrivacySettingsSheet(context, s),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.pin_outlined, size: 20),
+                  title: Text(
+                    AppLocalizations.of(context)!.kidsPin,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.kidsPinSub,
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => showParentPinDialog(context, s),
                 ),
                 const SizedBox(height: 8),
                 _header(context, Icons.folder_outlined, 'Data'),
