@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/billing/entitlement.dart';
 import 'package:mhuri_money/core/models/models.dart';
+import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/core/theme/app_theme.dart';
 import 'package:mhuri_money/features/family_chat/family_chat_screen.dart';
@@ -173,6 +174,43 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(state.familyChatMessages.single.text, 'Edited');
+
+    state.dispose();
+  });
+
+  testWidgets(
+      'Free family opening chat from a budget sends plain text without Plus-only reference payload',
+      (tester) async {
+    _phoneSize(tester);
+    final state = AppState();
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Groceries',
+      limit: const Money(15000, Currency.usd),
+      emoji: 'cart',
+    );
+    final groceries = state.envelopes.single;
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          home: FamilyChatScreen(initialBudget: groceries),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'Should we stock up?');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Send message'));
+    await tester.pumpAndSettle();
+
+    final sent = state.familyChatMessages.single;
+    expect(sent.text, 'Budget: Groceries — Should we stock up?');
+    expect(sent.referenceType, isNull);
+    expect(sent.referenceId, isNull);
 
     state.dispose();
   });

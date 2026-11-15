@@ -142,9 +142,10 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
   }
 
   void _startChatActivity(AppState state) {
-    if (_chatActivityStarted || !_hasEnhancedChat(state)) return;
+    if (_chatActivityStarted) return;
     _chatActivityStarted = true;
     state.markFamilyChatRead();
+    if (state.sync == null) return;
     unawaited(state.sync?.refreshChat());
     unawaited(_loadPinnedMessageIds(state));
     _chatRefreshTimer = Timer.periodic(
@@ -152,7 +153,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
       (_) {
         if (!mounted) return;
         final currentState = AppScope.of(context);
-        if (!_hasEnhancedChat(currentState)) return;
+        if (currentState.sync == null) return;
         unawaited(currentState.sync?.refreshChat());
         _refreshTick++;
         if (_refreshTick % 4 == 0) {
@@ -942,7 +943,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     String? mediaType,
     String? sticker,
   }) {
-    final reference = _pendingReference;
+    final reference = _hasEnhancedChat(state) ? _pendingReference : null;
     final reply = _replyingTo;
     // RLS requires sender_id = auth.uid(); always use the authenticated
     // identity rather than any device-local profile state.
@@ -1178,17 +1179,25 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
         return;
       }
     }
-    final text = _hasEnhancedChat(state)
-        ? rawText
-        : stripChatEmoji(rawText).trim();
+    final enhanced = _hasEnhancedChat(state);
+    final text = enhanced ? rawText : stripChatEmoji(rawText).trim();
     if (text.isEmpty && _pendingReference == null) return;
     final reference = _pendingReference;
-    final message = _message(
-      state,
-      text: text.isEmpty && reference != null
-          ? '${_referenceLabel(reference.type)[0].toUpperCase()}${_referenceLabel(reference.type).substring(1)}: ${reference.title}'
-          : text,
-    );
+    final String resolvedText;
+    if (reference != null) {
+      final refPrefix =
+          '${_referenceLabel(reference.type)[0].toUpperCase()}${_referenceLabel(reference.type).substring(1)}: ${reference.title}';
+      if (text.isEmpty) {
+        resolvedText = refPrefix;
+      } else if (!enhanced) {
+        resolvedText = '$refPrefix — $text';
+      } else {
+        resolvedText = text;
+      }
+    } else {
+      resolvedText = text;
+    }
+    final message = _message(state, text: resolvedText);
     state.addChatMessage(message);
     _controller.clear();
     setState(() {

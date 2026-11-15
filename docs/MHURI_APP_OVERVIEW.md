@@ -58,9 +58,9 @@ These tools are available from Home, the family area, or related screens rather 
 
 ## Free use and Mhuri Plus
 
-Mhuri’s everyday foundation is free: family spaces and collaboration, income and expense records, budgets, savings goals, debts and repayments, shopping lists, family tasks, basic recurring bills, and standard CSV reporting. Family messaging is part of Mhuri Plus; existing conversations remain stored if a subscription ends.
+Mhuri’s everyday foundation is free: family spaces and collaboration, income and expense records, budgets, savings goals, debts and repayments, shopping lists, family tasks, basic recurring bills, standard CSV reporting, and basic plain-text family chat with replies and message search.
 
-**Mhuri Plus** is the optional paid subscription for family messaging, advanced planning, and review. The current Plus design includes family chat and its collaboration tools, smart bills and commitments, payday cash-flow planning, period preparation, financial health reviews, and advanced savings and debt planning. One subscription is intended to cover the family space, so its members can use the included features together.
+**Mhuri Plus** is the optional paid subscription for enhanced family collaboration, advanced planning, and review. The current Plus design includes enhanced family chat tools (voice notes, photos, stickers/emoji, message editing, interactive budget/task/shopping cards, polls, pins, and advanced search), smart bills and commitments, payday cash-flow planning, period preparation, financial health reviews, and advanced savings and debt planning. One subscription covers the family space, so its members can use the included features together; existing conversations and attachments remain readable if a subscription ends.
 
 The product’s clearest promise is helping a family understand its day-to-day money and plan what is coming next. Plus extends that with deeper forward-looking tools; it is not required to record ordinary income, expenses or budgets.
 
