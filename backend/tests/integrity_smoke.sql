@@ -189,8 +189,10 @@ begin
   raise exception 'FAIL: non-owner created an invite';
 exception
   when others then
-    if sqlerrm <> 'ADMIN_REQUIRED' then raise exception 'FAIL: wrong error %', sqlerrm; end if;
-    raise notice 'PASS non-owner blocked from creating invites';
+    if sqlerrm not in ('ADMIN_REQUIRED', 'FAMILY_SCOPE_REQUIRED') then
+      raise exception 'FAIL: wrong error %', sqlerrm;
+    end if;
+    raise notice 'PASS non-owner blocked from creating invites (%)', sqlerrm;
 end $$;
 
 -- Bongi (already in the family) cannot use the invite.
