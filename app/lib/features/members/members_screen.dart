@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/widgets/ui.dart';
+import '../../core/l10n/app_strings.dart';
 
 import '../../core/billing/entitlement.dart';
 import '../../core/auth/auth_controller.dart';

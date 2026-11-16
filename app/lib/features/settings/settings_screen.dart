@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/money/money.dart';
 import '../../core/config/app_version.dart';
 import '../../core/billing/entitlement.dart';
 import '../../core/notifications/notifier.dart';

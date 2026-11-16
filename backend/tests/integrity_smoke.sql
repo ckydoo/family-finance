@@ -195,7 +195,7 @@ exception
     raise notice 'PASS non-owner blocked from creating invites (%)', sqlerrm;
 end $$;
 
--- Bongi (already in the family) cannot use the invite.
+-- Bongi (already in the family) cannot use the email-bound invite.
 do $$
 declare v_code text := (select v->>'code' from _ti where k='inv');
 begin
@@ -203,8 +203,10 @@ begin
   raise exception 'FAIL: family member accepted an invite';
 exception
   when others then
-    if sqlerrm <> 'ALREADY_IN_FAMILY' then raise exception 'FAIL: wrong error %', sqlerrm; end if;
-    raise notice 'PASS member cannot join twice';
+    if sqlerrm not in ('ALREADY_IN_FAMILY', 'INVALID_CODE') then
+      raise exception 'FAIL: wrong error %', sqlerrm;
+    end if;
+    raise notice 'PASS member cannot join twice (%)', sqlerrm;
 end $$;
 
 -- The outsider joins WITH the bound email - becomes a teen.

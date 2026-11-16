@@ -57,10 +57,10 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         notifier: state,
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: mhuriLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const MembersScreen(),
+          home: MembersScreen(),
         ),
       ),
     );
