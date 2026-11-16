@@ -397,10 +397,20 @@ begin
   insert into public.transaction (space_id, member_id, created_by, type, amount_minor, currency)
   values (v_space, '88888888-8888-8888-8888-888888888888',
           '88888888-8888-8888-8888-888888888888', 'expense', 100, 'USD');
+  -- With child_budget=false (migration 032), shared tx_read hides ledger rows from kid:
+  select count(*) into n from public.transaction
+   where member_id = '88888888-8888-8888-8888-888888888888';
+  if n <> 0 then raise exception 'FAIL: kid saw shared tx with child_budget=false'; end if;
+  raise notice 'PASS switch ON: kid can transact while child_budget=false hides ledger';
+end $$;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$
+declare n int;
+begin
   select count(*) into n from public.transaction
    where member_id = '88888888-8888-8888-8888-888888888888';
   if n <> 1 then raise exception 'FAIL: kid tx insert vanished'; end if;
-  raise notice 'PASS switch ON: kid can now transact';
+  raise notice 'PASS owner sees kid transaction';
 end $$;
 
 select set_config('request.jwt.claim.sub', '77777777-7777-7777-7777-777777777777', false);

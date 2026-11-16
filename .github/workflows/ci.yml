@@ -158,9 +158,9 @@ jobs:
           echo "$out"
       - name: Run flutter test
         run: |
-          if ! out=$(flutter test 2>&1); then
+          if ! out=$(flutter test --reporter expanded 2>&1); then
             echo "$out"
-            summary=$(echo "$out" | grep -E "Some tests failed|FAILED|Exception|Expected:|Actual:|\-[0-9]+:" | tail -n 10 | tr '\n' ' ')
+            summary=$(echo "$out" | grep -B 1 -A 5 "\[E\]" | head -n 30 | tr '\n' ' ')
             echo "::error title=flutter_test::$summary"
             exit 1
           fi

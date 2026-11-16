@@ -121,10 +121,18 @@ void main() {
   testWidgets('Home exposes one-tap shortcuts to Plan Ahead and Ask Mhuri',
       (tester) async {
     phone(tester);
-    final state = AppState()..members.add(AppState().user);
+    final state = AppState();
+    state.members.add(state.user);
     state.addEnvelope(
       name: 'Groceries',
       limit: const Money(10000, Currency.usd),
+    );
+    state.addTx(
+      type: TxType.income,
+      amount: const Money(50000, Currency.usd),
+      memberId: state.user.id,
+      method: Method.bankTransfer,
+      note: 'Salary',
     );
     await tester.pumpWidget(harness(state, const HomeScreen()));
     await tester.pumpAndSettle();
@@ -142,8 +150,9 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
+    await tester.drag(planChip, const Offset(-200, 0));
+    await tester.pumpAndSettle();
     final askChip = find.byKey(const ValueKey('home_shortcut_ask_mhuri'));
-    await tester.ensureVisible(askChip);
     await tester.tap(askChip);
     await tester.pumpAndSettle();
     expect(find.byType(AskMhuriScreen), findsOneWidget);
