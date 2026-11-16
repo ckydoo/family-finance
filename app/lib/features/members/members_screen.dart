@@ -611,7 +611,7 @@ class MembersScreen extends StatelessWidget {
             _familyDestination(
               context,
               icon: Icons.bar_chart_rounded,
-              title: 'Monthly reports',
+              title: AppLocalizations.of(context)!.monthlyReportsTitle,
               subtitle: 'Spending breakdowns, history & CSV',
               screen: const ReportsScreen(),
             ),
@@ -625,7 +625,7 @@ class MembersScreen extends StatelessWidget {
             _familyDestination(
               context,
               icon: Icons.history_rounded,
-              title: 'Family activity',
+              title: AppLocalizations.of(context)!.familyActivityTitle,
               subtitle: 'Money and family updates',
               screen: const ActivityScreen(),
             ),

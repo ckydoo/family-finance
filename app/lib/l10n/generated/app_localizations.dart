@@ -3969,6 +3969,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App & currency settings'**
   String get appAndCurrencySettings;
+
+  /// No description provided for @planAheadHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Make the next few weeks easier'**
+  String get planAheadHeadline;
+
+  /// No description provided for @planAheadLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the question you want to answer. Nothing changes until you review and confirm it.'**
+  String get planAheadLead;
+
+  /// No description provided for @planToolCashTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash outlook'**
+  String get planToolCashTitle;
+
+  /// No description provided for @planToolCashSub.
+  ///
+  /// In en, this message translates to:
+  /// **'See whether your money can cover the days until payday.'**
+  String get planToolCashSub;
+
+  /// No description provided for @planToolBillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills and commitments'**
+  String get planToolBillsTitle;
+
+  /// No description provided for @planToolBillsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Track due dates, reminders and partial payments.'**
+  String get planToolBillsSub;
+
+  /// No description provided for @planToolSavingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings and debt plan'**
+  String get planToolSavingsTitle;
+
+  /// No description provided for @planToolSavingsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare contribution and payoff timelines.'**
+  String get planToolSavingsSub;
+
+  /// No description provided for @planToolHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial health'**
+  String get planToolHealthTitle;
+
+  /// No description provided for @planToolHealthSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Review practical signals from the current period.'**
+  String get planToolHealthSub;
+
+  /// No description provided for @planToolNextPeriodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare the next period'**
+  String get planToolNextPeriodTitle;
+
+  /// No description provided for @planToolNextPeriodSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Review a suggested plan before applying any changes.'**
+  String get planToolNextPeriodSub;
+
+  /// No description provided for @exploreMhuriPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Mhuri Plus'**
+  String get exploreMhuriPlus;
+
+  /// No description provided for @monthlyReportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly reports'**
+  String get monthlyReportsTitle;
+
+  /// No description provided for @familyActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Family activity'**
+  String get familyActivityTitle;
 }
 
 class _AppLocalizationsDelegate

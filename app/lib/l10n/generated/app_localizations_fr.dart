@@ -2197,4 +2197,49 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get appAndCurrencySettings => 'Paramètres et devises';
+
+  @override
+  String get planAheadHeadline => 'Simplifiez les prochaines semaines';
+
+  @override
+  String get planAheadLead => 'Choisissez la question à laquelle répondre. Rien ne change avant votre confirmation.';
+
+  @override
+  String get planToolCashTitle => 'Prévision de trésorerie';
+
+  @override
+  String get planToolCashSub => 'Vérifiez si votre argent couvre les jours jusqu’à la paie.';
+
+  @override
+  String get planToolBillsTitle => 'Factures et engagements';
+
+  @override
+  String get planToolBillsSub => 'Suivez les échéances, rappels et paiements partiels.';
+
+  @override
+  String get planToolSavingsTitle => 'Plan d’épargne et de dettes';
+
+  @override
+  String get planToolSavingsSub => 'Comparez les délais d’épargne et de remboursement.';
+
+  @override
+  String get planToolHealthTitle => 'Santé financière';
+
+  @override
+  String get planToolHealthSub => 'Examinez les signaux pratiques de la période en cours.';
+
+  @override
+  String get planToolNextPeriodTitle => 'Préparer la prochaine période';
+
+  @override
+  String get planToolNextPeriodSub => 'Vérifiez un plan suggéré avant d’appliquer des changements.';
+
+  @override
+  String get exploreMhuriPlus => 'Découvrir Mhuri Plus';
+
+  @override
+  String get monthlyReportsTitle => 'Rapports mensuels';
+
+  @override
+  String get familyActivityTitle => 'Activité familiale';
 }

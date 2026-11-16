@@ -117,9 +117,15 @@ jobs:
 
       - name: Functional integrity smoke test (deletion rules, RLS scoping)
         run: |
-          docker exec -i ${{ job.services.postgres.id }} \
+          if ! out=$(docker exec -i ${{ job.services.postgres.id }} \
             psql -U postgres -d mhuri_ci -v ON_ERROR_STOP=1 \
-            < backend/tests/integrity_smoke.sql
+            < backend/tests/integrity_smoke.sql 2>&1); then
+            echo "$out"
+            summary=$(echo "$out" | tail -n 12 | tr '\n' ' ')
+            echo "::error title=integrity_smoke::$summary"
+            exit 1
+          fi
+          echo "$out"
 
   flutter:
     name: flutter analyze + test
@@ -140,8 +146,25 @@ jobs:
       - name: dart format (advisory)
         run: dart format --output=none --set-exit-if-changed .
         continue-on-error: true
-      - run: flutter analyze --fatal-infos
-      - run: flutter test
+      - name: Run flutter analyze --fatal-infos
+        run: |
+          if ! out=$(flutter analyze --fatal-infos 2>&1); then
+            echo "$out"
+            echo "$out" | grep -E "info •|warning •|error •" | head -n 10 | while IFS= read -r line; do
+              echo "::error title=flutter_analyze::$line"
+            done
+            exit 1
+          fi
+          echo "$out"
+      - name: Run flutter test
+        run: |
+          if ! out=$(flutter test 2>&1); then
+            echo "$out"
+            summary=$(echo "$out" | grep -E "Some tests failed|FAILED|Exception|Expected:|Actual:|\-[0-9]+:" | tail -n 10 | tr '\n' ' ')
+            echo "::error title=flutter_test::$summary"
+            exit 1
+          fi
+          echo "$out" | tail -n 5
   secrets:
     name: secret scanning (#18)
     runs-on: ubuntu-latest
@@ -177,7 +200,15 @@ jobs:
           cache: true
       - run: test -f .env || cp .env.example .env
       - run: flutter pub get
-      - run: flutter build apk --debug
+      - name: Run flutter build apk --debug
+        run: |
+          if ! out=$(flutter build apk --debug 2>&1); then
+            echo "$out"
+            summary=$(echo "$out" | grep -iE "FAILURE|Exception|error:|What went wrong|> " | head -n 12 | tr '\n' ' ')
+            echo "::error title=android_debug_build::$summary"
+            exit 1
+          fi
+          echo "$out" | tail -n 5
 
   ios:
     name: ios build (manual dispatch) (#18)

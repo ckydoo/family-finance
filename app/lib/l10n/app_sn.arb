@@ -643,5 +643,20 @@
   "quickAddAmountReceived": "Mari yatambirwa",
   "quickAddWhichBudget": "Mari iyi inobva mubhajeti ripi?",
   "quickAddSavedLabel": "Yachengetedzwa",
-  "appAndCurrencySettings": "Zvirongwa zveApp nemari"
+  "appAndCurrencySettings": "Zvirongwa zveApp nemari",
+  "planAheadHeadline": "Ita kuti mavhiki anotevera ave nyore",
+  "planAheadLead": "Sarudza mubvunzo waunoda kupindura. Hapana chinoshanduka kusvikira waongorora wotsinhira.",
+  "planToolCashTitle": "Mamiriro emari",
+  "planToolCashSub": "Ona kana mari yako ichikwana kusvika zuva remubairo.",
+  "planToolBillsTitle": "Zvikwereti nezvisungo",
+  "planToolBillsSub": "Tevedzera mazuva ekubhadhara, zviyeuchidzo uye kubhadhara pashoma.",
+  "planToolSavingsTitle": "Hurongwa hwekuchengeta nekubhadhara chikwereti",
+  "planToolSavingsSub": "Enzanisa nguva dzekuchengeta mari nedzekupedza zvikwereti.",
+  "planToolHealthTitle": "Utano hwemari",
+  "planToolHealthSub": "Ongorora zviratidzo zvemashandisirwo emari munguva ino.",
+  "planToolNextPeriodTitle": "Gadzirira nguva inotevera",
+  "planToolNextPeriodSub": "Ongorora hurongwa hwakakurudzirwa usati washandura chero chinhu.",
+  "exploreMhuriPlus": "Ongorora Mhuri Plus",
+  "monthlyReportsTitle": "Mishumo yemwedzi",
+  "familyActivityTitle": "Zvaitika mumhuri"
 }

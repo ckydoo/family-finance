@@ -643,5 +643,20 @@
   "quickAddAmountReceived": "Imali etholakeleyo",
   "quickAddWhichBudget": "Imali le ivela kuyiphi ibhajethi?",
   "quickAddSavedLabel": "Kulondoloziwe",
-  "appAndCurrencySettings": "Izilungiselelo ze-App lemali"
+  "appAndCurrencySettings": "Izilungiselelo ze-App lemali",
+  "planAheadHeadline": "Yenza amaviki alandelayo abe lula",
+  "planAheadLead": "Khetha umbuzo ofuna ukuwuphendula. Akulalutho olutshintshayo uze uhlole uqinisekise.",
+  "planToolCashTitle": "Isimo semali",
+  "planToolCashSub": "Bona ukuthi imali yakho iyenela yini kuze kufike usuku lweholo.",
+  "planToolBillsTitle": "Izikwelede lezibopho",
+  "planToolBillsSub": "Landela amalanga okubhadala, izikhumbuzo lokubhadala kancane.",
+  "planToolSavingsTitle": "Uhlelo lokonga lokubhadala izikwelede",
+  "planToolSavingsSub": "Qathanisa izikhathi zokonga lezokuqeda izikwelede.",
+  "planToolHealthTitle": "Impilo yemali",
+  "planToolHealthSub": "Hlola izibonakaliso zokusebenzisa imali kwesikhathi samanje.",
+  "planToolNextPeriodTitle": "Lungiselela isikhathi esilandelayo",
+  "planToolNextPeriodSub": "Hlola uhlelo olucetshisiweyo ungakaguquli lutho.",
+  "exploreMhuriPlus": "Hlola i-Mhuri Plus",
+  "monthlyReportsTitle": "Imibiko yenyanga",
+  "familyActivityTitle": "Okwenzakale emulini"
 }

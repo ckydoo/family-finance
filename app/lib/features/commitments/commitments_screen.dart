@@ -72,11 +72,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                 children: [
                   Text(
                     'New Smart Commitment',
-                    style: TextStyle(
-                      color: sheetContext.ink,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: MhuriType.titleM.copyWith(color: sheetContext.ink),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -334,11 +330,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
               children: [
                 Text(
                   'Link Expense Payment · ${commitment?.name ?? occurrence.occurrenceKey}',
-                  style: TextStyle(
-                    color: sheetContext.ink,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: MhuriType.titleM.copyWith(color: sheetContext.ink),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -566,7 +558,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                           'Overdue (${overdue.length})',
                           style: TextStyle(
                             color: context.danger,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             fontSize: 15,
                           ),
                         ),
@@ -596,7 +588,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                           'Upcoming (${upcoming.length})',
                           style: TextStyle(
                             color: context.ink,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             fontSize: 15,
                           ),
                         ),
@@ -668,7 +660,7 @@ class _SummaryHeader extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.card,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: kBRadiusL,
           border: Border.all(color: context.hairline),
         ),
         child: Row(
@@ -724,7 +716,7 @@ class _MetricStat extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: 20,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -756,6 +748,11 @@ class _OccurrenceCard extends StatelessWidget {
     final isPartial = paidMinor > 0 && outstanding.minor > 0;
     return Card(
       color: context.card,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: kBRadiusL,
+        side: BorderSide(color: context.hairline),
+      ),
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -769,7 +766,7 @@ class _OccurrenceCard extends StatelessWidget {
                     commitment?.name ?? 'Commitment',
                     style: TextStyle(
                       color: context.ink,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
                   ),
@@ -783,7 +780,7 @@ class _OccurrenceCard extends StatelessWidget {
                     color: isOverdue
                         ? context.danger.withValues(alpha: 0.14)
                         : context.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: kBRadiusS,
                   ),
                   child: Text(
                     isOverdue
@@ -851,6 +848,11 @@ class _CommitmentRuleCard extends StatelessWidget {
             .join(', ');
     return Card(
       color: context.card,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: kBRadiusL,
+        side: BorderSide(color: context.hairline),
+      ),
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         title: Text(
@@ -903,7 +905,7 @@ class _EmptyPane extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: context.card,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: kBRadiusL,
           border: Border.all(color: context.hairline),
         ),
         child: Column(
@@ -913,7 +915,7 @@ class _EmptyPane extends StatelessWidget {
               title,
               style: TextStyle(
                 color: context.ink,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
             ),
@@ -959,7 +961,7 @@ class _RegularBillsSection extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.card,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: kBRadiusL,
         border: Border.all(color: context.hairline),
       ),
       child: Column(
@@ -975,7 +977,7 @@ class _RegularBillsSection extends StatelessWidget {
                   style: TextStyle(
                     color: context.ink,
                     fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

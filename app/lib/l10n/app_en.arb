@@ -1030,5 +1030,20 @@
   "quickAddAmountReceived": "Amount received",
   "quickAddWhichBudget": "Which budget is this from?",
   "quickAddSavedLabel": "Saved",
-  "appAndCurrencySettings": "App & currency settings"
+  "appAndCurrencySettings": "App & currency settings",
+  "planAheadHeadline": "Make the next few weeks easier",
+  "planAheadLead": "Choose the question you want to answer. Nothing changes until you review and confirm it.",
+  "planToolCashTitle": "Cash outlook",
+  "planToolCashSub": "See whether your money can cover the days until payday.",
+  "planToolBillsTitle": "Bills and commitments",
+  "planToolBillsSub": "Track due dates, reminders and partial payments.",
+  "planToolSavingsTitle": "Savings and debt plan",
+  "planToolSavingsSub": "Compare contribution and payoff timelines.",
+  "planToolHealthTitle": "Financial health",
+  "planToolHealthSub": "Review practical signals from the current period.",
+  "planToolNextPeriodTitle": "Prepare the next period",
+  "planToolNextPeriodSub": "Review a suggested plan before applying any changes.",
+  "exploreMhuriPlus": "Explore Mhuri Plus",
+  "monthlyReportsTitle": "Monthly reports",
+  "familyActivityTitle": "Family activity"
 }

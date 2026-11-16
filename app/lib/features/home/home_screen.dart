@@ -1338,12 +1338,19 @@ class _SummaryStat extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: Text(value,
+                child: AnimatedSwitcher(
+                  duration: kMotionFast,
+                  child: Text(
+                    value,
+                    key: ValueKey(value),
                     style: TextStyle(
-                        color: context.ink,
-                        fontSize: compact ? 13.5 : 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: compact ? -0.35 : -0.2)),
+                      color: context.ink,
+                      fontSize: compact ? 13.5 : 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: compact ? -0.35 : -0.2,
+                    ),
+                  ),
+                ),
               ),
             ]),
       ),
@@ -2176,29 +2183,34 @@ class _PoolCard extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
-                    child: s.hideAmounts
-                        ? Text(
-                            '•••••',
-                            style: MhuriType.display.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? context.ink
-                                  : Colors.white,
-                              fontSize: 31,
-                              letterSpacing: -0.8,
+                    child: AnimatedSwitcher(
+                      duration: kMotion,
+                      child: s.hideAmounts
+                          ? Text(
+                              '•••••',
+                              key: const ValueKey('hero_masked'),
+                              style: MhuriType.display.copyWith(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? context.ink
+                                    : Colors.white,
+                                fontSize: 31,
+                                letterSpacing: -0.8,
+                              ),
+                            )
+                          : CountUpText(
+                              key: ValueKey('hero_${primary.currency.name}'),
+                              amount: primary,
+                              style: MhuriType.display.copyWith(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? context.ink
+                                    : Colors.white,
+                                fontSize: 31,
+                                letterSpacing: -0.8,
+                              ),
                             ),
-                          )
-                        : CountUpText(
-                            amount: primary,
-                            style: MhuriType.display.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? context.ink
-                                  : Colors.white,
-                              fontSize: 31,
-                              letterSpacing: -0.8,
-                            ),
-                          ),
+                    ),
                   ),
                   if (hasDual && secondary != null) ...[
                     const SizedBox(height: 4),
@@ -2727,9 +2739,12 @@ class _HomeToolShortcuts extends StatelessWidget {
               child: InkWell(
                 key: ValueKey(items[i].$1),
                 borderRadius: BorderRadius.circular(999),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => items[i].$4),
-                ),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => items[i].$4),
+                  );
+                },
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 44),
                   child: Container(

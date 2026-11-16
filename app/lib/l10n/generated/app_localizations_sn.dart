@@ -2176,4 +2176,49 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get appAndCurrencySettings => 'Zvirongwa zveApp nemari';
+
+  @override
+  String get planAheadHeadline => 'Ita kuti mavhiki anotevera ave nyore';
+
+  @override
+  String get planAheadLead => 'Sarudza mubvunzo waunoda kupindura. Hapana chinoshanduka kusvikira waongorora wotsinhira.';
+
+  @override
+  String get planToolCashTitle => 'Mamiriro emari';
+
+  @override
+  String get planToolCashSub => 'Ona kana mari yako ichikwana kusvika zuva remubairo.';
+
+  @override
+  String get planToolBillsTitle => 'Zvikwereti nezvisungo';
+
+  @override
+  String get planToolBillsSub => 'Tevedzera mazuva ekubhadhara, zviyeuchidzo uye kubhadhara pashoma.';
+
+  @override
+  String get planToolSavingsTitle => 'Hurongwa hwekuchengeta nekubhadhara chikwereti';
+
+  @override
+  String get planToolSavingsSub => 'Enzanisa nguva dzekuchengeta mari nedzekupedza zvikwereti.';
+
+  @override
+  String get planToolHealthTitle => 'Utano hwemari';
+
+  @override
+  String get planToolHealthSub => 'Ongorora zviratidzo zvemashandisirwo emari munguva ino.';
+
+  @override
+  String get planToolNextPeriodTitle => 'Gadzirira nguva inotevera';
+
+  @override
+  String get planToolNextPeriodSub => 'Ongorora hurongwa hwakakurudzirwa usati washandura chero chinhu.';
+
+  @override
+  String get exploreMhuriPlus => 'Ongorora Mhuri Plus';
+
+  @override
+  String get monthlyReportsTitle => 'Mishumo yemwedzi';
+
+  @override
+  String get familyActivityTitle => 'Zvaitika mumhuri';
 }

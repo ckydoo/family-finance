@@ -2178,4 +2178,49 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get appAndCurrencySettings => 'Izilungiselelo ze-App lemali';
+
+  @override
+  String get planAheadHeadline => 'Yenza amaviki alandelayo abe lula';
+
+  @override
+  String get planAheadLead => 'Khetha umbuzo ofuna ukuwuphendula. Akulalutho olutshintshayo uze uhlole uqinisekise.';
+
+  @override
+  String get planToolCashTitle => 'Isimo semali';
+
+  @override
+  String get planToolCashSub => 'Bona ukuthi imali yakho iyenela yini kuze kufike usuku lweholo.';
+
+  @override
+  String get planToolBillsTitle => 'Izikwelede lezibopho';
+
+  @override
+  String get planToolBillsSub => 'Landela amalanga okubhadala, izikhumbuzo lokubhadala kancane.';
+
+  @override
+  String get planToolSavingsTitle => 'Uhlelo lokonga lokubhadala izikwelede';
+
+  @override
+  String get planToolSavingsSub => 'Qathanisa izikhathi zokonga lezokuqeda izikwelede.';
+
+  @override
+  String get planToolHealthTitle => 'Impilo yemali';
+
+  @override
+  String get planToolHealthSub => 'Hlola izibonakaliso zokusebenzisa imali kwesikhathi samanje.';
+
+  @override
+  String get planToolNextPeriodTitle => 'Lungiselela isikhathi esilandelayo';
+
+  @override
+  String get planToolNextPeriodSub => 'Hlola uhlelo olucetshisiweyo ungakaguquli lutho.';
+
+  @override
+  String get exploreMhuriPlus => 'Hlola i-Mhuri Plus';
+
+  @override
+  String get monthlyReportsTitle => 'Imibiko yenyanga';
+
+  @override
+  String get familyActivityTitle => 'Okwenzakale emulini';
 }

@@ -27,7 +27,7 @@ class PlusHero extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: context.primary,
-          borderRadius: BorderRadius.circular(kRadiusSheet),
+          borderRadius: kBRadiusL,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

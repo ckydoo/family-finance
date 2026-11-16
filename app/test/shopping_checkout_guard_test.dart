@@ -178,4 +178,29 @@ void main() {
     expect(state.availableToSpend(Currency.usd).minor, 18500);
     expect(find.textContaining('Deducted from Groceries:'), findsOneWidget);
   });
+
+  test(
+      'defaultShoppingEnvelope links Food, Chikafu, Ukudla, Compras, and cart budgets',
+      () {
+    for (final name in ['Food', 'Chikafu', 'Ukudla', 'Compras', 'Courses']) {
+      final state = AppState();
+      state.envelopes.clear();
+      state.addEnvelope(
+        name: 'Rent',
+        limit: Money.fromMajor(500, Currency.usd),
+        emoji: 'home',
+      );
+      state.addEnvelope(
+        name: name,
+        limit: Money.fromMajor(150, Currency.usd),
+        emoji: 'wallet',
+      );
+      expect(
+        state.defaultShoppingEnvelope?.name,
+        name,
+        reason: 'Expected $name to link as shopping budget',
+      );
+      state.dispose();
+    }
+  });
 }

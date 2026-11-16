@@ -643,5 +643,20 @@
   "quickAddAmountReceived": "Importe recibido",
   "quickAddWhichBudget": "¿De qué presupuesto sale?",
   "quickAddSavedLabel": "Guardado",
-  "appAndCurrencySettings": "Ajustes de la app y moneda"
+  "appAndCurrencySettings": "Ajustes de la app y moneda",
+  "planAheadHeadline": "Facilita las próximas semanas",
+  "planAheadLead": "Elige la pregunta que quieres responder. Nada cambia hasta que lo revises y confirmes.",
+  "planToolCashTitle": "Previsión de efectivo",
+  "planToolCashSub": "Comprueba si tu dinero cubre los días hasta el próximo cobro.",
+  "planToolBillsTitle": "Facturas y compromisos",
+  "planToolBillsSub": "Sigue vencimientos, recordatorios y pagos parciales.",
+  "planToolSavingsTitle": "Plan de ahorro y deudas",
+  "planToolSavingsSub": "Compara plazos de aportación y liquidación.",
+  "planToolHealthTitle": "Salud financiera",
+  "planToolHealthSub": "Revisa indicadores prácticos del periodo actual.",
+  "planToolNextPeriodTitle": "Preparar el próximo periodo",
+  "planToolNextPeriodSub": "Revisa un plan sugerido antes de aplicar cambios.",
+  "exploreMhuriPlus": "Explorar Mhuri Plus",
+  "monthlyReportsTitle": "Informes mensuales",
+  "familyActivityTitle": "Actividad familiar"
 }

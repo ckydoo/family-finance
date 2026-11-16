@@ -58,9 +58,7 @@ class _ListsScreenState extends State<ListsScreen> {
         s.secondaryCurrency != null ? s.estFor(s.secondaryCurrency!) : null;
     final actualPrimary = s.actualShoppingFor(s.primaryCurrency);
     final unloggedPrimary = s.unloggedShoppingFor(s.primaryCurrency);
-    final groceries = s.envelopes
-        .where((e) => !e.isPersonal && e.name.toLowerCase().contains('grocer'))
-        .firstOrNull;
+    final groceries = s.defaultShoppingEnvelope;
     final groceriesSpent = groceries != null
         ? s.spentOn(groceries).inCurrency(s.primaryCurrency, s.rate)
         : Money(0, s.primaryCurrency);
@@ -640,10 +638,7 @@ class _ListsScreenState extends State<ListsScreen> {
 Future<({String? envelopeId, Method method, Money customTotal})?>
     _checkoutSheet(BuildContext context, AppState state) async {
   final available = state.envelopes.where((e) => !e.isPersonal).toList();
-  String? envelopeId = available
-      .where((e) => e.name.toLowerCase().contains('grocer'))
-      .map((e) => e.id)
-      .firstOrNull;
+  String? envelopeId = state.defaultShoppingEnvelope?.id;
   if (envelopeId == null && available.isNotEmpty) {
     envelopeId = available.first.id;
   }

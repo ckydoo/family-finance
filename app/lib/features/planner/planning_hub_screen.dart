@@ -18,49 +18,54 @@ class PlanningHubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    final l = AppLocalizations.of(context);
     final tools = <_PlanningTool>[
-      const _PlanningTool(
+      _PlanningTool(
         feature: 'cash_flow_forecast',
         icon: Icons.timeline_rounded,
-        title: 'Cash outlook',
-        subtitle: 'See whether your money can cover the days until payday.',
-        screen: PaydayPlannerScreen(),
+        title: l?.planToolCashTitle ?? 'Cash outlook',
+        subtitle: l?.planToolCashSub ??
+            'See whether your money can cover the days until payday.',
+        screen: const PaydayPlannerScreen(),
       ),
-      const _PlanningTool(
+      _PlanningTool(
         feature: 'smart_commitments',
         icon: Icons.event_repeat_rounded,
-        title: 'Bills and commitments',
-        subtitle: 'Track due dates, reminders and partial payments.',
-        screen: CommitmentsScreen(),
+        title: l?.planToolBillsTitle ?? 'Bills and commitments',
+        subtitle: l?.planToolBillsSub ??
+            'Track due dates, reminders and partial payments.',
+        screen: const CommitmentsScreen(),
         alwaysOpenScreen: true,
       ),
-      const _PlanningTool(
+      _PlanningTool(
         feature: 'savings_projections',
         alternateFeature: 'debt_planning',
         icon: Icons.savings_outlined,
-        title: 'Savings and debt plan',
-        subtitle: 'Compare contribution and payoff timelines.',
-        screen: AdvancedPlanningScreen(),
+        title: l?.planToolSavingsTitle ?? 'Savings and debt plan',
+        subtitle: l?.planToolSavingsSub ??
+            'Compare contribution and payoff timelines.',
+        screen: const AdvancedPlanningScreen(),
       ),
-      const _PlanningTool(
+      _PlanningTool(
         feature: 'financial_health',
         icon: Icons.health_and_safety_outlined,
-        title: 'Financial health',
-        subtitle: 'Review practical signals from the current period.',
-        screen: FinancialHealthScreen(),
+        title: l?.planToolHealthTitle ?? 'Financial health',
+        subtitle: l?.planToolHealthSub ??
+            'Review practical signals from the current period.',
+        screen: const FinancialHealthScreen(),
       ),
-      const _PlanningTool(
+      _PlanningTool(
         feature: 'period_preparation',
         icon: Icons.next_plan_outlined,
-        title: 'Prepare the next period',
-        subtitle: 'Review a suggested plan before applying any changes.',
-        screen: PeriodPreparationScreen(),
+        title: l?.planToolNextPeriodTitle ?? 'Prepare the next period',
+        subtitle: l?.planToolNextPeriodSub ??
+            'Review a suggested plan before applying any changes.',
+        screen: const PeriodPreparationScreen(),
       ),
     ];
     final available = tools.where((tool) => tool.isAvailable(state)).toList();
     final visibleTools = available.isNotEmpty ? available : tools;
     final lockedPreview = available.isEmpty;
-    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: context.bg,
@@ -69,11 +74,14 @@ class PlanningHubScreen extends StatelessWidget {
         child: ListView(
           padding: kPageInsets,
           children: [
-            Text('Make the next few weeks easier',
-                style: MhuriType.titleL.copyWith(color: context.ink)),
+            Text(
+              l?.planAheadHeadline ?? 'Make the next few weeks easier',
+              style: MhuriType.titleL.copyWith(color: context.ink),
+            ),
             const SizedBox(height: 6),
             Text(
-              'Choose the question you want to answer. Nothing changes until you review and confirm it.',
+              l?.planAheadLead ??
+                  'Choose the question you want to answer. Nothing changes until you review and confirm it.',
               style: MhuriType.body.copyWith(color: context.inkSoft),
             ),
             const SizedBox(height: 20),
@@ -110,7 +118,7 @@ class PlanningHubScreen extends StatelessWidget {
                     ),
                   ),
                   icon: const Icon(Icons.workspace_premium_rounded, size: 18),
-                  label: const Text('Explore Mhuri Plus'),
+                  label: Text(l?.exploreMhuriPlus ?? 'Explore Mhuri Plus'),
                 ),
               ),
             ],
@@ -185,7 +193,7 @@ class _PlanningToolTile extends StatelessWidget {
                   'PLUS',
                   style: TextStyle(
                     fontSize: 10,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: context.ink,
                     letterSpacing: 0.5,
                   ),

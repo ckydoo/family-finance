@@ -1528,8 +1528,7 @@ class _ShoppingTrackingCard extends StatelessWidget {
     final shoppingTxs = transactions.where((tx) {
       if (tx.type != TxType.expense) return false;
       final env = envelopeById[tx.envelopeId];
-      final isGroceries =
-          env != null && env.name.toLowerCase().contains('grocer');
+      final isGroceries = env != null && state.isShoppingEnvelope(env);
       final note = tx.note.toLowerCase();
       final isShoppingNote = note.contains('grocer') ||
           note.contains('shop') ||

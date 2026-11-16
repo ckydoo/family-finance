@@ -4062,6 +4062,54 @@ class AppState extends ChangeNotifier {
 
   /// F5 - "Finish shopping" closes the loop: checked items become one expense
   /// pre-filled with the estimate, posted to the linked envelope.
+  static const List<String> _shoppingEnvelopeKeywords = [
+    'grocer',
+    'food',
+    'supermarket',
+    'supermarch',
+    'supermercad',
+    'shopping',
+    'market',
+    'chikafu',
+    'zvekudya',
+    'kutenga',
+    'ukudla',
+    'ukuthenga',
+    'compras',
+    'alimenta',
+    'mercearia',
+    'comida',
+    'courses',
+    'epicerie',
+    'épicerie',
+  ];
+
+  bool isShoppingEnvelope(Envelope e) {
+    if (e.isPersonal || e.isArchived) return false;
+    final lower = e.name.trim().toLowerCase();
+    for (final kw in _shoppingEnvelopeKeywords) {
+      if (lower.contains(kw)) return true;
+    }
+    return e.emoji == 'cart' || e.emoji == 'shopping_cart';
+  }
+
+  /// Resolves the shared household shopping/groceries budget across supported
+  /// languages (`Groceries`, `Food`, `Chikafu`, `Ukudla`, `Compras`, `Courses`,
+  /// or cart-icon budgets), preferring an explicit `grocer` match first.
+  Envelope? get defaultShoppingEnvelope {
+    for (final e in envelopes) {
+      if (!e.isPersonal &&
+          !e.isArchived &&
+          e.name.toLowerCase().contains('grocer')) {
+        return e;
+      }
+    }
+    for (final e in envelopes) {
+      if (isShoppingEnvelope(e)) return e;
+    }
+    return null;
+  }
+
   Money finishShopping({
     String? txId,
     String? envelopeId,
@@ -4069,17 +4117,10 @@ class AppState extends ChangeNotifier {
     Money? customTotal,
     String? note,
   }) {
-    // Prefer a Groceries envelope; fall back to the first shared one.
+    // Prefer the household shopping/groceries envelope; fall back to the first shared one.
     Envelope? target;
     if (envelopeId != null) target = envelope(envelopeId);
-    if (target == null) {
-      for (final e in envelopes) {
-        if (!e.isPersonal && e.name.toLowerCase().contains('grocer')) {
-          target = e;
-          break;
-        }
-      }
-    }
+    target ??= defaultShoppingEnvelope;
     if (target == null) {
       for (final e in envelopes) {
         if (!e.isPersonal) {

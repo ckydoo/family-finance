@@ -2170,4 +2170,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appAndCurrencySettings => 'App & currency settings';
+
+  @override
+  String get planAheadHeadline => 'Make the next few weeks easier';
+
+  @override
+  String get planAheadLead => 'Choose the question you want to answer. Nothing changes until you review and confirm it.';
+
+  @override
+  String get planToolCashTitle => 'Cash outlook';
+
+  @override
+  String get planToolCashSub => 'See whether your money can cover the days until payday.';
+
+  @override
+  String get planToolBillsTitle => 'Bills and commitments';
+
+  @override
+  String get planToolBillsSub => 'Track due dates, reminders and partial payments.';
+
+  @override
+  String get planToolSavingsTitle => 'Savings and debt plan';
+
+  @override
+  String get planToolSavingsSub => 'Compare contribution and payoff timelines.';
+
+  @override
+  String get planToolHealthTitle => 'Financial health';
+
+  @override
+  String get planToolHealthSub => 'Review practical signals from the current period.';
+
+  @override
+  String get planToolNextPeriodTitle => 'Prepare the next period';
+
+  @override
+  String get planToolNextPeriodSub => 'Review a suggested plan before applying any changes.';
+
+  @override
+  String get exploreMhuriPlus => 'Explore Mhuri Plus';
+
+  @override
+  String get monthlyReportsTitle => 'Monthly reports';
+
+  @override
+  String get familyActivityTitle => 'Family activity';
 }
