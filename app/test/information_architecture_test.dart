@@ -138,8 +138,13 @@ void main() {
     await tester.pumpAndSettle();
 
     final planChip = find.byKey(const ValueKey('home_shortcut_plan_ahead'));
-    await tester.ensureVisible(planChip);
-    await tester.pumpAndSettle();
+    // The home ListView lazily builds children, so scroll until the chip
+    // exists and is vertically visible before tapping it.
+    await tester.scrollUntilVisible(
+      planChip,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(planChip);
     await tester.pumpAndSettle();
     expect(find.byType(PlanningHubScreen), findsOneWidget);
@@ -147,6 +152,7 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
+    // The chip row is already built; reveal the last chip horizontally.
     final askChip = find.byKey(const ValueKey('home_shortcut_ask_mhuri'));
     await tester.ensureVisible(askChip);
     await tester.pumpAndSettle();
