@@ -171,14 +171,21 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
                   size: 19, color: context.primary),
             ),
             const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Ask Mhuri', style: TextStyle(fontSize: 17)),
-                Text('Family money, made clearer',
-                    style:
-                        TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-              ],
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Ask Mhuri',
+                      style: TextStyle(fontSize: 17),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  Text('Family money, made clearer',
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
             ),
           ],
         ),
