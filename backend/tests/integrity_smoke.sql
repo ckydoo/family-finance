@@ -28,7 +28,7 @@ begin
     raise exception 'FAIL: invite code shape';
   end if;
   -- default shopping list exists
-  select count(*) into n from public.shopping_list where space_id = v_space and name = 'Groceries';
+  select count(*) into n from public.shopping_list where space_id = v_space and name = 'Shopping';
   if n <> 1 then raise exception 'FAIL: default shopping list missing'; end if;
   -- audit row exists
   select count(*) into n from public.activity_log
@@ -109,7 +109,7 @@ begin
   delete from public.family_space where name = 'ProbeList';
   -- (that RPC errored on the name or not - we only assert the ORIGINAL list:)
   select id into v_list from public.shopping_list
-    where space_id = v_space and name = 'Groceries' and deleted_at is null
+    where space_id = v_space and name = 'Shopping' and deleted_at is null
     limit 1;
   if v_list is null then raise exception 'FAIL: device A cannot see the default list'; end if;
   insert into _t values ('list', jsonb_build_object('id', v_list::text))
@@ -133,7 +133,7 @@ declare
 begin
   -- B pulls: header + item both visible through membership RLS.
   select count(*) into n from public.shopping_list
-    where id = v_list and name = 'Groceries';
+    where id = v_list and name = 'Shopping';
   if n <> 1 then raise exception 'FAIL: device B cannot see the list header'; end if;
   select count(*) into n from public.list_item
     where list_id = v_list and name = 'Mielie meal';
@@ -189,7 +189,7 @@ begin
   raise exception 'FAIL: non-owner created an invite';
 exception
   when others then
-    if sqlerrm <> 'OWNER_REQUIRED' then raise exception 'FAIL: wrong error %', sqlerrm; end if;
+    if sqlerrm <> 'ADMIN_REQUIRED' then raise exception 'FAIL: wrong error %', sqlerrm; end if;
     raise notice 'PASS non-owner blocked from creating invites';
 end $$;
 

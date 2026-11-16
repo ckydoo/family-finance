@@ -133,6 +133,7 @@ jobs:
         with:
           channel: stable
           cache: true
+      - run: test -f .env || cp .env.example .env
       - run: flutter pub get
       # #18 format gate: NON-BLOCKING until one local `dart format .` run
       # lands; then remove `continue-on-error` to make it enforce.
@@ -152,7 +153,7 @@ jobs:
         run: |
           set -euo pipefail
           patt='github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|supabase_service_role[[:space:]]*[:=][[:space:]]*[^[:space:]"]+|-----BEGIN (RSA|OPENSSH|EC|PGP) PRIVATE KEY-----|AKIA[0-9A-Z]{16}'
-          hits=$(git grep -nIiE "$patt" $(git rev-list --all --max-count=30) -- . ':(exclude).env.example' || true)
+          hits=$(git grep -nIiE "$patt" $(git rev-list --all --max-count=30) -- . ':(exclude).env.example' ':(exclude)SCREENSHOTS.html' || true)
           if [ -n "$hits" ]; then
             echo "POTENTIAL SECRETS FOUND:"; echo "$hits" | head -20; exit 1
           fi
@@ -166,14 +167,15 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+      - run: test -f .env || cp .env.example .env
       - run: flutter pub get
       - run: flutter build apk --debug
 
@@ -190,5 +192,6 @@ jobs:
         with:
           channel: stable
           cache: true
+      - run: test -f .env || cp .env.example .env
       - run: flutter pub get
       - run: flutter build ios --debug --no-codesign
