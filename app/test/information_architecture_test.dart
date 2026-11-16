@@ -138,11 +138,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final planChip = find.byKey(const ValueKey('home_shortcut_plan_ahead'));
-    await tester.scrollUntilVisible(
-      planChip,
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.ensureVisible(planChip);
+    await tester.pumpAndSettle();
     await tester.tap(planChip);
     await tester.pumpAndSettle();
     expect(find.byType(PlanningHubScreen), findsOneWidget);
@@ -150,9 +147,9 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    await tester.drag(planChip, const Offset(-200, 0));
-    await tester.pumpAndSettle();
     final askChip = find.byKey(const ValueKey('home_shortcut_ask_mhuri'));
+    await tester.ensureVisible(askChip);
+    await tester.pumpAndSettle();
     await tester.tap(askChip);
     await tester.pumpAndSettle();
     expect(find.byType(AskMhuriScreen), findsOneWidget);

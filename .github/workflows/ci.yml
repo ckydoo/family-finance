@@ -160,7 +160,7 @@ jobs:
         run: |
           if ! out=$(flutter test --reporter expanded 2>&1); then
             echo "$out"
-            summary=$(echo "$out" | grep -B 1 -A 5 "\[E\]" | head -n 30 | tr '\n' ' ')
+            summary=$(echo "$out" | grep -B 45 "\[E\]" | head -n 100 | tr '\n' ' ')
             echo "::error title=flutter_test::$summary"
             exit 1
           fi
