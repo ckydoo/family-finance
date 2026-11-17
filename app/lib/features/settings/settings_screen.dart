@@ -360,12 +360,18 @@ class SettingsScreen extends StatelessWidget {
                     AppLocalizations.of(context)!.monthEndSweepSettingDesc,
                     style: TextStyle(fontSize: 12, color: context.inkSoft),
                   ),
-                  trailing: Text(
-                    _monthEndSweepLabel(context, s),
-                    style: TextStyle(
-                      color: context.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12.5,
+                  trailing: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Text(
+                      _monthEndSweepLabel(context, s),
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: context.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
                   onTap: () => _chooseMonthEndSweep(context, s),
