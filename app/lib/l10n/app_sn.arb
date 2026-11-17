@@ -721,5 +721,6 @@
   "splitExpense": "Kugovanisa kushandisa",
   "applySplit": "Shandisa kugovanisa",
   "recordIn": "Nyora mu",
-  "budgetCountLabel": "{count, plural, =1{bhajeti 1} other{mabhajeti {count}}}"
+  "budgetCountLabel": "{count, plural, =1{bhajeti 1} other{mabhajeti {count}}}",
+  "amountLabel": "Mari"
 }

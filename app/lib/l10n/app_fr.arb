@@ -721,5 +721,6 @@
   "splitExpense": "Répartir la dépense",
   "applySplit": "Appliquer la répartition",
   "recordIn": "Enregistrer dans",
-  "budgetCountLabel": "{count, plural, =1{1 budget} other{{count} budgets}}"
+  "budgetCountLabel": "{count, plural, =1{1 budget} other{{count} budgets}}",
+  "amountLabel": "Montant"
 }

@@ -4484,4 +4484,10 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 budget} other{{count} budgets}}'**
   String budgetCountLabel(num count);
+
+  /// No description provided for @amountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get amountLabel;
 }

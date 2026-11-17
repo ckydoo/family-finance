@@ -721,5 +721,6 @@
   "splitExpense": "Dividir despesa",
   "applySplit": "Aplicar divisão",
   "recordIn": "Registar em",
-  "budgetCountLabel": "{count, plural, =1{1 orçamento} other{{count} orçamentos}}"
+  "budgetCountLabel": "{count, plural, =1{1 orçamento} other{{count} orçamentos}}",
+  "amountLabel": "Valor"
 }

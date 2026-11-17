@@ -721,5 +721,6 @@
   "splitExpense": "Kwaba iindleko",
   "applySplit": "Sebenzisa ukwaba",
   "recordIn": "Rekhoda ku",
-  "budgetCountLabel": "{count, plural, =1{ibhajeti 1} other{amabhajeti {count}}}"
+  "budgetCountLabel": "{count, plural, =1{ibhajeti 1} other{amabhajeti {count}}}",
+  "amountLabel": "Imali"
 }
