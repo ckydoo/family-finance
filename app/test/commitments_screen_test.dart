@@ -79,4 +79,40 @@ void main() {
 
     state.dispose();
   });
+
+  testWidgets(
+      'Unified Upcoming Bills shows free regular recurring bills alongside Plus prompt',
+      (tester) async {
+    final now = DateTime(2026, 10, 22);
+    final state = AppState(clock: () => now);
+    state.setRealUser(
+      const Member(id: 'u1', name: 'Parent', emoji: 'person', role: Role.owner),
+    );
+    state.addRecurring(
+      name: 'Electricity token',
+      emoji: 'power',
+      amount: const Money(3500, Currency.usd),
+      memberId: 'u1',
+      method: Method.cash,
+      frequency: Frequency.monthly,
+      nextDue: DateTime(2026, 10, 25),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        home: AppScope(notifier: state, child: const CommitmentsScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Upcoming Bills'), findsOneWidget);
+    expect(find.text('Electricity token'), findsOneWidget);
+    expect(
+      find.text('Smart Bills & Commitments is a Mhuri Plus feature'),
+      findsOneWidget,
+    );
+
+    state.dispose();
+  });
 }

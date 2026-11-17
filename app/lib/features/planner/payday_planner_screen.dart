@@ -7,6 +7,7 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/plus_ui.dart';
 import '../commitments/commitments_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class PaydayPlannerScreen extends StatefulWidget {
   const PaydayPlannerScreen({super.key});
@@ -567,6 +568,7 @@ class _AdvancedScenarioSection extends StatelessWidget {
                   ),
                   subtitle: Text('Arrives in +${item.dayOffset} days'),
                   trailing: IconButton(
+                    tooltip: AppLocalizations.of(context)!.removeLabel,
                     icon: const Icon(Icons.close, size: 18),
                     onPressed: () => onRemoveIrregularIncome(item.id),
                   ),

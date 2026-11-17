@@ -1318,6 +1318,120 @@ abstract class AppLocalizations {
   /// **'Keep accumulating'**
   String get rollAccum;
 
+  /// No description provided for @monthEndReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Month-end review'**
+  String get monthEndReviewTitle;
+
+  /// No description provided for @monthEndReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} is still unspent from last month. Move it to savings, or keep it in the budget.'**
+  String monthEndReviewBody(Object amount);
+
+  /// No description provided for @monthEndReviewCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get monthEndReviewCta;
+
+  /// No description provided for @monthEndReviewLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get monthEndReviewLater;
+
+  /// No description provided for @monthEndSweptAutomatically.
+  ///
+  /// In en, this message translates to:
+  /// **'We moved {amount} of last month\'s leftovers into savings.'**
+  String monthEndSweptAutomatically(Object amount);
+
+  /// No description provided for @monthEndReviewSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Money left over'**
+  String get monthEndReviewSheetTitle;
+
+  /// No description provided for @monthEndReviewSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month ended with {amount} still in your budgets. Nothing moves until you confirm.'**
+  String monthEndReviewSheetBody(Object amount);
+
+  /// No description provided for @monthEndReviewCarryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Budgets set to roll over or accumulate already keep their leftovers.'**
+  String get monthEndReviewCarryNote;
+
+  /// No description provided for @monthEndReviewNoGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a savings goal first - then leftover money has somewhere to go.'**
+  String get monthEndReviewNoGoals;
+
+  /// No description provided for @monthEndReviewSendTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Send it to'**
+  String get monthEndReviewSendTo;
+
+  /// No description provided for @monthEndReviewMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move {amount} to {goal}'**
+  String monthEndReviewMove(Object amount, Object goal);
+
+  /// No description provided for @monthEndReviewKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it in the budget'**
+  String get monthEndReviewKeep;
+
+  /// No description provided for @monthEndReviewDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved {amount} to {goal}'**
+  String monthEndReviewDone(Object amount, Object goal);
+
+  /// No description provided for @monthEndReviewDontAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t ask me again'**
+  String get monthEndReviewDontAsk;
+
+  /// No description provided for @monthEndSweepSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Leftover money'**
+  String get monthEndSweepSetting;
+
+  /// No description provided for @monthEndSweepSettingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens to money still unspent when a budget month closes.'**
+  String get monthEndSweepSettingDesc;
+
+  /// No description provided for @monthEndSweepAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask me each month'**
+  String get monthEndSweepAsk;
+
+  /// No description provided for @monthEndSweepAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always move to savings'**
+  String get monthEndSweepAlways;
+
+  /// No description provided for @monthEndSweepNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave it in the budget'**
+  String get monthEndSweepNever;
+
   /// No description provided for @freqTerm.
   ///
   /// In en, this message translates to:
@@ -3867,6 +3981,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not send the test notification.'**
   String get testNotificationFailed;
+
+  /// No description provided for @planAheadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan Ahead'**
+  String get planAheadTitle;
+
+  /// No description provided for @reportsShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reportsShortcut;
+
+  /// No description provided for @tasksShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get tasksShortcut;
+
+  /// No description provided for @askMhuriTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Mhuri'**
+  String get askMhuriTitle;
+
+  /// No description provided for @upcomingBillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Bills'**
+  String get upcomingBillsTitle;
+
+  /// No description provided for @needsAttentionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get needsAttentionLabel;
+
+  /// No description provided for @comingUpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming up'**
+  String get comingUpLabel;
+
+  /// No description provided for @tasksComingUpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks coming up'**
+  String get tasksComingUpLabel;
+
+  /// No description provided for @weeklySummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Mhuri summary'**
+  String get weeklySummaryTitle;
+
+  /// No description provided for @weeklySummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days · household snapshot'**
+  String get weeklySummarySubtitle;
+
+  /// No description provided for @quickAddWhatAdding.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you adding?'**
+  String get quickAddWhatAdding;
+
+  /// No description provided for @quickAddShoppingOrTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping or task'**
+  String get quickAddShoppingOrTask;
+
+  /// No description provided for @quickAddAmountSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount spent'**
+  String get quickAddAmountSpent;
+
+  /// No description provided for @quickAddAmountReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount received'**
+  String get quickAddAmountReceived;
+
+  /// No description provided for @quickAddWhichBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Which budget is this from?'**
+  String get quickAddWhichBudget;
+
+  /// No description provided for @quickAddSavedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get quickAddSavedLabel;
+
+  /// No description provided for @appAndCurrencySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'App & currency settings'**
+  String get appAndCurrencySettings;
+
+  /// No description provided for @planAheadHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Make the next few weeks easier'**
+  String get planAheadHeadline;
+
+  /// No description provided for @planAheadLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the question you want to answer. Nothing changes until you review and confirm it.'**
+  String get planAheadLead;
+
+  /// No description provided for @planToolCashTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash outlook'**
+  String get planToolCashTitle;
+
+  /// No description provided for @planToolCashSub.
+  ///
+  /// In en, this message translates to:
+  /// **'See whether your money can cover the days until payday.'**
+  String get planToolCashSub;
+
+  /// No description provided for @planToolBillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills and commitments'**
+  String get planToolBillsTitle;
+
+  /// No description provided for @planToolBillsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Track due dates, reminders and partial payments.'**
+  String get planToolBillsSub;
+
+  /// No description provided for @planToolSavingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings and debt plan'**
+  String get planToolSavingsTitle;
+
+  /// No description provided for @planToolSavingsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare contribution and payoff timelines.'**
+  String get planToolSavingsSub;
+
+  /// No description provided for @planToolHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial health'**
+  String get planToolHealthTitle;
+
+  /// No description provided for @planToolHealthSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Review practical signals from the current period.'**
+  String get planToolHealthSub;
+
+  /// No description provided for @planToolNextPeriodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare the next period'**
+  String get planToolNextPeriodTitle;
+
+  /// No description provided for @planToolNextPeriodSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Review a suggested plan before applying any changes.'**
+  String get planToolNextPeriodSub;
+
+  /// No description provided for @exploreMhuriPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Mhuri Plus'**
+  String get exploreMhuriPlus;
+
+  /// No description provided for @monthlyReportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly reports'**
+  String get monthlyReportsTitle;
+
+  /// No description provided for @familyActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Family activity'**
+  String get familyActivityTitle;
 }
 
 class _AppLocalizationsDelegate
@@ -3914,4 +4220,274 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       'an issue with the localizations generation tool. Please file an issue '
       'on GitHub with a reproducible sample app and the gen-l10n configuration '
       'that was used.');
+
+  /// No description provided for @activityFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter activity'**
+  String get activityFilterTitle;
+
+  /// No description provided for @filterReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get filterReset;
+
+  /// No description provided for @filterTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction type'**
+  String get filterTypeLabel;
+
+  /// No description provided for @filterExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get filterExpenses;
+
+  /// No description provided for @filterMemberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Family member'**
+  String get filterMemberLabel;
+
+  /// No description provided for @filterEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone'**
+  String get filterEveryone;
+
+  /// No description provided for @filterViewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance view'**
+  String get filterViewLabel;
+
+  /// No description provided for @filterFamilyView.
+  ///
+  /// In en, this message translates to:
+  /// **'Family finances'**
+  String get filterFamilyView;
+
+  /// No description provided for @filterPrivateOption.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · Private'**
+  String filterPrivateOption(Object name);
+
+  /// No description provided for @filterDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get filterDateLabel;
+
+  /// No description provided for @filterAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get filterAllTime;
+
+  /// No description provided for @filterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get filterToday;
+
+  /// No description provided for @filterLast7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get filterLast7Days;
+
+  /// No description provided for @filterLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get filterLast30Days;
+
+  /// No description provided for @filterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get filterApply;
+
+  /// No description provided for @activitySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search activity'**
+  String get activitySearchHint;
+
+  /// No description provided for @privateAccountOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Private account · only you can see it'**
+  String get privateAccountOnly;
+
+  /// No description provided for @clearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get clearFilters;
+
+  /// No description provided for @closeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeLabel;
+
+  /// No description provided for @filterAllTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAllTypes;
+
+  /// No description provided for @activityDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity details'**
+  String get activityDetailsTitle;
+
+  /// No description provided for @noMatchingActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching activity'**
+  String get noMatchingActivity;
+
+  /// No description provided for @noMatchingActivityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try changing or clearing your filters.'**
+  String get noMatchingActivityHint;
+
+  /// No description provided for @closeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get closeSearch;
+
+  /// No description provided for @increaseValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase'**
+  String get increaseValue;
+
+  /// No description provided for @decreaseValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease'**
+  String get decreaseValue;
+
+  /// No description provided for @moveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get moveUp;
+
+  /// No description provided for @moveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get moveDown;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// No description provided for @removeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeLabel;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @toLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'to'**
+  String get toLabel;
+
+  /// No description provided for @quickAddSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what to record for your household'**
+  String get quickAddSubtitle;
+
+  /// No description provided for @addSomethingElse.
+  ///
+  /// In en, this message translates to:
+  /// **'Add something else'**
+  String get addSomethingElse;
+
+  /// No description provided for @addSomethingElseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch entry type or add a household item'**
+  String get addSomethingElseSubtitle;
+
+  /// No description provided for @chooseBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a budget'**
+  String get chooseBudget;
+
+  /// No description provided for @searchBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Search budgets'**
+  String get searchBudgets;
+
+  /// No description provided for @noBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'No budget'**
+  String get noBudget;
+
+  /// No description provided for @keepUnallocated.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this expense unallocated'**
+  String get keepUnallocated;
+
+  /// No description provided for @splitExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Split expense'**
+  String get splitExpense;
+
+  /// No description provided for @applySplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply split'**
+  String get applySplit;
+
+  /// No description provided for @recordIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Record in'**
+  String get recordIn;
+
+  /// No description provided for @budgetCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 budget} other{{count} budgets}}'**
+  String budgetCountLabel(num count);
+
+  /// No description provided for @amountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get amountLabel;
 }

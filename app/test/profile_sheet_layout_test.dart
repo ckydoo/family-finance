@@ -5,6 +5,7 @@ import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/features/members/invite_screen.dart';
 import 'package:mhuri_money/features/members/members_screen.dart';
+import 'package:mhuri_money/features/settings/settings_screen.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 void main() {
@@ -180,7 +181,7 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: mhuriLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: MembersScreen(),
+          home: SettingsScreen(),
         ),
       ),
     );
@@ -191,7 +192,7 @@ void main() {
       250,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.drag(find.byType(ListView).first, const Offset(0, -80));
+    await tester.ensureVisible(find.text('Kids Mode exit PIN'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Kids Mode exit PIN'));
     await tester.pumpAndSettle();

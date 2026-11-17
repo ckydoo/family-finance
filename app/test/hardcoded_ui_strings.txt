@@ -1,0 +1,544 @@
+lib/features/activity/activity_screen.dart|Filter activity
+lib/features/ai/ask_mhuri_screen.dart|ASK MHURI
+lib/features/ai/ask_mhuri_screen.dart|Ask Mhuri
+lib/features/ai/ask_mhuri_screen.dart|Ask about your family’s money…
+lib/features/ai/ask_mhuri_screen.dart|Based on recorded family data. Some costs may be missing.
+lib/features/ai/ask_mhuri_screen.dart|Checking your family’s plan…
+lib/features/ai/ask_mhuri_screen.dart|Explore Mhuri Plus
+lib/features/ai/ask_mhuri_screen.dart|Family money, made clearer
+lib/features/ai/ask_mhuri_screen.dart|Make your next money decision with more clarity.
+lib/features/ai/ask_mhuri_screen.dart|Mhuri Plus
+lib/features/ai/ask_mhuri_screen.dart|NUMBERS USED
+lib/features/ai/ask_mhuri_screen.dart|No matching recorded figures for this question.
+lib/features/ai/ask_mhuri_screen.dart|PLUS
+lib/features/ai/ask_mhuri_screen.dart|TRY ASKING
+lib/features/auth/login_screen.dart|Could not open Google sign-in. Please try again.
+lib/features/budgets/budgets_screen.dart|Allocated
+lib/features/budgets/budgets_screen.dart|As I earn it
+lib/features/budgets/budgets_screen.dart|Budget actions
+lib/features/budgets/budgets_screen.dart|Budgets
+lib/features/budgets/budgets_screen.dart|Close month
+lib/features/budgets/budgets_screen.dart|Close search
+lib/features/budgets/budgets_screen.dart|Close this month?
+lib/features/budgets/budgets_screen.dart|Discuss this budget
+lib/features/budgets/budgets_screen.dart|Edit budget
+lib/features/budgets/budgets_screen.dart|Edit plan
+lib/features/budgets/budgets_screen.dart|Expected
+lib/features/budgets/budgets_screen.dart|Expected income
+lib/features/budgets/budgets_screen.dart|Family Admin permission needed
+lib/features/budgets/budgets_screen.dart|How does your family receive income?
+lib/features/budgets/budgets_screen.dart|Known monthly
+lib/features/budgets/budgets_screen.dart|Last month\'s plan is ready to review.
+lib/features/budgets/budgets_screen.dart|Name
+lib/features/budgets/budgets_screen.dart|No budgets match this view.
+lib/features/budgets/budgets_screen.dart|OK
+lib/features/budgets/budgets_screen.dart|Period
+lib/features/budgets/budgets_screen.dart|Prepare period
+lib/features/budgets/budgets_screen.dart|Remove budget
+lib/features/budgets/budgets_screen.dart|Save changes
+lib/features/budgets/budgets_screen.dart|Save plan
+lib/features/budgets/budgets_screen.dart|Search budgets
+lib/features/budgets/budgets_screen.dart|Set budget
+lib/features/budgets/budgets_screen.dart|Set up plan
+lib/features/budgets/budgets_screen.dart|This month\'s plan
+lib/features/budgets/budgets_screen.dart|Use last month
+lib/features/budgets/period_preparation_screen.dart|1. Check budget amounts
+lib/features/budgets/period_preparation_screen.dart|Carry forward what still matters
+lib/features/budgets/period_preparation_screen.dart|Expected income (optional)
+lib/features/budgets/period_preparation_screen.dart|No active commitments to prepare.
+lib/features/budgets/period_preparation_screen.dart|No completed items to suggest.
+lib/features/budgets/period_preparation_screen.dart|No prior-period contributions to suggest.
+lib/features/budgets/period_preparation_screen.dart|Prepare next period
+lib/features/budgets/period_preparation_screen.dart|Your preparation summary
+lib/features/budgets/recurring_ui.dart|Archive payment
+lib/features/budgets/recurring_ui.dart|Edit payment
+lib/features/budgets/recurring_ui.dart|Edit regular payment
+lib/features/budgets/recurring_ui.dart|Frequency
+lib/features/budgets/recurring_ui.dart|Name
+lib/features/budgets/recurring_ui.dart|Regular payment actions
+lib/features/budgets/recurring_ui.dart|Regular payment archived
+lib/features/budgets/recurring_ui.dart|Regular payment updated
+lib/features/budgets/recurring_ui.dart|Save changes
+lib/features/commitments/commitments_screen.dart|Active rules
+lib/features/commitments/commitments_screen.dart|Add Commitment
+lib/features/commitments/commitments_screen.dart|Add bill
+lib/features/commitments/commitments_screen.dart|Amount
+lib/features/commitments/commitments_screen.dart|Archive
+lib/features/commitments/commitments_screen.dart|Budget category (optional)
+lib/features/commitments/commitments_screen.dart|Commitment name (e.g. School fees, Rent)
+lib/features/commitments/commitments_screen.dart|Due & Overdue
+lib/features/commitments/commitments_screen.dart|End schedule
+lib/features/commitments/commitments_screen.dart|Explore Mhuri Plus
+lib/features/commitments/commitments_screen.dart|Generate next 60 days
+lib/features/commitments/commitments_screen.dart|Link Payment
+lib/features/commitments/commitments_screen.dart|No category linked
+lib/features/commitments/commitments_screen.dart|No commitment schedules yet
+lib/features/commitments/commitments_screen.dart|No upcoming commitment occurrences
+lib/features/commitments/commitments_screen.dart|On due date
+lib/features/commitments/commitments_screen.dart|Overdue
+lib/features/commitments/commitments_screen.dart|Pause
+lib/features/commitments/commitments_screen.dart|Save Commitment
+lib/features/commitments/commitments_screen.dart|Schedule
+lib/features/commitments/commitments_screen.dart|Schedules
+lib/features/commitments/commitments_screen.dart|Select recorded expense transaction
+lib/features/commitments/commitments_screen.dart|Set Active
+lib/features/commitments/commitments_screen.dart|Skip
+lib/features/commitments/commitments_screen.dart|Stay ahead of every due date
+lib/features/commitments/commitments_screen.dart|Upcoming
+lib/features/family_chat/family_chat_screen.dart|A Mhuri Plus feature
+lib/features/family_chat/family_chat_screen.dart|Add photo or reference
+lib/features/family_chat/family_chat_screen.dart|Advanced chat search is a Mhuri Plus feature.
+lib/features/family_chat/family_chat_screen.dart|Advanced message search
+lib/features/family_chat/family_chat_screen.dart|Advanced search filters
+lib/features/family_chat/family_chat_screen.dart|Any type
+lib/features/family_chat/family_chat_screen.dart|Anyone
+lib/features/family_chat/family_chat_screen.dart|Budget
+lib/features/family_chat/family_chat_screen.dart|Cancel
+lib/features/family_chat/family_chat_screen.dart|Cancel reply
+lib/features/family_chat/family_chat_screen.dart|Clear end date
+lib/features/family_chat/family_chat_screen.dart|Clear filters
+lib/features/family_chat/family_chat_screen.dart|Clear start date
+lib/features/family_chat/family_chat_screen.dart|Close search
+lib/features/family_chat/family_chat_screen.dart|Connect to your family before sending a voice note.
+lib/features/family_chat/family_chat_screen.dart|Connect to your family before sharing photos.
+lib/features/family_chat/family_chat_screen.dart|Delete message?
+lib/features/family_chat/family_chat_screen.dart|Discard voice note
+lib/features/family_chat/family_chat_screen.dart|Edit message
+lib/features/family_chat/family_chat_screen.dart|Emoji
+lib/features/family_chat/family_chat_screen.dart|Emoji and stickers
+lib/features/family_chat/family_chat_screen.dart|Explore Mhuri Plus
+lib/features/family_chat/family_chat_screen.dart|Explore Plus
+lib/features/family_chat/family_chat_screen.dart|Family polls
+lib/features/family_chat/family_chat_screen.dart|Family tasks
+lib/features/family_chat/family_chat_screen.dart|Family update
+lib/features/family_chat/family_chat_screen.dart|Maybe later
+lib/features/family_chat/family_chat_screen.dart|Message
+lib/features/family_chat/family_chat_screen.dart|Message options
+lib/features/family_chat/family_chat_screen.dart|Message type
+lib/features/family_chat/family_chat_screen.dart|Original message is unavailable or was deleted.
+lib/features/family_chat/family_chat_screen.dart|PIN_LIMIT_REACHED
+lib/features/family_chat/family_chat_screen.dart|PLUS_FEATURE_REQUIRED
+lib/features/family_chat/family_chat_screen.dart|Photo library
+lib/features/family_chat/family_chat_screen.dart|Photo or attachment
+lib/features/family_chat/family_chat_screen.dart|Pin message
+lib/features/family_chat/family_chat_screen.dart|Pinned messages
+lib/features/family_chat/family_chat_screen.dart|Reference a budget
+lib/features/family_chat/family_chat_screen.dart|Reference a shopping item
+lib/features/family_chat/family_chat_screen.dart|Remove
+lib/features/family_chat/family_chat_screen.dart|Save
+lib/features/family_chat/family_chat_screen.dart|Search
+lib/features/family_chat/family_chat_screen.dart|Search messages
+lib/features/family_chat/family_chat_screen.dart|Send message
+lib/features/family_chat/family_chat_screen.dart|Send voice note
+lib/features/family_chat/family_chat_screen.dart|Sender
+lib/features/family_chat/family_chat_screen.dart|Share with the family
+lib/features/family_chat/family_chat_screen.dart|Shopping item
+lib/features/family_chat/family_chat_screen.dart|Sticker
+lib/features/family_chat/family_chat_screen.dart|Stickers
+lib/features/family_chat/family_chat_screen.dart|Text
+lib/features/family_chat/family_chat_screen.dart|Unpin message
+lib/features/family_chat/family_chat_voice_note.dart|Voice note
+lib/features/family_chat/family_polls_sheet.dart|Add option
+lib/features/family_chat/family_polls_sheet.dart|Allow multiple choices
+lib/features/family_chat/family_polls_sheet.dart|Cancel
+lib/features/family_chat/family_polls_sheet.dart|Close
+lib/features/family_chat/family_polls_sheet.dart|Close poll
+lib/features/family_chat/family_polls_sheet.dart|Create a family poll
+lib/features/family_chat/family_polls_sheet.dart|Create a poll
+lib/features/family_chat/family_polls_sheet.dart|Create poll
+lib/features/family_chat/family_polls_sheet.dart|Decide together
+lib/features/family_chat/family_polls_sheet.dart|Explore Mhuri Plus
+lib/features/family_chat/family_polls_sheet.dart|Family polls
+lib/features/family_chat/family_polls_sheet.dart|New
+lib/features/family_chat/family_polls_sheet.dart|Question
+lib/features/family_chat/family_polls_sheet.dart|Submit vote
+lib/features/family_chat/family_polls_sheet.dart|Update vote
+lib/features/family_tasks/family_tasks_screen.dart|Add family task
+lib/features/family_tasks/family_tasks_screen.dart|Add task
+lib/features/family_tasks/family_tasks_screen.dart|Approve reward
+lib/features/family_tasks/family_tasks_screen.dart|Archive
+lib/features/family_tasks/family_tasks_screen.dart|Assignee
+lib/features/family_tasks/family_tasks_screen.dart|Cancel
+lib/features/family_tasks/family_tasks_screen.dart|Close search
+lib/features/family_tasks/family_tasks_screen.dart|Completed
+lib/features/family_tasks/family_tasks_screen.dart|Discuss
+lib/features/family_tasks/family_tasks_screen.dart|Discuss task
+lib/features/family_tasks/family_tasks_screen.dart|Edit family task
+lib/features/family_tasks/family_tasks_screen.dart|Edit task
+lib/features/family_tasks/family_tasks_screen.dart|Notes
+lib/features/family_tasks/family_tasks_screen.dart|Points
+lib/features/family_tasks/family_tasks_screen.dart|Reopen task
+lib/features/family_tasks/family_tasks_screen.dart|Requires family approval
+lib/features/family_tasks/family_tasks_screen.dart|Save changes
+lib/features/family_tasks/family_tasks_screen.dart|Save task
+lib/features/family_tasks/family_tasks_screen.dart|Search tasks
+lib/features/family_tasks/family_tasks_screen.dart|Status
+lib/features/family_tasks/family_tasks_screen.dart|Task title
+lib/features/family_tasks/family_tasks_screen.dart|Tasks & responsibilities
+lib/features/family_tasks/family_tasks_screen.dart|Today
+lib/features/family_tasks/family_tasks_screen.dart|Unassigned
+lib/features/family_tasks/family_tasks_screen.dart|Upcoming
+lib/features/family_tasks/family_tasks_screen.dart|Who’s involved and what needs done?
+lib/features/home/home_screen.dart|Add money coming in
+lib/features/home/home_screen.dart|Budgets
+lib/features/home/home_screen.dart|Cancel
+lib/features/home/home_screen.dart|Choose the family space you want to use.
+lib/features/home/home_screen.dart|Close
+lib/features/home/home_screen.dart|Configure members, amounts and collection order to start.
+lib/features/home/home_screen.dart|Current
+lib/features/home/home_screen.dart|Decide how much you want to spend this month.
+lib/features/home/home_screen.dart|Families could not be loaded.
+lib/features/home/home_screen.dart|Family chat
+lib/features/home/home_screen.dart|Invite code
+lib/features/home/home_screen.dart|JOIN A FAMILY
+lib/features/home/home_screen.dart|Join
+lib/features/home/home_screen.dart|Join another family
+lib/features/home/home_screen.dart|Join with code
+lib/features/home/home_screen.dart|Keep everyone on the same page as you buy things.
+lib/features/home/home_screen.dart|Log salary, business earnings or family funds.
+lib/features/home/home_screen.dart|Manage current family
+lib/features/home/home_screen.dart|Mhuri Plus active
+lib/features/home/home_screen.dart|Mukando savings circle
+lib/features/home/home_screen.dart|My private finances
+lib/features/home/home_screen.dart|Record what you spend
+lib/features/home/home_screen.dart|Set your budgets
+lib/features/home/home_screen.dart|Sign out?
+lib/features/home/home_screen.dart|Switch family
+lib/features/home/home_screen.dart|Tasks coming up
+lib/features/home/home_screen.dart|Try again
+lib/features/home/home_screen.dart|Zoe
+lib/features/instructions/instructions_screen.dart|Collaborative Shopping Runs
+lib/features/instructions/instructions_screen.dart|Household Roles & Permissions
+lib/features/instructions/instructions_screen.dart|Moving Money Between Envelopes
+lib/features/instructions/instructions_screen.dart|Mukando & Rotating Savings Circles (ROSCA)
+lib/features/instructions/instructions_screen.dart|Multi-Currency & Dual-Currency Tracking
+lib/features/instructions/instructions_screen.dart|Offline-First & Cloud Sync
+lib/features/instructions/instructions_screen.dart|Tasks, Points & Family Rewards
+lib/features/instructions/instructions_screen.dart|Zero-Based Envelope Budgeting
+lib/features/legal/legal_screen.dart|Account Credentials
+lib/features/legal/legal_screen.dart|Ask Mhuri (temporarily unavailable)
+lib/features/legal/legal_screen.dart|Children & Minor Profiles
+lib/features/legal/legal_screen.dart|Deleting a Family Space (Owner)
+lib/features/legal/legal_screen.dart|Diagnostics, Usage & Notifications
+lib/features/legal/legal_screen.dart|Family Financial Content
+lib/features/legal/legal_screen.dart|Family Tasks, Points & Rewards
+lib/features/legal/legal_screen.dart|Leaving a Family (Member)
+lib/features/legal/legal_screen.dart|Open Source Licenses
+lib/features/legal/legal_screen.dart|Permanent Account Purge
+lib/features/legal/legal_screen.dart|View Open Source Licenses
+lib/features/lists/lists_screen.dart|Add first item
+lib/features/lists/lists_screen.dart|Anyone
+lib/features/lists/lists_screen.dart|Assign to
+lib/features/lists/lists_screen.dart|Budget category
+lib/features/lists/lists_screen.dart|Discuss with family
+lib/features/lists/lists_screen.dart|Edit item
+lib/features/lists/lists_screen.dart|Finish shopping
+lib/features/lists/lists_screen.dart|Item
+lib/features/lists/lists_screen.dart|Item actions
+lib/features/lists/lists_screen.dart|Payment method
+lib/features/lists/lists_screen.dart|Quantity
+lib/features/lists/lists_screen.dart|Record expense
+lib/features/lists/lists_screen.dart|Remove item
+lib/features/lists/lists_screen.dart|Reuse purchased items
+lib/features/lists/lists_screen.dart|Save changes
+lib/features/lists/lists_screen.dart|Search shopping items
+lib/features/lists/lists_screen.dart|Shopping item updated
+lib/features/lists/lists_screen.dart|Undo
+lib/features/meeting/family_meeting_screen.dart|Approve
+lib/features/meeting/family_meeting_screen.dart|Decline
+lib/features/meeting/family_meeting_screen.dart|Previous commitments
+lib/features/meeting/family_meeting_screen.dart|Review budgets
+lib/features/meeting/family_meeting_screen.dart|Review goals
+lib/features/meeting/family_meeting_screen.dart|Use last month
+lib/features/members/invite_screen.dart|Explore Mhuri Plus
+lib/features/members/invite_screen.dart|Family Admin permission needed
+lib/features/members/invite_screen.dart|Mhuri
+lib/features/members/invite_screen.dart|OK
+lib/features/members/members_screen.dart|Add Kids Mode chore
+lib/features/members/members_screen.dart|Add chore
+lib/features/members/members_screen.dart|Add family reward
+lib/features/members/members_screen.dart|Add legacy chore
+lib/features/members/members_screen.dart|Add reward
+lib/features/members/members_screen.dart|Adult Member
+lib/features/members/members_screen.dart|Answers from your household numbers
+lib/features/members/members_screen.dart|Approved task points
+lib/features/members/members_screen.dart|Archive reward
+lib/features/members/members_screen.dart|Bills, payday outlook, and next period
+lib/features/members/members_screen.dart|Cancel
+lib/features/members/members_screen.dart|Change avatar
+lib/features/members/members_screen.dart|Change to Adult Member
+lib/features/members/members_screen.dart|Change to Contributor
+lib/features/members/members_screen.dart|Chore name
+lib/features/members/members_screen.dart|Close avatar
+lib/features/members/members_screen.dart|Confirm your password
+lib/features/members/members_screen.dart|Contributor
+lib/features/members/members_screen.dart|Could not change this member\'s role.
+lib/features/members/members_screen.dart|Done
+lib/features/members/members_screen.dart|Edit Kids Mode chore
+lib/features/members/members_screen.dart|Edit family
+lib/features/members/members_screen.dart|Edit profile
+lib/features/members/members_screen.dart|Explore Mhuri Plus
+lib/features/members/members_screen.dart|FAMILY
+lib/features/members/members_screen.dart|Family Admin
+lib/features/members/members_screen.dart|Family Admin permission needed
+lib/features/members/members_screen.dart|Family Owner
+lib/features/members/members_screen.dart|Family chat
+lib/features/members/members_screen.dart|Family name
+lib/features/members/members_screen.dart|Family name changed
+lib/features/members/members_screen.dart|Invite member
+lib/features/members/members_screen.dart|Kid
+lib/features/members/members_screen.dart|Kids Mode chores
+lib/features/members/members_screen.dart|Legacy chores award stars in Kids Mode.
+lib/features/members/members_screen.dart|MHRI-XXXX
+lib/features/members/members_screen.dart|Make Family Admin
+lib/features/members/members_screen.dart|Manage family
+lib/features/members/members_screen.dart|Member removed
+lib/features/members/members_screen.dart|Money and family updates
+lib/features/members/members_screen.dart|None (Single Currency Mode)
+lib/features/members/members_screen.dart|OK
+lib/features/members/members_screen.dart|Optional details
+lib/features/members/members_screen.dart|Points & rewards
+lib/features/members/members_screen.dart|Points required
+lib/features/members/members_screen.dart|Remove from family
+lib/features/members/members_screen.dart|Remove member
+lib/features/members/members_screen.dart|Removing family members
+lib/features/members/members_screen.dart|Reward name
+lib/features/members/members_screen.dart|Rewards
+lib/features/members/members_screen.dart|Save changes
+lib/features/members/members_screen.dart|Save reward
+lib/features/members/members_screen.dart|Saving…
+lib/features/members/members_screen.dart|See role permissions
+lib/features/members/members_screen.dart|Set a reward and how many approved points it costs.
+lib/features/members/members_screen.dart|Spending breakdowns, history & CSV
+lib/features/members/members_screen.dart|Stars
+lib/features/members/members_screen.dart|Tasks & responsibilities
+lib/features/members/members_screen.dart|Teen
+lib/features/members/members_screen.dart|The updated name will sync to every family member.
+lib/features/members/members_screen.dart|Verify
+lib/features/members/members_screen.dart|Viewer
+lib/features/members/members_screen.dart|Who can do what?
+lib/features/onboarding/family_setup_screen.dart|+ Add my own
+lib/features/onboarding/family_setup_screen.dart|Add
+lib/features/onboarding/family_setup_screen.dart|Create a family instead
+lib/features/onboarding/family_setup_screen.dart|Family name
+lib/features/onboarding/family_setup_screen.dart|For example, 20 or 31
+lib/features/onboarding/family_setup_screen.dart|Go to Home
+lib/features/onboarding/family_setup_screen.dart|Invite code
+lib/features/onboarding/family_setup_screen.dart|None (Single currency)
+lib/features/onboarding/family_setup_screen.dart|Payday (day of month)
+lib/features/onboarding/family_setup_screen.dart|Preferred name
+lib/features/onboarding/family_setup_screen.dart|What should the family call you?
+lib/features/onboarding/family_setup_screen.dart|e.g. Chikangaiso Family
+lib/features/onboarding/family_setup_screen.dart|e.g. Church, Farm, Parents
+lib/features/onboarding/family_setup_screen.dart|e.g. MHRI-ABCD
+lib/features/onboarding/family_setup_screen.dart|e.g. Mac
+lib/features/planner/payday_planner_screen.dart|1. Start with money available now
+lib/features/planner/payday_planner_screen.dart|14 days late
+lib/features/planner/payday_planner_screen.dart|2. Add what you expect
+lib/features/planner/payday_planner_screen.dart|3 days late
+lib/features/planner/payday_planner_screen.dart|3. Your outlook
+lib/features/planner/payday_planner_screen.dart|30 days
+lib/features/planner/payday_planner_screen.dart|60 days
+lib/features/planner/payday_planner_screen.dart|7 days late
+lib/features/planner/payday_planner_screen.dart|90 days
+lib/features/planner/payday_planner_screen.dart|Add
+lib/features/planner/payday_planner_screen.dart|Add dated expected income
+lib/features/planner/payday_planner_screen.dart|Add dated income
+lib/features/planner/payday_planner_screen.dart|Additional savings scenario
+lib/features/planner/payday_planner_screen.dart|Build your outlook
+lib/features/planner/payday_planner_screen.dart|Cancel
+lib/features/planner/payday_planner_screen.dart|Confirm the opening amount to calculate the outlook.
+lib/features/planner/payday_planner_screen.dart|Currency
+lib/features/planner/payday_planner_screen.dart|Days from today (e.g. 10)
+lib/features/planner/payday_planner_screen.dart|Enter a valid opening amount.
+lib/features/planner/payday_planner_screen.dart|Higher essentials scenario
+lib/features/planner/payday_planner_screen.dart|On time (0 days)
+lib/features/planner/payday_planner_screen.dart|Optional what-if scenarios
+lib/features/planner/payday_planner_screen.dart|Payday-to-payday planner
+lib/features/planner/payday_planner_screen.dart|Period
+lib/features/planner/payday_planner_screen.dart|Projected closing balance
+lib/features/planner/payday_planner_screen.dart|Rough estimates are enough. You can refine them later.
+lib/features/planner/payday_planner_screen.dart|See the month before it happens
+lib/features/planner/payday_planner_screen.dart|Smart Commitments
+lib/features/planner/payday_planner_screen.dart|Source (e.g. Freelance, Market sales)
+lib/features/planner/payday_planner_screen.dart|This amount is available to plan with
+lib/features/planner/payday_planner_screen.dart|Use your recorded balance or enter a different amount.
+lib/features/planner/payday_planner_screen.dart|What if essentials cost more?
+lib/features/planner/payday_planner_screen.dart|What if expected income arrives late?
+lib/features/planner/payday_planner_screen.dart|What if we increase savings?
+lib/features/planner/payday_planner_screen.dart|What-if purchase
+lib/features/planner/planning_hub_screen.dart|Bills and commitments
+lib/features/planner/planning_hub_screen.dart|Cash outlook
+lib/features/planner/planning_hub_screen.dart|Explore Mhuri Plus
+lib/features/planner/planning_hub_screen.dart|Financial health
+lib/features/planner/planning_hub_screen.dart|Plan Ahead
+lib/features/planner/planning_hub_screen.dart|Prepare the next period
+lib/features/planner/planning_hub_screen.dart|Savings and debt plan
+lib/features/reports/financial_health_screen.dart|Financial health check
+lib/features/reports/financial_health_screen.dart|How this was calculated
+lib/features/reports/financial_health_screen.dart|Limitations
+lib/features/reports/reports_screen.dart|Bills and debts
+lib/features/reports/reports_screen.dart|Bills paid in this period
+lib/features/reports/reports_screen.dart|Category
+lib/features/reports/reports_screen.dart|Compared with last cycle
+lib/features/reports/reports_screen.dart|Debt still outstanding
+lib/features/reports/reports_screen.dart|Explore Mhuri Plus
+lib/features/reports/reports_screen.dart|Family progress
+lib/features/reports/reports_screen.dart|Income
+lib/features/reports/reports_screen.dart|Month closed
+lib/features/reports/reports_screen.dart|Month-end summary
+lib/features/reports/reports_screen.dart|Open health check
+lib/features/reports/reports_screen.dart|Open planner
+lib/features/reports/reports_screen.dart|Overdue bills
+lib/features/reports/reports_screen.dart|Plan vs actual
+lib/features/reports/reports_screen.dart|Plus · 30-day cash-flow estimate
+lib/features/reports/reports_screen.dart|Plus · category insights
+lib/features/reports/reports_screen.dart|Savings goals
+lib/features/reports/reports_screen.dart|Smart Commitments
+lib/features/reports/reports_screen.dart|Spending
+lib/features/reports/reports_screen.dart|Upcoming bills
+lib/features/reports/reports_screen.dart|View full shopping list
+lib/features/reports/weekly_summary_sheet.dart|Cancel
+lib/features/reports/weekly_summary_sheet.dart|Coming up next
+lib/features/reports/weekly_summary_sheet.dart|Confirm & share
+lib/features/reports/weekly_summary_sheet.dart|Debt repaid
+lib/features/reports/weekly_summary_sheet.dart|Hide exact currency amounts
+lib/features/reports/weekly_summary_sheet.dart|Income (7 days)
+lib/features/reports/weekly_summary_sheet.dart|Last 7 days · household snapshot
+lib/features/reports/weekly_summary_sheet.dart|Saved this week
+lib/features/reports/weekly_summary_sheet.dart|Share summary
+lib/features/reports/weekly_summary_sheet.dart|Share weekly summary?
+lib/features/reports/weekly_summary_sheet.dart|Spent (7 days)
+lib/features/reports/weekly_summary_sheet.dart|Weekly Mhuri summary
+lib/features/reports/weekly_summary_sheet.dart|Weekly summary copied and ready to share.
+lib/features/savings/advanced_planning_screen.dart|Add a debt first
+lib/features/savings/advanced_planning_screen.dart|Amount to compare
+lib/features/savings/advanced_planning_screen.dart|Clear a debt
+lib/features/savings/advanced_planning_screen.dart|Compare another amount
+lib/features/savings/advanced_planning_screen.dart|Create a savings goal first
+lib/features/savings/advanced_planning_screen.dart|Debt to clear
+lib/features/savings/advanced_planning_screen.dart|Different target amount
+lib/features/savings/advanced_planning_screen.dart|Frequency
+lib/features/savings/advanced_planning_screen.dart|Optional amount or date
+lib/features/savings/advanced_planning_screen.dart|Reach a goal
+lib/features/savings/advanced_planning_screen.dart|Savings & debt scenarios
+lib/features/savings/advanced_planning_screen.dart|Savings goal
+lib/features/savings/advanced_planning_screen.dart|Try a different target
+lib/features/savings/advanced_planning_screen.dart|Turn goals into a timeline
+lib/features/savings/savings_screen.dart|+ Add member to circle
+lib/features/savings/savings_screen.dart|Add debt or money owed
+lib/features/savings/savings_screen.dart|Amount
+lib/features/savings/savings_screen.dart|Archive goal
+lib/features/savings/savings_screen.dart|Cancel
+lib/features/savings/savings_screen.dart|Circle name
+lib/features/savings/savings_screen.dart|Configure Mukando
+lib/features/savings/savings_screen.dart|Contribution amount
+lib/features/savings/savings_screen.dart|Contribution per turn
+lib/features/savings/savings_screen.dart|Create
+lib/features/savings/savings_screen.dart|Currency
+lib/features/savings/savings_screen.dart|Deadline
+lib/features/savings/savings_screen.dart|Debts
+lib/features/savings/savings_screen.dart|Delete
+lib/features/savings/savings_screen.dart|Delete debt
+lib/features/savings/savings_screen.dart|Delete this debt?
+lib/features/savings/savings_screen.dart|Due date (optional)
+lib/features/savings/savings_screen.dart|Edit
+lib/features/savings/savings_screen.dart|Edit debt
+lib/features/savings/savings_screen.dart|Edit goal
+lib/features/savings/savings_screen.dart|Edit savings goal
+lib/features/savings/savings_screen.dart|Event or cause
+lib/features/savings/savings_screen.dart|Every 3 months
+lib/features/savings/savings_screen.dart|Explore Mhuri Plus
+lib/features/savings/savings_screen.dart|Explore scenarios
+lib/features/savings/savings_screen.dart|Family loan
+lib/features/savings/savings_screen.dart|Family member (optional)
+lib/features/savings/savings_screen.dart|Fortnightly
+lib/features/savings/savings_screen.dart|Frequency
+lib/features/savings/savings_screen.dart|Goal
+lib/features/savings/savings_screen.dart|Goals
+lib/features/savings/savings_screen.dart|I owe
+lib/features/savings/savings_screen.dart|Mark as completed
+lib/features/savings/savings_screen.dart|Mark paid
+lib/features/savings/savings_screen.dart|Monthly
+lib/features/savings/savings_screen.dart|Mukando configured successfully
+lib/features/savings/savings_screen.dart|New family contribution
+lib/features/savings/savings_screen.dart|No debts recorded
+lib/features/savings/savings_screen.dart|OK
+lib/features/savings/savings_screen.dart|Original
+lib/features/savings/savings_screen.dart|Original amount
+lib/features/savings/savings_screen.dart|Owed to me
+lib/features/savings/savings_screen.dart|Payment
+lib/features/savings/savings_screen.dart|Payoff scenarios
+lib/features/savings/savings_screen.dart|Permission needed
+lib/features/savings/savings_screen.dart|Plan how much to save regularly
+lib/features/savings/savings_screen.dart|Pledge
+lib/features/savings/savings_screen.dart|Plus · savings projections
+lib/features/savings/savings_screen.dart|Record payment
+lib/features/savings/savings_screen.dart|Record repayment
+lib/features/savings/savings_screen.dart|Recurring contribution
+lib/features/savings/savings_screen.dart|Remaining
+lib/features/savings/savings_screen.dart|Remove due date
+lib/features/savings/savings_screen.dart|Repaid
+lib/features/savings/savings_screen.dart|Repay
+lib/features/savings/savings_screen.dart|Repayments and the original recorder stay unchanged.
+lib/features/savings/savings_screen.dart|Rotating savings circle for family members
+lib/features/savings/savings_screen.dart|Save
+lib/features/savings/savings_screen.dart|Save Mukando
+lib/features/savings/savings_screen.dart|Save changes
+lib/features/savings/savings_screen.dart|Save pledge
+lib/features/savings/savings_screen.dart|Save repayment
+lib/features/savings/savings_screen.dart|Savings
+lib/features/savings/savings_screen.dart|Savings goal actions
+lib/features/savings/savings_screen.dart|Savings goal archived
+lib/features/savings/savings_screen.dart|Savings goal completed
+lib/features/savings/savings_screen.dart|Savings goal updated
+lib/features/savings/savings_screen.dart|Set up Mukando
+lib/features/savings/savings_screen.dart|Settled
+lib/features/savings/savings_screen.dart|Someone outside the family
+lib/features/savings/savings_screen.dart|Start date
+lib/features/savings/savings_screen.dart|Target
+lib/features/savings/savings_screen.dart|Type
+lib/features/savings/savings_screen.dart|Undo payment
+lib/features/savings/savings_screen.dart|Weekly
+lib/features/savings/savings_screen.dart|Who or what is this for?
+lib/features/savings/savings_screen.dart|e.g. Family Mukando
+lib/features/settings/plus_screen.dart|ACTIVE
+lib/features/settings/plus_screen.dart|Already subscribed?
+lib/features/settings/plus_screen.dart|Annual
+lib/features/settings/plus_screen.dart|BEST VALUE
+lib/features/settings/plus_screen.dart|Membership
+lib/features/settings/plus_screen.dart|Mhuri Plus
+lib/features/settings/plus_screen.dart|Monthly
+lib/features/settings/plus_screen.dart|Plan Ahead
+lib/features/settings/plus_screen.dart|Your Plus tools
+lib/features/settings/private_accounts_screen.dart|Account name
+lib/features/settings/private_accounts_screen.dart|Add expense
+lib/features/settings/private_accounts_screen.dart|Add income
+lib/features/settings/private_accounts_screen.dart|Cancel
+lib/features/settings/private_accounts_screen.dart|Could not create a private account.
+lib/features/settings/private_accounts_screen.dart|Create
+lib/features/settings/private_accounts_screen.dart|Create account
+lib/features/settings/private_accounts_screen.dart|Create private account
+lib/features/settings/private_accounts_screen.dart|Currency
+lib/features/settings/private_accounts_screen.dart|For example, Side hustle
+lib/features/settings/private_accounts_screen.dart|No private account yet
+lib/features/settings/private_accounts_screen.dart|Private accounts
+lib/features/settings/settings_screen.dart|1 to 31
+lib/features/settings/settings_screen.dart|Day of month
+lib/features/settings/settings_screen.dart|Display name
+lib/features/settings/settings_screen.dart|Payday
+lib/features/settings/settings_screen.dart|Save
+lib/features/settings/settings_screen.dart|Sign out?
+lib/features/settings/settings_screen.dart|Update the name shown to your family.
+lib/features/settings/sync_screen.dart|Cancel
+lib/features/settings/sync_screen.dart|Changes need review
+lib/features/settings/sync_screen.dart|Keep this device’s version
+lib/features/settings/sync_screen.dart|Reload
+lib/features/settings/sync_screen.dart|Reload all family data
+lib/features/settings/sync_screen.dart|Reload all family data?
+lib/features/settings/sync_screen.dart|Resolve conflict
+lib/features/settings/sync_screen.dart|Use family version
+lib/features/teen/teen_zone.dart|Assigned to you
+lib/features/teen/teen_zone.dart|Exit
+lib/features/teen/teen_zone.dart|Open
+lib/features/teen/teen_zone.dart|See all

@@ -478,4 +478,67 @@ void main() {
     expect(find.text('Move money'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'home shows Income/Spent/Saved and prioritizes one attention card at a time',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final now = DateTime(2026, 10, 11);
+    final state = AppState(clock: () => now);
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Groceries',
+      limit: Money.fromMajor(100, Currency.usd),
+    );
+    state.addTx(
+      type: TxType.expense,
+      amount: Money.fromMajor(130, Currency.usd),
+      memberId: state.user.id,
+      method: Method.cash,
+      note: 'Groceries',
+      envelopeId: state.envelopes.single.id,
+      when: now,
+    );
+    state.addRecurring(
+      name: 'Internet',
+      emoji: 'wifi',
+      amount: Money.fromMajor(20, Currency.usd),
+      memberId: state.user.id,
+      method: Method.bankTransfer,
+      frequency: Frequency.monthly,
+      nextDue: now.add(const Duration(days: 2)),
+    );
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HomeScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Income'), findsOneWidget);
+    expect(find.text('Spent'), findsOneWidget);
+    expect(find.text('Saved'), findsOneWidget);
+    expect(find.text('Remaining'), findsNothing);
+
+    // Budget alert takes priority over upcoming recurring bill
+    expect(find.text('Groceries is over budget'), findsOneWidget);
+    expect(find.text('Internet'), findsNothing);
+
+    // Swiping the budget alert reveals the upcoming bill in the same slot
+    await tester.drag(
+        find.text('Groceries is over budget'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Internet'), findsOneWidget);
+  });
 }

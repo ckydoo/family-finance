@@ -677,6 +677,73 @@ class AppLocalizationsNd extends AppLocalizations {
   String get rollAccum => 'Yonga okusele';
 
   @override
+  String get monthEndReviewTitle => 'Ukubuyekezwa kokuphela kwenyanga';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return '$amount akukasetjenziswa kusukela ngenyanga ephelileyo. Kudlulisele emalini egciniweyo namkha kugcine ebhajetini.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Buyekeza';
+
+  @override
+  String get monthEndReviewLater => 'Hatshi gadesi';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'Sidlulisele $amount yensalela yenyanga ephelileyo emalini egciniweyo.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Imali eseleyo';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'Inyanga ephelileyo yaphela ine $amount isebhajetini yakho. Akukho okutjintjhako kuze uqinisekise.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Amabhajeti anadluliselako namkha aqongako agcina insalela yawo.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Qala wenze umgomo wokugcina imali - khonapho imali eseleyo inendawo yokuya.';
+
+  @override
+  String get monthEndReviewSendTo => 'Thumela ku';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Dlulisa $amount ku $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Yigcine ebhajetini';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Sidlulisele $amount ku $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'Ungabe usabuza godu';
+
+  @override
+  String get monthEndSweepSetting => 'Imali eseleyo';
+
+  @override
+  String get monthEndSweepSettingDesc => 'Okwenzekayo emalini engakatjenziswanga nasekupheleni kwenyanga yebhajeti.';
+
+  @override
+  String get monthEndSweepAsk => 'Ngibuze nyanga zonke';
+
+  @override
+  String get monthEndSweepAlways => 'Hlala udlulisela emalini egciniweyo';
+
+  @override
+  String get monthEndSweepNever => 'Yigcine ebhajeti';
+
+  @override
   String get freqTerm => 'Ngesikhashana (~inyanga 3)';
 
   @override
@@ -2127,4 +2194,245 @@ class AppLocalizationsNd extends AppLocalizations {
   @override
   String get testNotificationFailed =>
       'Asenelisanga ukuthumela isaziso sokuhlola.';
+
+  @override
+  String get planAheadTitle => 'Hlela Phambili';
+
+  @override
+  String get reportsShortcut => 'Imibiko';
+
+  @override
+  String get tasksShortcut => 'Imisebenzi';
+
+  @override
+  String get askMhuriTitle => 'Buza uMhuri';
+
+  @override
+  String get upcomingBillsTitle => 'Izikwelede Ezizayo';
+
+  @override
+  String get needsAttentionLabel => 'Okudinga ukukhangelwa';
+
+  @override
+  String get comingUpLabel => 'Okuzayo';
+
+  @override
+  String get tasksComingUpLabel => 'Imisebenzi ezayo';
+
+  @override
+  String get weeklySummaryTitle => 'Isifinqo seMhuri seveki';
+
+  @override
+  String get weeklySummarySubtitle => 'Insuku eziyi-7 ezedlule · isimo somuzi';
+
+  @override
+  String get quickAddWhatAdding => 'Ufakani?';
+
+  @override
+  String get quickAddShoppingOrTask => 'Okokuthenga kumbe umsebenzi';
+
+  @override
+  String get quickAddAmountSpent => 'Imali esetshenzisiweyo';
+
+  @override
+  String get quickAddAmountReceived => 'Imali etholakeleyo';
+
+  @override
+  String get quickAddWhichBudget => 'Imali le ivela kuyiphi ibhajethi?';
+
+  @override
+  String get quickAddSavedLabel => 'Kulondoloziwe';
+
+  @override
+  String get appAndCurrencySettings => 'Izilungiselelo ze-App lemali';
+
+  @override
+  String get planAheadHeadline => 'Yenza amaviki alandelayo abe lula';
+
+  @override
+  String get planAheadLead => 'Khetha umbuzo ofuna ukuwuphendula. Akulalutho olutshintshayo uze uhlole uqinisekise.';
+
+  @override
+  String get planToolCashTitle => 'Isimo semali';
+
+  @override
+  String get planToolCashSub => 'Bona ukuthi imali yakho iyenela yini kuze kufike usuku lweholo.';
+
+  @override
+  String get planToolBillsTitle => 'Izikwelede lezibopho';
+
+  @override
+  String get planToolBillsSub => 'Landela amalanga okubhadala, izikhumbuzo lokubhadala kancane.';
+
+  @override
+  String get planToolSavingsTitle => 'Uhlelo lokonga lokubhadala izikwelede';
+
+  @override
+  String get planToolSavingsSub => 'Qathanisa izikhathi zokonga lezokuqeda izikwelede.';
+
+  @override
+  String get planToolHealthTitle => 'Impilo yemali';
+
+  @override
+  String get planToolHealthSub => 'Hlola izibonakaliso zokusebenzisa imali kwesikhathi samanje.';
+
+  @override
+  String get planToolNextPeriodTitle => 'Lungiselela isikhathi esilandelayo';
+
+  @override
+  String get planToolNextPeriodSub => 'Hlola uhlelo olucetshisiweyo ungakaguquli lutho.';
+
+  @override
+  String get exploreMhuriPlus => 'Hlola i-Mhuri Plus';
+
+  @override
+  String get monthlyReportsTitle => 'Imibiko yenyanga';
+
+  @override
+  String get familyActivityTitle => 'Okwenzakale emulini';
+
+  @override
+  String get activityFilterTitle => 'Hlunga okwenzakale';
+
+  @override
+  String get filterReset => 'Buyisela';
+
+  @override
+  String get filterTypeLabel => 'Uhlobo lokusetjenziswa';
+
+  @override
+  String get filterExpenses => 'Iindleko';
+
+  @override
+  String get filterMemberLabel => 'Ilunga lomuli';
+
+  @override
+  String get filterEveryone => 'Koke';
+
+  @override
+  String get filterViewLabel => 'Ukubona kwemali';
+
+  @override
+  String get filterFamilyView => 'Imali yomuli';
+
+  @override
+  String filterPrivateOption(Object name) {
+    return '$name · Eyimfihlo';
+  }
+
+  @override
+  String get filterDateLabel => 'Ilanga';
+
+  @override
+  String get filterAllTime => 'Isikhathi soke';
+
+  @override
+  String get filterToday => 'Lamuhla';
+
+  @override
+  String get filterLast7Days => 'Amalanga 7 adlulileyo';
+
+  @override
+  String get filterLast30Days => 'Amalanga 30 adlulileyo';
+
+  @override
+  String get filterApply => 'Sebenzisa izihlungi';
+
+  @override
+  String get activitySearchHint => 'Phenya okwenzakale';
+
+  @override
+  String get privateAccountOnly => 'I-akhawunti eyimfihlo · nguwe wedwa ongayibona';
+
+  @override
+  String get clearFilters => 'Susa izihlungi';
+
+  @override
+  String get closeLabel => 'Vala';
+
+  @override
+  String get filterAllTypes => 'Koke';
+
+  @override
+  String get activityDetailsTitle => 'Okwenzakale';
+
+  @override
+  String get noMatchingActivity => 'Akukho okwenzakale okuhambelanako';
+
+  @override
+  String get noMatchingActivityHint => 'Zama ukutjintja namkha ukususa izihlungi zakho.';
+
+  @override
+  String get closeSearch => 'Vala ukuphenya';
+
+  @override
+  String get increaseValue => 'Engeza';
+
+  @override
+  String get decreaseValue => 'Nciphisa';
+
+  @override
+  String get moveUp => 'Nyuka';
+
+  @override
+  String get moveDown => 'Ehla';
+
+  @override
+  String get showPassword => 'Khombisa iphasiwedi';
+
+  @override
+  String get hidePassword => 'Fihla iphasiwedi';
+
+  @override
+  String get removeLabel => 'Susa';
+
+  @override
+  String get clearSearch => 'Susa ukuphenya';
+
+  @override
+  String get toLabel => 'kuze';
+
+  @override
+  String get quickAddSubtitle => 'Khetha okuzorekhoda kwemuli wakho';
+
+  @override
+  String get addSomethingElse => 'Engeza okunye';
+
+  @override
+  String get addSomethingElseSubtitle => 'Tjintja uhlobo lokurekhoda namkha ungeze into yasekhaya';
+
+  @override
+  String get chooseBudget => 'Khetha ibhajeti';
+
+  @override
+  String get searchBudgets => 'Phenya amabhajeti';
+
+  @override
+  String get noBudget => 'Akukho bhajeti';
+
+  @override
+  String get keepUnallocated => 'Tjhiya iindleko lezi zingakabelwanga';
+
+  @override
+  String get splitExpense => 'Kwaba iindleko';
+
+  @override
+  String get applySplit => 'Sebenzisa ukwaba';
+
+  @override
+  String get recordIn => 'Rekhoda ku';
+
+  @override
+  String budgetCountLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'amabhajeti $count',
+      one: 'ibhajeti 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get amountLabel => 'Imali';
 }

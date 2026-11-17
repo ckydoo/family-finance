@@ -4,9 +4,13 @@ import 'package:mhuri_money/core/l10n/localization_delegates.dart';
 import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
+import 'package:mhuri_money/features/ai/ask_mhuri_screen.dart';
 import 'package:mhuri_money/features/budgets/budgets_screen.dart';
+import 'package:mhuri_money/features/home/home_screen.dart';
+import 'package:mhuri_money/features/planner/planning_hub_screen.dart';
 import 'package:mhuri_money/features/quickadd/quick_add_sheet.dart';
 import 'package:mhuri_money/features/savings/savings_screen.dart';
+import 'package:mhuri_money/features/settings/settings_screen.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 void main() {
@@ -96,5 +100,64 @@ void main() {
     await tester.tap(find.text('Debts'));
     await tester.pumpAndSettle();
     expect(find.text('School loan'), findsOneWidget);
+  });
+
+  testWidgets('Settings consolidates currency, privacy, and parent PIN',
+      (tester) async {
+    phone(tester);
+    final state = AppState();
+    await tester.pumpWidget(harness(state, const SettingsScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('USD · Single currency mode'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('USD · Single currency mode'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home exposes one-tap shortcuts to Plan Ahead and Ask Mhuri',
+      (tester) async {
+    phone(tester);
+    final state = AppState();
+    state.members.add(state.user);
+    state.addEnvelope(
+      name: 'Groceries',
+      limit: const Money(10000, Currency.usd),
+    );
+    state.addTx(
+      type: TxType.income,
+      amount: const Money(50000, Currency.usd),
+      memberId: state.user.id,
+      method: Method.bankTransfer,
+      note: 'Salary',
+    );
+    await tester.pumpWidget(harness(state, const HomeScreen()));
+    await tester.pumpAndSettle();
+
+    final planChip = find.byKey(const ValueKey('home_shortcut_plan_ahead'));
+    // The home ListView lazily builds children, so scroll until the chip
+    // exists and is vertically visible before tapping it.
+    await tester.scrollUntilVisible(
+      planChip,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(planChip);
+    await tester.pumpAndSettle();
+    expect(find.byType(PlanningHubScreen), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // The chip row is already built; reveal the last chip horizontally.
+    final askChip = find.byKey(const ValueKey('home_shortcut_ask_mhuri'));
+    await tester.ensureVisible(askChip);
+    await tester.pumpAndSettle();
+    await tester.tap(askChip);
+    await tester.pumpAndSettle();
+    expect(find.byType(AskMhuriScreen), findsOneWidget);
   });
 }

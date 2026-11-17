@@ -676,6 +676,73 @@ class AppLocalizationsSn extends AppLocalizations {
   String get rollAccum => 'Wedzera zvinosara';
 
   @override
+  String get monthEndReviewTitle => 'Kuongorora pakupera kwemwedzi';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return '$amount haisati yashandiswa kubva mwedzi wapfuura. Iendese kumaraki kana kuisiya mubhajeti.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Ongorora';
+
+  @override
+  String get monthEndReviewLater => 'Kwete iye zvino';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'Takaendesa $amount yezvakasara mwedzi wapfuura kumaraki.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Mari yasara';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'Mwedzi wapfuura wakapera uine $amount iri mumabhajeti ako. Hapana chinochinja kusvika wasimbisa.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Mabhajeti anotakura kana kuunganidza anotochengeta zvaasara.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Tanga wagadzira chinangwa chemari - ipapo mari yasara inenge iine kwainoenda.';
+
+  @override
+  String get monthEndReviewSendTo => 'Endesa ku';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Endesa $amount ku $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Isiya mubhajeti';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Takaendesa $amount kuna $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'Usazondibvunza zvakare';
+
+  @override
+  String get monthEndSweepSetting => 'Mari yasara';
+
+  @override
+  String get monthEndSweepSettingDesc => 'Zvinoitika kumari isina kushandiswa kana mwedzi webhajeti wapedza.';
+
+  @override
+  String get monthEndSweepAsk => 'Ndivunze mwedzi wese';
+
+  @override
+  String get monthEndSweepAlways => 'Gara uchiendesa kumaraki';
+
+  @override
+  String get monthEndSweepNever => 'Isiya mubhajeti';
+
+  @override
   String get freqTerm => 'Pakutanga (~mwedzi 3)';
 
   @override
@@ -2125,4 +2192,245 @@ class AppLocalizationsSn extends AppLocalizations {
   @override
   String get testNotificationFailed =>
       'Hatina kukwanisa kutumira chiziviso chekuyedza.';
+
+  @override
+  String get planAheadTitle => 'Ronga Mberi';
+
+  @override
+  String get reportsShortcut => 'Mishumo';
+
+  @override
+  String get tasksShortcut => 'Mabasa';
+
+  @override
+  String get askMhuriTitle => 'Bvunza Mhuri';
+
+  @override
+  String get upcomingBillsTitle => 'Zvikwereti Zviri Kuuya';
+
+  @override
+  String get needsAttentionLabel => 'Zvinoda kutariswa';
+
+  @override
+  String get comingUpLabel => 'Zviri kuuya';
+
+  @override
+  String get tasksComingUpLabel => 'Mabasa ari kuuya';
+
+  @override
+  String get weeklySummaryTitle => 'Pfupiso yeMhuri yevhiki';
+
+  @override
+  String get weeklySummarySubtitle => 'Mazuva 7 apfuura · mamiriro emhuri';
+
+  @override
+  String get quickAddWhatAdding => 'Uri kuwedzera chii?';
+
+  @override
+  String get quickAddShoppingOrTask => 'Zvekutenga kana basa';
+
+  @override
+  String get quickAddAmountSpent => 'Mari yashandiswa';
+
+  @override
+  String get quickAddAmountReceived => 'Mari yatambirwa';
+
+  @override
+  String get quickAddWhichBudget => 'Mari iyi inobva mubhajeti ripi?';
+
+  @override
+  String get quickAddSavedLabel => 'Yachengetedzwa';
+
+  @override
+  String get appAndCurrencySettings => 'Zvirongwa zveApp nemari';
+
+  @override
+  String get planAheadHeadline => 'Ita kuti mavhiki anotevera ave nyore';
+
+  @override
+  String get planAheadLead => 'Sarudza mubvunzo waunoda kupindura. Hapana chinoshanduka kusvikira waongorora wotsinhira.';
+
+  @override
+  String get planToolCashTitle => 'Mamiriro emari';
+
+  @override
+  String get planToolCashSub => 'Ona kana mari yako ichikwana kusvika zuva remubairo.';
+
+  @override
+  String get planToolBillsTitle => 'Zvikwereti nezvisungo';
+
+  @override
+  String get planToolBillsSub => 'Tevedzera mazuva ekubhadhara, zviyeuchidzo uye kubhadhara pashoma.';
+
+  @override
+  String get planToolSavingsTitle => 'Hurongwa hwekuchengeta nekubhadhara chikwereti';
+
+  @override
+  String get planToolSavingsSub => 'Enzanisa nguva dzekuchengeta mari nedzekupedza zvikwereti.';
+
+  @override
+  String get planToolHealthTitle => 'Utano hwemari';
+
+  @override
+  String get planToolHealthSub => 'Ongorora zviratidzo zvemashandisirwo emari munguva ino.';
+
+  @override
+  String get planToolNextPeriodTitle => 'Gadzirira nguva inotevera';
+
+  @override
+  String get planToolNextPeriodSub => 'Ongorora hurongwa hwakakurudzirwa usati washandura chero chinhu.';
+
+  @override
+  String get exploreMhuriPlus => 'Ongorora Mhuri Plus';
+
+  @override
+  String get monthlyReportsTitle => 'Mishumo yemwedzi';
+
+  @override
+  String get familyActivityTitle => 'Zvaitika mumhuri';
+
+  @override
+  String get activityFilterTitle => 'Sefa zvakaitika';
+
+  @override
+  String get filterReset => 'Dzokorora';
+
+  @override
+  String get filterTypeLabel => 'Rudzi rwekushandisa';
+
+  @override
+  String get filterExpenses => 'Kushandisa';
+
+  @override
+  String get filterMemberLabel => 'Nhengo yemhuri';
+
+  @override
+  String get filterEveryone => 'Vose';
+
+  @override
+  String get filterViewLabel => 'Maonero emari';
+
+  @override
+  String get filterFamilyView => 'Mari yemhuri';
+
+  @override
+  String filterPrivateOption(Object name) {
+    return '$name · Yakavanzika';
+  }
+
+  @override
+  String get filterDateLabel => 'Zuva';
+
+  @override
+  String get filterAllTime => 'Nguva yose';
+
+  @override
+  String get filterToday => 'Nhasi';
+
+  @override
+  String get filterLast7Days => 'Mazuva 7 apfuura';
+
+  @override
+  String get filterLast30Days => 'Mazuva 30 apfuura';
+
+  @override
+  String get filterApply => 'Shandisa masefa';
+
+  @override
+  String get activitySearchHint => 'Tsvaga zvakaitika';
+
+  @override
+  String get privateAccountOnly => 'Akaundi yakavanzika · iwe chete unogona kuiona';
+
+  @override
+  String get clearFilters => 'Bvisa masefa';
+
+  @override
+  String get closeLabel => 'Vhara';
+
+  @override
+  String get filterAllTypes => 'Zvose';
+
+  @override
+  String get activityDetailsTitle => 'Zvakaitika';
+
+  @override
+  String get noMatchingActivity => 'Hapana zvakaitika zvinowirirana';
+
+  @override
+  String get noMatchingActivityHint => 'Edza kuchinja kana kubvisa masefa ako.';
+
+  @override
+  String get closeSearch => 'Vhara kutsvaga';
+
+  @override
+  String get increaseValue => 'Wedzera';
+
+  @override
+  String get decreaseValue => 'Deredza';
+
+  @override
+  String get moveUp => 'Kwidza';
+
+  @override
+  String get moveDown => 'Dzika';
+
+  @override
+  String get showPassword => 'Ratidza password';
+
+  @override
+  String get hidePassword => 'Vanza password';
+
+  @override
+  String get removeLabel => 'Bvisa';
+
+  @override
+  String get clearSearch => 'Bvisa kutsvaga';
+
+  @override
+  String get toLabel => 'kusvika';
+
+  @override
+  String get quickAddSubtitle => 'Sarudza zvekunyora zvemhuri yako';
+
+  @override
+  String get addSomethingElse => 'Wedzera chimwe chinhu';
+
+  @override
+  String get addSomethingElseSubtitle => 'Chinja rudzi rwekunyora kana kuwedzera chinhu chemumba';
+
+  @override
+  String get chooseBudget => 'Sarudza bhajeti';
+
+  @override
+  String get searchBudgets => 'Tsvaga mabhajeti';
+
+  @override
+  String get noBudget => 'Hapana bhajeti';
+
+  @override
+  String get keepUnallocated => 'Siya kushandisa uku kusina bhajeti';
+
+  @override
+  String get splitExpense => 'Kugovanisa kushandisa';
+
+  @override
+  String get applySplit => 'Shandisa kugovanisa';
+
+  @override
+  String get recordIn => 'Nyora mu';
+
+  @override
+  String budgetCountLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'mabhajeti $count',
+      one: 'bhajeti 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get amountLabel => 'Mari';
 }

@@ -3,20 +3,22 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/widgets/ui.dart';
+import '../../core/l10n/app_strings.dart';
 
 import '../../core/billing/entitlement.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/observability/reporter.dart';
 import '../../core/auth/pin_store.dart';
 import '../settings/settings_screen.dart';
-import '../settings/sync_screen.dart';
 import '../activity/activity_screen.dart';
+import '../ai/ask_mhuri_screen.dart';
 import '../family_chat/family_chat_screen.dart';
 import '../family_tasks/family_tasks_screen.dart';
+import '../planner/planning_hub_screen.dart';
+import '../reports/reports_screen.dart';
 import 'invite_screen.dart';
 import '../settings/plus_screen.dart';
 import '../../core/widgets/app_icons.dart';
-import '../../core/l10n/app_strings.dart';
 import '../../core/money/money.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../core/models/models.dart';
@@ -602,14 +604,35 @@ class MembersScreen extends StatelessWidget {
             ),
             _familyDestination(
               context,
+              icon: Icons.event_note_outlined,
+              title: AppLocalizations.of(context)!.planAheadTitle,
+              subtitle: 'Bills, payday outlook, and next period',
+              screen: const PlanningHubScreen(),
+            ),
+            _familyDestination(
+              context,
+              icon: Icons.bar_chart_rounded,
+              title: AppLocalizations.of(context)!.monthlyReportsTitle,
+              subtitle: 'Spending breakdowns, history & CSV',
+              screen: const ReportsScreen(),
+            ),
+            _familyDestination(
+              context,
+              icon: Icons.auto_awesome_outlined,
+              title: AppLocalizations.of(context)!.askMhuriTitle,
+              subtitle: 'Answers from your household numbers',
+              screen: const AskMhuriScreen(),
+            ),
+            _familyDestination(
+              context,
               icon: Icons.history_rounded,
-              title: 'Family activity',
+              title: AppLocalizations.of(context)!.familyActivityTitle,
               subtitle: 'Money and family updates',
               screen: const ActivityScreen(),
             ),
             const SizedBox(height: 20),
 
-            // ── Settings stubs ────────────────────────────────────────────
+            if (s.isLive && s.shouldPromptFamilySetup) _spaceCard(context, s),
             Text(
               'SETTINGS',
               style: TextStyle(
@@ -618,45 +641,14 @@ class MembersScreen extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: context.inkSoft),
             ),
-            const SizedBox(height: 10),
-            _settingAction(
+            const SizedBox(height: 4),
+            _familyDestination(
               context,
-              AppLocalizations.of(context)!.setCurrency,
-              s.secondaryCurrency == null
-                  ? '${s.primaryCurrency.short} · Single currency mode'
-                  : '${s.primaryCurrency.short} primary · ${s.secondaryCurrency!.short} secondary · ${s.rateLabel}',
-              () => _currencySheet(context, s),
-            ),
-            _languageRow(context, s),
-            _settingAction(
-              context,
-              AppLocalizations.of(context)!.setPrivacy,
-              AppLocalizations.of(context)!.setPrivacySub,
-              () => _privacySheet(context, s),
-            ),
-            _settingAction(
-              context,
-              AppLocalizations.of(context)!.setMonthStart,
-              AppLocalizations.of(context)!.setMonthStartSub,
-              () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              ),
-            ),
-            _settingAction(
-              context,
-              AppLocalizations.of(context)!.setNotif,
-              AppLocalizations.of(context)!.setNotifSub,
-              () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              ),
-            ),
-            if (s.isLive && s.shouldPromptFamilySetup) _spaceCard(context, s),
-            _pinRow(context, s),
-            _settingAction(
-              context,
-              AppLocalizations.of(context)!.setBackup,
-              AppLocalizations.of(context)!.setBackupSub,
-              () => _backupSheet(context, s),
+              icon: Icons.settings_outlined,
+              title: AppLocalizations.of(context)!.appAndCurrencySettings,
+              subtitle:
+                  'Currency (${s.primaryCurrency.short}), language, notifications, privacy & PIN',
+              screen: const SettingsScreen(),
             ),
           ],
         ),
@@ -691,87 +683,6 @@ class MembersScreen extends StatelessWidget {
                   MaterialPageRoute<void>(builder: (_) => screen),
                 ),
       );
-
-  Widget _languageRow(BuildContext context, AppState s) => InkWell(
-        onTap: () => _pickLanguage(context, s),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: context.hairline)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tStr(context, 'language'),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: context.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      kLanguageNames[s.localeCode] ?? 'English',
-                      style: TextStyle(fontSize: 12, color: context.inkSoft),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: context.inkSoft),
-            ],
-          ),
-        ),
-      );
-
-  Future<void> _pickLanguage(BuildContext context, AppState s) async {
-    final selected = await showDialog<String>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-        title: Text(tStr(context, 'language')),
-        children: [
-          for (final entry in kLanguageNames.entries)
-            SimpleDialogOption(
-              onPressed: () {
-                Navigator.pop(ctx, entry.key);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: [
-                    if (s.localeCode == entry.key)
-                      Icon(Icons.check, color: context.primary, size: 18)
-                    else
-                      const SizedBox(width: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      entry.value,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Text(
-              AppLocalizations.of(context)!.localizedNote,
-              style: TextStyle(fontSize: 11.5, color: context.inkSoft),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (selected == null || !context.mounted) return;
-    s.setLocale(selected);
-  }
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
@@ -986,105 +897,6 @@ class MembersScreen extends StatelessWidget {
     );
   }
 
-  Widget _pinRow(BuildContext context, AppState s) => InkWell(
-        onTap: () => _editParentPin(context, s),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: context.hairline)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.kidsPin,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: context.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      AppLocalizations.of(context)!.kidsPinSub,
-                      style: TextStyle(fontSize: 12, color: context.inkSoft),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: context.inkSoft),
-            ],
-          ),
-        ),
-      );
-
-  void _editParentPin(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(context)!;
-    final pin = TextEditingController();
-    String? pinError;
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-          title: Text(AppLocalizations.of(context)!.kidsPin),
-          content: TextField(
-            controller: pin,
-            keyboardType: TextInputType.number,
-            inputFormatters: pinInputFormatters,
-            obscureText: true,
-            maxLength: 6,
-            onChanged: (_) {
-              if (pinError != null) setDialogState(() => pinError = null);
-            },
-            decoration: InputDecoration(
-              hintText: l.kidsPinHint,
-              counterText: '',
-              errorText: pinError,
-              errorStyle: TextStyle(color: context.danger),
-              filled: true,
-              fillColor: context.bg,
-              border: const OutlineInputBorder(borderSide: BorderSide.none),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.primary,
-                foregroundColor: context.onSolid,
-              ),
-              onPressed: () async {
-                final v = pin.text.trim();
-                if (v.length < 4) {
-                  setDialogState(() => pinError = l.kidsPinHint);
-                  return;
-                }
-                await s.pinStore.setPin(PinStore.parentKey, v);
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l.kidsPinUpdated),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
-              child: Text(MaterialLocalizations.of(ctx).saveButtonLabel),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Kept temporarily for compatibility with the existing deletion flow while
   // account controls are hosted by Settings.
   // ignore: unused_element
@@ -1207,6 +1019,7 @@ class MembersScreen extends StatelessWidget {
                   fillColor: context.card,
                   border: const OutlineInputBorder(borderSide: BorderSide.none),
                   suffixIcon: IconButton(
+                    tooltip: obscurePw ? l.showPassword : l.hidePassword,
                     icon: Icon(obscurePw
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined),
@@ -1425,57 +1238,83 @@ class MembersScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  // ── Premium pass: every settings row now does something ──────────────────
-
-  Widget _settingAction(BuildContext context, String title, String subtitle,
-          VoidCallback onTap) =>
-      InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: context.hairline)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: context.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(fontSize: 12, color: context.inkSoft),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: context.inkSoft),
-            ],
+void showParentPinDialog(BuildContext context, AppState s) {
+  final l = AppLocalizations.of(context)!;
+  final pin = TextEditingController();
+  String? pinError;
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+        title: Text(AppLocalizations.of(context)!.kidsPin),
+        content: TextField(
+          controller: pin,
+          keyboardType: TextInputType.number,
+          inputFormatters: pinInputFormatters,
+          obscureText: true,
+          maxLength: 6,
+          onChanged: (_) {
+            if (pinError != null) setDialogState(() => pinError = null);
+          },
+          decoration: InputDecoration(
+            hintText: l.kidsPinHint,
+            counterText: '',
+            errorText: pinError,
+            errorStyle: TextStyle(color: context.danger),
+            filled: true,
+            fillColor: context.bg,
+            border: const OutlineInputBorder(borderSide: BorderSide.none),
           ),
         ),
-      );
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.primary,
+              foregroundColor: context.onSolid,
+            ),
+            onPressed: () async {
+              final v = pin.text.trim();
+              if (v.length < 4) {
+                setDialogState(() => pinError = l.kidsPinHint);
+                return;
+              }
+              await s.pinStore.setPin(PinStore.parentKey, v);
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l.kidsPinUpdated),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: Text(MaterialLocalizations.of(ctx).saveButtonLabel),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
-  void _currencySheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(context)!;
-    if (s.secondaryCurrency != null) {
-      final isZwgPair = s.primaryCurrency == Currency.zwg ||
-          s.secondaryCurrency == Currency.zwg;
-      if (!isZwgPair && s.rate > 15) {
-        final def = s.primaryCurrency.defaultRateTo(s.secondaryCurrency!);
-        s.setCustomRate(def);
-      }
+void showCurrencySettingsSheet(BuildContext context, AppState s) {
+  final l = AppLocalizations.of(context)!;
+  if (s.secondaryCurrency != null) {
+    final isZwgPair = s.primaryCurrency == Currency.zwg ||
+        s.secondaryCurrency == Currency.zwg;
+    if (!isZwgPair && s.rate > 15) {
+      final def = s.primaryCurrency.defaultRateTo(s.secondaryCurrency!);
+      s.setCustomRate(def);
     }
-    final rateCtrl = TextEditingController(text: s.rate.toString());
+  }
+  final rateCtrl = TextEditingController(text: s.rate.toString());
     showMhuriSheet<void>(
       context: context,
       builder: (ctx) => AnimatedBuilder(
@@ -1647,143 +1486,51 @@ class MembersScreen extends StatelessWidget {
         ),
       ),
     );
-  }
+}
 
-  void _privacySheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(context)!;
-    showMhuriSheet<void>(
-      context: context,
-      builder: (ctx) => AnimatedBuilder(
-        animation: s,
-        builder: (ctx, _) => MhuriSheetShell(
-          title: l.setPrivacy,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SwitchListTile.adaptive(
-                value: s.autoHideAmounts,
-                onChanged: s.setAutoHideAmounts,
-                title: Text(
-                  l.autoHide,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: ctx.ink),
-                ),
-                subtitle: Text(
-                  l.autoHideSub,
-                  style: TextStyle(fontSize: 12, color: ctx.inkSoft),
-                ),
-              ),
-              SwitchListTile.adaptive(
-                value: s.hideAmounts,
-                onChanged: s.setHideAmounts,
-                title: Text(
-                  l.hideNow,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: ctx.ink),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _backupSheet(BuildContext context, AppState s) {
-    final l = AppLocalizations.of(context)!;
-    showMhuriSheet<void>(
-      context: context,
-      builder: (ctx) => MhuriSheetShell(
-        title: l.setBackup,
+void showPrivacySettingsSheet(BuildContext context, AppState s) {
+  final l = AppLocalizations.of(context)!;
+  showMhuriSheet<void>(
+    context: context,
+    builder: (ctx) => AnimatedBuilder(
+      animation: s,
+      builder: (ctx, _) => MhuriSheetShell(
+        title: l.setPrivacy,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ListTile(
-              leading: Icon(Icons.ios_share, color: ctx.primary),
+            SwitchListTile.adaptive(
+              value: s.autoHideAmounts,
+              onChanged: s.setAutoHideAmounts,
               title: Text(
-                l.exportCsvRow,
+                l.autoHide,
                 style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w700, color: ctx.ink),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: ctx.ink),
               ),
-              onTap: () async {
-                final path = await s.exportCsv();
-                if (!ctx.mounted) return;
-                final messenger = ScaffoldMessenger.of(context);
-                Navigator.pop(ctx);
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      path == null ? l.exportReal : l.exportedPath(path),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              subtitle: Text(
+                l.autoHideSub,
+                style: TextStyle(fontSize: 12, color: ctx.inkSoft),
+              ),
             ),
-            if (s.isLive && (s.inviteCode ?? '').isNotEmpty) ...[
-              ListTile(
-                leading: Icon(Icons.person_add_alt, color: ctx.primary),
-                title: Text(
-                  l.inviteTitle,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: ctx.ink),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => const InviteScreen(),
-                  ));
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.link, color: ctx.primary),
-                title: Text(
-                  l.copyInvite,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: ctx.ink),
-                ),
-                onTap: () {
-                  final messenger = ScaffoldMessenger.of(context);
-                  Clipboard.setData(ClipboardData(text: s.inviteCode ?? ''));
-                  Navigator.pop(ctx);
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(l.copied),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-              ),
-            ],
-            ListTile(
-              leading: Icon(Icons.cloud_sync_outlined, color: ctx.primary),
+            SwitchListTile.adaptive(
+              value: s.hideAmounts,
+              onChanged: s.setHideAmounts,
               title: Text(
-                l.syncDataTitle,
+                l.hideNow,
                 style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w700, color: ctx.ink),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: ctx.ink),
               ),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => const SyncScreen(),
-                ));
-              },
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _PointsRewardsScreen extends StatelessWidget {

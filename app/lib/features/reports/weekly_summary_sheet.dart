@@ -9,6 +9,7 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ids.dart';
 import '../../core/widgets/ui.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 Future<void> showWeeklySummarySheet(BuildContext context) {
   final s = AppScope.of(context);
@@ -22,11 +23,14 @@ Future<void> showWeeklySummarySheet(BuildContext context) {
   );
   return showMhuriSheet<void>(
     context: context,
-    builder: (_) => const MhuriSheetShell(
-      title: 'Weekly Mhuri summary',
-      subtitle: 'Last 7 days · household snapshot',
-      child: _WeeklySummarySheetBody(),
-    ),
+    builder: (sheetCtx) {
+      final l = AppLocalizations.of(sheetCtx);
+      return MhuriSheetShell(
+        title: l?.weeklySummaryTitle ?? 'Weekly Mhuri summary',
+        subtitle: l?.weeklySummarySubtitle ?? 'Last 7 days · household snapshot',
+        child: const _WeeklySummarySheetBody(),
+      );
+    },
   );
 }
 
@@ -38,6 +42,8 @@ class WeeklySummaryPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final l = AppLocalizations.of(context);
+    final title = l?.weeklySummaryTitle ?? 'Weekly Mhuri summary';
     final summary = s.weeklySummary;
     if (!summary.hasActivity) return const SizedBox.shrink();
 
@@ -46,7 +52,7 @@ class WeeklySummaryPreviewCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Weekly Mhuri summary',
+      label: title,
       child: Material(
         color: context.card,
         borderRadius: kBRadiusL,
@@ -85,7 +91,7 @@ class WeeklySummaryPreviewCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              'Weekly Mhuri summary',
+                              title,
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,

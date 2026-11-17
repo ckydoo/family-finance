@@ -13,16 +13,23 @@
   "availableToSpendLabel": "Available to spend",
   "savingsExceedsCashTitle": "Not enough available cash",
   "savingsExceedsCashBody": "This contribution is {amount} more than the cash available to spend.",
-  "@savingsExceedsCashBody": {"placeholders": {"amount": {}}},
+  "@savingsExceedsCashBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
   "goalOverfundTitle": "This exceeds the goal",
   "goalOverfundBody": "The contribution puts this goal {amount} above its target. Add it anyway?",
-  "@goalOverfundBody": {"placeholders": {"amount": {}}},
+  "@goalOverfundBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
   "addAnyway": "Add anyway",
   "safeToSpend": "Free after commitments: {amount}",
   "@safeToSpend": {
     "placeholders": {
-      "amount": {
-      }
+      "amount": {}
     }
   },
   "flexibleSpendTitle": "Free after commitments",
@@ -30,7 +37,13 @@
   "reservedForEnvelopes": "Reserved for budgets",
   "freeAfterCommitments": "Free after commitments",
   "daysRemaining": "Days remaining: {count}",
-  "@daysRemaining": {"placeholders": {"count": {"type": "int"}}},
+  "@daysRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "seeAll": "See all",
   "add": "Add",
   "save": "Save",
@@ -87,10 +100,8 @@
   "scheduledOn": "Scheduled on this device · quiet hours {from}–{to}",
   "@scheduledOn": {
     "placeholders": {
-      "from": {
-      },
-      "to": {
-      }
+      "from": {},
+      "to": {}
     }
   },
   "remindersOff": "Reminders are off",
@@ -105,8 +116,7 @@
   "syncPill": "{count, plural, =1{1 change saved on this device - syncs when online} other{{count} changes saved on this device - syncs when online}}",
   "@syncPill": {
     "placeholders": {
-      "count": {
-      }
+      "count": {}
     }
   },
   "hideAmountsTip": "Hide amounts",
@@ -124,8 +134,7 @@
   "loginSentCode": "We sent a code by SMS to {phone}",
   "@loginSentCode": {
     "placeholders": {
-      "phone": {
-      }
+      "phone": {}
     }
   },
   "loginSignInHint": "Sign in with your email to open your family space.",
@@ -144,18 +153,15 @@
   "kidsHi": "Hi {name}!",
   "@kidsHi": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "kidsMyJar": "My Jar",
   "kidsGoalSaved": "Goal: {goal} - {pct}% saved",
   "@kidsGoalSaved": {
     "placeholders": {
-      "goal": {
-      },
-      "pct": {
-      }
+      "goal": {},
+      "pct": {}
     }
   },
   "kidsMyChores": "My Chores",
@@ -163,8 +169,7 @@
   "kidsWishItem": "Soccer ball - US$25 · saved {amount}",
   "@kidsWishItem": {
     "placeholders": {
-      "amount": {
-      }
+      "amount": {}
     }
   },
   "kidsAskMoney": "Ask Mom/Dad\nfor money",
@@ -180,13 +185,27 @@
   "starReward": "Star reward",
   "choreFieldsRequired": "Enter a chore name and at least 1 star.",
   "choreAdded": "{name} added for the kids.",
-  "@choreAdded": {"placeholders": {"name": {}}},
+  "@choreAdded": {
+    "placeholders": {
+      "name": {}
+    }
+  },
   "noFamilyChores": "No chores yet. Add the first one for the kids.",
   "choreStars": "{stars} stars",
-  "@choreStars": {"placeholders": {"stars": {}}},
+  "@choreStars": {
+    "placeholders": {
+      "stars": {}
+    }
+  },
   "kidsNoWish": "No wish selected yet",
   "kidsWishProgress": "{name} · {target} goal · {saved} saved",
-  "@kidsWishProgress": {"placeholders": {"name": {}, "target": {}, "saved": {}}},
+  "@kidsWishProgress": {
+    "placeholders": {
+      "name": {},
+      "target": {},
+      "saved": {}
+    }
+  },
   "kidsJars": "Kids' savings",
   "addKidWish": "Add a kid's wish",
   "childLabel": "Child",
@@ -202,8 +221,7 @@
   "teenSplitHint": "Suggested split of {amount} earned this month",
   "@teenSplitHint": {
     "placeholders": {
-      "amount": {
-      }
+      "amount": {}
     }
   },
   "teenSavedJar": "Saved to your jar - parents match 50%",
@@ -212,14 +230,19 @@
   "familyTitle": "Family",
   "membersDesc": "Couple + kids · month starts on the 1st",
   "membersCycleDesc": "Budget cycle starts on day {day}",
-  "@membersCycleDesc": {"placeholders": {"day": {"type": "int"}}},
+  "@membersCycleDesc": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
   "membersInviteHint": "Create a secure, role-based invitation for each family member",
   "setCurrency": "Currency & rates",
   "setCurrencySub": "USD primary · ZiG secondary · {rate}",
   "@setCurrencySub": {
     "placeholders": {
-      "rate": {
-      }
+      "rate": {}
     }
   },
   "setPrivacy": "Privacy",
@@ -243,8 +266,7 @@
   "recSkipped": "Skipped - next: {date}",
   "@recSkipped": {
     "placeholders": {
-      "date": {
-      }
+      "date": {}
     }
   },
   "recNew": "New regular payment",
@@ -273,6 +295,52 @@
   "rollReset": "Reset each month",
   "rollRoll": "Roll over what is left",
   "rollAccum": "Keep accumulating",
+  "monthEndReviewTitle": "Month-end review",
+  "monthEndReviewBody": "{amount} is still unspent from last month. Move it to savings, or keep it in the budget.",
+  "@monthEndReviewBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "monthEndReviewCta": "Review",
+  "monthEndReviewLater": "Not now",
+  "monthEndSweptAutomatically": "We moved {amount} of last month's leftovers into savings.",
+  "@monthEndSweptAutomatically": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "monthEndReviewSheetTitle": "Money left over",
+  "monthEndReviewSheetBody": "Last month ended with {amount} still in your budgets. Nothing moves until you confirm.",
+  "@monthEndReviewSheetBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "monthEndReviewCarryNote": "Budgets set to roll over or accumulate already keep their leftovers.",
+  "monthEndReviewNoGoals": "Create a savings goal first - then leftover money has somewhere to go.",
+  "monthEndReviewSendTo": "Send it to",
+  "monthEndReviewMove": "Move {amount} to {goal}",
+  "@monthEndReviewMove": {
+    "placeholders": {
+      "amount": {},
+      "goal": {}
+    }
+  },
+  "monthEndReviewKeep": "Keep it in the budget",
+  "monthEndReviewDone": "Moved {amount} to {goal}",
+  "@monthEndReviewDone": {
+    "placeholders": {
+      "amount": {},
+      "goal": {}
+    }
+  },
+  "monthEndReviewDontAsk": "Don't ask me again",
+  "monthEndSweepSetting": "Leftover money",
+  "monthEndSweepSettingDesc": "What happens to money still unspent when a budget month closes.",
+  "monthEndSweepAsk": "Ask me each month",
+  "monthEndSweepAlways": "Always move to savings",
+  "monthEndSweepNever": "Leave it in the budget",
   "freqTerm": "Per term (~3 months)",
   "budgetsTitle": "Budgets",
   "noEnvelopes": "No budgets yet",
@@ -294,12 +362,9 @@
   "mChoresLine": "{stars} stars earned · {requests} request(s) waiting · {proposals} teen proposal(s) waiting.",
   "@mChoresLine": {
     "placeholders": {
-      "stars": {
-      },
-      "requests": {
-      },
-      "proposals": {
-      }
+      "stars": {},
+      "requests": {},
+      "proposals": {}
     }
   },
   "meetingNoteHint": "e.g. \"Cook more on Sundays - musika spending is creeping.\"",
@@ -337,8 +402,7 @@
   "lastSync": "Last sync: {last}",
   "@lastSync": {
     "placeholders": {
-      "last": {
-      }
+      "last": {}
     }
   },
   "familySpace": "Family space",
@@ -350,10 +414,8 @@
   "reachedMove": "{on} of {total} budgets are on track. Open a budget to review or move money.",
   "@reachedMove": {
     "placeholders": {
-      "on": {
-      },
-      "total": {
-      }
+      "on": {},
+      "total": {}
     }
   },
   "cashTrace": "Cash is easy to spend and hard to trace. Paying a bit more by mobile money or bank card keeps the picture clearer.",
@@ -362,15 +424,13 @@
   "csvSaved": "CSV saved: {path}",
   "@csvSaved": {
     "placeholders": {
-      "path": {
-      }
+      "path": {}
     }
   },
   "exportedPath": "Exported ✓ {path}",
   "@exportedPath": {
     "placeholders": {
-      "path": {
-      }
+      "path": {}
     }
   },
   "bringToMeeting": "Bring this to the monthly Family Meeting",
@@ -397,35 +457,28 @@
   "requestTitle": "{name} requested {amount}",
   "@requestTitle": {
     "placeholders": {
-      "name": {
-      },
-      "amount": {
-      }
+      "name": {},
+      "amount": {}
     }
   },
   "proposalTitle": "{name} proposes {amount}",
   "@proposalTitle": {
     "placeholders": {
-      "name": {
-      },
-      "amount": {
-      }
+      "name": {},
+      "amount": {}
     }
   },
   "proposalSub": "{reason} · from {env}",
   "@proposalSub": {
     "placeholders": {
-      "reason": {
-      },
-      "env": {
-      }
+      "reason": {},
+      "env": {}
     }
   },
   "recDueSub": "Recurring · comes due {when} · post it when you pay it",
   "@recDueSub": {
     "placeholders": {
-      "when": {
-      }
+      "when": {}
     }
   },
   "dueNow": "now",
@@ -433,26 +486,21 @@
   "choreDoneTitle": "\"{name}\" done - confirm?",
   "@choreDoneTitle": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "choreDoneSub": "{stars} stars - confirm to grow the jar",
   "@choreDoneSub": {
     "placeholders": {
-      "stars": {
-      }
+      "stars": {}
     }
   },
   "circleSub": "{who} to collect {amount} · pot {pot} so far",
   "@circleSub": {
     "placeholders": {
-      "who": {
-      },
-      "amount": {
-      },
-      "pot": {
-      }
+      "who": {},
+      "amount": {},
+      "pot": {}
     }
   },
   "exportReal": "Export works on a real device",
@@ -463,8 +511,7 @@
   "dueBy": "overdue by {days}d",
   "@dueBy": {
     "placeholders": {
-      "days": {
-      }
+      "days": {}
     }
   },
   "dueToday": "due today",
@@ -472,100 +519,82 @@
   "dueIn": "due in {days}d",
   "@dueIn": {
     "placeholders": {
-      "days": {
-      }
+      "days": {}
     }
   },
   "circleTitle": "Savings circle - Round {round} of {total}",
   "@circleTitle": {
     "placeholders": {
-      "round": {
-      },
-      "total": {
-      }
+      "round": {},
+      "total": {}
     }
   },
   "postedSnack": "{name} posted ✓ - budget updated",
   "@postedSnack": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "starsGiven": "{stars} stars given to the kids!",
   "@starsGiven": {
     "placeholders": {
-      "stars": {
-      }
+      "stars": {}
     }
   },
   "approvedReq": "Approved ✓ - {amount} added to {name}",
   "@approvedReq": {
     "placeholders": {
-      "amount": {
-      },
-      "name": {
-      }
+      "amount": {},
+      "name": {}
     }
   },
   "declineBody": "{reason}\n\nFrom budget: {env}",
   "@declineBody": {
     "placeholders": {
-      "reason": {
-      },
-      "env": {
-      }
+      "reason": {},
+      "env": {}
     }
   },
   "approvedProp": "Approved ✓ - {amount} logged to {env}",
   "@approvedProp": {
     "placeholders": {
-      "amount": {
-      },
-      "env": {
-      }
+      "amount": {},
+      "env": {}
     }
   },
   "sentKid": "\"{name}\" sent to Mom & Dad",
   "@sentKid": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "listEmptyAdd": "Nothing here - add an item with ＋",
   "usesPct": "Uses {pct}% of your {name} budget",
   "@usesPct": {
     "placeholders": {
-      "pct": {
-      },
-      "name": {
-      }
+      "pct": {},
+      "name": {}
     }
   },
   "loggedTo": "Recorded {amount} in {name} ✓ - budget updated",
   "@loggedTo": {
     "placeholders": {
-      "amount": {
-      },
-      "name": {
-      }
+      "amount": {},
+      "name": {}
     }
   },
   "finishShop": "Record shopping expense",
   "estPrice": "Est. unit price ({symbol})",
   "@estPrice": {
     "placeholders": {
-      "symbol": {
-      }
+      "symbol": {}
     }
   },
   "myFamily": "My family",
   "spaceCreated": "Family space created ✓ Invite code: {code}",
   "@spaceCreated": {
     "placeholders": {
-      "code": {
-      }
+      "code": {}
     }
   },
   "createFail": "Could not create the space - try again",
@@ -578,8 +607,7 @@
   "signedInAs": "Signed in: {masked}",
   "@signedInAs": {
     "placeholders": {
-      "masked": {
-      }
+      "masked": {}
     }
   },
   "signOut": "Sign out",
@@ -587,67 +615,57 @@
   "cashShare": "{pct}% of spending",
   "@cashShare": {
     "placeholders": {
-      "pct": {
-      }
+      "pct": {}
     }
   },
   "donutA11y": "Spending by budget, {name} selected, {share} percent",
   "@donutA11y": {
     "placeholders": {
-      "name": {
-      },
-      "share": {
-      }
+      "name": {},
+      "share": {}
     }
   },
   "starsHome": "{stars} stars - confirm chores on Home to grow jars",
   "@starsHome": {
     "placeholders": {
-      "stars": {
-      }
+      "stars": {}
     }
   },
   "circleMember": "Savings circle · {name}",
   "@circleMember": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "potSoFar": "Pot so far: {pot}",
   "@potSoFar": {
     "placeholders": {
-      "pot": {
-      }
+      "pot": {}
     }
   },
   "roundOk": "Round recorded ✓ - records only, we never hold money",
   "addToGoal": "Add to {name}",
   "@addToGoal": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "addedToGoal": "Added to {name}",
   "@addedToGoal": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "goalBase": "Goal base: {short}",
   "@goalBase": {
     "placeholders": {
-      "short": {
-      }
+      "short": {}
     }
   },
   "syncTime": "today at {t}",
   "@syncTime": {
     "placeholders": {
-      "t": {
-      }
+      "t": {}
     }
   },
   "watch": "Watch",
@@ -656,38 +674,30 @@
   "envelopeRemaining": "{name} has {amount} remaining",
   "@envelopeRemaining": {
     "placeholders": {
-      "name": {
-      },
-      "amount": {
-      }
+      "name": {},
+      "amount": {}
     }
   },
   "envelopeWillLeave": "This leaves {amount} in {name}",
   "@envelopeWillLeave": {
     "placeholders": {
-      "amount": {
-      },
-      "name": {
-      }
+      "amount": {},
+      "name": {}
     }
   },
   "envelopeWillExceed": "This puts {name} {amount} over budget",
   "@envelopeWillExceed": {
     "placeholders": {
-      "name": {
-      },
-      "amount": {
-      }
+      "name": {},
+      "amount": {}
     }
   },
   "overBudgetTitle": "This budget will be over its limit",
   "overBudgetBody": "{name} will be over by {amount}. The expense can still be recorded.",
   "@overBudgetBody": {
     "placeholders": {
-      "name": {
-      },
-      "amount": {
-      }
+      "name": {},
+      "amount": {}
     }
   },
   "adjustAmount": "Adjust amount",
@@ -695,20 +705,16 @@
   "overBy": "Over by {amount}",
   "@overBy": {
     "placeholders": {
-      "amount": {
-      }
+      "amount": {}
     }
   },
   "overBudgetLabel": "Over budget",
   "memberPot": "Pot so far: {pot} · {contribution} × {count} members",
   "@memberPot": {
     "placeholders": {
-      "pot": {
-      },
-      "contribution": {
-      },
-      "count": {
-      }
+      "pot": {},
+      "contribution": {},
+      "count": {}
     }
   },
   "switchProfile": "Switch profile",
@@ -839,8 +845,7 @@
   "previewBanner": "Previewing as {name}",
   "@previewBanner": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "previewExit": "Exit",
@@ -862,8 +867,7 @@
   "listDeleted": "\"{name}\" removed from the list",
   "@listDeleted": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "memberAccountTitle": "Create member account",
@@ -895,18 +899,15 @@
   "inviteAcceptedLabel": "{code} - joined ({role})",
   "@inviteAcceptedLabel": {
     "placeholders": {
-      "code": {
-      },
-      "role": {
-      }
+      "code": {},
+      "role": {}
     }
   },
   "inviteRevoke": "Revoke",
   "inviteRevokeBody": "Revoke invite {code}? They will not be able to join with it.",
   "@inviteRevokeBody": {
     "placeholders": {
-      "code": {
-      }
+      "code": {}
     }
   },
   "inviteFailed": "Could not create the invite - check your connection and try again.",
@@ -915,8 +916,7 @@
   "inviteLinkReady": "Invite {code} is waiting - join the family below.",
   "@inviteLinkReady": {
     "placeholders": {
-      "code": {
-      }
+      "code": {}
     }
   },
   "inviteAlreadyInFamily": "You are already in a family - invites are for joining a new one.",
@@ -924,15 +924,13 @@
   "makeOwnerBody": "Make {name} the family owner? You become a regular adult member and they manage invites and settings.",
   "@makeOwnerBody": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "makeOwnerDone": "{name} is now the family owner",
   "@makeOwnerDone": {
     "placeholders": {
-      "name": {
-      }
+      "name": {}
     }
   },
   "makeOwnerFailed": "Could not transfer ownership - check your connection and try again.",
@@ -946,15 +944,13 @@
   "syncDiscardBody": "“{what}” stays only on this phone and will never reach the family cloud. Discard it?",
   "@syncDiscardBody": {
     "placeholders": {
-      "what": {
-      }
+      "what": {}
     }
   },
   "syncTries": "{tries} tries so far",
   "@syncTries": {
     "placeholders": {
-      "tries": {
-      }
+      "tries": {}
     }
   },
   "syncKindTx": "Expense",
@@ -968,19 +964,15 @@
   "setupInviteText": "Join {family} on Mhuri with invite code {code}. Suggested role: {role}.",
   "@setupInviteText": {
     "placeholders": {
-      "family": {
-      },
-      "code": {
-      },
-      "role": {
-      }
+      "family": {},
+      "code": {},
+      "role": {}
     }
   },
   "setupInviteSubject": "Join {family} on Mhuri",
   "@setupInviteSubject": {
     "placeholders": {
-      "family": {
-      }
+      "family": {}
     }
   },
   "setupTagline": "One family. One plan.",
@@ -1010,8 +1002,7 @@
   "setupStepOf": "Step {n} of 3",
   "@setupStepOf": {
     "placeholders": {
-      "n": {
-      }
+      "n": {}
     }
   },
   "deleteWhatTitle": "What happens when you delete",
@@ -1045,8 +1036,7 @@
   "filterAll": "All ({n})",
   "@filterAll": {
     "placeholders": {
-      "n": {
-      }
+      "n": {}
     }
   },
   "envLabel": "Environment",
@@ -1069,5 +1059,92 @@
   "reminderDigest": "Weekly digest (Sunday 6pm)",
   "notificationsDenied": "Notifications are disabled for Mhuri. Enable them in your device settings.",
   "testNotificationSent": "Test notification sent.",
-  "testNotificationFailed": "Could not send the test notification."
+  "testNotificationFailed": "Could not send the test notification.",
+  "planAheadTitle": "Plan Ahead",
+  "reportsShortcut": "Reports",
+  "tasksShortcut": "Tasks",
+  "askMhuriTitle": "Ask Mhuri",
+  "upcomingBillsTitle": "Upcoming Bills",
+  "needsAttentionLabel": "Needs attention",
+  "comingUpLabel": "Coming up",
+  "tasksComingUpLabel": "Tasks coming up",
+  "weeklySummaryTitle": "Weekly Mhuri summary",
+  "weeklySummarySubtitle": "Last 7 days · household snapshot",
+  "quickAddWhatAdding": "What are you adding?",
+  "quickAddShoppingOrTask": "Shopping or task",
+  "quickAddAmountSpent": "Amount spent",
+  "quickAddAmountReceived": "Amount received",
+  "quickAddWhichBudget": "Which budget is this from?",
+  "quickAddSavedLabel": "Saved",
+  "appAndCurrencySettings": "App & currency settings",
+  "planAheadHeadline": "Make the next few weeks easier",
+  "planAheadLead": "Choose the question you want to answer. Nothing changes until you review and confirm it.",
+  "planToolCashTitle": "Cash outlook",
+  "planToolCashSub": "See whether your money can cover the days until payday.",
+  "planToolBillsTitle": "Bills and commitments",
+  "planToolBillsSub": "Track due dates, reminders and partial payments.",
+  "planToolSavingsTitle": "Savings and debt plan",
+  "planToolSavingsSub": "Compare contribution and payoff timelines.",
+  "planToolHealthTitle": "Financial health",
+  "planToolHealthSub": "Review practical signals from the current period.",
+  "planToolNextPeriodTitle": "Prepare the next period",
+  "planToolNextPeriodSub": "Review a suggested plan before applying any changes.",
+  "exploreMhuriPlus": "Explore Mhuri Plus",
+  "monthlyReportsTitle": "Monthly reports",
+  "familyActivityTitle": "Family activity",
+  "activityFilterTitle": "Filter activity",
+  "filterReset": "Reset",
+  "filterTypeLabel": "Transaction type",
+  "filterExpenses": "Expenses",
+  "filterMemberLabel": "Family member",
+  "filterEveryone": "Everyone",
+  "filterViewLabel": "Finance view",
+  "filterFamilyView": "Family finances",
+  "filterPrivateOption": "{name} · Private",
+  "@filterPrivateOption": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "filterDateLabel": "Date",
+  "filterAllTime": "All time",
+  "filterToday": "Today",
+  "filterLast7Days": "Last 7 days",
+  "filterLast30Days": "Last 30 days",
+  "filterApply": "Apply filters",
+  "activitySearchHint": "Search activity",
+  "privateAccountOnly": "Private account · only you can see it",
+  "clearFilters": "Clear filters",
+  "closeLabel": "Close",
+  "filterAllTypes": "All",
+  "activityDetailsTitle": "Activity details",
+  "noMatchingActivity": "No matching activity",
+  "noMatchingActivityHint": "Try changing or clearing your filters.",
+  "closeSearch": "Close search",
+  "increaseValue": "Increase",
+  "decreaseValue": "Decrease",
+  "moveUp": "Move up",
+  "moveDown": "Move down",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "removeLabel": "Remove",
+  "clearSearch": "Clear search",
+  "toLabel": "to",
+  "quickAddSubtitle": "Choose what to record for your household",
+  "addSomethingElse": "Add something else",
+  "addSomethingElseSubtitle": "Switch entry type or add a household item",
+  "chooseBudget": "Choose a budget",
+  "searchBudgets": "Search budgets",
+  "noBudget": "No budget",
+  "keepUnallocated": "Keep this expense unallocated",
+  "splitExpense": "Split expense",
+  "applySplit": "Apply split",
+  "recordIn": "Record in",
+  "budgetCountLabel": "{count, plural, =1{1 budget} other{{count} budgets}}",
+  "@budgetCountLabel": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "amountLabel": "Amount"
 }

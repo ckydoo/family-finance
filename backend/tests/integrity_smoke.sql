@@ -28,7 +28,7 @@ begin
     raise exception 'FAIL: invite code shape';
   end if;
   -- default shopping list exists
-  select count(*) into n from public.shopping_list where space_id = v_space and name = 'Groceries';
+  select count(*) into n from public.shopping_list where space_id = v_space and name = 'Shopping';
   if n <> 1 then raise exception 'FAIL: default shopping list missing'; end if;
   -- audit row exists
   select count(*) into n from public.activity_log
@@ -109,7 +109,7 @@ begin
   delete from public.family_space where name = 'ProbeList';
   -- (that RPC errored on the name or not - we only assert the ORIGINAL list:)
   select id into v_list from public.shopping_list
-    where space_id = v_space and name = 'Groceries' and deleted_at is null
+    where space_id = v_space and name = 'Shopping' and deleted_at is null
     limit 1;
   if v_list is null then raise exception 'FAIL: device A cannot see the default list'; end if;
   insert into _t values ('list', jsonb_build_object('id', v_list::text))
@@ -133,7 +133,7 @@ declare
 begin
   -- B pulls: header + item both visible through membership RLS.
   select count(*) into n from public.shopping_list
-    where id = v_list and name = 'Groceries';
+    where id = v_list and name = 'Shopping';
   if n <> 1 then raise exception 'FAIL: device B cannot see the list header'; end if;
   select count(*) into n from public.list_item
     where list_id = v_list and name = 'Mielie meal';
@@ -189,11 +189,13 @@ begin
   raise exception 'FAIL: non-owner created an invite';
 exception
   when others then
-    if sqlerrm <> 'OWNER_REQUIRED' then raise exception 'FAIL: wrong error %', sqlerrm; end if;
-    raise notice 'PASS non-owner blocked from creating invites';
+    if sqlerrm not in ('ADMIN_REQUIRED', 'FAMILY_SCOPE_REQUIRED') then
+      raise exception 'FAIL: wrong error %', sqlerrm;
+    end if;
+    raise notice 'PASS non-owner blocked from creating invites (%)', sqlerrm;
 end $$;
 
--- Bongi (already in the family) cannot use the invite.
+-- Bongi (already in the family) cannot use the email-bound invite.
 do $$
 declare v_code text := (select v->>'code' from _ti where k='inv');
 begin
@@ -201,8 +203,10 @@ begin
   raise exception 'FAIL: family member accepted an invite';
 exception
   when others then
-    if sqlerrm <> 'ALREADY_IN_FAMILY' then raise exception 'FAIL: wrong error %', sqlerrm; end if;
-    raise notice 'PASS member cannot join twice';
+    if sqlerrm not in ('ALREADY_IN_FAMILY', 'INVALID_CODE') then
+      raise exception 'FAIL: wrong error %', sqlerrm;
+    end if;
+    raise notice 'PASS member cannot join twice (%)', sqlerrm;
 end $$;
 
 -- The outsider joins WITH the bound email - becomes a teen.
@@ -393,10 +397,20 @@ begin
   insert into public.transaction (space_id, member_id, created_by, type, amount_minor, currency)
   values (v_space, '88888888-8888-8888-8888-888888888888',
           '88888888-8888-8888-8888-888888888888', 'expense', 100, 'USD');
+  -- With child_budget=false (migration 032), shared tx_read hides ledger rows from kid:
+  select count(*) into n from public.transaction
+   where member_id = '88888888-8888-8888-8888-888888888888';
+  if n <> 0 then raise exception 'FAIL: kid saw shared tx with child_budget=false'; end if;
+  raise notice 'PASS switch ON: kid can transact while child_budget=false hides ledger';
+end $$;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$
+declare n int;
+begin
   select count(*) into n from public.transaction
    where member_id = '88888888-8888-8888-8888-888888888888';
   if n <> 1 then raise exception 'FAIL: kid tx insert vanished'; end if;
-  raise notice 'PASS switch ON: kid can now transact';
+  raise notice 'PASS owner sees kid transaction';
 end $$;
 
 select set_config('request.jwt.claim.sub', '77777777-7777-7777-7777-777777777777', false);

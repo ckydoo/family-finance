@@ -171,14 +171,21 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
                   size: 19, color: context.primary),
             ),
             const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Ask Mhuri', style: TextStyle(fontSize: 17)),
-                Text('Family money, made clearer',
-                    style:
-                        TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-              ],
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Ask Mhuri',
+                      style: TextStyle(fontSize: 17),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  Text('Family money, made clearer',
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
             ),
           ],
         ),
@@ -267,7 +274,7 @@ class _Welcome extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [context.primarySoft, context.card],
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: kBRadiusL,
               border: Border.all(color: context.hairline),
             ),
             child: Column(
@@ -277,10 +284,10 @@ class _Welcome extends StatelessWidget {
                     color: context.primary, size: 26),
                 const SizedBox(height: 17),
                 Text('Make your next money decision with more clarity.',
-                    style: TextStyle(
-                      fontSize: 22,
-                      height: 1.18,
-                      fontWeight: FontWeight.w800,
+                    style: MhuriType.titleL.copyWith(
+                      fontSize: 21,
+                      height: 1.2,
+                      fontWeight: FontWeight.w700,
                       color: context.ink,
                     )),
                 const SizedBox(height: 9),

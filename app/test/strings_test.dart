@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mhuri_money/app.dart';
 import 'package:mhuri_money/core/auth/auth_controller.dart';
+import 'package:mhuri_money/core/models/models.dart';
 import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
@@ -89,6 +91,10 @@ void main() {
   });
 
   testWidgets('switching language re-renders the whole app', (tester) async {
+    tester.view.physicalSize = const Size(430, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
     final env = testEnv();
     final auth = AuthController(env: env, service: FakeAuthService());
     await auth.signIn('test@mhuri.app', '123456');
@@ -96,6 +102,13 @@ void main() {
     state.addEnvelope(
       name: 'Groceries',
       limit: Money.fromMajor(100, Currency.usd),
+    );
+    state.addTx(
+      type: TxType.income,
+      amount: Money.fromMajor(500, Currency.usd),
+      memberId: state.user.id,
+      method: Method.bankTransfer,
+      note: 'Salary',
     );
 
     await tester.pumpWidget(MhuriMoneyApp(env: env, auth: auth, state: state));
@@ -109,12 +122,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Presupuestos'), findsOneWidget);
+    expect(find.text('Planificar'), findsOneWidget);
     expect(AppLocalizations.of(context)!.localeName, 'es');
 
     // And to chiShona.
     s.setLocale('sn');
     await tester.pumpAndSettle();
     expect(find.text('Bhajeti'), findsOneWidget);
+    expect(find.text('Ronga Mberi'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 5));
   });
