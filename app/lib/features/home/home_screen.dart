@@ -321,7 +321,7 @@ class _FamilySpaceSwitcherState extends State<_FamilySpaceSwitcher> {
                                         horizontal: 9, vertical: 5),
                                     decoration: BoxDecoration(
                                       color: context.primary,
-                                      borderRadius: BorderRadius.circular(999),
+                                      borderRadius: kBRadiusS,
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -897,40 +897,15 @@ class _PremiumHeaderAction extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [context.card, context.bg],
-              ),
-              border: Border.all(color: context.hairline),
-              boxShadow: [
-                BoxShadow(
-                  color: context.shadowColor.withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.22),
-                  blurRadius: 1,
-                  offset: const Offset(-1, -1),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: onTap,
-                splashColor: context.primary.withValues(alpha: 0.12),
-                child: Center(
-                  child: Icon(icon, size: 19, color: context.ink),
-                ),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: kBRadiusS,
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Center(child: Icon(icon, size: 19, color: context.ink)),
               ),
             ),
           ),
@@ -1597,7 +1572,7 @@ class _FirstStepsCard extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: context.primarySoft,
-                shape: BoxShape.circle,
+                borderRadius: kBRadiusXS,
               ),
               child: Text(
                 number,
@@ -2291,7 +2266,7 @@ class _PlusMark extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
             color: context.accent,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: kBRadiusS,
             border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
           ),
           child: const Row(
@@ -2703,6 +2678,12 @@ class _HomeToolShortcuts extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final items = <(String, String, IconData, Widget)>[
       (
+        'home_shortcut_ask_mhuri',
+        l?.askMhuriTitle ?? 'Ask Mhuri',
+        Icons.auto_awesome_outlined,
+        const AskMhuriScreen(),
+      ),
+      (
         'home_shortcut_plan_ahead',
         l?.planAheadTitle ?? 'Plan Ahead',
         Icons.event_note_outlined,
@@ -2720,12 +2701,6 @@ class _HomeToolShortcuts extends StatelessWidget {
         Icons.task_alt_outlined,
         const FamilyTasksScreen(),
       ),
-      (
-        'home_shortcut_ask_mhuri',
-        l?.askMhuriTitle ?? 'Ask Mhuri',
-        Icons.auto_awesome_outlined,
-        const AskMhuriScreen(),
-      ),
     ];
 
     return SingleChildScrollView(
@@ -2736,11 +2711,11 @@ class _HomeToolShortcuts extends StatelessWidget {
           for (var i = 0; i < items.length; i++) ...[
             if (i > 0) const SizedBox(width: 8),
             Material(
-              color: context.card,
-              borderRadius: BorderRadius.circular(999),
+              color: Colors.transparent,
+              borderRadius: kBRadiusS,
               child: InkWell(
                 key: ValueKey(items[i].$1),
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: kBRadiusS,
                 onTap: () {
                   HapticFeedback.selectionClick();
                   Navigator.of(context).push(
@@ -2755,7 +2730,7 @@ class _HomeToolShortcuts extends StatelessWidget {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: kBRadiusS,
                       border: Border.all(color: context.hairline),
                     ),
                     child: Row(

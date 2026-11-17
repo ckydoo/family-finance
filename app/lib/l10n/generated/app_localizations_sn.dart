@@ -703,10 +703,22 @@ class AppLocalizationsSn extends AppLocalizations {
   }
 
   @override
-  String get monthEndReviewCarryNote => 'Mabhajeti anotakura kana kuunganidza anotochengeta zvaasara.';
+  String get monthEndReviewCarryNote =>
+      'Mabhajeti anotakura kana kuunganidza anotochengeta zvaasara.';
 
   @override
-  String get monthEndReviewNoGoals => 'Tanga wagadzira chinangwa chemari - ipapo mari yasara inenge iine kwainoenda.';
+  String get monthEndReviewNoGoals =>
+      'Tanga wagadzira chinangwa chemari - ipapo mari yasara inenge iine kwainoenda.';
+
+  @override
+  String monthEndSavingsGoalName(Object month) {
+    return 'Kuchengetera kwa $month';
+  }
+
+  @override
+  String monthEndReviewGoalCreated(Object goal) {
+    return 'Chinangwa che$goal chagadzirira. Hapana mari ichafambiswa kusvika wabvuma.';
+  }
 
   @override
   String get monthEndReviewSendTo => 'Endesa ku';
@@ -731,7 +743,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get monthEndSweepSetting => 'Mari yasara';
 
   @override
-  String get monthEndSweepSettingDesc => 'Zvinoitika kumari isina kushandiswa kana mwedzi webhajeti wapedza.';
+  String get monthEndSweepSettingDesc =>
+      'Zvinoitika kumari isina kushandiswa kana mwedzi webhajeti wapedza.';
 
   @override
   String get monthEndSweepAsk => 'Ndivunze mwedzi wese';
@@ -2206,6 +2219,9 @@ class AppLocalizationsSn extends AppLocalizations {
   String get askMhuriTitle => 'Bvunza Mhuri';
 
   @override
+  String get askMhuriPrompt => 'Wana mhinduro dzakajeka nezvemari yemhuri yako';
+
+  @override
   String get upcomingBillsTitle => 'Zvikwereti Zviri Kuuya';
 
   @override
@@ -2248,37 +2264,44 @@ class AppLocalizationsSn extends AppLocalizations {
   String get planAheadHeadline => 'Ita kuti mavhiki anotevera ave nyore';
 
   @override
-  String get planAheadLead => 'Sarudza mubvunzo waunoda kupindura. Hapana chinoshanduka kusvikira waongorora wotsinhira.';
+  String get planAheadLead =>
+      'Sarudza mubvunzo waunoda kupindura. Hapana chinoshanduka kusvikira waongorora wotsinhira.';
 
   @override
   String get planToolCashTitle => 'Mamiriro emari';
 
   @override
-  String get planToolCashSub => 'Ona kana mari yako ichikwana kusvika zuva remubairo.';
+  String get planToolCashSub =>
+      'Ona kana mari yako ichikwana kusvika zuva remubairo.';
 
   @override
   String get planToolBillsTitle => 'Zvikwereti nezvisungo';
 
   @override
-  String get planToolBillsSub => 'Tevedzera mazuva ekubhadhara, zviyeuchidzo uye kubhadhara pashoma.';
+  String get planToolBillsSub =>
+      'Tevedzera mazuva ekubhadhara, zviyeuchidzo uye kubhadhara pashoma.';
 
   @override
-  String get planToolSavingsTitle => 'Hurongwa hwekuchengeta nekubhadhara chikwereti';
+  String get planToolSavingsTitle =>
+      'Hurongwa hwekuchengeta nekubhadhara chikwereti';
 
   @override
-  String get planToolSavingsSub => 'Enzanisa nguva dzekuchengeta mari nedzekupedza zvikwereti.';
+  String get planToolSavingsSub =>
+      'Enzanisa nguva dzekuchengeta mari nedzekupedza zvikwereti.';
 
   @override
   String get planToolHealthTitle => 'Utano hwemari';
 
   @override
-  String get planToolHealthSub => 'Ongorora zviratidzo zvemashandisirwo emari munguva ino.';
+  String get planToolHealthSub =>
+      'Ongorora zviratidzo zvemashandisirwo emari munguva ino.';
 
   @override
   String get planToolNextPeriodTitle => 'Gadzirira nguva inotevera';
 
   @override
-  String get planToolNextPeriodSub => 'Ongorora hurongwa hwakakurudzirwa usati washandura chero chinhu.';
+  String get planToolNextPeriodSub =>
+      'Ongorora hurongwa hwakakurudzirwa usati washandura chero chinhu.';
 
   @override
   String get exploreMhuriPlus => 'Ongorora Mhuri Plus';
@@ -2340,7 +2363,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get activitySearchHint => 'Tsvaga zvakaitika';
 
   @override
-  String get privateAccountOnly => 'Akaundi yakavanzika · iwe chete unogona kuiona';
+  String get privateAccountOnly =>
+      'Akaundi yakavanzika · iwe chete unogona kuiona';
 
   @override
   String get clearFilters => 'Bvisa masefa';
@@ -2397,7 +2421,8 @@ class AppLocalizationsSn extends AppLocalizations {
   String get addSomethingElse => 'Wedzera chimwe chinhu';
 
   @override
-  String get addSomethingElseSubtitle => 'Chinja rudzi rwekunyora kana kuwedzera chinhu chemumba';
+  String get addSomethingElseSubtitle =>
+      'Chinja rudzi rwekunyora kana kuwedzera chinhu chemumba';
 
   @override
   String get chooseBudget => 'Sarudza bhajeti';

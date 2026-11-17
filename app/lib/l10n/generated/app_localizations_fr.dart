@@ -708,10 +708,22 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get monthEndReviewCarryNote => 'Les budgets en report ou en accumulation conservent déjà leur reliquat.';
+  String get monthEndReviewCarryNote =>
+      'Les budgets en report ou en accumulation conservent déjà leur reliquat.';
 
   @override
-  String get monthEndReviewNoGoals => 'Créez d\'abord un objectif d\'épargne : l\'argent restant aura alors une destination.';
+  String get monthEndReviewNoGoals =>
+      'Créez d\'abord un objectif d\'épargne : l\'argent restant aura alors une destination.';
+
+  @override
+  String monthEndSavingsGoalName(Object month) {
+    return 'Épargne $month';
+  }
+
+  @override
+  String monthEndReviewGoalCreated(Object goal) {
+    return 'L’objectif « $goal » est prêt. Rien ne sera déplacé avant votre confirmation.';
+  }
 
   @override
   String get monthEndReviewSendTo => 'Envoyer vers';
@@ -736,7 +748,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get monthEndSweepSetting => 'Argent restant';
 
   @override
-  String get monthEndSweepSettingDesc => 'Ce qu\'il advient de l\'argent non dépensé à la fin d\'un mois budgétaire.';
+  String get monthEndSweepSettingDesc =>
+      'Ce qu\'il advient de l\'argent non dépensé à la fin d\'un mois budgétaire.';
 
   @override
   String get monthEndSweepAsk => 'Me demander chaque mois';
@@ -2227,6 +2240,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get askMhuriTitle => 'Demander à Mhuri';
 
   @override
+  String get askMhuriPrompt =>
+      'Des réponses claires sur l’argent de votre famille';
+
+  @override
   String get upcomingBillsTitle => 'Factures à venir';
 
   @override
@@ -2269,37 +2286,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get planAheadHeadline => 'Simplifiez les prochaines semaines';
 
   @override
-  String get planAheadLead => 'Choisissez la question à laquelle répondre. Rien ne change avant votre confirmation.';
+  String get planAheadLead =>
+      'Choisissez la question à laquelle répondre. Rien ne change avant votre confirmation.';
 
   @override
   String get planToolCashTitle => 'Prévision de trésorerie';
 
   @override
-  String get planToolCashSub => 'Vérifiez si votre argent couvre les jours jusqu’à la paie.';
+  String get planToolCashSub =>
+      'Vérifiez si votre argent couvre les jours jusqu’à la paie.';
 
   @override
   String get planToolBillsTitle => 'Factures et engagements';
 
   @override
-  String get planToolBillsSub => 'Suivez les échéances, rappels et paiements partiels.';
+  String get planToolBillsSub =>
+      'Suivez les échéances, rappels et paiements partiels.';
 
   @override
   String get planToolSavingsTitle => 'Plan d’épargne et de dettes';
 
   @override
-  String get planToolSavingsSub => 'Comparez les délais d’épargne et de remboursement.';
+  String get planToolSavingsSub =>
+      'Comparez les délais d’épargne et de remboursement.';
 
   @override
   String get planToolHealthTitle => 'Santé financière';
 
   @override
-  String get planToolHealthSub => 'Examinez les signaux pratiques de la période en cours.';
+  String get planToolHealthSub =>
+      'Examinez les signaux pratiques de la période en cours.';
 
   @override
   String get planToolNextPeriodTitle => 'Préparer la prochaine période';
 
   @override
-  String get planToolNextPeriodSub => 'Vérifiez un plan suggéré avant d’appliquer des changements.';
+  String get planToolNextPeriodSub =>
+      'Vérifiez un plan suggéré avant d’appliquer des changements.';
 
   @override
   String get exploreMhuriPlus => 'Découvrir Mhuri Plus';
@@ -2379,7 +2402,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noMatchingActivity => 'Aucune activité correspondante';
 
   @override
-  String get noMatchingActivityHint => 'Essayez de modifier ou d\'effacer vos filtres.';
+  String get noMatchingActivityHint =>
+      'Essayez de modifier ou d\'effacer vos filtres.';
 
   @override
   String get closeSearch => 'Fermer la recherche';
@@ -2412,13 +2436,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get toLabel => 'à';
 
   @override
-  String get quickAddSubtitle => 'Choisissez ce qu\'il faut enregistrer pour votre foyer';
+  String get quickAddSubtitle =>
+      'Choisissez ce qu\'il faut enregistrer pour votre foyer';
 
   @override
   String get addSomethingElse => 'Ajouter autre chose';
 
   @override
-  String get addSomethingElseSubtitle => 'Changez le type d\'entrée ou ajoutez un article du foyer';
+  String get addSomethingElseSubtitle =>
+      'Changez le type d\'entrée ou ajoutez un article du foyer';
 
   @override
   String get chooseBudget => 'Choisir un budget';

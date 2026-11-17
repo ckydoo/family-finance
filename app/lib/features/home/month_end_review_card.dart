@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/money/money.dart';
 import '../../core/planning/month_end_review.dart';
@@ -139,11 +140,23 @@ Future<void> showMonthEndReviewSheet(BuildContext context) async {
   final l = AppLocalizations.of(context)!;
   final review = s.monthEndReview;
   if (review == null) return;
+  final month = DateFormat.yMMMM(Localizations.localeOf(context).toString())
+      .format(review.cycleStart);
+  final goalName = l.monthEndSavingsGoalName(month);
+  final matchingGoal = s.monthEndSweepGoals
+      .where((goal) => goal.name == goalName)
+      .firstOrNull;
+  final monthGoal = s.ensureMonthEndSavingsGoal(
+    name: goalName,
+    target: review.totalLeft,
+  );
+  final createdMonthGoal = matchingGoal == null ? monthGoal : null;
   final goals = s.monthEndSweepGoals;
   final lines = review.sweepable.toList(growable: false);
 
   final selected = <String>{for (final line in lines) line.envelopeId};
-  String? goalId = s.preferredMonthEndGoal?.id ??
+  String? goalId = monthGoal?.id ??
+      s.preferredMonthEndGoal?.id ??
       (goals.isEmpty ? null : goals.first.id);
   var busy = false;
 
@@ -194,6 +207,13 @@ Future<void> showMonthEndReviewSheet(BuildContext context) async {
                 Text(
                   l.monthEndReviewCarryNote,
                   style: TextStyle(fontSize: 11.5, color: context.inkFaint),
+                ),
+              ],
+              if (createdMonthGoal != null) ...[
+                const SizedBox(height: 12),
+                StatusBanner(
+                  message:
+                      l.monthEndReviewGoalCreated(createdMonthGoal.name),
                 ),
               ],
               const SizedBox(height: 16),

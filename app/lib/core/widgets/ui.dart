@@ -568,7 +568,7 @@ class ErrorNotice extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: context.dangerSoft,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: kBRadiusM,
             border: Border.all(color: context.danger),
           ),
           child: Row(
@@ -815,7 +815,7 @@ class StatusBanner extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: kBRadiusM,
         border: Border.all(color: context.hairline),
       ),
       child: Row(
@@ -1092,7 +1092,7 @@ Future<T?> showMhuriSheet<T>({
       showDragHandle: true,
       backgroundColor: context.bg,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusSheet)),
       ),
       builder: builder,
     );

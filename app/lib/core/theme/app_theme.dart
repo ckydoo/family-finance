@@ -85,11 +85,11 @@ class MhuriType {
 }
 
 /// The one radius ruler: everything circles back to these.
-const double kRadiusXS = 6;
-const double kRadiusS = 8;
-const double kRadiusM = 10;
-const double kRadiusL = 12;
-const double kRadiusSheet = 20;
+const double kRadiusXS = 4;
+const double kRadiusS = 6;
+const double kRadiusM = 8;
+const double kRadiusL = 10;
+const double kRadiusSheet = 16;
 
 /// Standard spacing scale (4, 8, 12, 16, 24, 32, 48)
 const double kSpace4 = 4;
@@ -554,7 +554,7 @@ ThemeData _buildTheme(MhuriColors p, Brightness brightness) {
     chipTheme: base.chipTheme.copyWith(
       backgroundColor: p.card,
       side: BorderSide(color: p.hairline),
-      shape: const StadiumBorder(),
+      shape: RoundedRectangleBorder(borderRadius: kBRadiusS),
       labelStyle: TextStyle(
         fontFamily: kFontFamily,
         fontSize: 12.5,

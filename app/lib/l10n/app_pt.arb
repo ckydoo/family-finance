@@ -210,6 +210,18 @@
   "monthEndReviewSheetBody": "O mês passado terminou com {amount} ainda nos seus orçamentos. Nada muda até você confirmar.",
   "monthEndReviewCarryNote": "Orçamentos com transição ou acumulação já guardam as sobras.",
   "monthEndReviewNoGoals": "Crie primeiro uma meta de poupança - assim o dinheiro sobrando tem para onde ir.",
+  "monthEndSavingsGoalName": "Poupança de {month}",
+  "@monthEndSavingsGoalName": {
+    "placeholders": {
+      "month": {}
+    }
+  },
+  "monthEndReviewGoalCreated": "A meta {goal} está pronta. Nada será movido até você confirmar.",
+  "@monthEndReviewGoalCreated": {
+    "placeholders": {
+      "goal": {}
+    }
+  },
   "monthEndReviewSendTo": "Enviar para",
   "monthEndReviewMove": "Mover {amount} para {goal}",
   "monthEndReviewKeep": "Manter no orçamento",
@@ -650,6 +662,7 @@
   "reportsShortcut": "Relatórios",
   "tasksShortcut": "Tarefas",
   "askMhuriTitle": "Perguntar ao Mhuri",
+  "askMhuriPrompt": "Respostas claras sobre o dinheiro da sua família",
   "upcomingBillsTitle": "Próximas contas",
   "needsAttentionLabel": "Requer atenção",
   "comingUpLabel": "Em breve",

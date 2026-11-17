@@ -319,6 +319,18 @@
   },
   "monthEndReviewCarryNote": "Budgets set to roll over or accumulate already keep their leftovers.",
   "monthEndReviewNoGoals": "Create a savings goal first - then leftover money has somewhere to go.",
+  "monthEndSavingsGoalName": "{month} savings",
+  "@monthEndSavingsGoalName": {
+    "placeholders": {
+      "month": {}
+    }
+  },
+  "monthEndReviewGoalCreated": "{goal} is ready. Nothing moves until you confirm.",
+  "@monthEndReviewGoalCreated": {
+    "placeholders": {
+      "goal": {}
+    }
+  },
   "monthEndReviewSendTo": "Send it to",
   "monthEndReviewMove": "Move {amount} to {goal}",
   "@monthEndReviewMove": {
@@ -1064,6 +1076,7 @@
   "reportsShortcut": "Reports",
   "tasksShortcut": "Tasks",
   "askMhuriTitle": "Ask Mhuri",
+  "askMhuriPrompt": "Get clear answers about your family’s money",
   "upcomingBillsTitle": "Upcoming Bills",
   "needsAttentionLabel": "Needs attention",
   "comingUpLabel": "Coming up",

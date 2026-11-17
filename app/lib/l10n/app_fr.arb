@@ -211,6 +211,18 @@
   "monthEndReviewSheetBody": "Le mois dernier s'est terminé avec {amount} encore dans vos budgets. Rien ne bouge avant votre confirmation.",
   "monthEndReviewCarryNote": "Les budgets en report ou en accumulation conservent déjà leur reliquat.",
   "monthEndReviewNoGoals": "Créez d'abord un objectif d'épargne : l'argent restant aura alors une destination.",
+  "monthEndSavingsGoalName": "Épargne {month}",
+  "@monthEndSavingsGoalName": {
+    "placeholders": {
+      "month": {}
+    }
+  },
+  "monthEndReviewGoalCreated": "L’objectif « {goal} » est prêt. Rien ne sera déplacé avant votre confirmation.",
+  "@monthEndReviewGoalCreated": {
+    "placeholders": {
+      "goal": {}
+    }
+  },
   "monthEndReviewSendTo": "Envoyer vers",
   "monthEndReviewMove": "Déplacer {amount} vers {goal}",
   "monthEndReviewKeep": "Garder dans le budget",
@@ -650,6 +662,7 @@
   "reportsShortcut": "Rapports",
   "tasksShortcut": "Tâches",
   "askMhuriTitle": "Demander à Mhuri",
+  "askMhuriPrompt": "Des réponses claires sur l’argent de votre famille",
   "upcomingBillsTitle": "Factures à venir",
   "needsAttentionLabel": "À vérifier",
   "comingUpLabel": "À venir",

@@ -1372,6 +1372,18 @@ abstract class AppLocalizations {
   /// **'Create a savings goal first - then leftover money has somewhere to go.'**
   String get monthEndReviewNoGoals;
 
+  /// No description provided for @monthEndSavingsGoalName.
+  ///
+  /// In en, this message translates to:
+  /// **'{month} savings'**
+  String monthEndSavingsGoalName(Object month);
+
+  /// No description provided for @monthEndReviewGoalCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'{goal} is ready. Nothing moves until you confirm.'**
+  String monthEndReviewGoalCreated(Object goal);
+
   /// No description provided for @monthEndReviewSendTo.
   ///
   /// In en, this message translates to:
@@ -4006,6 +4018,12 @@ abstract class AppLocalizations {
   /// **'Ask Mhuri'**
   String get askMhuriTitle;
 
+  /// No description provided for @askMhuriPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Get clear answers about your family’s money'**
+  String get askMhuriPrompt;
+
   /// No description provided for @upcomingBillsTitle.
   ///
   /// In en, this message translates to:
@@ -4173,53 +4191,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Family activity'**
   String get familyActivityTitle;
-}
-
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
-  const _AppLocalizationsDelegate();
-
-  @override
-  Future<AppLocalizations> load(Locale locale) {
-    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
-  }
-
-  @override
-  bool isSupported(Locale locale) => <String>[
-        'en',
-        'es',
-        'fr',
-        'nd',
-        'pt',
-        'sn'
-      ].contains(locale.languageCode);
-
-  @override
-  bool shouldReload(_AppLocalizationsDelegate old) => false;
-}
-
-AppLocalizations lookupAppLocalizations(Locale locale) {
-  // Lookup logic when only language code is specified.
-  switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
-    case 'es':
-      return AppLocalizationsEs();
-    case 'fr':
-      return AppLocalizationsFr();
-    case 'nd':
-      return AppLocalizationsNd();
-    case 'pt':
-      return AppLocalizationsPt();
-    case 'sn':
-      return AppLocalizationsSn();
-  }
-
-  throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
 
   /// No description provided for @activityFilterTitle.
   ///
@@ -4490,4 +4461,51 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   /// In en, this message translates to:
   /// **'Amount'**
   String get amountLabel;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) => <String>[
+        'en',
+        'es',
+        'fr',
+        'nd',
+        'pt',
+        'sn'
+      ].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'nd':
+      return AppLocalizationsNd();
+    case 'pt':
+      return AppLocalizationsPt();
+    case 'sn':
+      return AppLocalizationsSn();
+  }
+
+  throw FlutterError(
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

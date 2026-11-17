@@ -3782,6 +3782,26 @@ class AppState extends ChangeNotifier {
   List<Goal> get monthEndSweepGoals =>
       goals.where((g) => g.status == 'active' && !g.isKidJar).toList();
 
+  /// Ensures each closed budget month has a clearly named savings destination.
+  /// Creating the goal never moves money; the review still requires an
+  /// explicit user action before contributing any leftover.
+  Goal? ensureMonthEndSavingsGoal({
+    required String name,
+    required Money target,
+  }) {
+    final normalizedName = name.trim();
+    if (normalizedName.isEmpty || target.minor <= 0) return null;
+    for (final existing in monthEndSweepGoals) {
+      if (existing.name == normalizedName) return existing;
+    }
+    final created = addGoal(name: normalizedName, target: target);
+    if (created != null && preferredMonthEndGoal == null) {
+      monthEndSweepGoalId = created.id;
+      _persistKv('month_end_sweep_goal', created.id);
+    }
+    return created;
+  }
+
   void setMonthEndSweepMode(MonthEndSweepMode mode, {String? goalId}) {
     if (!canContributeSavings) return;
     monthEndSweepMode = mode;
@@ -4933,7 +4953,7 @@ class AppState extends ChangeNotifier {
     return Money(sum, g.target.currency);
   }
 
-  void addGoal({
+  Goal? addGoal({
     required String name,
     required Money target,
     String emoji = 'goal',
@@ -4944,7 +4964,7 @@ class AppState extends ChangeNotifier {
   }) {
     if (!canCreateSavingsRecords) {
       debugPrint('Mhuri: unauthorized addGoal for role: ${authRole.name}');
-      return;
+      return null;
     }
     final goal = Goal(
       id: _seq('g'),
@@ -4963,6 +4983,7 @@ class AppState extends ChangeNotifier {
     pendingOps++;
     _resyncReminders();
     notifyListeners();
+    return goal;
   }
 
   bool updateGoal(

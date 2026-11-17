@@ -210,6 +210,18 @@
   "monthEndReviewSheetBody": "Inyanga ephelileyo yaphela ine {amount} isebhajetini yakho. Akukho okutjintjhako kuze uqinisekise.",
   "monthEndReviewCarryNote": "Amabhajeti anadluliselako namkha aqongako agcina insalela yawo.",
   "monthEndReviewNoGoals": "Qala wenze umgomo wokugcina imali - khonapho imali eseleyo inendawo yokuya.",
+  "monthEndSavingsGoalName": "Ukonga kwe {month}",
+  "@monthEndSavingsGoalName": {
+    "placeholders": {
+      "month": {}
+    }
+  },
+  "monthEndReviewGoalCreated": "Umgomo othi {goal} usulungile. Akulamali ezadluliselwa kuze uqinisekise.",
+  "@monthEndReviewGoalCreated": {
+    "placeholders": {
+      "goal": {}
+    }
+  },
   "monthEndReviewSendTo": "Thumela ku",
   "monthEndReviewMove": "Dlulisa {amount} ku {goal}",
   "monthEndReviewKeep": "Yigcine ebhajetini",
@@ -650,6 +662,7 @@
   "reportsShortcut": "Imibiko",
   "tasksShortcut": "Imisebenzi",
   "askMhuriTitle": "Buza uMhuri",
+  "askMhuriPrompt": "Thola izimpendulo ezicacileyo ngemali yemuli yakho",
   "upcomingBillsTitle": "Izikwelede Ezizayo",
   "needsAttentionLabel": "Okudinga ukukhangelwa",
   "comingUpLabel": "Okuzayo",

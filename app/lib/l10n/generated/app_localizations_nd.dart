@@ -704,10 +704,22 @@ class AppLocalizationsNd extends AppLocalizations {
   }
 
   @override
-  String get monthEndReviewCarryNote => 'Amabhajeti anadluliselako namkha aqongako agcina insalela yawo.';
+  String get monthEndReviewCarryNote =>
+      'Amabhajeti anadluliselako namkha aqongako agcina insalela yawo.';
 
   @override
-  String get monthEndReviewNoGoals => 'Qala wenze umgomo wokugcina imali - khonapho imali eseleyo inendawo yokuya.';
+  String get monthEndReviewNoGoals =>
+      'Qala wenze umgomo wokugcina imali - khonapho imali eseleyo inendawo yokuya.';
+
+  @override
+  String monthEndSavingsGoalName(Object month) {
+    return 'Ukonga kwe $month';
+  }
+
+  @override
+  String monthEndReviewGoalCreated(Object goal) {
+    return 'Umgomo othi $goal usulungile. Akulamali ezadluliselwa kuze uqinisekise.';
+  }
 
   @override
   String get monthEndReviewSendTo => 'Thumela ku';
@@ -732,7 +744,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get monthEndSweepSetting => 'Imali eseleyo';
 
   @override
-  String get monthEndSweepSettingDesc => 'Okwenzekayo emalini engakatjenziswanga nasekupheleni kwenyanga yebhajeti.';
+  String get monthEndSweepSettingDesc =>
+      'Okwenzekayo emalini engakatjenziswanga nasekupheleni kwenyanga yebhajeti.';
 
   @override
   String get monthEndSweepAsk => 'Ngibuze nyanga zonke';
@@ -2208,6 +2221,10 @@ class AppLocalizationsNd extends AppLocalizations {
   String get askMhuriTitle => 'Buza uMhuri';
 
   @override
+  String get askMhuriPrompt =>
+      'Thola izimpendulo ezicacileyo ngemali yemuli yakho';
+
+  @override
   String get upcomingBillsTitle => 'Izikwelede Ezizayo';
 
   @override
@@ -2250,37 +2267,43 @@ class AppLocalizationsNd extends AppLocalizations {
   String get planAheadHeadline => 'Yenza amaviki alandelayo abe lula';
 
   @override
-  String get planAheadLead => 'Khetha umbuzo ofuna ukuwuphendula. Akulalutho olutshintshayo uze uhlole uqinisekise.';
+  String get planAheadLead =>
+      'Khetha umbuzo ofuna ukuwuphendula. Akulalutho olutshintshayo uze uhlole uqinisekise.';
 
   @override
   String get planToolCashTitle => 'Isimo semali';
 
   @override
-  String get planToolCashSub => 'Bona ukuthi imali yakho iyenela yini kuze kufike usuku lweholo.';
+  String get planToolCashSub =>
+      'Bona ukuthi imali yakho iyenela yini kuze kufike usuku lweholo.';
 
   @override
   String get planToolBillsTitle => 'Izikwelede lezibopho';
 
   @override
-  String get planToolBillsSub => 'Landela amalanga okubhadala, izikhumbuzo lokubhadala kancane.';
+  String get planToolBillsSub =>
+      'Landela amalanga okubhadala, izikhumbuzo lokubhadala kancane.';
 
   @override
   String get planToolSavingsTitle => 'Uhlelo lokonga lokubhadala izikwelede';
 
   @override
-  String get planToolSavingsSub => 'Qathanisa izikhathi zokonga lezokuqeda izikwelede.';
+  String get planToolSavingsSub =>
+      'Qathanisa izikhathi zokonga lezokuqeda izikwelede.';
 
   @override
   String get planToolHealthTitle => 'Impilo yemali';
 
   @override
-  String get planToolHealthSub => 'Hlola izibonakaliso zokusebenzisa imali kwesikhathi samanje.';
+  String get planToolHealthSub =>
+      'Hlola izibonakaliso zokusebenzisa imali kwesikhathi samanje.';
 
   @override
   String get planToolNextPeriodTitle => 'Lungiselela isikhathi esilandelayo';
 
   @override
-  String get planToolNextPeriodSub => 'Hlola uhlelo olucetshisiweyo ungakaguquli lutho.';
+  String get planToolNextPeriodSub =>
+      'Hlola uhlelo olucetshisiweyo ungakaguquli lutho.';
 
   @override
   String get exploreMhuriPlus => 'Hlola i-Mhuri Plus';
@@ -2342,7 +2365,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get activitySearchHint => 'Phenya okwenzakale';
 
   @override
-  String get privateAccountOnly => 'I-akhawunti eyimfihlo · nguwe wedwa ongayibona';
+  String get privateAccountOnly =>
+      'I-akhawunti eyimfihlo · nguwe wedwa ongayibona';
 
   @override
   String get clearFilters => 'Susa izihlungi';
@@ -2360,7 +2384,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get noMatchingActivity => 'Akukho okwenzakale okuhambelanako';
 
   @override
-  String get noMatchingActivityHint => 'Zama ukutjintja namkha ukususa izihlungi zakho.';
+  String get noMatchingActivityHint =>
+      'Zama ukutjintja namkha ukususa izihlungi zakho.';
 
   @override
   String get closeSearch => 'Vala ukuphenya';
@@ -2399,7 +2424,8 @@ class AppLocalizationsNd extends AppLocalizations {
   String get addSomethingElse => 'Engeza okunye';
 
   @override
-  String get addSomethingElseSubtitle => 'Tjintja uhlobo lokurekhoda namkha ungeze into yasekhaya';
+  String get addSomethingElseSubtitle =>
+      'Tjintja uhlobo lokurekhoda namkha ungeze into yasekhaya';
 
   @override
   String get chooseBudget => 'Khetha ibhajeti';

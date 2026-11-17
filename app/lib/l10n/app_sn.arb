@@ -210,6 +210,18 @@
   "monthEndReviewSheetBody": "Mwedzi wapfuura wakapera uine {amount} iri mumabhajeti ako. Hapana chinochinja kusvika wasimbisa.",
   "monthEndReviewCarryNote": "Mabhajeti anotakura kana kuunganidza anotochengeta zvaasara.",
   "monthEndReviewNoGoals": "Tanga wagadzira chinangwa chemari - ipapo mari yasara inenge iine kwainoenda.",
+  "monthEndSavingsGoalName": "Kuchengetera kwa {month}",
+  "@monthEndSavingsGoalName": {
+    "placeholders": {
+      "month": {}
+    }
+  },
+  "monthEndReviewGoalCreated": "Chinangwa che{goal} chagadzirira. Hapana mari ichafambiswa kusvika wabvuma.",
+  "@monthEndReviewGoalCreated": {
+    "placeholders": {
+      "goal": {}
+    }
+  },
   "monthEndReviewSendTo": "Endesa ku",
   "monthEndReviewMove": "Endesa {amount} ku {goal}",
   "monthEndReviewKeep": "Isiya mubhajeti",
@@ -650,6 +662,7 @@
   "reportsShortcut": "Mishumo",
   "tasksShortcut": "Mabasa",
   "askMhuriTitle": "Bvunza Mhuri",
+  "askMhuriPrompt": "Wana mhinduro dzakajeka nezvemari yemhuri yako",
   "upcomingBillsTitle": "Zvikwereti Zviri Kuuya",
   "needsAttentionLabel": "Zvinoda kutariswa",
   "comingUpLabel": "Zviri kuuya",

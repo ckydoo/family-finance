@@ -700,10 +700,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get monthEndReviewCarryNote => 'Budgets set to roll over or accumulate already keep their leftovers.';
+  String get monthEndReviewCarryNote =>
+      'Budgets set to roll over or accumulate already keep their leftovers.';
 
   @override
-  String get monthEndReviewNoGoals => 'Create a savings goal first - then leftover money has somewhere to go.';
+  String get monthEndReviewNoGoals =>
+      'Create a savings goal first - then leftover money has somewhere to go.';
+
+  @override
+  String monthEndSavingsGoalName(Object month) {
+    return '$month savings';
+  }
+
+  @override
+  String monthEndReviewGoalCreated(Object goal) {
+    return '$goal is ready. Nothing moves until you confirm.';
+  }
 
   @override
   String get monthEndReviewSendTo => 'Send it to';
@@ -728,7 +740,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monthEndSweepSetting => 'Leftover money';
 
   @override
-  String get monthEndSweepSettingDesc => 'What happens to money still unspent when a budget month closes.';
+  String get monthEndSweepSettingDesc =>
+      'What happens to money still unspent when a budget month closes.';
 
   @override
   String get monthEndSweepAsk => 'Ask me each month';
@@ -2200,6 +2213,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get askMhuriTitle => 'Ask Mhuri';
 
   @override
+  String get askMhuriPrompt => 'Get clear answers about your family’s money';
+
+  @override
   String get upcomingBillsTitle => 'Upcoming Bills';
 
   @override
@@ -2242,19 +2258,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planAheadHeadline => 'Make the next few weeks easier';
 
   @override
-  String get planAheadLead => 'Choose the question you want to answer. Nothing changes until you review and confirm it.';
+  String get planAheadLead =>
+      'Choose the question you want to answer. Nothing changes until you review and confirm it.';
 
   @override
   String get planToolCashTitle => 'Cash outlook';
 
   @override
-  String get planToolCashSub => 'See whether your money can cover the days until payday.';
+  String get planToolCashSub =>
+      'See whether your money can cover the days until payday.';
 
   @override
   String get planToolBillsTitle => 'Bills and commitments';
 
   @override
-  String get planToolBillsSub => 'Track due dates, reminders and partial payments.';
+  String get planToolBillsSub =>
+      'Track due dates, reminders and partial payments.';
 
   @override
   String get planToolSavingsTitle => 'Savings and debt plan';
@@ -2266,13 +2285,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planToolHealthTitle => 'Financial health';
 
   @override
-  String get planToolHealthSub => 'Review practical signals from the current period.';
+  String get planToolHealthSub =>
+      'Review practical signals from the current period.';
 
   @override
   String get planToolNextPeriodTitle => 'Prepare the next period';
 
   @override
-  String get planToolNextPeriodSub => 'Review a suggested plan before applying any changes.';
+  String get planToolNextPeriodSub =>
+      'Review a suggested plan before applying any changes.';
 
   @override
   String get exploreMhuriPlus => 'Explore Mhuri Plus';
@@ -2391,7 +2412,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addSomethingElse => 'Add something else';
 
   @override
-  String get addSomethingElseSubtitle => 'Switch entry type or add a household item';
+  String get addSomethingElseSubtitle =>
+      'Switch entry type or add a household item';
 
   @override
   String get chooseBudget => 'Choose a budget';

@@ -160,17 +160,9 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
         titleSpacing: 20,
         title: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: context.primarySoft,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.auto_awesome_rounded,
-                  size: 19, color: context.primary),
-            ),
-            const SizedBox(width: 10),
+            Icon(Icons.auto_awesome_rounded,
+                size: 23, color: context.primary),
+            const SizedBox(width: 9),
             const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,15 +318,15 @@ class _Welcome extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: Material(
                 color: context.card,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: kBRadiusM,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: kBRadiusM,
                   onTap: () => onSelect(question),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 14),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: kBRadiusM,
                       border: Border.all(color: context.hairline),
                     ),
                     child: Row(
@@ -410,10 +402,10 @@ class _MessageBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.primary,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(18),
-              bottomRight: Radius.circular(5),
+              topLeft: Radius.circular(kRadiusM),
+              topRight: Radius.circular(kRadiusM),
+              bottomLeft: Radius.circular(kRadiusM),
+              bottomRight: Radius.circular(kRadiusXS),
             ),
           ),
           child: Text(turn.text,
@@ -430,10 +422,10 @@ class _MessageBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.card,
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(5),
-            topRight: Radius.circular(18),
-            bottomLeft: Radius.circular(18),
-            bottomRight: Radius.circular(18),
+            topLeft: Radius.circular(kRadiusXS),
+            topRight: Radius.circular(kRadiusM),
+            bottomLeft: Radius.circular(kRadiusM),
+            bottomRight: Radius.circular(kRadiusM),
           ),
           border: Border.all(color: context.hairline),
         ),
@@ -627,7 +619,7 @@ class _FactsCard extends StatelessWidget {
       padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
         color: context.bg,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: kBRadiusM,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,7 +692,7 @@ class _ThinkingBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.card,
             border: Border.all(color: context.hairline),
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: kBRadiusM,
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             SizedBox(
@@ -730,7 +722,7 @@ class _ErrorNotice extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
         decoration: BoxDecoration(
           color: context.dangerSoft,
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: kBRadiusM,
         ),
         child: Row(children: [
           Expanded(
@@ -784,7 +776,7 @@ class _Composer extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 4, 5, 4),
           decoration: BoxDecoration(
             color: context.card,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: kBRadiusL,
             border: Border.all(color: context.hairline),
             boxShadow: [
               BoxShadow(
