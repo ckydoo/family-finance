@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ui.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 enum GuideCategory { all, budgeting, currency, shopping, savings, family, sync }
 
@@ -59,6 +60,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
+                          tooltip: AppLocalizations.of(context)!.clearSearch,
                           icon: const Icon(Icons.clear, size: 18),
                           onPressed: () {
                             _searchController.clear();
@@ -288,6 +290,7 @@ const List<_GuideItem> _allGuides = [
       'Create envelopes for your regular expenses (e.g., Groceries, Rent, Fuel, Utilities).',
       'Set a monthly limit in your preferred currency.',
       'Choose a rollover mode: Reset (starts fresh each cycle), Rollover (carries surpluses/deficits), or Accumulate (savings buffer).',
+      'At month-end Mhuri shows what each Reset budget still has left. Nothing moves by itself - you choose whether that money goes to savings or stays in the budget.',
       'Log expenses directly to the envelope using the Quick Add button (+) on the home screen.',
       'Check envelope health rings regularly to avoid end-of-month surprises.',
     ],

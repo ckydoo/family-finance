@@ -32,7 +32,7 @@ class PrivateAccountsScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: context.primarySoft,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: kBRadiusL,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +307,7 @@ class _EmptyPrivateAccounts extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
         decoration: BoxDecoration(
           color: context.card,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: kBRadiusL,
           border: Border.all(color: context.hairline),
         ),
         child: Column(

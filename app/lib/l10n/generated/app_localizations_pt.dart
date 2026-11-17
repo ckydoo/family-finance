@@ -681,6 +681,73 @@ class AppLocalizationsPt extends AppLocalizations {
   String get rollAccum => 'Acumular';
 
   @override
+  String get monthEndReviewTitle => 'Revisão de fim de mês';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return 'Ainda há $amount não gastos do mês passado. Mova para a poupança ou mantenha no orçamento.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Revisar';
+
+  @override
+  String get monthEndReviewLater => 'Agora não';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'Movemos $amount das sobras do mês passado para a poupança.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Dinheiro sobrando';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'O mês passado terminou com $amount ainda nos seus orçamentos. Nada muda até você confirmar.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Orçamentos com transição ou acumulação já guardam as sobras.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Crie primeiro uma meta de poupança - assim o dinheiro sobrando tem para onde ir.';
+
+  @override
+  String get monthEndReviewSendTo => 'Enviar para';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Mover $amount para $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Manter no orçamento';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Movemos $amount para $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'Não perguntar novamente';
+
+  @override
+  String get monthEndSweepSetting => 'Dinheiro sobrando';
+
+  @override
+  String get monthEndSweepSettingDesc => 'O que acontece ao dinheiro não gasto quando o mês orçamentário termina.';
+
+  @override
+  String get monthEndSweepAsk => 'Perguntar todos os meses';
+
+  @override
+  String get monthEndSweepAlways => 'Mover sempre para a poupança';
+
+  @override
+  String get monthEndSweepNever => 'Manter no orçamento';
+
+  @override
   String get freqTerm => 'Por trimestre (~3 meses)';
 
   @override
@@ -2135,4 +2202,245 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get testNotificationFailed =>
       'Não foi possível enviar a notificação de teste.';
+
+  @override
+  String get planAheadTitle => 'Planear';
+
+  @override
+  String get reportsShortcut => 'Relatórios';
+
+  @override
+  String get tasksShortcut => 'Tarefas';
+
+  @override
+  String get askMhuriTitle => 'Perguntar ao Mhuri';
+
+  @override
+  String get upcomingBillsTitle => 'Próximas contas';
+
+  @override
+  String get needsAttentionLabel => 'Requer atenção';
+
+  @override
+  String get comingUpLabel => 'Em breve';
+
+  @override
+  String get tasksComingUpLabel => 'Tarefas próximas';
+
+  @override
+  String get weeklySummaryTitle => 'Resumo semanal Mhuri';
+
+  @override
+  String get weeklySummarySubtitle => 'Últimos 7 dias · resumo da família';
+
+  @override
+  String get quickAddWhatAdding => 'O que está a registar?';
+
+  @override
+  String get quickAddShoppingOrTask => 'Compras ou tarefa';
+
+  @override
+  String get quickAddAmountSpent => 'Valor gasto';
+
+  @override
+  String get quickAddAmountReceived => 'Valor recebido';
+
+  @override
+  String get quickAddWhichBudget => 'De que orçamento sai?';
+
+  @override
+  String get quickAddSavedLabel => 'Guardado';
+
+  @override
+  String get appAndCurrencySettings => 'Definições e moeda';
+
+  @override
+  String get planAheadHeadline => 'Torne as próximas semanas mais fáceis';
+
+  @override
+  String get planAheadLead => 'Escolha a pergunta a responder. Nada muda até rever e confirmar.';
+
+  @override
+  String get planToolCashTitle => 'Previsão de caixa';
+
+  @override
+  String get planToolCashSub => 'Veja se o seu dinheiro cobre os dias até ao próximo salário.';
+
+  @override
+  String get planToolBillsTitle => 'Contas e compromissos';
+
+  @override
+  String get planToolBillsSub => 'Acompanhe datas de vencimento, lembretes e pagamentos parciais.';
+
+  @override
+  String get planToolSavingsTitle => 'Plano de poupança e dívidas';
+
+  @override
+  String get planToolSavingsSub => 'Compare prazos de poupança e amortização.';
+
+  @override
+  String get planToolHealthTitle => 'Saúde financeira';
+
+  @override
+  String get planToolHealthSub => 'Reveja sinais práticos do período atual.';
+
+  @override
+  String get planToolNextPeriodTitle => 'Preparar o próximo período';
+
+  @override
+  String get planToolNextPeriodSub => 'Reveja um plano sugerido antes de aplicar alterações.';
+
+  @override
+  String get exploreMhuriPlus => 'Explorar Mhuri Plus';
+
+  @override
+  String get monthlyReportsTitle => 'Relatórios mensais';
+
+  @override
+  String get familyActivityTitle => 'Atividade familiar';
+
+  @override
+  String get activityFilterTitle => 'Filtrar atividade';
+
+  @override
+  String get filterReset => 'Redefinir';
+
+  @override
+  String get filterTypeLabel => 'Tipo de transação';
+
+  @override
+  String get filterExpenses => 'Despesas';
+
+  @override
+  String get filterMemberLabel => 'Membro da família';
+
+  @override
+  String get filterEveryone => 'Todos';
+
+  @override
+  String get filterViewLabel => 'Visão financeira';
+
+  @override
+  String get filterFamilyView => 'Finanças da família';
+
+  @override
+  String filterPrivateOption(Object name) {
+    return '$name · Privado';
+  }
+
+  @override
+  String get filterDateLabel => 'Data';
+
+  @override
+  String get filterAllTime => 'Todo o período';
+
+  @override
+  String get filterToday => 'Hoje';
+
+  @override
+  String get filterLast7Days => 'Últimos 7 dias';
+
+  @override
+  String get filterLast30Days => 'Últimos 30 dias';
+
+  @override
+  String get filterApply => 'Aplicar filtros';
+
+  @override
+  String get activitySearchHint => 'Pesquisar atividade';
+
+  @override
+  String get privateAccountOnly => 'Conta privada · só você pode ver';
+
+  @override
+  String get clearFilters => 'Limpar filtros';
+
+  @override
+  String get closeLabel => 'Fechar';
+
+  @override
+  String get filterAllTypes => 'Tudo';
+
+  @override
+  String get activityDetailsTitle => 'Detalhes da atividade';
+
+  @override
+  String get noMatchingActivity => 'Nenhuma atividade correspondente';
+
+  @override
+  String get noMatchingActivityHint => 'Tente mudar ou limpar os seus filtros.';
+
+  @override
+  String get closeSearch => 'Fechar pesquisa';
+
+  @override
+  String get increaseValue => 'Aumentar';
+
+  @override
+  String get decreaseValue => 'Diminuir';
+
+  @override
+  String get moveUp => 'Mover para cima';
+
+  @override
+  String get moveDown => 'Mover para baixo';
+
+  @override
+  String get showPassword => 'Mostrar palavra-passe';
+
+  @override
+  String get hidePassword => 'Ocultar palavra-passe';
+
+  @override
+  String get removeLabel => 'Remover';
+
+  @override
+  String get clearSearch => 'Limpar pesquisa';
+
+  @override
+  String get toLabel => 'até';
+
+  @override
+  String get quickAddSubtitle => 'Escolha o que registar para a sua casa';
+
+  @override
+  String get addSomethingElse => 'Adicionar outra coisa';
+
+  @override
+  String get addSomethingElseSubtitle => 'Mude o tipo de registo ou adicione um item da casa';
+
+  @override
+  String get chooseBudget => 'Escolher um orçamento';
+
+  @override
+  String get searchBudgets => 'Pesquisar orçamentos';
+
+  @override
+  String get noBudget => 'Sem orçamento';
+
+  @override
+  String get keepUnallocated => 'Deixar esta despesa não atribuída';
+
+  @override
+  String get splitExpense => 'Dividir despesa';
+
+  @override
+  String get applySplit => 'Aplicar divisão';
+
+  @override
+  String get recordIn => 'Registar em';
+
+  @override
+  String budgetCountLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orçamentos',
+      one: '1 orçamento',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get amountLabel => 'Valor';
 }

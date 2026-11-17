@@ -117,9 +117,15 @@ jobs:
 
       - name: Functional integrity smoke test (deletion rules, RLS scoping)
         run: |
-          docker exec -i ${{ job.services.postgres.id }} \
+          if ! out=$(docker exec -i ${{ job.services.postgres.id }} \
             psql -U postgres -d mhuri_ci -v ON_ERROR_STOP=1 \
-            < backend/tests/integrity_smoke.sql
+            < backend/tests/integrity_smoke.sql 2>&1); then
+            echo "$out"
+            summary=$(echo "$out" | tail -n 12 | tr '\n' ' ')
+            echo "::error title=integrity_smoke::$summary"
+            exit 1
+          fi
+          echo "$out"
 
   flutter:
     name: flutter analyze + test
@@ -133,14 +139,32 @@ jobs:
         with:
           channel: stable
           cache: true
+      - run: test -f .env || cp .env.example .env
       - run: flutter pub get
       # #18 format gate: NON-BLOCKING until one local `dart format .` run
       # lands; then remove `continue-on-error` to make it enforce.
       - name: dart format (advisory)
         run: dart format --output=none --set-exit-if-changed .
         continue-on-error: true
-      - run: flutter analyze --fatal-infos
-      - run: flutter test
+      - name: Run flutter analyze --fatal-infos
+        run: |
+          if ! out=$(flutter analyze --fatal-infos 2>&1); then
+            echo "$out"
+            echo "$out" | grep -E "info •|warning •|error •" | head -n 10 | while IFS= read -r line; do
+              echo "::error title=flutter_analyze::$line"
+            done
+            exit 1
+          fi
+          echo "$out"
+      - name: Run flutter test
+        run: |
+          if ! out=$(flutter test --reporter expanded 2>&1); then
+            echo "$out"
+            summary=$( { echo "$out" | grep -A 35 "EXCEPTION CAUGHT"; echo "$out" | grep -B 10 -A 5 "\[E\]"; } | head -n 120 | tr '\n' ' ')
+            echo "::error title=flutter_test::$summary"
+            exit 1
+          fi
+          echo "$out" | tail -n 5
   secrets:
     name: secret scanning (#18)
     runs-on: ubuntu-latest
@@ -152,7 +176,7 @@ jobs:
         run: |
           set -euo pipefail
           patt='github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|supabase_service_role[[:space:]]*[:=][[:space:]]*[^[:space:]"]+|-----BEGIN (RSA|OPENSSH|EC|PGP) PRIVATE KEY-----|AKIA[0-9A-Z]{16}'
-          hits=$(git grep -nIiE "$patt" $(git rev-list --all --max-count=30) -- . ':(exclude).env.example' || true)
+          hits=$(git grep -nIiE "$patt" $(git rev-list --all --max-count=30) -- . ':(exclude).env.example' ':(exclude)SCREENSHOTS.html' || true)
           if [ -n "$hits" ]; then
             echo "POTENTIAL SECRETS FOUND:"; echo "$hits" | head -20; exit 1
           fi
@@ -166,20 +190,30 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+      - run: test -f .env || cp .env.example .env
       - run: flutter pub get
-      - run: flutter build apk --debug
+      - name: Run flutter build apk --debug
+        run: |
+          if ! out=$(flutter build apk --debug 2>&1); then
+            echo "$out"
+            summary=$(echo "$out" | grep -iE "FAILURE|Exception|error:|What went wrong|> " | head -n 12 | tr '\n' ' ')
+            echo "::error title=android_debug_build::$summary"
+            exit 1
+          fi
+          echo "$out" | tail -n 5
 
   ios:
-    name: ios build (manual dispatch) (#18)
-    if: github.event_name == 'workflow_dispatch'
+    name: ios debug build
+    # Runs on every PR/commit: iOS was previously only built on manual
+    # dispatch, so a regression there could reach a release unnoticed.
     runs-on: macos-latest
     defaults:
       run:
@@ -190,5 +224,14 @@ jobs:
         with:
           channel: stable
           cache: true
+      - run: test -f .env || cp .env.example .env
       - run: flutter pub get
-      - run: flutter build ios --debug --no-codesign
+      - name: Build iOS (debug, unsigned)
+        run: |
+          if ! out=$(flutter build ios --debug --no-codesign 2>&1); then
+            echo "$out"
+            summary=$(echo "$out" | grep -iE "error:|Error|failed|FAILURE|Podfile|Xcode" | head -n 12 | tr '\n' ' ')
+            echo "::error title=ios_build::$summary"
+            exit 1
+          fi
+          echo "$out" | tail -n 5

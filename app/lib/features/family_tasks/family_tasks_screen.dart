@@ -6,6 +6,7 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ids.dart';
 import '../family_chat/family_chat_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class FamilyTasksScreen extends StatefulWidget {
   const FamilyTasksScreen({
@@ -97,6 +98,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                     ),
                   ),
                   IconButton(
+                    tooltip:
+                        AppLocalizations.of(sheetContext)!.closeLabel,
                     onPressed: () => Navigator.of(sheetContext).pop(),
                     icon: const Icon(Icons.close_rounded),
                   ),
@@ -415,6 +418,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                         const Text('Points'),
                         const Spacer(),
                         IconButton(
+                          tooltip: AppLocalizations.of(context)!
+                              .decreaseValue,
                           onPressed: () => setState(
                               () => points = (points - 1).clamp(0, 20)),
                           icon: const Icon(Icons.remove_rounded),
@@ -428,6 +433,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                           ),
                         ),
                         IconButton(
+                          tooltip: AppLocalizations.of(context)!
+                              .increaseValue,
                           onPressed: () => setState(
                               () => points = (points + 1).clamp(0, 20)),
                           icon: const Icon(Icons.add_rounded),

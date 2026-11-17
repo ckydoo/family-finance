@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/money/money.dart';
 import '../../core/config/app_version.dart';
 import '../../core/billing/entitlement.dart';
 import '../../core/notifications/notifier.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/notifications/reminders.dart';
+import '../../core/planning/month_end_review.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../instructions/instructions_screen.dart';
 import '../legal/legal_screen.dart';
+import '../members/members_screen.dart'
+    show
+        showCurrencySettingsSheet,
+        showParentPinDialog,
+        showPrivacySettingsSheet;
 import 'sync_screen.dart';
 import 'plus_screen.dart';
 import 'private_accounts_screen.dart';
@@ -239,7 +246,10 @@ class SettingsScreen extends StatelessWidget {
                         value: s.quietStart,
                         onChanged: (v) => s.setQuietHours(v, s.quietEnd),
                       ),
-                      const Text('to  ', style: TextStyle(fontSize: 13)),
+                      Text(
+                        AppLocalizations.of(context)!.toLabel,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                       _hourDropdown(
                         value: s.quietEnd,
                         onChanged: (v) => s.setQuietHours(s.quietStart, v),
@@ -333,9 +343,103 @@ class SettingsScreen extends StatelessWidget {
                   subtitle: Text(
                     'Transactions stay in your history. Spending totals start '
                     'a new cycle; reset budgets start fresh, rollover budgets '
-                    'carry unused money, and savings keep accumulating.',
+                    'carry unused money, and savings keep accumulating. Money '
+                    'left in a reset budget is never moved unless you say so.',
                     style: TextStyle(fontSize: 12, color: context.inkSoft),
                   ),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.savings_outlined, size: 20),
+                  title: Text(
+                    AppLocalizations.of(context)!.monthEndSweepSetting,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.monthEndSweepSettingDesc,
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                  trailing: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Text(
+                      _monthEndSweepLabel(context, s),
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: context.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ),
+                  onTap: () => _chooseMonthEndSweep(context, s),
+                ),
+                const SizedBox(height: 8),
+                _header(
+                  context,
+                  Icons.currency_exchange_rounded,
+                  AppLocalizations.of(context)!.setCurrency,
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.currency_exchange, size: 20),
+                  title: Text(
+                    AppLocalizations.of(context)!.setCurrency,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(
+                    s.secondaryCurrency == null
+                        ? '${s.primaryCurrency.short} · Single currency mode'
+                        : '${s.primaryCurrency.short} primary · ${s.secondaryCurrency!.short} secondary · ${s.rateLabel}',
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => showCurrencySettingsSheet(context, s),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.visibility_off_outlined, size: 20),
+                  title: Text(
+                    AppLocalizations.of(context)!.setPrivacy,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.setPrivacySub,
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => showPrivacySettingsSheet(context, s),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.pin_outlined, size: 20),
+                  title: Text(
+                    AppLocalizations.of(context)!.kidsPin,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.kidsPinSub,
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => showParentPinDialog(context, s),
                 ),
                 const SizedBox(height: 8),
                 _header(context, Icons.folder_outlined, 'Data'),
@@ -622,6 +726,104 @@ class SettingsScreen extends StatelessWidget {
       }
     }
     state.setMonthStartDay(day);
+  }
+
+
+  static String _monthEndSweepLabel(BuildContext context, AppState s) {
+    final l = AppLocalizations.of(context)!;
+    return switch (s.monthEndSweepMode) {
+      MonthEndSweepMode.ask => l.monthEndSweepAsk,
+      MonthEndSweepMode.always => s.preferredMonthEndGoal?.name ?? l.monthEndSweepAsk,
+      MonthEndSweepMode.never => l.monthEndSweepNever,
+    };
+  }
+
+  /// Preference sheet for month-end leftovers. Asking is the default: Mhuri
+  /// only moves money here when the family explicitly picks "always".
+  static Future<void> _chooseMonthEndSweep(
+      BuildContext context, AppState state) async {
+    final l = AppLocalizations.of(context)!;
+    final goals = state.monthEndSweepGoals;
+    var mode = state.monthEndSweepMode;
+    var goalId = state.preferredMonthEndGoal?.id ??
+        (goals.isEmpty ? null : goals.first.id);
+
+    await showMhuriSheet<void>(
+      context: context,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx, setSheet) {
+          final needsGoal =
+              mode == MonthEndSweepMode.always && goals.isNotEmpty;
+          return MhuriSheetShell(
+            title: l.monthEndSweepSetting,
+            subtitle: l.monthEndSweepSettingDesc,
+            onClose: () => Navigator.pop(sheetCtx),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final option in MonthEndSweepMode.values)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => setSheet(() => mode = option),
+                    title: Text(
+                      switch (option) {
+                        MonthEndSweepMode.ask => l.monthEndSweepAsk,
+                        MonthEndSweepMode.always => l.monthEndSweepAlways,
+                        MonthEndSweepMode.never => l.monthEndSweepNever,
+                      },
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    trailing: Icon(
+                      mode == option
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: mode == option ? context.primary : context.inkFaint,
+                    ),
+                  ),
+                if (goals.isEmpty)
+                  ErrorNotice(l.monthEndReviewNoGoals)
+                else if (needsGoal) ...[
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: goalId,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: context.card,
+                      border:
+                          const OutlineInputBorder(borderSide: BorderSide.none),
+                    ),
+                    items: [
+                      for (final g in goals)
+                        DropdownMenuItem(
+                          value: g.id,
+                          child: Text('${g.emoji}  ${g.name}'),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setSheet(() => goalId = value);
+                    },
+                  ),
+                ],
+                const SizedBox(height: 16),
+                PrimaryButton(
+                  label: l.done,
+                  onPressed: () {
+                    state.setMonthEndSweepMode(
+                      mode,
+                      goalId: mode == MonthEndSweepMode.always ? goalId : null,
+                    );
+                    Navigator.pop(sheetCtx);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   static void _showMessage(BuildContext context, String message) {

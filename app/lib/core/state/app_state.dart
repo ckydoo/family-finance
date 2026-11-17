@@ -18,6 +18,7 @@ import '../models/models.dart';
 import '../notifications/reminders.dart';
 import '../money/money.dart';
 import '../planning/commitments.dart';
+import '../planning/month_end_review.dart';
 import '../planning/period_preparation.dart';
 import '../planning/weekly_summary.dart';
 import '../utils/ids.dart';
@@ -247,6 +248,21 @@ class AppState extends ChangeNotifier {
   /// Mukando (savings circle) is OPT-IN: the Home card and the Savings
   /// section only appear when the family chose to track rounds.
   bool mukandoEnabled = false;
+
+  /// Month-end review (9.6) - what happens to money left when a budget month
+  /// closes. Defaults to asking; money is never moved silently.
+  MonthEndSweepMode monthEndSweepMode = MonthEndSweepMode.ask;
+
+  /// Savings goal that "always move leftovers" sends money to.
+  String? monthEndSweepGoalId;
+
+  /// Cycle key of the closed cycle the family already answered for, so the
+  /// review asks exactly once per month and never nags.
+  String? monthEndReviewedCycleKey;
+
+  /// Amount moved automatically in this session, surfaced as a quiet receipt
+  /// on Home so automation is still visible after the fact.
+  Money? lastMonthEndSweep;
 
   Member get user => _user;
 
@@ -642,6 +658,21 @@ class AppState extends ChangeNotifier {
           monthStartDay = parsed;
         }
       }
+      final sweepModeMarker = await db?.kvGet('month_end_sweep_mode');
+      if (sweepModeMarker != null && sweepModeMarker.isNotEmpty) {
+        final parsed = int.tryParse(sweepModeMarker);
+        if (parsed != null) {
+          monthEndSweepMode = MonthEndSweepModeX.fromIndex(parsed);
+        }
+      }
+      final sweepGoalMarker = await db?.kvGet('month_end_sweep_goal');
+      if (sweepGoalMarker != null && sweepGoalMarker.isNotEmpty) {
+        monthEndSweepGoalId = sweepGoalMarker;
+      }
+      final reviewedMarker = await db?.kvGet('month_end_review_cycle');
+      if (reviewedMarker != null && reviewedMarker.isNotEmpty) {
+        monthEndReviewedCycleKey = reviewedMarker;
+      }
       final tm = await db?.kvGet('theme_mode');
       if (tm != null && tm.isNotEmpty) {
         final parsed = int.tryParse(tm);
@@ -914,6 +945,9 @@ class AppState extends ChangeNotifier {
       _loadedOnce = true;
       deduplicateEnvelopes();
       _resyncReminders();
+      // "Always move leftovers" runs once per closed cycle, after the ledger is
+      // fully loaded, so it sees the same numbers the review sheet shows.
+      applyMonthEndAutomation();
       notifyListeners();
     }
   }
@@ -3646,6 +3680,195 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
+  // ── Month-end review (9.6) ────────────────────────────────────────────────
+  //
+  // Money left when a cycle closes is never moved silently. A bare "start at
+  // 0.00" sweep would (a) undo the promise made by `Rollover.roll` and
+  // `Rollover.accumulate` envelopes, (b) break the identity between the pool
+  // balance and the bank account, and (c) strand a bill that falls due just
+  // after payday. So the review *offers* the move instead - only for
+  // `Rollover.reset` envelopes, which are the only ones that lose the money
+  // when the cycle flips - and records the choice per cycle.
+
+  /// The cycle that has just closed, or null while no cycle has completed yet,
+  /// while onboarding is still running, or when the closed cycle saw no money
+  /// move at all (a first-month family has nothing to review).
+  ({DateTime start, DateTime end})? get lastClosedCycle {
+    if (hydrating || !onboardingComplete) return null;
+    final start = _cycleDate(cycleStart.year, cycleStart.month - 1);
+    final end = cycleStart;
+    if (!_hasCycleActivity(start, end)) return null;
+    return (start: start, end: end);
+  }
+
+  bool _hasCycleActivity(DateTime from, DateTime to) {
+    for (final t in familyTransactions) {
+      if (!t.when.isBefore(from) && t.when.isBefore(to)) return true;
+    }
+    for (final c in goalTxs) {
+      if (!c.at.isBefore(from) && c.at.isBefore(to)) return true;
+    }
+    return false;
+  }
+
+  /// Snapshot of what the last closed cycle left in each budget, or null when
+  /// there is nothing to look at. Overspent envelopes are skipped: Mhuri never
+  /// carries a deficit, so there is no leftover to sweep either.
+  MonthEndReview? get monthEndReview {
+    final cycle = lastClosedCycle;
+    if (cycle == null) return null;
+    final lines = <MonthEndLine>[];
+    for (final e in envelopes) {
+      if (e.isPersonal || e.isArchived) continue;
+      // A zero limit means "no cap" in this app, so it has no leftover.
+      if (e.limit.minor <= 0) continue;
+      final spent = _spentInCycle(e, cycle.start, cycle.end)
+          .inCurrency(e.limit.currency, rate)
+          .minor;
+      final left = e.limit.minor - spent;
+      if (left <= 0) continue;
+      lines.add(
+        MonthEndLine(
+          envelopeId: e.id,
+          name: e.name,
+          emoji: e.emoji,
+          remaining: Money(left, e.limit.currency),
+          carries: e.rollover != Rollover.reset,
+        ),
+      );
+    }
+    if (lines.isEmpty) return null;
+    lines.sort((a, b) => b.remaining.minor.compareTo(a.remaining.minor));
+    var sweepable = 0;
+    var carried = 0;
+    for (final line in lines) {
+      final inDisplay = line.remaining.inCurrency(displayCurrency, rate).minor;
+      if (line.carries) {
+        carried += inDisplay;
+      } else {
+        sweepable += inDisplay;
+      }
+    }
+    return MonthEndReview(
+      cycleStart: cycle.start,
+      completedAt: cycle.end,
+      lines: lines,
+      totalLeft: Money(sweepable, displayCurrency),
+      carriedLeft: Money(carried, displayCurrency),
+    );
+  }
+
+  /// True when Home should invite the family to review last month's leftovers.
+  bool get monthEndReviewDue {
+    if (!canContributeSavings) return false;
+    if (monthEndSweepMode != MonthEndSweepMode.ask) return false;
+    if (monthEndReviewedCycleKey == _cycleKey(cycleStart)) return false;
+    final review = monthEndReview;
+    return review != null && review.hasSweepableLeftover;
+  }
+
+  /// Where "always move leftovers" sends the money.
+  Goal? get preferredMonthEndGoal {
+    final id = monthEndSweepGoalId;
+    if (id == null) return null;
+    for (final g in goals) {
+      if (g.id == id && g.status == 'active') return g;
+    }
+    return null;
+  }
+
+  /// Goals the review may sweep into: active, family savings goals (a kid jar
+  /// belongs to one child, so leftovers are never diverted into it).
+  List<Goal> get monthEndSweepGoals =>
+      goals.where((g) => g.status == 'active' && !g.isKidJar).toList();
+
+  void setMonthEndSweepMode(MonthEndSweepMode mode, {String? goalId}) {
+    if (!canContributeSavings) return;
+    monthEndSweepMode = mode;
+    _persistKv('month_end_sweep_mode', '${mode.index}');
+    if (goalId != null) {
+      monthEndSweepGoalId = goalId;
+      _persistKv('month_end_sweep_goal', goalId);
+    }
+    // Changing the preference re-opens the question for the current month so a
+    // family that just switched it on is not stuck waiting a whole cycle.
+    monthEndReviewedCycleKey = null;
+    _persistKv('month_end_review_cycle', '');
+    notifyListeners();
+  }
+
+  /// Answers "not now" (or records an automatic sweep) for this cycle.
+  void markMonthEndReviewed() {
+    monthEndReviewedCycleKey = _cycleKey(cycleStart);
+    _persistKv('month_end_review_cycle', monthEndReviewedCycleKey!);
+    notifyListeners();
+  }
+
+  /// Moves last month's leftovers into [goal] and returns the amount moved, or
+  /// null when nothing was (no admin, no review, nothing left, no goal).
+  ///
+  /// Individual envelopes can be excluded with [envelopeIds]; the move is
+  /// capped at cash the family can still spend, so a sweep can never create a
+  /// negative pool. Every contribution goes through [contribute], which means
+  /// it is persisted, queued for sync, audited and mile-stoned like any other
+  /// savings contribution.
+  Money? sweepMonthEndToGoal(Goal goal, {Set<String>? envelopeIds}) {
+    if (!canContributeSavings) {
+      debugPrint('Mhuri: unauthorized month-end sweep: ${authRole.name}');
+      return null;
+    }
+    if (goal.status != 'active' || goal.isKidJar) return null;
+    final review = monthEndReview;
+    if (review == null) return null;
+    var moved = 0;
+    for (final line in review.sweepable) {
+      if (envelopeIds != null && !envelopeIds.contains(line.envelopeId)) {
+        continue;
+      }
+      if (line.remaining.minor <= 0) continue;
+      final currency = line.remaining.currency;
+      final available = availableToSpend(currency).minor;
+      if (available <= 0) break;
+      final amount = line.remaining.minor > available
+          ? Money(available, currency)
+          : line.remaining;
+      if (amount.minor <= 0) break;
+      contribute(goal, amount, id: newUuid());
+      moved += amount.inCurrency(displayCurrency, rate).minor;
+    }
+    if (moved <= 0) return null;
+    markMonthEndReviewed();
+    return Money(moved, displayCurrency);
+  }
+
+  /// Runs the "always move leftovers" preference once per closed cycle. Called
+  /// after hydration; a no-op for every other mode.
+  Money? applyMonthEndAutomation() {
+    if (!canContributeSavings ||
+        monthEndSweepMode != MonthEndSweepMode.always) {
+      return null;
+    }
+    if (monthEndReviewedCycleKey == _cycleKey(cycleStart)) return null;
+    final goal = preferredMonthEndGoal;
+    if (goal == null) return null;
+    final moved = sweepMonthEndToGoal(goal);
+    if (moved == null) {
+      // Nothing to move, but the cycle was considered - don't re-check it on
+      // every rebuild.
+      markMonthEndReviewed();
+      return null;
+    }
+    lastMonthEndSweep = moved;
+    notifyListeners();
+    return moved;
+  }
+
+  void clearLastMonthEndSweep() {
+    if (lastMonthEndSweep == null) return;
+    lastMonthEndSweep = null;
+    notifyListeners();
+  }
+
   // ── Transactions ──────────────────────────────────────────────────────────
 
   Account? createPrivateAccount(String name, {Currency? currency}) {
@@ -4062,6 +4285,54 @@ class AppState extends ChangeNotifier {
 
   /// F5 - "Finish shopping" closes the loop: checked items become one expense
   /// pre-filled with the estimate, posted to the linked envelope.
+  static const List<String> _shoppingEnvelopeKeywords = [
+    'grocer',
+    'food',
+    'supermarket',
+    'supermarch',
+    'supermercad',
+    'shopping',
+    'market',
+    'chikafu',
+    'zvekudya',
+    'kutenga',
+    'ukudla',
+    'ukuthenga',
+    'compras',
+    'alimenta',
+    'mercearia',
+    'comida',
+    'courses',
+    'epicerie',
+    'épicerie',
+  ];
+
+  bool isShoppingEnvelope(Envelope e) {
+    if (e.isPersonal || e.isArchived) return false;
+    final lower = e.name.trim().toLowerCase();
+    for (final kw in _shoppingEnvelopeKeywords) {
+      if (lower.contains(kw)) return true;
+    }
+    return e.emoji == 'cart' || e.emoji == 'shopping_cart';
+  }
+
+  /// Resolves the shared household shopping/groceries budget across supported
+  /// languages (`Groceries`, `Food`, `Chikafu`, `Ukudla`, `Compras`, `Courses`,
+  /// or cart-icon budgets), preferring an explicit `grocer` match first.
+  Envelope? get defaultShoppingEnvelope {
+    for (final e in envelopes) {
+      if (!e.isPersonal &&
+          !e.isArchived &&
+          e.name.toLowerCase().contains('grocer')) {
+        return e;
+      }
+    }
+    for (final e in envelopes) {
+      if (isShoppingEnvelope(e)) return e;
+    }
+    return null;
+  }
+
   Money finishShopping({
     String? txId,
     String? envelopeId,
@@ -4069,17 +4340,10 @@ class AppState extends ChangeNotifier {
     Money? customTotal,
     String? note,
   }) {
-    // Prefer a Groceries envelope; fall back to the first shared one.
+    // Prefer the household shopping/groceries envelope; fall back to the first shared one.
     Envelope? target;
     if (envelopeId != null) target = envelope(envelopeId);
-    if (target == null) {
-      for (final e in envelopes) {
-        if (!e.isPersonal && e.name.toLowerCase().contains('grocer')) {
-          target = e;
-          break;
-        }
-      }
-    }
+    target ??= defaultShoppingEnvelope;
     if (target == null) {
       for (final e in envelopes) {
         if (!e.isPersonal) {

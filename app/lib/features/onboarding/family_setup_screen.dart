@@ -1227,6 +1227,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                       style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
                 IconButton(
+                  tooltip: AppLocalizations.of(context)!.closeLabel,
                   icon: const Icon(Icons.close, size: 18),
                   onPressed: () => setState(() => _addingCustom = false),
                 ),

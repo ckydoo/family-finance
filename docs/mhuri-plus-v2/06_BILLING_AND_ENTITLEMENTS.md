@@ -32,7 +32,7 @@ Both `supabase/functions/verify-family-entitlement/index.ts`, `supabase/function
 6. `debt_planning` — Debt Payoff Scenarios & Comparisons
 7. `family_polls_pins` — Family Chat Polls and Pinned Messages
 8. `advanced_chat_search` — Family Chat Advanced Search & Filters
-9. `enhanced_family_chat` — Family text messages and replies, photos, voice notes, emoji/stickers, message editing, and task/budget/shopping references. All family chat access and new messages require Plus. Existing messages remain stored after downgrade, and the server still permits authors to delete their own historical messages without restoring the subscription.
+9. `enhanced_family_chat` — Enhanced family chat tools: photos, voice notes, emoji/stickers, message editing, system updates, and interactive task/budget/shopping references. Basic plain-text messages, replies, message search, and self-deletion of ordinary messages remain available on Mhuri Free. Existing messages and attachments remain readable after downgrade.
 9. `advanced_insights` — Advanced insight surfaces
 10. `advanced_reports` — Advanced reports
 11. `enhanced_reports` — Enhanced report surfaces

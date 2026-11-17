@@ -681,6 +681,73 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rollAccum => 'Cumuler';
 
   @override
+  String get monthEndReviewTitle => 'Bilan de fin de mois';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return 'Il reste $amount non dépensés du mois dernier. Placez-les en épargne ou gardez-les dans le budget.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Vérifier';
+
+  @override
+  String get monthEndReviewLater => 'Plus tard';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'Nous avons placé $amount du reliquat du mois dernier en épargne.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Argent restant';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'Le mois dernier s\'est terminé avec $amount encore dans vos budgets. Rien ne bouge avant votre confirmation.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Les budgets en report ou en accumulation conservent déjà leur reliquat.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Créez d\'abord un objectif d\'épargne : l\'argent restant aura alors une destination.';
+
+  @override
+  String get monthEndReviewSendTo => 'Envoyer vers';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Déplacer $amount vers $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Garder dans le budget';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Déplacé $amount vers $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'Ne plus me demander';
+
+  @override
+  String get monthEndSweepSetting => 'Argent restant';
+
+  @override
+  String get monthEndSweepSettingDesc => 'Ce qu\'il advient de l\'argent non dépensé à la fin d\'un mois budgétaire.';
+
+  @override
+  String get monthEndSweepAsk => 'Me demander chaque mois';
+
+  @override
+  String get monthEndSweepAlways => 'Toujours placer en épargne';
+
+  @override
+  String get monthEndSweepNever => 'Garder dans le budget';
+
+  @override
   String get freqTerm => 'Par trimestre (~3 mois)';
 
   @override
@@ -2146,4 +2213,245 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get testNotificationFailed =>
       'Impossible d’envoyer la notification de test.';
+
+  @override
+  String get planAheadTitle => 'Planifier';
+
+  @override
+  String get reportsShortcut => 'Rapports';
+
+  @override
+  String get tasksShortcut => 'Tâches';
+
+  @override
+  String get askMhuriTitle => 'Demander à Mhuri';
+
+  @override
+  String get upcomingBillsTitle => 'Factures à venir';
+
+  @override
+  String get needsAttentionLabel => 'À vérifier';
+
+  @override
+  String get comingUpLabel => 'À venir';
+
+  @override
+  String get tasksComingUpLabel => 'Tâches à venir';
+
+  @override
+  String get weeklySummaryTitle => 'Résumé hebdomadaire Mhuri';
+
+  @override
+  String get weeklySummarySubtitle => '7 derniers jours · aperçu du foyer';
+
+  @override
+  String get quickAddWhatAdding => 'Que souhaitez-vous ajouter ?';
+
+  @override
+  String get quickAddShoppingOrTask => 'Courses ou tâche';
+
+  @override
+  String get quickAddAmountSpent => 'Montant dépensé';
+
+  @override
+  String get quickAddAmountReceived => 'Montant reçu';
+
+  @override
+  String get quickAddWhichBudget => 'De quel budget cela provient-il ?';
+
+  @override
+  String get quickAddSavedLabel => 'Enregistré';
+
+  @override
+  String get appAndCurrencySettings => 'Paramètres et devises';
+
+  @override
+  String get planAheadHeadline => 'Simplifiez les prochaines semaines';
+
+  @override
+  String get planAheadLead => 'Choisissez la question à laquelle répondre. Rien ne change avant votre confirmation.';
+
+  @override
+  String get planToolCashTitle => 'Prévision de trésorerie';
+
+  @override
+  String get planToolCashSub => 'Vérifiez si votre argent couvre les jours jusqu’à la paie.';
+
+  @override
+  String get planToolBillsTitle => 'Factures et engagements';
+
+  @override
+  String get planToolBillsSub => 'Suivez les échéances, rappels et paiements partiels.';
+
+  @override
+  String get planToolSavingsTitle => 'Plan d’épargne et de dettes';
+
+  @override
+  String get planToolSavingsSub => 'Comparez les délais d’épargne et de remboursement.';
+
+  @override
+  String get planToolHealthTitle => 'Santé financière';
+
+  @override
+  String get planToolHealthSub => 'Examinez les signaux pratiques de la période en cours.';
+
+  @override
+  String get planToolNextPeriodTitle => 'Préparer la prochaine période';
+
+  @override
+  String get planToolNextPeriodSub => 'Vérifiez un plan suggéré avant d’appliquer des changements.';
+
+  @override
+  String get exploreMhuriPlus => 'Découvrir Mhuri Plus';
+
+  @override
+  String get monthlyReportsTitle => 'Rapports mensuels';
+
+  @override
+  String get familyActivityTitle => 'Activité familiale';
+
+  @override
+  String get activityFilterTitle => 'Filtrer l\'activité';
+
+  @override
+  String get filterReset => 'Réinitialiser';
+
+  @override
+  String get filterTypeLabel => 'Type d\'opération';
+
+  @override
+  String get filterExpenses => 'Dépenses';
+
+  @override
+  String get filterMemberLabel => 'Membre de la famille';
+
+  @override
+  String get filterEveryone => 'Tout le monde';
+
+  @override
+  String get filterViewLabel => 'Vue financière';
+
+  @override
+  String get filterFamilyView => 'Finances familiales';
+
+  @override
+  String filterPrivateOption(Object name) {
+    return '$name · Privé';
+  }
+
+  @override
+  String get filterDateLabel => 'Date';
+
+  @override
+  String get filterAllTime => 'Tout l\'historique';
+
+  @override
+  String get filterToday => 'Aujourd\'hui';
+
+  @override
+  String get filterLast7Days => '7 derniers jours';
+
+  @override
+  String get filterLast30Days => '30 derniers jours';
+
+  @override
+  String get filterApply => 'Appliquer les filtres';
+
+  @override
+  String get activitySearchHint => 'Rechercher une activité';
+
+  @override
+  String get privateAccountOnly => 'Compte privé · vous seul pouvez le voir';
+
+  @override
+  String get clearFilters => 'Effacer les filtres';
+
+  @override
+  String get closeLabel => 'Fermer';
+
+  @override
+  String get filterAllTypes => 'Tout';
+
+  @override
+  String get activityDetailsTitle => 'Détails de l\'activité';
+
+  @override
+  String get noMatchingActivity => 'Aucune activité correspondante';
+
+  @override
+  String get noMatchingActivityHint => 'Essayez de modifier ou d\'effacer vos filtres.';
+
+  @override
+  String get closeSearch => 'Fermer la recherche';
+
+  @override
+  String get increaseValue => 'Augmenter';
+
+  @override
+  String get decreaseValue => 'Diminuer';
+
+  @override
+  String get moveUp => 'Monter';
+
+  @override
+  String get moveDown => 'Descendre';
+
+  @override
+  String get showPassword => 'Afficher le mot de passe';
+
+  @override
+  String get hidePassword => 'Masquer le mot de passe';
+
+  @override
+  String get removeLabel => 'Retirer';
+
+  @override
+  String get clearSearch => 'Effacer la recherche';
+
+  @override
+  String get toLabel => 'à';
+
+  @override
+  String get quickAddSubtitle => 'Choisissez ce qu\'il faut enregistrer pour votre foyer';
+
+  @override
+  String get addSomethingElse => 'Ajouter autre chose';
+
+  @override
+  String get addSomethingElseSubtitle => 'Changez le type d\'entrée ou ajoutez un article du foyer';
+
+  @override
+  String get chooseBudget => 'Choisir un budget';
+
+  @override
+  String get searchBudgets => 'Rechercher des budgets';
+
+  @override
+  String get noBudget => 'Aucun budget';
+
+  @override
+  String get keepUnallocated => 'Laisser cette dépense non affectée';
+
+  @override
+  String get splitExpense => 'Répartir la dépense';
+
+  @override
+  String get applySplit => 'Appliquer la répartition';
+
+  @override
+  String get recordIn => 'Enregistrer dans';
+
+  @override
+  String budgetCountLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count budgets',
+      one: '1 budget',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get amountLabel => 'Montant';
 }

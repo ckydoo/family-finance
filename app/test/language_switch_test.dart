@@ -3,10 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/l10n/localization_delegates.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/features/members/members_screen.dart';
+import 'package:mhuri_money/features/settings/settings_screen.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('switching to Shona keeps MaterialLocalizations available',
+  testWidgets('switching to Shona in Settings keeps MaterialLocalizations available',
       (tester) async {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1;
@@ -22,7 +23,7 @@ void main() {
             locale: Locale(state.localeCode),
             localizationsDelegates: mhuriLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const MembersScreen(),
+            home: const SettingsScreen(),
           ),
         ),
       ),
@@ -34,15 +35,46 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.ensureVisible(find.text('Language'));
+    await tester.ensureVisible(find.text('English'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Language'));
+    await tester.tap(find.text('English'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('chiShona'));
+    await tester.tap(find.text('chiShona').last);
     await tester.pumpAndSettle();
 
     expect(state.localeCode, 'sn');
     expect(find.byType(AppBar), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('MembersScreen links cleanly to unified SettingsScreen',
+      (tester) async {
+    tester.view.physicalSize = const Size(402, 874);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = AppState();
+
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: const MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MembersScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('App & currency settings'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('App & currency settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
