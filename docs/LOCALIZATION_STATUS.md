@@ -20,6 +20,11 @@ To localize a string:
 
 Keys are added mechanically, in batches, in file order.
 
+## Recently localized
+
+- `askMhuriFromYourRecords` — the badge Ask Mhuri shows when it answers from
+  saved records instead of the model (en, sn, nd, es, fr, pt).
+
 ## Remaining backlog
 
 544 inline strings remain (488 of them unique). Strings built by
