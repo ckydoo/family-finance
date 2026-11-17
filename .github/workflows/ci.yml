@@ -25,6 +25,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Two migrations may not share a number: with equal versions the winner
+      # is decided by file ordering, not by intent. 068 is the one legacy pair
+      # already applied in the wild - 070_chat_guard_reconcile.sql restates the
+      # final definition for it - so it is tolerated by name, not by pattern.
+      - name: Reject duplicate migration numbers
+        run: |
+          set -euo pipefail
+          legacy="068_fix_account_deletion_and_free_basic_chat.sql 068_free_basic_family_chat.sql"
+          dupes=0
+          for n in $(ls backend/migrations/*.sql | xargs -n1 basename | cut -d_ -f1 | sort | uniq -d); do
+            files=$(ls backend/migrations/ | grep -E "^${n}_.*\.sql$" | tr '\n' ' ')
+            allowed=1
+            for f in $files; do
+              case " $legacy " in *" $f "*) ;; *) allowed=0 ;; esac
+            done
+            if [ "$allowed" -ne 1 ]; then
+              echo "duplicate migration number ${n}: ${files}"
+              dupes=1
+            fi
+          done
+          if [ "$dupes" -ne 0 ]; then
+            echo "::error title=duplicate_migrations::Two migrations share a number; which one wins depends on file order. Renumber the newer file."
+            exit 1
+          fi
+          echo "✅ migration numbers are unique"
+
       - name: Register Supabase-compatible auth helper
         run: |
           docker exec ${{ job.services.postgres.id }} psql -U postgres -d mhuri_ci -c "
