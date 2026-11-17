@@ -701,5 +701,13 @@
   "activityDetailsTitle": "Zvakaitika",
   "noMatchingActivity": "Hapana zvakaitika zvinowirirana",
   "noMatchingActivityHint": "Edza kuchinja kana kubvisa masefa ako.",
-  "closeSearch": "Vhara kutsvaga"
+  "closeSearch": "Vhara kutsvaga",
+  "increaseValue": "Wedzera",
+  "decreaseValue": "Deredza",
+  "moveUp": "Kwidza",
+  "moveDown": "Dzika",
+  "showPassword": "Ratidza password",
+  "hidePassword": "Vanza password",
+  "removeLabel": "Bvisa",
+  "clearSearch": "Bvisa kutsvaga"
 }

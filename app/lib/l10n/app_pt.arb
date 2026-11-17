@@ -701,5 +701,13 @@
   "activityDetailsTitle": "Detalhes da atividade",
   "noMatchingActivity": "Nenhuma atividade correspondente",
   "noMatchingActivityHint": "Tente mudar ou limpar os seus filtros.",
-  "closeSearch": "Fechar pesquisa"
+  "closeSearch": "Fechar pesquisa",
+  "increaseValue": "Aumentar",
+  "decreaseValue": "Diminuir",
+  "moveUp": "Mover para cima",
+  "moveDown": "Mover para baixo",
+  "showPassword": "Mostrar palavra-passe",
+  "hidePassword": "Ocultar palavra-passe",
+  "removeLabel": "Remover",
+  "clearSearch": "Limpar pesquisa"
 }

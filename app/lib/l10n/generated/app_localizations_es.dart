@@ -2376,4 +2376,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get closeSearch => 'Cerrar búsqueda';
+
+  @override
+  String get increaseValue => 'Aumentar';
+
+  @override
+  String get decreaseValue => 'Disminuir';
+
+  @override
+  String get moveUp => 'Subir';
+
+  @override
+  String get moveDown => 'Bajar';
+
+  @override
+  String get showPassword => 'Mostrar contraseña';
+
+  @override
+  String get hidePassword => 'Ocultar contraseña';
+
+  @override
+  String get removeLabel => 'Quitar';
+
+  @override
+  String get clearSearch => 'Borrar búsqueda';
 }

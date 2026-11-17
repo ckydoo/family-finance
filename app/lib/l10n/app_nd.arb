@@ -701,5 +701,13 @@
   "activityDetailsTitle": "Okwenzakale",
   "noMatchingActivity": "Akukho okwenzakale okuhambelanako",
   "noMatchingActivityHint": "Zama ukutjintja namkha ukususa izihlungi zakho.",
-  "closeSearch": "Vala ukuphenya"
+  "closeSearch": "Vala ukuphenya",
+  "increaseValue": "Engeza",
+  "decreaseValue": "Nciphisa",
+  "moveUp": "Nyuka",
+  "moveDown": "Ehla",
+  "showPassword": "Khombisa iphasiwedi",
+  "hidePassword": "Fihla iphasiwedi",
+  "removeLabel": "Susa",
+  "clearSearch": "Susa ukuphenya"
 }

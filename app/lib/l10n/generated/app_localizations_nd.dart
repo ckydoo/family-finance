@@ -2364,4 +2364,28 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get closeSearch => 'Vala ukuphenya';
+
+  @override
+  String get increaseValue => 'Engeza';
+
+  @override
+  String get decreaseValue => 'Nciphisa';
+
+  @override
+  String get moveUp => 'Nyuka';
+
+  @override
+  String get moveDown => 'Ehla';
+
+  @override
+  String get showPassword => 'Khombisa iphasiwedi';
+
+  @override
+  String get hidePassword => 'Fihla iphasiwedi';
+
+  @override
+  String get removeLabel => 'Susa';
+
+  @override
+  String get clearSearch => 'Susa ukuphenya';
 }

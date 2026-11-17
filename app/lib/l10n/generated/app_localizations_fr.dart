@@ -2383,4 +2383,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get closeSearch => 'Fermer la recherche';
+
+  @override
+  String get increaseValue => 'Augmenter';
+
+  @override
+  String get decreaseValue => 'Diminuer';
+
+  @override
+  String get moveUp => 'Monter';
+
+  @override
+  String get moveDown => 'Descendre';
+
+  @override
+  String get showPassword => 'Afficher le mot de passe';
+
+  @override
+  String get hidePassword => 'Masquer le mot de passe';
+
+  @override
+  String get removeLabel => 'Retirer';
+
+  @override
+  String get clearSearch => 'Effacer la recherche';
 }

@@ -2362,4 +2362,28 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get closeSearch => 'Vhara kutsvaga';
+
+  @override
+  String get increaseValue => 'Wedzera';
+
+  @override
+  String get decreaseValue => 'Deredza';
+
+  @override
+  String get moveUp => 'Kwidza';
+
+  @override
+  String get moveDown => 'Dzika';
+
+  @override
+  String get showPassword => 'Ratidza password';
+
+  @override
+  String get hidePassword => 'Vanza password';
+
+  @override
+  String get removeLabel => 'Bvisa';
+
+  @override
+  String get clearSearch => 'Bvisa kutsvaga';
 }

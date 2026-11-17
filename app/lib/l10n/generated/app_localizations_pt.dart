@@ -2372,4 +2372,28 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get closeSearch => 'Fechar pesquisa';
+
+  @override
+  String get increaseValue => 'Aumentar';
+
+  @override
+  String get decreaseValue => 'Diminuir';
+
+  @override
+  String get moveUp => 'Mover para cima';
+
+  @override
+  String get moveDown => 'Mover para baixo';
+
+  @override
+  String get showPassword => 'Mostrar palavra-passe';
+
+  @override
+  String get hidePassword => 'Ocultar palavra-passe';
+
+  @override
+  String get removeLabel => 'Remover';
+
+  @override
+  String get clearSearch => 'Limpar pesquisa';
 }

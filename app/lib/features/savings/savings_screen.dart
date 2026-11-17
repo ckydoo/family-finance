@@ -186,12 +186,14 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                     ),
                   ),
                   IconButton(
+                    tooltip: AppLocalizations.of(sheetContext)!.decreaseValue,
                     icon: const Icon(Icons.remove_circle_outline),
                     onPressed: totalRounds > 1
                         ? () => setSheetState(() => totalRounds--)
                         : null,
                   ),
                   IconButton(
+                    tooltip: AppLocalizations.of(sheetContext)!.increaseValue,
                     icon: const Icon(Icons.add_circle_outline),
                     onPressed: () => setSheetState(() => totalRounds++),
                   ),
@@ -272,6 +274,7 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                           ),
                         ),
                         IconButton(
+                          tooltip: AppLocalizations.of(sheetContext)!.moveUp,
                           icon: const Icon(Icons.arrow_upward, size: 18),
                           visualDensity: VisualDensity.compact,
                           onPressed: i > 0
@@ -282,6 +285,7 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                               : null,
                         ),
                         IconButton(
+                          tooltip: AppLocalizations.of(sheetContext)!.moveDown,
                           icon: const Icon(Icons.arrow_downward, size: 18),
                           visualDensity: VisualDensity.compact,
                           onPressed: i < orderedIds.length - 1
@@ -292,6 +296,8 @@ Future<void> _showMukandoSetup(BuildContext context, AppState s) async {
                               : null,
                         ),
                         IconButton(
+                          tooltip: AppLocalizations.of(sheetContext)!
+                              .removeLabel,
                           icon: const Icon(Icons.close, size: 18),
                           visualDensity: VisualDensity.compact,
                           onPressed: orderedIds.length > 1
@@ -1364,6 +1370,7 @@ class _ContributionMember extends StatelessWidget {
         subtitle: Text('Pledged ${pledged.text} · Paid ${paid.text} · $status'),
         trailing: s.canAdmin || member.id == s.realUser.id
             ? IconButton(
+                tooltip: AppLocalizations.of(context)!.add,
                 icon: const Icon(Icons.add_circle_outline),
                 onPressed: () => _entry(context, s))
             : null);

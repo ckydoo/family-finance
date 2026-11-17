@@ -4364,4 +4364,52 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   /// In en, this message translates to:
   /// **'Close search'**
   String get closeSearch;
+
+  /// No description provided for @increaseValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase'**
+  String get increaseValue;
+
+  /// No description provided for @decreaseValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease'**
+  String get decreaseValue;
+
+  /// No description provided for @moveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get moveUp;
+
+  /// No description provided for @moveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get moveDown;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// No description provided for @removeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeLabel;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
 }

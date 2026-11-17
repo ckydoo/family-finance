@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ui.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 enum GuideCategory { all, budgeting, currency, shopping, savings, family, sync }
 
@@ -59,6 +60,7 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
+                          tooltip: AppLocalizations.of(context)!.clearSearch,
                           icon: const Icon(Icons.clear, size: 18),
                           onPressed: () {
                             _searchController.clear();

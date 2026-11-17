@@ -24,6 +24,7 @@ import 'family_polls_sheet.dart';
 import 'family_chat_voice_note.dart';
 import 'chat_text_input.dart';
 import '../settings/plus_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 /// Single entry point for Home, notifications, tasks, budgets, shopping, and
 /// family management. The screen also enforces access itself for deep links.
@@ -566,6 +567,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
                     ),
                   ),
                   IconButton(
+                    tooltip: AppLocalizations.of(sheetContext)!.closeLabel,
                     onPressed: () => Navigator.pop(sheetContext),
                     icon: const Icon(Icons.close),
                   ),

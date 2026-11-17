@@ -1019,6 +1019,7 @@ class MembersScreen extends StatelessWidget {
                   fillColor: context.card,
                   border: const OutlineInputBorder(borderSide: BorderSide.none),
                   suffixIcon: IconButton(
+                    tooltip: obscurePw ? l.showPassword : l.hidePassword,
                     icon: Icon(obscurePw
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined),

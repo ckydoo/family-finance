@@ -2356,4 +2356,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closeSearch => 'Close search';
+
+  @override
+  String get increaseValue => 'Increase';
+
+  @override
+  String get decreaseValue => 'Decrease';
+
+  @override
+  String get moveUp => 'Move up';
+
+  @override
+  String get moveDown => 'Move down';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get removeLabel => 'Remove';
+
+  @override
+  String get clearSearch => 'Clear search';
 }
