@@ -2388,4 +2388,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get clearSearch => 'Susa ukuphenya';
+
+  @override
+  String get toLabel => 'kuze';
 }

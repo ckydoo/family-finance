@@ -709,5 +709,6 @@
   "showPassword": "Mostrar palavra-passe",
   "hidePassword": "Ocultar palavra-passe",
   "removeLabel": "Remover",
-  "clearSearch": "Limpar pesquisa"
+  "clearSearch": "Limpar pesquisa",
+  "toLabel": "até"
 }

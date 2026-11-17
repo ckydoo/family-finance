@@ -709,5 +709,6 @@
   "showPassword": "Ratidza password",
   "hidePassword": "Vanza password",
   "removeLabel": "Bvisa",
-  "clearSearch": "Bvisa kutsvaga"
+  "clearSearch": "Bvisa kutsvaga",
+  "toLabel": "kusvika"
 }

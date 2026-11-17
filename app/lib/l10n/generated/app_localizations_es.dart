@@ -2400,4 +2400,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get clearSearch => 'Borrar búsqueda';
+
+  @override
+  String get toLabel => 'hasta';
 }

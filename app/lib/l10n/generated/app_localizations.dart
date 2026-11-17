@@ -4412,4 +4412,10 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   /// In en, this message translates to:
   /// **'Clear search'**
   String get clearSearch;
+
+  /// No description provided for @toLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'to'**
+  String get toLabel;
 }

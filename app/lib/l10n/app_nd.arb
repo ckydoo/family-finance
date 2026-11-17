@@ -709,5 +709,6 @@
   "showPassword": "Khombisa iphasiwedi",
   "hidePassword": "Fihla iphasiwedi",
   "removeLabel": "Susa",
-  "clearSearch": "Susa ukuphenya"
+  "clearSearch": "Susa ukuphenya",
+  "toLabel": "kuze"
 }

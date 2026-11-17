@@ -2386,4 +2386,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get clearSearch => 'Bvisa kutsvaga';
+
+  @override
+  String get toLabel => 'kusvika';
 }

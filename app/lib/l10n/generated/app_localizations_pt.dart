@@ -2396,4 +2396,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clearSearch => 'Limpar pesquisa';
+
+  @override
+  String get toLabel => 'até';
 }

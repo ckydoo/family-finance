@@ -1128,5 +1128,6 @@
   "showPassword": "Show password",
   "hidePassword": "Hide password",
   "removeLabel": "Remove",
-  "clearSearch": "Clear search"
+  "clearSearch": "Clear search",
+  "toLabel": "to"
 }

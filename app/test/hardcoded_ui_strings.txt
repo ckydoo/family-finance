@@ -543,7 +543,6 @@ lib/features/settings/settings_screen.dart|Payday
 lib/features/settings/settings_screen.dart|Save
 lib/features/settings/settings_screen.dart|Sign out?
 lib/features/settings/settings_screen.dart|Update the name shown to your family.
-lib/features/settings/settings_screen.dart|to  
 lib/features/settings/sync_screen.dart|Cancel
 lib/features/settings/sync_screen.dart|Changes need review
 lib/features/settings/sync_screen.dart|Keep this device’s version

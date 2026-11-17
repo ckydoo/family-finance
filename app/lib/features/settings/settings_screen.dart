@@ -246,7 +246,10 @@ class SettingsScreen extends StatelessWidget {
                         value: s.quietStart,
                         onChanged: (v) => s.setQuietHours(v, s.quietEnd),
                       ),
-                      const Text('to  ', style: TextStyle(fontSize: 13)),
+                      Text(
+                        AppLocalizations.of(context)!.toLabel,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                       _hourDropdown(
                         value: s.quietEnd,
                         onChanged: (v) => s.setQuietHours(s.quietStart, v),
