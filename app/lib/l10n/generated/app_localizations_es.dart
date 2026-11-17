@@ -2403,4 +2403,45 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get toLabel => 'hasta';
+
+  @override
+  String get quickAddSubtitle => 'Elige qué registrar para tu hogar';
+
+  @override
+  String get addSomethingElse => 'Añadir otra cosa';
+
+  @override
+  String get addSomethingElseSubtitle => 'Cambia el tipo de registro o añade un artículo del hogar';
+
+  @override
+  String get chooseBudget => 'Elige un presupuesto';
+
+  @override
+  String get searchBudgets => 'Buscar presupuestos';
+
+  @override
+  String get noBudget => 'Sin presupuesto';
+
+  @override
+  String get keepUnallocated => 'Deja este gasto sin asignar';
+
+  @override
+  String get splitExpense => 'Dividir gasto';
+
+  @override
+  String get applySplit => 'Aplicar división';
+
+  @override
+  String get recordIn => 'Registrar en';
+
+  @override
+  String budgetCountLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count presupuestos',
+      one: '1 presupuesto',
+    );
+    return '$_temp0';
+  }
 }

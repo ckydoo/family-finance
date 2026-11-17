@@ -2391,4 +2391,45 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get toLabel => 'kuze';
+
+  @override
+  String get quickAddSubtitle => 'Khetha okuzorekhoda kwemuli wakho';
+
+  @override
+  String get addSomethingElse => 'Engeza okunye';
+
+  @override
+  String get addSomethingElseSubtitle => 'Tjintja uhlobo lokurekhoda namkha ungeze into yasekhaya';
+
+  @override
+  String get chooseBudget => 'Khetha ibhajeti';
+
+  @override
+  String get searchBudgets => 'Phenya amabhajeti';
+
+  @override
+  String get noBudget => 'Akukho bhajeti';
+
+  @override
+  String get keepUnallocated => 'Tjhiya iindleko lezi zingakabelwanga';
+
+  @override
+  String get splitExpense => 'Kwaba iindleko';
+
+  @override
+  String get applySplit => 'Sebenzisa ukwaba';
+
+  @override
+  String get recordIn => 'Rekhoda ku';
+
+  @override
+  String budgetCountLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'amabhajeti $count',
+      one: 'ibhajeti 1',
+    );
+    return '$_temp0';
+  }
 }

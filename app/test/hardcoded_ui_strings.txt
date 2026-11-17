@@ -374,19 +374,6 @@ lib/features/planner/planning_hub_screen.dart|Financial health
 lib/features/planner/planning_hub_screen.dart|Plan Ahead
 lib/features/planner/planning_hub_screen.dart|Prepare the next period
 lib/features/planner/planning_hub_screen.dart|Savings and debt plan
-lib/features/quickadd/quick_add_sheet.dart|Add something else
-lib/features/quickadd/quick_add_sheet.dart|Amount
-lib/features/quickadd/quick_add_sheet.dart|Apply split
-lib/features/quickadd/quick_add_sheet.dart|Choose a budget
-lib/features/quickadd/quick_add_sheet.dart|Choose what to record for your household
-lib/features/quickadd/quick_add_sheet.dart|Family finances
-lib/features/quickadd/quick_add_sheet.dart|Keep this expense unallocated
-lib/features/quickadd/quick_add_sheet.dart|No budget
-lib/features/quickadd/quick_add_sheet.dart|Quick add
-lib/features/quickadd/quick_add_sheet.dart|Record in
-lib/features/quickadd/quick_add_sheet.dart|Search budgets
-lib/features/quickadd/quick_add_sheet.dart|Split expense
-lib/features/quickadd/quick_add_sheet.dart|Switch entry type or add a household item
 lib/features/reports/financial_health_screen.dart|Financial health check
 lib/features/reports/financial_health_screen.dart|How this was calculated
 lib/features/reports/financial_health_screen.dart|Limitations

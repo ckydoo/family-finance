@@ -2410,4 +2410,45 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get toLabel => 'à';
+
+  @override
+  String get quickAddSubtitle => 'Choisissez ce qu\'il faut enregistrer pour votre foyer';
+
+  @override
+  String get addSomethingElse => 'Ajouter autre chose';
+
+  @override
+  String get addSomethingElseSubtitle => 'Changez le type d\'entrée ou ajoutez un article du foyer';
+
+  @override
+  String get chooseBudget => 'Choisir un budget';
+
+  @override
+  String get searchBudgets => 'Rechercher des budgets';
+
+  @override
+  String get noBudget => 'Aucun budget';
+
+  @override
+  String get keepUnallocated => 'Laisser cette dépense non affectée';
+
+  @override
+  String get splitExpense => 'Répartir la dépense';
+
+  @override
+  String get applySplit => 'Appliquer la répartition';
+
+  @override
+  String get recordIn => 'Enregistrer dans';
+
+  @override
+  String budgetCountLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count budgets',
+      one: '1 budget',
+    );
+    return '$_temp0';
+  }
 }

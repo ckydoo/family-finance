@@ -710,5 +710,16 @@
   "hidePassword": "Masquer le mot de passe",
   "removeLabel": "Retirer",
   "clearSearch": "Effacer la recherche",
-  "toLabel": "à"
+  "toLabel": "à",
+  "quickAddSubtitle": "Choisissez ce qu'il faut enregistrer pour votre foyer",
+  "addSomethingElse": "Ajouter autre chose",
+  "addSomethingElseSubtitle": "Changez le type d'entrée ou ajoutez un article du foyer",
+  "chooseBudget": "Choisir un budget",
+  "searchBudgets": "Rechercher des budgets",
+  "noBudget": "Aucun budget",
+  "keepUnallocated": "Laisser cette dépense non affectée",
+  "splitExpense": "Répartir la dépense",
+  "applySplit": "Appliquer la répartition",
+  "recordIn": "Enregistrer dans",
+  "budgetCountLabel": "{count, plural, =1{1 budget} other{{count} budgets}}"
 }

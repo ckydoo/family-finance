@@ -710,5 +710,16 @@
   "hidePassword": "Ocultar palavra-passe",
   "removeLabel": "Remover",
   "clearSearch": "Limpar pesquisa",
-  "toLabel": "até"
+  "toLabel": "até",
+  "quickAddSubtitle": "Escolha o que registar para a sua casa",
+  "addSomethingElse": "Adicionar outra coisa",
+  "addSomethingElseSubtitle": "Mude o tipo de registo ou adicione um item da casa",
+  "chooseBudget": "Escolher um orçamento",
+  "searchBudgets": "Pesquisar orçamentos",
+  "noBudget": "Sem orçamento",
+  "keepUnallocated": "Deixar esta despesa não atribuída",
+  "splitExpense": "Dividir despesa",
+  "applySplit": "Aplicar divisão",
+  "recordIn": "Registar em",
+  "budgetCountLabel": "{count, plural, =1{1 orçamento} other{{count} orçamentos}}"
 }

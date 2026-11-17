@@ -710,5 +710,16 @@
   "hidePassword": "Vanza password",
   "removeLabel": "Bvisa",
   "clearSearch": "Bvisa kutsvaga",
-  "toLabel": "kusvika"
+  "toLabel": "kusvika",
+  "quickAddSubtitle": "Sarudza zvekunyora zvemhuri yako",
+  "addSomethingElse": "Wedzera chimwe chinhu",
+  "addSomethingElseSubtitle": "Chinja rudzi rwekunyora kana kuwedzera chinhu chemumba",
+  "chooseBudget": "Sarudza bhajeti",
+  "searchBudgets": "Tsvaga mabhajeti",
+  "noBudget": "Hapana bhajeti",
+  "keepUnallocated": "Siya kushandisa uku kusina bhajeti",
+  "splitExpense": "Kugovanisa kushandisa",
+  "applySplit": "Shandisa kugovanisa",
+  "recordIn": "Nyora mu",
+  "budgetCountLabel": "{count, plural, =1{bhajeti 1} other{mabhajeti {count}}}"
 }

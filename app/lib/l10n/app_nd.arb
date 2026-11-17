@@ -710,5 +710,16 @@
   "hidePassword": "Fihla iphasiwedi",
   "removeLabel": "Susa",
   "clearSearch": "Susa ukuphenya",
-  "toLabel": "kuze"
+  "toLabel": "kuze",
+  "quickAddSubtitle": "Khetha okuzorekhoda kwemuli wakho",
+  "addSomethingElse": "Engeza okunye",
+  "addSomethingElseSubtitle": "Tjintja uhlobo lokurekhoda namkha ungeze into yasekhaya",
+  "chooseBudget": "Khetha ibhajeti",
+  "searchBudgets": "Phenya amabhajeti",
+  "noBudget": "Akukho bhajeti",
+  "keepUnallocated": "Tjhiya iindleko lezi zingakabelwanga",
+  "splitExpense": "Kwaba iindleko",
+  "applySplit": "Sebenzisa ukwaba",
+  "recordIn": "Rekhoda ku",
+  "budgetCountLabel": "{count, plural, =1{ibhajeti 1} other{amabhajeti {count}}}"
 }

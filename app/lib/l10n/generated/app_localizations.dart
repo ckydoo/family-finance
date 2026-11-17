@@ -4418,4 +4418,70 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   /// In en, this message translates to:
   /// **'to'**
   String get toLabel;
+
+  /// No description provided for @quickAddSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what to record for your household'**
+  String get quickAddSubtitle;
+
+  /// No description provided for @addSomethingElse.
+  ///
+  /// In en, this message translates to:
+  /// **'Add something else'**
+  String get addSomethingElse;
+
+  /// No description provided for @addSomethingElseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch entry type or add a household item'**
+  String get addSomethingElseSubtitle;
+
+  /// No description provided for @chooseBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a budget'**
+  String get chooseBudget;
+
+  /// No description provided for @searchBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Search budgets'**
+  String get searchBudgets;
+
+  /// No description provided for @noBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'No budget'**
+  String get noBudget;
+
+  /// No description provided for @keepUnallocated.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this expense unallocated'**
+  String get keepUnallocated;
+
+  /// No description provided for @splitExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Split expense'**
+  String get splitExpense;
+
+  /// No description provided for @applySplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply split'**
+  String get applySplit;
+
+  /// No description provided for @recordIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Record in'**
+  String get recordIn;
+
+  /// No description provided for @budgetCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 budget} other{{count} budgets}}'**
+  String budgetCountLabel(num count);
 }

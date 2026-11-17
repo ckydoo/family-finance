@@ -1129,5 +1129,21 @@
   "hidePassword": "Hide password",
   "removeLabel": "Remove",
   "clearSearch": "Clear search",
-  "toLabel": "to"
+  "toLabel": "to",
+  "quickAddSubtitle": "Choose what to record for your household",
+  "addSomethingElse": "Add something else",
+  "addSomethingElseSubtitle": "Switch entry type or add a household item",
+  "chooseBudget": "Choose a budget",
+  "searchBudgets": "Search budgets",
+  "noBudget": "No budget",
+  "keepUnallocated": "Keep this expense unallocated",
+  "splitExpense": "Split expense",
+  "applySplit": "Apply split",
+  "recordIn": "Record in",
+  "budgetCountLabel": "{count, plural, =1{1 budget} other{{count} budgets}}",
+  "@budgetCountLabel": {
+    "placeholders": {
+      "count": {}
+    }
+  }
 }

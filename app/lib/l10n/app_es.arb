@@ -710,5 +710,16 @@
   "hidePassword": "Ocultar contraseña",
   "removeLabel": "Quitar",
   "clearSearch": "Borrar búsqueda",
-  "toLabel": "hasta"
+  "toLabel": "hasta",
+  "quickAddSubtitle": "Elige qué registrar para tu hogar",
+  "addSomethingElse": "Añadir otra cosa",
+  "addSomethingElseSubtitle": "Cambia el tipo de registro o añade un artículo del hogar",
+  "chooseBudget": "Elige un presupuesto",
+  "searchBudgets": "Buscar presupuestos",
+  "noBudget": "Sin presupuesto",
+  "keepUnallocated": "Deja este gasto sin asignar",
+  "splitExpense": "Dividir gasto",
+  "applySplit": "Aplicar división",
+  "recordIn": "Registrar en",
+  "budgetCountLabel": "{count, plural, =1{1 presupuesto} other{{count} presupuestos}}"
 }

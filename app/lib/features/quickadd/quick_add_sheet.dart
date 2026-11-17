@@ -40,10 +40,10 @@ Future<void> showQuickAddMenu(BuildContext context) async {
   {
     final action = await showMhuriSheet<_QuickAction>(
       context: context,
-      builder: (_) => const MhuriSheetShell(
-        title: 'Quick add',
-        subtitle: 'Choose what to record for your household',
-        child: _QuickActionMenu(),
+      builder: (_) => MhuriSheetShell(
+        title: AppLocalizations.of(context)!.quickAddTitle,
+        subtitle: AppLocalizations.of(context)!.quickAddSubtitle,
+        child: const _QuickActionMenu(),
       ),
     );
     if (action == null || !context.mounted) return;
@@ -389,8 +389,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     final action = await showMhuriSheet<_QuickAction>(
       context: context,
       builder: (_) => MhuriSheetShell(
-        title: 'Add something else',
-        subtitle: 'Switch entry type or add a household item',
+        title: AppLocalizations.of(context)!.addSomethingElse,
+        subtitle: AppLocalizations.of(context)!.addSomethingElseSubtitle,
         child: _QuickActionMenu(currentAction: current),
       ),
     );
@@ -671,7 +671,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text('Choose a budget',
+                        child: Text(
+                            AppLocalizations.of(context)!.chooseBudget,
                             style: Theme.of(sheetContext).textTheme.titleLarge),
                       ),
                       IconButton(
@@ -687,7 +688,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     autofocus: state.envelopes.length > 8,
                     onChanged: (value) => setSheet(() => query = value),
                     decoration: InputDecoration(
-                      hintText: 'Search budgets',
+                      hintText: AppLocalizations.of(context)!.searchBudgets,
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
                       fillColor: sheetContext.card,
@@ -703,8 +704,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 4),
                           leading: const Icon(Icons.remove_circle_outline),
-                          title: const Text('No budget'),
-                          subtitle: const Text('Keep this expense unallocated'),
+                          title: Text(
+                              AppLocalizations.of(context)!.noBudget),
+                          subtitle: Text(AppLocalizations.of(context)!
+                              .keepUnallocated),
                           trailing: _envelopeId == null
                               ? Icon(Icons.check_circle,
                                   color: sheetContext.primary)
@@ -761,10 +764,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       context: context,
       builder: (sheetContext) => StatefulBuilder(
         builder: (sheetContext, setSheet) => MhuriSheetShell(
-          title: 'Split expense',
+          title: AppLocalizations.of(context)!.splitExpense,
           subtitle: 'Allocate ${Money.fromMajor(total, _cur).text} exactly.',
           footer: PrimaryButton(
-              label: 'Apply split',
+              label: AppLocalizations.of(context)!.applySplit,
               onPressed: () {
                 final a = double.tryParse(firstAmount.text.replaceAll(',', ''));
                 final b =
@@ -808,7 +811,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                      labelText: 'Amount', prefixText: '${_cur.symbol} ')),
+                      labelText:
+                          AppLocalizations.of(context)!.amountLabel,
+                      prefixText: '${_cur.symbol} ')),
               const SizedBox(height: 10),
             ],
             if (error != null) ErrorNotice(error!),
@@ -906,7 +911,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     ),
                     Semantics(
                       button: true,
-                      label: 'Add something else',
+                      label: AppLocalizations.of(context)!.addSomethingElse,
                       child: Material(
                         color: context.card,
                         borderRadius: BorderRadius.circular(999),
@@ -1068,7 +1073,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               if (s.accounts.any((account) =>
                   account.isPrivate &&
                   account.ownerMemberId == s.realUser.id)) ...[
-                Text('Record in',
+                Text(AppLocalizations.of(context)!.recordIn,
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
@@ -1081,9 +1086,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     isDense: true,
                   ),
                   items: [
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: '__family__',
-                      child: Text('Family finances'),
+                      child:
+                          Text(AppLocalizations.of(context)!.filterFamilyView),
                     ),
                     for (final account in s.accounts.where((account) =>
                         account.isPrivate &&
@@ -1315,8 +1321,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                           : () => _configureSplit(s),
                       icon: const Icon(Icons.call_split_outlined),
                       label: Text(_allocations.isEmpty
-                          ? 'Split expense'
-                          : '${_allocations.length} budgets'),
+                          ? AppLocalizations.of(context)!.splitExpense
+                          : AppLocalizations.of(context)!.budgetCountLabel(
+                              _allocations.length)),
                     )),
                   ]),
                 ],
@@ -1473,7 +1480,8 @@ class _BudgetSelector extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      selected?.name ?? 'No budget',
+                      selected?.name ??
+                          AppLocalizations.of(context)!.noBudget,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

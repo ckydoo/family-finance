@@ -2389,4 +2389,45 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get toLabel => 'kusvika';
+
+  @override
+  String get quickAddSubtitle => 'Sarudza zvekunyora zvemhuri yako';
+
+  @override
+  String get addSomethingElse => 'Wedzera chimwe chinhu';
+
+  @override
+  String get addSomethingElseSubtitle => 'Chinja rudzi rwekunyora kana kuwedzera chinhu chemumba';
+
+  @override
+  String get chooseBudget => 'Sarudza bhajeti';
+
+  @override
+  String get searchBudgets => 'Tsvaga mabhajeti';
+
+  @override
+  String get noBudget => 'Hapana bhajeti';
+
+  @override
+  String get keepUnallocated => 'Siya kushandisa uku kusina bhajeti';
+
+  @override
+  String get splitExpense => 'Kugovanisa kushandisa';
+
+  @override
+  String get applySplit => 'Shandisa kugovanisa';
+
+  @override
+  String get recordIn => 'Nyora mu';
+
+  @override
+  String budgetCountLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'mabhajeti $count',
+      one: 'bhajeti 1',
+    );
+    return '$_temp0';
+  }
 }

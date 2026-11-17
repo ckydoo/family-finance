@@ -22,7 +22,7 @@ Keys are added mechanically, in batches, in file order.
 
 ## Remaining backlog
 
-558 inline strings remain (500 of them unique). Strings built by
+544 inline strings remain (488 of them unique). Strings built by
 interpolation are excluded here; they need the same treatment when touched.
 
 | File | Strings |
@@ -41,7 +41,6 @@ interpolation are excluded here; they need the same treatment when touched.
 | `lib/features/onboarding/family_setup_screen.dart` | 15 |
 | `lib/features/savings/advanced_planning_screen.dart` | 14 |
 | `lib/features/ai/ask_mhuri_screen.dart` | 13 |
-| `lib/features/quickadd/quick_add_sheet.dart` | 13 |
 | `lib/features/reports/weekly_summary_sheet.dart` | 13 |
 | `lib/features/settings/private_accounts_screen.dart` | 12 |
 | `lib/features/legal/legal_screen.dart` | 11 |
@@ -49,9 +48,9 @@ interpolation are excluded here; they need the same treatment when touched.
 | `lib/features/settings/plus_screen.dart` | 9 |
 | `lib/features/budgets/period_preparation_screen.dart` | 8 |
 | `lib/features/instructions/instructions_screen.dart` | 8 |
-| `lib/features/settings/settings_screen.dart` | 8 |
 | `lib/features/settings/sync_screen.dart` | 8 |
 | `lib/features/planner/planning_hub_screen.dart` | 7 |
+| `lib/features/settings/settings_screen.dart` | 7 |
 | `lib/features/meeting/family_meeting_screen.dart` | 6 |
 | `lib/features/members/invite_screen.dart` | 4 |
 | `lib/features/teen/teen_zone.dart` | 4 |
