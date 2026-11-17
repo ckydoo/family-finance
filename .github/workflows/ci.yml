@@ -127,6 +127,27 @@ jobs:
           fi
           echo "$out"
 
+  ai-function:
+    name: ask-mhuri function tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # The suite stubs the Deno globals, so it runs under Node's built-in
+      # test runner with type stripping. It asserts the fail-closed and error
+      # paths that decide whether a family ever sees a fabricated answer.
+      - name: Run ask-mhuri tests
+        run: |
+          if ! out=$(node --experimental-strip-types --test supabase/functions/ask-mhuri/ 2>&1); then
+            echo "$out"
+            summary=$(echo "$out" | grep -iE "not ok|Error|AssertionError|expected|actual" | head -n 12 | tr '\n' ' ')
+            echo "::error title=ask_mhuri_tests::$summary"
+            exit 1
+          fi
+          echo "$out" | tail -n 15
+
   flutter:
     name: flutter analyze + test
     runs-on: ubuntu-latest

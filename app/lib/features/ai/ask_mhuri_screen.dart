@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/money/money.dart';
+import '../../core/ai/local_ask.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../settings/plus_screen.dart';
@@ -83,6 +84,33 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
     } catch (error) {
       if (!mounted) return;
       final errorText = error.toString();
+      // The assistant needs a configured server function and a reachable
+      // provider. When either is missing the records still hold the answers to
+      // the questions Mhuri itself suggests, so answer those locally instead of
+      // showing a dead end. Quota and permission decisions stay with the server.
+      final canUseRecords =
+          !errorText.contains('QUOTA_EXCEEDED') &&
+              !errorText.contains('ROLE_NOT_SUPPORTED') &&
+              !errorText.contains('NOT_AUTHENTICATED');
+      final local =
+          canUseRecords ? answerFromRecords(state, question) : null;
+      if (local != null) {
+        setState(() {
+          if (_turns.isNotEmpty && !_turns.last.isAssistant) {
+            _turns.removeLast();
+          }
+          _turns.add(_ChatTurn(
+            question: question,
+            text: local.text,
+            isAssistant: true,
+            facts: local.facts,
+            fromRecords: true,
+          ));
+          _sending = false;
+        });
+        _scrollToEnd();
+        return;
+      }
       final message = _friendlyError(error);
       setState(() {
         _statusMessage = message;
@@ -243,11 +271,16 @@ class _ChatTurn {
     this.question = '',
     this.isAssistant = false,
     this.facts = const {},
+    this.fromRecords = false,
   });
   final String text;
   final String question;
   final bool isAssistant;
   final Map<String, Object?> facts;
+
+  /// True when the answer was computed from the family's own records because
+  /// the assistant was unreachable, so the UI can say so instead of pretending.
+  final bool fromRecords;
 }
 
 class _Welcome extends StatelessWidget {
@@ -433,10 +466,12 @@ class _MessageBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Icon(Icons.auto_awesome_rounded,
+              Icon(turn.fromRecords
+                  ? Icons.receipt_long_outlined
+                  : Icons.auto_awesome_rounded,
                   size: 15, color: context.primary),
               const SizedBox(width: 7),
-              Text('ASK MHURI',
+              Text(turn.fromRecords ? 'FROM YOUR RECORDS' : 'ASK MHURI',
                   style: TextStyle(
                     color: context.primary,
                     fontSize: 9,
