@@ -1,4 +1,3 @@
-lib/features/activity/activity_screen.dart|$subtitle · ${fmtWhen(activity.at)}
 lib/features/activity/activity_screen.dart|Filter activity
 lib/features/ai/ask_mhuri_screen.dart|ASK MHURI
 lib/features/ai/ask_mhuri_screen.dart|Ask Mhuri
@@ -13,10 +12,7 @@ lib/features/ai/ask_mhuri_screen.dart|NUMBERS USED
 lib/features/ai/ask_mhuri_screen.dart|No matching recorded figures for this question.
 lib/features/ai/ask_mhuri_screen.dart|PLUS
 lib/features/ai/ask_mhuri_screen.dart|TRY ASKING
-lib/features/auth/login_screen.dart|$action $provider
 lib/features/auth/login_screen.dart|Could not open Google sign-in. Please try again.
-lib/features/budgets/budgets_screen.dart|${e.name} budget removed
-lib/features/budgets/budgets_screen.dart|${envelope.name} budget removed
 lib/features/budgets/budgets_screen.dart|Allocated
 lib/features/budgets/budgets_screen.dart|As I earn it
 lib/features/budgets/budgets_screen.dart|Budget actions
@@ -38,21 +34,14 @@ lib/features/budgets/budgets_screen.dart|No budgets match this view.
 lib/features/budgets/budgets_screen.dart|OK
 lib/features/budgets/budgets_screen.dart|Period
 lib/features/budgets/budgets_screen.dart|Prepare period
-lib/features/budgets/budgets_screen.dart|Remove ${e.name} budget?
-lib/features/budgets/budgets_screen.dart|Remove ${envelope.name} budget?
 lib/features/budgets/budgets_screen.dart|Remove budget
 lib/features/budgets/budgets_screen.dart|Save changes
 lib/features/budgets/budgets_screen.dart|Save plan
 lib/features/budgets/budgets_screen.dart|Search budgets
-lib/features/budgets/budgets_screen.dart|Set ${envelope.name} budget
 lib/features/budgets/budgets_screen.dart|Set budget
 lib/features/budgets/budgets_screen.dart|Set up plan
 lib/features/budgets/budgets_screen.dart|This month\'s plan
 lib/features/budgets/budgets_screen.dart|Use last month
-lib/features/budgets/period_preparation_screen.dart|${proposal.allocations.length} budgets
-lib/features/budgets/period_preparation_screen.dart|${proposal.commitmentIds.length} bills
-lib/features/budgets/period_preparation_screen.dart|${proposal.savings.length} savings plans
-lib/features/budgets/period_preparation_screen.dart|${value.quantity} × ${value.estimate.text}
 lib/features/budgets/period_preparation_screen.dart|1. Check budget amounts
 lib/features/budgets/period_preparation_screen.dart|Carry forward what still matters
 lib/features/budgets/period_preparation_screen.dart|Expected income (optional)
@@ -61,9 +50,6 @@ lib/features/budgets/period_preparation_screen.dart|No completed items to sugges
 lib/features/budgets/period_preparation_screen.dart|No prior-period contributions to suggest.
 lib/features/budgets/period_preparation_screen.dart|Prepare next period
 lib/features/budgets/period_preparation_screen.dart|Your preparation summary
-lib/features/budgets/recurring_ui.dart|${rule.name} posted ✓
-lib/features/budgets/recurring_ui.dart|Amount (${rule.amount.currency.symbol})
-lib/features/budgets/recurring_ui.dart|Archive ${rule.name}?
 lib/features/budgets/recurring_ui.dart|Archive payment
 lib/features/budgets/recurring_ui.dart|Edit payment
 lib/features/budgets/recurring_ui.dart|Edit regular payment
@@ -73,8 +59,6 @@ lib/features/budgets/recurring_ui.dart|Regular payment actions
 lib/features/budgets/recurring_ui.dart|Regular payment archived
 lib/features/budgets/recurring_ui.dart|Regular payment updated
 lib/features/budgets/recurring_ui.dart|Save changes
-lib/features/commitments/commitments_screen.dart|${day}d before
-lib/features/commitments/commitments_screen.dart|${rule.amount.text} · ${_dateText(rule.nextDue)}
 lib/features/commitments/commitments_screen.dart|Active rules
 lib/features/commitments/commitments_screen.dart|Add Commitment
 lib/features/commitments/commitments_screen.dart|Add bill
@@ -82,19 +66,15 @@ lib/features/commitments/commitments_screen.dart|Amount
 lib/features/commitments/commitments_screen.dart|Archive
 lib/features/commitments/commitments_screen.dart|Budget category (optional)
 lib/features/commitments/commitments_screen.dart|Commitment name (e.g. School fees, Rent)
-lib/features/commitments/commitments_screen.dart|Due ${_dateText(occurrence.dueDate)} · Total ${occurrence.amount.text} · Remaining ${outstanding.text}
 lib/features/commitments/commitments_screen.dart|Due & Overdue
 lib/features/commitments/commitments_screen.dart|End schedule
-lib/features/commitments/commitments_screen.dart|Ends: ${_dateText(endDate!)}
 lib/features/commitments/commitments_screen.dart|Explore Mhuri Plus
-lib/features/commitments/commitments_screen.dart|First due: ${_dateText(firstDue)}
 lib/features/commitments/commitments_screen.dart|Generate next 60 days
 lib/features/commitments/commitments_screen.dart|Link Payment
 lib/features/commitments/commitments_screen.dart|No category linked
 lib/features/commitments/commitments_screen.dart|No commitment schedules yet
 lib/features/commitments/commitments_screen.dart|No upcoming commitment occurrences
 lib/features/commitments/commitments_screen.dart|On due date
-lib/features/commitments/commitments_screen.dart|Outstanding: ${outstanding.text} (Due ${_dateText(occurrence.dueDate)})
 lib/features/commitments/commitments_screen.dart|Overdue
 lib/features/commitments/commitments_screen.dart|Pause
 lib/features/commitments/commitments_screen.dart|Save Commitment
@@ -142,7 +122,6 @@ lib/features/family_chat/family_chat_screen.dart|Photo library
 lib/features/family_chat/family_chat_screen.dart|Photo or attachment
 lib/features/family_chat/family_chat_screen.dart|Pin message
 lib/features/family_chat/family_chat_screen.dart|Pinned messages
-lib/features/family_chat/family_chat_screen.dart|Qty ${item.qty}
 lib/features/family_chat/family_chat_screen.dart|Reference a budget
 lib/features/family_chat/family_chat_screen.dart|Reference a shopping item
 lib/features/family_chat/family_chat_screen.dart|Remove
@@ -155,7 +134,6 @@ lib/features/family_chat/family_chat_screen.dart|Sender
 lib/features/family_chat/family_chat_screen.dart|Share with the family
 lib/features/family_chat/family_chat_screen.dart|Shopping item
 lib/features/family_chat/family_chat_screen.dart|Sticker
-lib/features/family_chat/family_chat_screen.dart|Sticker ${message.sticker}
 lib/features/family_chat/family_chat_screen.dart|Stickers
 lib/features/family_chat/family_chat_screen.dart|Text
 lib/features/family_chat/family_chat_screen.dart|Unpin message
@@ -172,17 +150,13 @@ lib/features/family_chat/family_polls_sheet.dart|Decide together
 lib/features/family_chat/family_polls_sheet.dart|Explore Mhuri Plus
 lib/features/family_chat/family_polls_sheet.dart|Family polls
 lib/features/family_chat/family_polls_sheet.dart|New
-lib/features/family_chat/family_polls_sheet.dart|Option ${i + 1}
 lib/features/family_chat/family_polls_sheet.dart|Question
 lib/features/family_chat/family_polls_sheet.dart|Submit vote
 lib/features/family_chat/family_polls_sheet.dart|Update vote
-lib/features/family_tasks/family_tasks_screen.dart|${task.points} pts
 lib/features/family_tasks/family_tasks_screen.dart|Add family task
 lib/features/family_tasks/family_tasks_screen.dart|Add task
-lib/features/family_tasks/family_tasks_screen.dart|Added by ${creator.name}
 lib/features/family_tasks/family_tasks_screen.dart|Approve reward
 lib/features/family_tasks/family_tasks_screen.dart|Archive
-lib/features/family_tasks/family_tasks_screen.dart|Assigned to ${assignee.name}
 lib/features/family_tasks/family_tasks_screen.dart|Assignee
 lib/features/family_tasks/family_tasks_screen.dart|Cancel
 lib/features/family_tasks/family_tasks_screen.dart|Close search
@@ -205,7 +179,6 @@ lib/features/family_tasks/family_tasks_screen.dart|Today
 lib/features/family_tasks/family_tasks_screen.dart|Unassigned
 lib/features/family_tasks/family_tasks_screen.dart|Upcoming
 lib/features/family_tasks/family_tasks_screen.dart|Who’s involved and what needs done?
-lib/features/home/home_screen.dart|${kid?.name ?? 
 lib/features/home/home_screen.dart|Add money coming in
 lib/features/home/home_screen.dart|Budgets
 lib/features/home/home_screen.dart|Cancel
@@ -234,8 +207,6 @@ lib/features/home/home_screen.dart|Switch family
 lib/features/home/home_screen.dart|Tasks coming up
 lib/features/home/home_screen.dart|Try again
 lib/features/home/home_screen.dart|Zoe
-lib/features/home/home_screen.dart|} requests ${r.amount.text}
-lib/features/home/month_end_review_card.dart|${g.emoji}  ${g.name}
 lib/features/instructions/instructions_screen.dart|Collaborative Shopping Runs
 lib/features/instructions/instructions_screen.dart|Household Roles & Permissions
 lib/features/instructions/instructions_screen.dart|Moving Money Between Envelopes
@@ -267,13 +238,11 @@ lib/features/lists/lists_screen.dart|Item actions
 lib/features/lists/lists_screen.dart|Payment method
 lib/features/lists/lists_screen.dart|Quantity
 lib/features/lists/lists_screen.dart|Record expense
-lib/features/lists/lists_screen.dart|Remove ${item.name}?
 lib/features/lists/lists_screen.dart|Remove item
 lib/features/lists/lists_screen.dart|Reuse purchased items
 lib/features/lists/lists_screen.dart|Save changes
 lib/features/lists/lists_screen.dart|Search shopping items
 lib/features/lists/lists_screen.dart|Shopping item updated
-lib/features/lists/lists_screen.dart|Total amount spent (${cur.symbol})
 lib/features/lists/lists_screen.dart|Undo
 lib/features/meeting/family_meeting_screen.dart|Approve
 lib/features/meeting/family_meeting_screen.dart|Decline
@@ -281,16 +250,10 @@ lib/features/meeting/family_meeting_screen.dart|Previous commitments
 lib/features/meeting/family_meeting_screen.dart|Review budgets
 lib/features/meeting/family_meeting_screen.dart|Review goals
 lib/features/meeting/family_meeting_screen.dart|Use last month
-lib/features/members/invite_screen.dart|${inv.code} · ${_roleLabel(l, inv.role)}
 lib/features/members/invite_screen.dart|Explore Mhuri Plus
 lib/features/members/invite_screen.dart|Family Admin permission needed
 lib/features/members/invite_screen.dart|Mhuri
 lib/features/members/invite_screen.dart|OK
-lib/features/members/members_screen.dart|${c.long} (${c.symbol})
-lib/features/members/members_screen.dart|${chore.stars} stars
-lib/features/members/members_screen.dart|${index + 1}
-lib/features/members/members_screen.dart|${pointsByMember[ranking[index].id] ?? 0} pts
-lib/features/members/members_screen.dart|${s.familyTaskPoints} family points
 lib/features/members/members_screen.dart|Add Kids Mode chore
 lib/features/members/members_screen.dart|Add chore
 lib/features/members/members_screen.dart|Add family reward
@@ -311,7 +274,6 @@ lib/features/members/members_screen.dart|Confirm your password
 lib/features/members/members_screen.dart|Contributor
 lib/features/members/members_screen.dart|Could not change this member\'s role.
 lib/features/members/members_screen.dart|Done
-lib/features/members/members_screen.dart|Edit ${m.name} profile
 lib/features/members/members_screen.dart|Edit Kids Mode chore
 lib/features/members/members_screen.dart|Edit family
 lib/features/members/members_screen.dart|Edit profile
@@ -329,7 +291,6 @@ lib/features/members/members_screen.dart|Kids Mode chores
 lib/features/members/members_screen.dart|Legacy chores award stars in Kids Mode.
 lib/features/members/members_screen.dart|MHRI-XXXX
 lib/features/members/members_screen.dart|Make Family Admin
-lib/features/members/members_screen.dart|Manage ${m.name}
 lib/features/members/members_screen.dart|Manage family
 lib/features/members/members_screen.dart|Member removed
 lib/features/members/members_screen.dart|Money and family updates
@@ -338,8 +299,6 @@ lib/features/members/members_screen.dart|OK
 lib/features/members/members_screen.dart|Optional details
 lib/features/members/members_screen.dart|Points & rewards
 lib/features/members/members_screen.dart|Points required
-lib/features/members/members_screen.dart|Redeemed by ${redeemedBy?.name ?? 
-lib/features/members/members_screen.dart|Remove ${m.name}?
 lib/features/members/members_screen.dart|Remove from family
 lib/features/members/members_screen.dart|Remove member
 lib/features/members/members_screen.dart|Removing family members
@@ -358,8 +317,6 @@ lib/features/members/members_screen.dart|The updated name will sync to every fam
 lib/features/members/members_screen.dart|Verify
 lib/features/members/members_screen.dart|Viewer
 lib/features/members/members_screen.dart|Who can do what?
-lib/features/onboarding/family_setup_screen.dart|${c.code} (${c.symbol})
-lib/features/onboarding/family_setup_screen.dart|${c.long} (${c.symbol})
 lib/features/onboarding/family_setup_screen.dart|+ Add my own
 lib/features/onboarding/family_setup_screen.dart|Add
 lib/features/onboarding/family_setup_screen.dart|Create a family instead
@@ -375,8 +332,6 @@ lib/features/onboarding/family_setup_screen.dart|e.g. Chikangaiso Family
 lib/features/onboarding/family_setup_screen.dart|e.g. Church, Farm, Parents
 lib/features/onboarding/family_setup_screen.dart|e.g. MHRI-ABCD
 lib/features/onboarding/family_setup_screen.dart|e.g. Mac
-lib/features/planner/payday_planner_screen.dart|${currency.short} 
-lib/features/planner/payday_planner_screen.dart|${forecast.points.length} dated planning entries included.
 lib/features/planner/payday_planner_screen.dart|1. Start with money available now
 lib/features/planner/payday_planner_screen.dart|14 days late
 lib/features/planner/payday_planner_screen.dart|2. Add what you expect
@@ -390,8 +345,6 @@ lib/features/planner/payday_planner_screen.dart|Add
 lib/features/planner/payday_planner_screen.dart|Add dated expected income
 lib/features/planner/payday_planner_screen.dart|Add dated income
 lib/features/planner/payday_planner_screen.dart|Additional savings scenario
-lib/features/planner/payday_planner_screen.dart|Amount (${currency.code})
-lib/features/planner/payday_planner_screen.dart|Arrives in +${item.dayOffset} days
 lib/features/planner/payday_planner_screen.dart|Build your outlook
 lib/features/planner/payday_planner_screen.dart|Cancel
 lib/features/planner/payday_planner_screen.dart|Confirm the opening amount to calculate the outlook.
@@ -399,7 +352,6 @@ lib/features/planner/payday_planner_screen.dart|Currency
 lib/features/planner/payday_planner_screen.dart|Days from today (e.g. 10)
 lib/features/planner/payday_planner_screen.dart|Enter a valid opening amount.
 lib/features/planner/payday_planner_screen.dart|Higher essentials scenario
-lib/features/planner/payday_planner_screen.dart|Lowest balance: ${forecast.lowestBalance.text}
 lib/features/planner/payday_planner_screen.dart|On time (0 days)
 lib/features/planner/payday_planner_screen.dart|Optional what-if scenarios
 lib/features/planner/payday_planner_screen.dart|Payday-to-payday planner
@@ -410,7 +362,6 @@ lib/features/planner/payday_planner_screen.dart|See the month before it happens
 lib/features/planner/payday_planner_screen.dart|Smart Commitments
 lib/features/planner/payday_planner_screen.dart|Source (e.g. Freelance, Market sales)
 lib/features/planner/payday_planner_screen.dart|This amount is available to plan with
-lib/features/planner/payday_planner_screen.dart|Use ledger (${recordedAvailable.text})
 lib/features/planner/payday_planner_screen.dart|Use your recorded balance or enter a different amount.
 lib/features/planner/payday_planner_screen.dart|What if essentials cost more?
 lib/features/planner/payday_planner_screen.dart|What if expected income arrives late?
@@ -423,13 +374,9 @@ lib/features/planner/planning_hub_screen.dart|Financial health
 lib/features/planner/planning_hub_screen.dart|Plan Ahead
 lib/features/planner/planning_hub_screen.dart|Prepare the next period
 lib/features/planner/planning_hub_screen.dart|Savings and debt plan
-lib/features/quickadd/quick_add_sheet.dart|${_cur.symbol} 
-lib/features/quickadd/quick_add_sheet.dart|${account.name} · Private
 lib/features/quickadd/quick_add_sheet.dart|Add something else
-lib/features/quickadd/quick_add_sheet.dart|Allocate ${Money.fromMajor(total, _cur).text} exactly.
 lib/features/quickadd/quick_add_sheet.dart|Amount
 lib/features/quickadd/quick_add_sheet.dart|Apply split
-lib/features/quickadd/quick_add_sheet.dart|Budget ${row + 1}
 lib/features/quickadd/quick_add_sheet.dart|Choose a budget
 lib/features/quickadd/quick_add_sheet.dart|Choose what to record for your household
 lib/features/quickadd/quick_add_sheet.dart|Family finances
@@ -443,10 +390,6 @@ lib/features/quickadd/quick_add_sheet.dart|Switch entry type or add a household 
 lib/features/reports/financial_health_screen.dart|Financial health check
 lib/features/reports/financial_health_screen.dart|How this was calculated
 lib/features/reports/financial_health_screen.dart|Limitations
-lib/features/reports/financial_health_screen.dart|Source records (${insight.sourceIds.length})
-lib/features/reports/financial_health_screen.dart|• $limitation
-lib/features/reports/reports_screen.dart|${pct > 0 ? 
-lib/features/reports/reports_screen.dart|Actual ${spent.text}
 lib/features/reports/reports_screen.dart|Bills and debts
 lib/features/reports/reports_screen.dart|Bills paid in this period
 lib/features/reports/reports_screen.dart|Category
@@ -461,21 +404,17 @@ lib/features/reports/reports_screen.dart|Open health check
 lib/features/reports/reports_screen.dart|Open planner
 lib/features/reports/reports_screen.dart|Overdue bills
 lib/features/reports/reports_screen.dart|Plan vs actual
-lib/features/reports/reports_screen.dart|Planned ${planned.text}
 lib/features/reports/reports_screen.dart|Plus · 30-day cash-flow estimate
 lib/features/reports/reports_screen.dart|Plus · category insights
 lib/features/reports/reports_screen.dart|Savings goals
 lib/features/reports/reports_screen.dart|Smart Commitments
 lib/features/reports/reports_screen.dart|Spending
-lib/features/reports/reports_screen.dart|The family saved ${saved.text} during this cycle.
 lib/features/reports/reports_screen.dart|Upcoming bills
-lib/features/reports/reports_screen.dart|View all ${sorted.length} transactions
 lib/features/reports/reports_screen.dart|View full shopping list
 lib/features/reports/weekly_summary_sheet.dart|Cancel
 lib/features/reports/weekly_summary_sheet.dart|Coming up next
 lib/features/reports/weekly_summary_sheet.dart|Confirm & share
 lib/features/reports/weekly_summary_sheet.dart|Debt repaid
-lib/features/reports/weekly_summary_sheet.dart|Focus budget · ${b.envelope.name}
 lib/features/reports/weekly_summary_sheet.dart|Hide exact currency amounts
 lib/features/reports/weekly_summary_sheet.dart|Income (7 days)
 lib/features/reports/weekly_summary_sheet.dart|Last 7 days · household snapshot
@@ -499,13 +438,9 @@ lib/features/savings/advanced_planning_screen.dart|Savings & debt scenarios
 lib/features/savings/advanced_planning_screen.dart|Savings goal
 lib/features/savings/advanced_planning_screen.dart|Try a different target
 lib/features/savings/advanced_planning_screen.dart|Turn goals into a timeline
-lib/features/savings/advanced_planning_screen.dart|• $assumption
-lib/features/savings/savings_screen.dart|${s.remainingOnDebt(debt).text} remaining
 lib/features/savings/savings_screen.dart|+ Add member to circle
 lib/features/savings/savings_screen.dart|Add debt or money owed
-lib/features/savings/savings_screen.dart|Added by $creator
 lib/features/savings/savings_screen.dart|Amount
-lib/features/savings/savings_screen.dart|Archive ${goal.name}?
 lib/features/savings/savings_screen.dart|Archive goal
 lib/features/savings/savings_screen.dart|Cancel
 lib/features/savings/savings_screen.dart|Circle name
@@ -513,15 +448,12 @@ lib/features/savings/savings_screen.dart|Configure Mukando
 lib/features/savings/savings_screen.dart|Contribution amount
 lib/features/savings/savings_screen.dart|Contribution per turn
 lib/features/savings/savings_screen.dart|Create
-lib/features/savings/savings_screen.dart|Created by $creator
 lib/features/savings/savings_screen.dart|Currency
 lib/features/savings/savings_screen.dart|Deadline
 lib/features/savings/savings_screen.dart|Debts
 lib/features/savings/savings_screen.dart|Delete
 lib/features/savings/savings_screen.dart|Delete debt
 lib/features/savings/savings_screen.dart|Delete this debt?
-lib/features/savings/savings_screen.dart|Due ${DateFormat.yMMMd().format(campaign.deadline)}
-lib/features/savings/savings_screen.dart|Due ${DateFormat.yMMMd().format(debt.dueDate!)}
 lib/features/savings/savings_screen.dart|Due date (optional)
 lib/features/savings/savings_screen.dart|Edit
 lib/features/savings/savings_screen.dart|Edit debt
@@ -533,7 +465,6 @@ lib/features/savings/savings_screen.dart|Explore Mhuri Plus
 lib/features/savings/savings_screen.dart|Explore scenarios
 lib/features/savings/savings_screen.dart|Family loan
 lib/features/savings/savings_screen.dart|Family member (optional)
-lib/features/savings/savings_screen.dart|Family member: ${counterparty.name}
 lib/features/savings/savings_screen.dart|Fortnightly
 lib/features/savings/savings_screen.dart|Frequency
 lib/features/savings/savings_screen.dart|Goal
@@ -554,7 +485,6 @@ lib/features/savings/savings_screen.dart|Payoff scenarios
 lib/features/savings/savings_screen.dart|Permission needed
 lib/features/savings/savings_screen.dart|Plan how much to save regularly
 lib/features/savings/savings_screen.dart|Pledge
-lib/features/savings/savings_screen.dart|Pledged ${pledged.text} · Paid ${paid.text} · $status
 lib/features/savings/savings_screen.dart|Plus · savings projections
 lib/features/savings/savings_screen.dart|Record payment
 lib/features/savings/savings_screen.dart|Record repayment
@@ -580,7 +510,6 @@ lib/features/savings/savings_screen.dart|Settled
 lib/features/savings/savings_screen.dart|Someone outside the family
 lib/features/savings/savings_screen.dart|Start date
 lib/features/savings/savings_screen.dart|Target
-lib/features/savings/savings_screen.dart|Target (${goal.target.currency.symbol})
 lib/features/savings/savings_screen.dart|Type
 lib/features/savings/savings_screen.dart|Undo payment
 lib/features/savings/savings_screen.dart|Weekly
@@ -607,8 +536,6 @@ lib/features/settings/private_accounts_screen.dart|Currency
 lib/features/settings/private_accounts_screen.dart|For example, Side hustle
 lib/features/settings/private_accounts_screen.dart|No private account yet
 lib/features/settings/private_accounts_screen.dart|Private accounts
-lib/features/settings/settings_screen.dart|${g.emoji}  ${g.name}
-lib/features/settings/settings_screen.dart|${h.toString().padLeft(2, 
 lib/features/settings/settings_screen.dart|1 to 31
 lib/features/settings/settings_screen.dart|Day of month
 lib/features/settings/settings_screen.dart|Display name
@@ -625,10 +552,7 @@ lib/features/settings/sync_screen.dart|Reload all family data
 lib/features/settings/sync_screen.dart|Reload all family data?
 lib/features/settings/sync_screen.dart|Resolve conflict
 lib/features/settings/sync_screen.dart|Use family version
-lib/features/teen/teen_zone.dart|${tStr(context, 
-lib/features/teen/teen_zone.dart|)} - ${activeJar.name}
 lib/features/teen/teen_zone.dart|Assigned to you
 lib/features/teen/teen_zone.dart|Exit
 lib/features/teen/teen_zone.dart|Open
-lib/features/teen/teen_zone.dart|Previewing as ${s.user.name}
 lib/features/teen/teen_zone.dart|See all

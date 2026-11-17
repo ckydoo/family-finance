@@ -45,6 +45,9 @@ void main() {
         for (final match in literal.allMatches(line)) {
           final text = match.group(1)!;
           if (!hasLetter.hasMatch(text)) continue;
+          // Interpolated strings are assembled at runtime and their quoted
+          // fragments are not prose (e.g. ${kid?.name ?? 'someone'}).
+          if (text.contains(r'$')) continue;
           if (!startsUpper.hasMatch(text) && !text.contains(' ')) continue;
           if (text.startsWith('package:') ||
               text.contains('/') ||

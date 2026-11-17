@@ -22,43 +22,43 @@ Keys are added mechanically, in batches, in file order.
 
 ## Remaining backlog
 
-634 inline strings remain (574 of them unique).
+558 inline strings remain (500 of them unique). Strings built by
+interpolation are excluded here; they need the same treatment when touched.
 
 | File | Strings |
 |---|---:|
-| `lib/features/savings/savings_screen.dart` | 86 |
-| `lib/features/members/members_screen.dart` | 72 |
-| `lib/features/family_chat/family_chat_screen.dart` | 54 |
-| `lib/features/planner/payday_planner_screen.dart` | 41 |
-| `lib/features/budgets/budgets_screen.dart` | 34 |
-| `lib/features/commitments/commitments_screen.dart` | 32 |
-| `lib/features/home/home_screen.dart` | 30 |
-| `lib/features/family_tasks/family_tasks_screen.dart` | 29 |
-| `lib/features/reports/reports_screen.dart` | 26 |
-| `lib/features/lists/lists_screen.dart` | 20 |
-| `lib/features/onboarding/family_setup_screen.dart` | 17 |
-| `lib/features/quickadd/quick_add_sheet.dart` | 17 |
-| `lib/features/family_chat/family_polls_sheet.dart` | 16 |
-| `lib/features/savings/advanced_planning_screen.dart` | 15 |
-| `lib/features/reports/weekly_summary_sheet.dart` | 14 |
+| `lib/features/savings/savings_screen.dart` | 77 |
+| `lib/features/members/members_screen.dart` | 63 |
+| `lib/features/family_chat/family_chat_screen.dart` | 52 |
+| `lib/features/planner/payday_planner_screen.dart` | 35 |
+| `lib/features/budgets/budgets_screen.dart` | 29 |
+| `lib/features/home/home_screen.dart` | 28 |
+| `lib/features/commitments/commitments_screen.dart` | 26 |
+| `lib/features/family_tasks/family_tasks_screen.dart` | 26 |
+| `lib/features/reports/reports_screen.dart` | 21 |
+| `lib/features/lists/lists_screen.dart` | 18 |
+| `lib/features/family_chat/family_polls_sheet.dart` | 15 |
+| `lib/features/onboarding/family_setup_screen.dart` | 15 |
+| `lib/features/savings/advanced_planning_screen.dart` | 14 |
 | `lib/features/ai/ask_mhuri_screen.dart` | 13 |
-| `lib/features/budgets/period_preparation_screen.dart` | 12 |
-| `lib/features/budgets/recurring_ui.dart` | 12 |
+| `lib/features/quickadd/quick_add_sheet.dart` | 13 |
+| `lib/features/reports/weekly_summary_sheet.dart` | 13 |
 | `lib/features/settings/private_accounts_screen.dart` | 12 |
 | `lib/features/legal/legal_screen.dart` | 11 |
-| `lib/features/settings/settings_screen.dart` | 10 |
+| `lib/features/budgets/recurring_ui.dart` | 9 |
 | `lib/features/settings/plus_screen.dart` | 9 |
+| `lib/features/budgets/period_preparation_screen.dart` | 8 |
 | `lib/features/instructions/instructions_screen.dart` | 8 |
+| `lib/features/settings/settings_screen.dart` | 8 |
 | `lib/features/settings/sync_screen.dart` | 8 |
 | `lib/features/planner/planning_hub_screen.dart` | 7 |
-| `lib/features/teen/teen_zone.dart` | 7 |
 | `lib/features/meeting/family_meeting_screen.dart` | 6 |
-| `lib/features/members/invite_screen.dart` | 5 |
-| `lib/features/reports/financial_health_screen.dart` | 5 |
-| `lib/features/activity/activity_screen.dart` | 2 |
-| `lib/features/auth/login_screen.dart` | 2 |
+| `lib/features/members/invite_screen.dart` | 4 |
+| `lib/features/teen/teen_zone.dart` | 4 |
+| `lib/features/reports/financial_health_screen.dart` | 3 |
+| `lib/features/activity/activity_screen.dart` | 1 |
+| `lib/features/auth/login_screen.dart` | 1 |
 | `lib/features/family_chat/family_chat_voice_note.dart` | 1 |
-| `lib/features/home/month_end_review_card.dart` | 1 |
 
 ## Quality note
 
