@@ -2288,4 +2288,78 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get familyActivityTitle => 'Zvaitika mumhuri';
+
+  @override
+  String get activityFilterTitle => 'Sefa zvakaitika';
+
+  @override
+  String get filterReset => 'Dzokorora';
+
+  @override
+  String get filterTypeLabel => 'Rudzi rwekushandisa';
+
+  @override
+  String get filterExpenses => 'Kushandisa';
+
+  @override
+  String get filterMemberLabel => 'Nhengo yemhuri';
+
+  @override
+  String get filterEveryone => 'Vose';
+
+  @override
+  String get filterViewLabel => 'Maonero emari';
+
+  @override
+  String get filterFamilyView => 'Mari yemhuri';
+
+  @override
+  String filterPrivateOption(Object name) {
+    return '$name · Yakavanzika';
+  }
+
+  @override
+  String get filterDateLabel => 'Zuva';
+
+  @override
+  String get filterAllTime => 'Nguva yose';
+
+  @override
+  String get filterToday => 'Nhasi';
+
+  @override
+  String get filterLast7Days => 'Mazuva 7 apfuura';
+
+  @override
+  String get filterLast30Days => 'Mazuva 30 apfuura';
+
+  @override
+  String get filterApply => 'Shandisa masefa';
+
+  @override
+  String get activitySearchHint => 'Tsvaga zvakaitika';
+
+  @override
+  String get privateAccountOnly => 'Akaundi yakavanzika · iwe chete unogona kuiona';
+
+  @override
+  String get clearFilters => 'Bvisa masefa';
+
+  @override
+  String get closeLabel => 'Vhara';
+
+  @override
+  String get filterAllTypes => 'Zvose';
+
+  @override
+  String get activityDetailsTitle => 'Zvakaitika';
+
+  @override
+  String get noMatchingActivity => 'Hapana zvakaitika zvinowirirana';
+
+  @override
+  String get noMatchingActivityHint => 'Edza kuchinja kana kubvisa masefa ako.';
+
+  @override
+  String get closeSearch => 'Vhara kutsvaga';
 }

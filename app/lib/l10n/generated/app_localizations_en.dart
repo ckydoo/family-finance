@@ -2282,4 +2282,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get familyActivityTitle => 'Family activity';
+
+  @override
+  String get activityFilterTitle => 'Filter activity';
+
+  @override
+  String get filterReset => 'Reset';
+
+  @override
+  String get filterTypeLabel => 'Transaction type';
+
+  @override
+  String get filterExpenses => 'Expenses';
+
+  @override
+  String get filterMemberLabel => 'Family member';
+
+  @override
+  String get filterEveryone => 'Everyone';
+
+  @override
+  String get filterViewLabel => 'Finance view';
+
+  @override
+  String get filterFamilyView => 'Family finances';
+
+  @override
+  String filterPrivateOption(Object name) {
+    return '$name · Private';
+  }
+
+  @override
+  String get filterDateLabel => 'Date';
+
+  @override
+  String get filterAllTime => 'All time';
+
+  @override
+  String get filterToday => 'Today';
+
+  @override
+  String get filterLast7Days => 'Last 7 days';
+
+  @override
+  String get filterLast30Days => 'Last 30 days';
+
+  @override
+  String get filterApply => 'Apply filters';
+
+  @override
+  String get activitySearchHint => 'Search activity';
+
+  @override
+  String get privateAccountOnly => 'Private account · only you can see it';
+
+  @override
+  String get clearFilters => 'Clear filters';
+
+  @override
+  String get closeLabel => 'Close';
+
+  @override
+  String get filterAllTypes => 'All';
+
+  @override
+  String get activityDetailsTitle => 'Activity details';
+
+  @override
+  String get noMatchingActivity => 'No matching activity';
+
+  @override
+  String get noMatchingActivityHint => 'Try changing or clearing your filters.';
+
+  @override
+  String get closeSearch => 'Close search';
 }

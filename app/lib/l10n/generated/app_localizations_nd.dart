@@ -2290,4 +2290,78 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get familyActivityTitle => 'Okwenzakale emulini';
+
+  @override
+  String get activityFilterTitle => 'Hlunga okwenzakale';
+
+  @override
+  String get filterReset => 'Buyisela';
+
+  @override
+  String get filterTypeLabel => 'Uhlobo lokusetjenziswa';
+
+  @override
+  String get filterExpenses => 'Iindleko';
+
+  @override
+  String get filterMemberLabel => 'Ilunga lomuli';
+
+  @override
+  String get filterEveryone => 'Koke';
+
+  @override
+  String get filterViewLabel => 'Ukubona kwemali';
+
+  @override
+  String get filterFamilyView => 'Imali yomuli';
+
+  @override
+  String filterPrivateOption(Object name) {
+    return '$name · Eyimfihlo';
+  }
+
+  @override
+  String get filterDateLabel => 'Ilanga';
+
+  @override
+  String get filterAllTime => 'Isikhathi soke';
+
+  @override
+  String get filterToday => 'Lamuhla';
+
+  @override
+  String get filterLast7Days => 'Amalanga 7 adlulileyo';
+
+  @override
+  String get filterLast30Days => 'Amalanga 30 adlulileyo';
+
+  @override
+  String get filterApply => 'Sebenzisa izihlungi';
+
+  @override
+  String get activitySearchHint => 'Phenya okwenzakale';
+
+  @override
+  String get privateAccountOnly => 'I-akhawunti eyimfihlo · nguwe wedwa ongayibona';
+
+  @override
+  String get clearFilters => 'Susa izihlungi';
+
+  @override
+  String get closeLabel => 'Vala';
+
+  @override
+  String get filterAllTypes => 'Koke';
+
+  @override
+  String get activityDetailsTitle => 'Okwenzakale';
+
+  @override
+  String get noMatchingActivity => 'Akukho okwenzakale okuhambelanako';
+
+  @override
+  String get noMatchingActivityHint => 'Zama ukutjintja namkha ukususa izihlungi zakho.';
+
+  @override
+  String get closeSearch => 'Vala ukuphenya';
 }

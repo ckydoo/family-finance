@@ -1091,5 +1091,34 @@
   "planToolNextPeriodSub": "Review a suggested plan before applying any changes.",
   "exploreMhuriPlus": "Explore Mhuri Plus",
   "monthlyReportsTitle": "Monthly reports",
-  "familyActivityTitle": "Family activity"
+  "familyActivityTitle": "Family activity",
+  "activityFilterTitle": "Filter activity",
+  "filterReset": "Reset",
+  "filterTypeLabel": "Transaction type",
+  "filterExpenses": "Expenses",
+  "filterMemberLabel": "Family member",
+  "filterEveryone": "Everyone",
+  "filterViewLabel": "Finance view",
+  "filterFamilyView": "Family finances",
+  "filterPrivateOption": "{name} · Private",
+  "@filterPrivateOption": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "filterDateLabel": "Date",
+  "filterAllTime": "All time",
+  "filterToday": "Today",
+  "filterLast7Days": "Last 7 days",
+  "filterLast30Days": "Last 30 days",
+  "filterApply": "Apply filters",
+  "activitySearchHint": "Search activity",
+  "privateAccountOnly": "Private account · only you can see it",
+  "clearFilters": "Clear filters",
+  "closeLabel": "Close",
+  "filterAllTypes": "All",
+  "activityDetailsTitle": "Activity details",
+  "noMatchingActivity": "No matching activity",
+  "noMatchingActivityHint": "Try changing or clearing your filters.",
+  "closeSearch": "Close search"
 }

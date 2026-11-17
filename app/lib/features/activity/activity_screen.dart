@@ -78,136 +78,141 @@ class _ActivityScreenState extends State<ActivityScreen> {
       showDragHandle: true,
       backgroundColor: context.bg,
       builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheet) => SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: EdgeInsets.fromLTRB(
-            20,
-            8,
-            20,
-            20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('Filter activity',
-                        style: Theme.of(context).textTheme.titleLarge),
-                  ),
-                  TextButton(
-                    onPressed: () => setSheet(() {
-                      type = null;
-                      memberId = null;
-                      accountId = null;
-                      period = _ActivityPeriod.all;
-                    }),
-                    child: const Text('Reset'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text('Transaction type',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  ChoiceChip(
-                    label: const Text('All'),
-                    selected: type == null,
-                    onSelected: (_) => setSheet(() => type = null),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Income'),
-                    selected: type == TxType.income,
-                    onSelected: (_) => setSheet(() => type = TxType.income),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Expenses'),
-                    selected: type == TxType.expense,
-                    onSelected: (_) => setSheet(() => type = TxType.expense),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String?>(
-                initialValue: memberId,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Family member'),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Everyone'),
-                  ),
-                  for (final member in state.members)
-                    DropdownMenuItem<String?>(
-                      value: member.id,
-                      child: Text(member.name),
+        builder: (sheetContext, setSheet) {
+          final l = AppLocalizations.of(sheetContext)!;
+          return SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(
+              20,
+              8,
+              20,
+              20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(l.activityFilterTitle,
+                          style: Theme.of(context).textTheme.titleLarge),
                     ),
-                ],
-                onChanged: (value) => setSheet(() => memberId = value),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String?>(
-                initialValue: accountId,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Finance view'),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Family finances'),
-                  ),
-                  for (final account in state.accounts.where((value) =>
-                      value.isPrivate &&
-                      value.ownerMemberId == state.realUser.id))
-                    DropdownMenuItem<String?>(
-                      value: account.id,
-                      child: Text('${account.name} · Private'),
+                    TextButton(
+                      onPressed: () => setSheet(() {
+                        type = null;
+                        memberId = null;
+                        accountId = null;
+                        period = _ActivityPeriod.all;
+                      }),
+                      child: Text(l.filterReset),
                     ),
-                ],
-                onChanged: (value) => setSheet(() => accountId = value),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<_ActivityPeriod>(
-                initialValue: period,
-                decoration: const InputDecoration(labelText: 'Date'),
-                items: const [
-                  DropdownMenuItem(
-                      value: _ActivityPeriod.all, child: Text('All time')),
-                  DropdownMenuItem(
-                      value: _ActivityPeriod.today, child: Text('Today')),
-                  DropdownMenuItem(
-                      value: _ActivityPeriod.sevenDays,
-                      child: Text('Last 7 days')),
-                  DropdownMenuItem(
-                      value: _ActivityPeriod.thirtyDays,
-                      child: Text('Last 30 days')),
-                ],
-                onChanged: (value) {
-                  if (value != null) setSheet(() => period = value);
-                },
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    setState(() {
-                      _type = type;
-                      _memberId = memberId;
-                      _accountId = accountId;
-                      _period = period;
-                    });
-                    Navigator.pop(sheetContext);
-                  },
-                  child: const Text('Apply filters'),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(height: 16),
+                Text(l.filterTypeLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: Text(l.filterAllTypes),
+                      selected: type == null,
+                      onSelected: (_) => setSheet(() => type = null),
+                    ),
+                    ChoiceChip(
+                      label: Text(l.income),
+                      selected: type == TxType.income,
+                      onSelected: (_) => setSheet(() => type = TxType.income),
+                    ),
+                    ChoiceChip(
+                      label: Text(l.filterExpenses),
+                      selected: type == TxType.expense,
+                      onSelected: (_) => setSheet(() => type = TxType.expense),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String?>(
+                  initialValue: memberId,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: l.filterMemberLabel),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(l.filterEveryone),
+                    ),
+                    for (final member in state.members)
+                      DropdownMenuItem<String?>(
+                        value: member.id,
+                        child: Text(member.name),
+                      ),
+                  ],
+                  onChanged: (value) => setSheet(() => memberId = value),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String?>(
+                  initialValue: accountId,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: l.filterViewLabel),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(l.filterFamilyView),
+                    ),
+                    for (final account in state.accounts.where((value) =>
+                        value.isPrivate &&
+                        value.ownerMemberId == state.realUser.id))
+                      DropdownMenuItem<String?>(
+                        value: account.id,
+                        child: Text(l.filterPrivateOption(account.name)),
+                      ),
+                  ],
+                  onChanged: (value) => setSheet(() => accountId = value),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<_ActivityPeriod>(
+                  initialValue: period,
+                  decoration: InputDecoration(labelText: l.filterDateLabel),
+                  items: [
+                    DropdownMenuItem(
+                        value: _ActivityPeriod.all,
+                        child: Text(l.filterAllTime)),
+                    DropdownMenuItem(
+                        value: _ActivityPeriod.today,
+                        child: Text(l.filterToday)),
+                    DropdownMenuItem(
+                        value: _ActivityPeriod.sevenDays,
+                        child: Text(l.filterLast7Days)),
+                    DropdownMenuItem(
+                        value: _ActivityPeriod.thirtyDays,
+                        child: Text(l.filterLast30Days)),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setSheet(() => period = value);
+                  },
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      setState(() {
+                        _type = type;
+                        _memberId = memberId;
+                        _accountId = accountId;
+                        _period = period;
+                      });
+                      Navigator.pop(sheetContext);
+                    },
+                    child: Text(l.filterApply),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -292,14 +297,17 @@ class _ActivityScreenState extends State<ActivityScreen> {
         title: _searching
             ? TextField(
                 autofocus: true,
-                decoration: const InputDecoration(
-                    hintText: 'Search activity', border: InputBorder.none),
+                decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!.activitySearchHint,
+                    border: InputBorder.none),
                 onChanged: (value) => setState(() => _query = value),
               )
             : Text(AppLocalizations.of(context)!.activityTitle),
         actions: [
           IconButton(
-            tooltip: _searching ? 'Close search' : 'Search activity',
+            tooltip: _searching
+                ? AppLocalizations.of(context)!.closeSearch
+                : AppLocalizations.of(context)!.activitySearchHint,
             onPressed: () => setState(() {
               _searching = !_searching;
               if (!_searching) _query = '';
@@ -345,7 +353,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
                             Text(privateAccount.name,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w700)),
-                            const Text('Private account · only you can see it'),
+                            Text(AppLocalizations.of(context)!
+                                .privateAccountOnly),
                           ],
                         ),
                       ),
@@ -360,16 +369,18 @@ class _ActivityScreenState extends State<ActivityScreen> {
                         padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
                         children: [
                           if (_hasFilters) ...[
-                            const EmptyState(
+                            EmptyState(
                               icon: Icons.filter_alt_off_outlined,
-                              title: 'No matching activity',
-                              subtitle:
-                                  'Try changing or clearing your filters.',
+                              title: AppLocalizations.of(context)!
+                                  .noMatchingActivity,
+                              subtitle: AppLocalizations.of(context)!
+                                  .noMatchingActivityHint,
                             ),
                             Center(
                               child: TextButton(
                                 onPressed: _clearFilters,
-                                child: const Text('Clear filters'),
+                                child: Text(
+                                    AppLocalizations.of(context)!.clearFilters),
                               ),
                             ),
                           ] else
@@ -795,13 +806,13 @@ class _FamilyActivityTile extends StatelessWidget {
     showMhuriSheet<void>(
       context: context,
       builder: (sheetContext) => MhuriSheetShell(
-        title: 'Activity details',
+        title: AppLocalizations.of(sheetContext)!.activityDetailsTitle,
         subtitle: fmtWhen(activity.at),
         footer: SizedBox(
           width: double.infinity,
           child: OutlinedButton(
             onPressed: () => Navigator.pop(sheetContext),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(sheetContext)!.closeLabel),
           ),
         ),
         child: Column(

@@ -2302,4 +2302,78 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get familyActivityTitle => 'Actividad familiar';
+
+  @override
+  String get activityFilterTitle => 'Filtrar actividad';
+
+  @override
+  String get filterReset => 'Restablecer';
+
+  @override
+  String get filterTypeLabel => 'Tipo de transacción';
+
+  @override
+  String get filterExpenses => 'Gastos';
+
+  @override
+  String get filterMemberLabel => 'Miembro de la familia';
+
+  @override
+  String get filterEveryone => 'Todos';
+
+  @override
+  String get filterViewLabel => 'Vista financiera';
+
+  @override
+  String get filterFamilyView => 'Finanzas familiares';
+
+  @override
+  String filterPrivateOption(Object name) {
+    return '$name · Privado';
+  }
+
+  @override
+  String get filterDateLabel => 'Fecha';
+
+  @override
+  String get filterAllTime => 'Todo el tiempo';
+
+  @override
+  String get filterToday => 'Hoy';
+
+  @override
+  String get filterLast7Days => 'Últimos 7 días';
+
+  @override
+  String get filterLast30Days => 'Últimos 30 días';
+
+  @override
+  String get filterApply => 'Aplicar filtros';
+
+  @override
+  String get activitySearchHint => 'Buscar actividad';
+
+  @override
+  String get privateAccountOnly => 'Cuenta privada · solo tú puedes verla';
+
+  @override
+  String get clearFilters => 'Borrar filtros';
+
+  @override
+  String get closeLabel => 'Cerrar';
+
+  @override
+  String get filterAllTypes => 'Todo';
+
+  @override
+  String get activityDetailsTitle => 'Detalles de la actividad';
+
+  @override
+  String get noMatchingActivity => 'No hay actividad que coincida';
+
+  @override
+  String get noMatchingActivityHint => 'Prueba cambiar o borrar tus filtros.';
+
+  @override
+  String get closeSearch => 'Cerrar búsqueda';
 }

@@ -4220,4 +4220,148 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       'an issue with the localizations generation tool. Please file an issue '
       'on GitHub with a reproducible sample app and the gen-l10n configuration '
       'that was used.');
+
+  /// No description provided for @activityFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter activity'**
+  String get activityFilterTitle;
+
+  /// No description provided for @filterReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get filterReset;
+
+  /// No description provided for @filterTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction type'**
+  String get filterTypeLabel;
+
+  /// No description provided for @filterExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get filterExpenses;
+
+  /// No description provided for @filterMemberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Family member'**
+  String get filterMemberLabel;
+
+  /// No description provided for @filterEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone'**
+  String get filterEveryone;
+
+  /// No description provided for @filterViewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance view'**
+  String get filterViewLabel;
+
+  /// No description provided for @filterFamilyView.
+  ///
+  /// In en, this message translates to:
+  /// **'Family finances'**
+  String get filterFamilyView;
+
+  /// No description provided for @filterPrivateOption.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · Private'**
+  String filterPrivateOption(Object name);
+
+  /// No description provided for @filterDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get filterDateLabel;
+
+  /// No description provided for @filterAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get filterAllTime;
+
+  /// No description provided for @filterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get filterToday;
+
+  /// No description provided for @filterLast7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get filterLast7Days;
+
+  /// No description provided for @filterLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get filterLast30Days;
+
+  /// No description provided for @filterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get filterApply;
+
+  /// No description provided for @activitySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search activity'**
+  String get activitySearchHint;
+
+  /// No description provided for @privateAccountOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Private account · only you can see it'**
+  String get privateAccountOnly;
+
+  /// No description provided for @clearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get clearFilters;
+
+  /// No description provided for @closeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeLabel;
+
+  /// No description provided for @filterAllTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAllTypes;
+
+  /// No description provided for @activityDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity details'**
+  String get activityDetailsTitle;
+
+  /// No description provided for @noMatchingActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching activity'**
+  String get noMatchingActivity;
+
+  /// No description provided for @noMatchingActivityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try changing or clearing your filters.'**
+  String get noMatchingActivityHint;
+
+  /// No description provided for @closeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get closeSearch;
 }

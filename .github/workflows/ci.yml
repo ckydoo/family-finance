@@ -211,8 +211,9 @@ jobs:
           echo "$out" | tail -n 5
 
   ios:
-    name: ios build (manual dispatch) (#18)
-    if: github.event_name == 'workflow_dispatch'
+    name: ios debug build
+    # Runs on every PR/commit: iOS was previously only built on manual
+    # dispatch, so a regression there could reach a release unnoticed.
     runs-on: macos-latest
     defaults:
       run:
@@ -225,4 +226,12 @@ jobs:
           cache: true
       - run: test -f .env || cp .env.example .env
       - run: flutter pub get
-      - run: flutter build ios --debug --no-codesign
+      - name: Build iOS (debug, unsigned)
+        run: |
+          if ! out=$(flutter build ios --debug --no-codesign 2>&1); then
+            echo "$out"
+            summary=$(echo "$out" | grep -iE "error:|Error|failed|FAILURE|Podfile|Xcode" | head -n 12 | tr '\n' ' ')
+            echo "::error title=ios_build::$summary"
+            exit 1
+          fi
+          echo "$out" | tail -n 5
