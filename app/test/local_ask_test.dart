@@ -80,7 +80,7 @@ void main() {
         emoji: 'home',
         amount: const Money(50000, usd),
         memberId: 'x',
-        method: Method.transfer,
+        method: Method.bankTransfer,
         frequency: Frequency.monthly,
         nextDue: DateTime(2026, 11, 20),
       ));

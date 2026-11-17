@@ -195,7 +195,7 @@ LocalAnswer? _savings(AppState state) {
       .where((goal) => goal.status == 'active' && !goal.isKidJar)
       .toList(growable: false);
   if (active.isEmpty) {
-    return LocalAnswer(
+    return const LocalAnswer(
       text: 'There are no savings goals recorded yet. Add a goal in Savings '
           'and Mhuri can track what is left and how much to put aside.',
     );
