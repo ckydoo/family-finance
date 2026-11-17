@@ -1077,6 +1077,10 @@
   "tasksShortcut": "Tasks",
   "askMhuriTitle": "Ask Mhuri",
   "askMhuriPrompt": "Get clear answers about your family’s money",
+  "askMhuriFromYourRecords": "FROM YOUR RECORDS",
+  "@askMhuriFromYourRecords": {
+    "description": "Badge shown when an answer was computed from the family's own saved records."
+  },
   "upcomingBillsTitle": "Upcoming Bills",
   "needsAttentionLabel": "Needs attention",
   "comingUpLabel": "Coming up",

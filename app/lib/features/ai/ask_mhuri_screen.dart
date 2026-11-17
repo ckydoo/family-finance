@@ -7,6 +7,7 @@ import '../../core/money/money.dart';
 import '../../core/ai/local_ask.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../settings/plus_screen.dart';
 
 class AskMhuriScreen extends StatefulWidget {
@@ -471,7 +472,10 @@ class _MessageBubble extends StatelessWidget {
                   : Icons.auto_awesome_rounded,
                   size: 15, color: context.primary),
               const SizedBox(width: 7),
-              Text(turn.fromRecords ? 'FROM YOUR RECORDS' : 'ASK MHURI',
+              Text(
+                  turn.fromRecords
+                      ? AppLocalizations.of(context)!.askMhuriFromYourRecords
+                      : 'ASK MHURI',
                   style: TextStyle(
                     color: context.primary,
                     fontSize: 9,
