@@ -682,6 +682,73 @@ class AppLocalizationsEs extends AppLocalizations {
   String get rollAccum => 'Acumular';
 
   @override
+  String get monthEndReviewTitle => 'Revisión de fin de mes';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return 'Quedan $amount sin gastar del mes pasado. Muévelos a ahorros o déjalos en el presupuesto.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Revisar';
+
+  @override
+  String get monthEndReviewLater => 'Ahora no';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'Movimos $amount de lo que sobró el mes pasado a ahorros.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Dinero sobrante';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'El mes pasado terminó con $amount aún en tus presupuestos. Nada se mueve hasta que confirmes.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Los presupuestos con arrastre o acumulación ya conservan sus sobrantes.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Crea primero una meta de ahorro y el dinero sobrante tendrá un destino.';
+
+  @override
+  String get monthEndReviewSendTo => 'Enviar a';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Mover $amount a $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Dejarlo en el presupuesto';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Movimos $amount a $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'No volver a preguntar';
+
+  @override
+  String get monthEndSweepSetting => 'Dinero sobrante';
+
+  @override
+  String get monthEndSweepSettingDesc => 'Qué pasa con el dinero sin gastar cuando termina el mes presupuestario.';
+
+  @override
+  String get monthEndSweepAsk => 'Preguntarme cada mes';
+
+  @override
+  String get monthEndSweepAlways => 'Mover siempre a ahorros';
+
+  @override
+  String get monthEndSweepNever => 'Dejarlo en el presupuesto';
+
+  @override
   String get freqTerm => 'Por trimestre (~3 meses)';
 
   @override

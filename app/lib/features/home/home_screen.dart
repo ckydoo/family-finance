@@ -23,6 +23,7 @@ import '../budgets/budgets_screen.dart'
 import '../family_chat/family_chat_screen.dart';
 import '../family_tasks/family_tasks_screen.dart';
 import '../members/members_screen.dart';
+import 'month_end_review_card.dart';
 import '../planner/planning_hub_screen.dart';
 import '../quickadd/quick_add_sheet.dart';
 import '../reports/reports_screen.dart';
@@ -652,6 +653,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const _CycleBoundaryNotice(),
+                  const MonthEndReviewCard(),
                   const _SyncRecoveryNotice(),
                   const _MonthlySummary(),
                   const SmartCard(),

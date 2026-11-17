@@ -1318,6 +1318,120 @@ abstract class AppLocalizations {
   /// **'Keep accumulating'**
   String get rollAccum;
 
+  /// No description provided for @monthEndReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Month-end review'**
+  String get monthEndReviewTitle;
+
+  /// No description provided for @monthEndReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} is still unspent from last month. Move it to savings, or keep it in the budget.'**
+  String monthEndReviewBody(Object amount);
+
+  /// No description provided for @monthEndReviewCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get monthEndReviewCta;
+
+  /// No description provided for @monthEndReviewLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get monthEndReviewLater;
+
+  /// No description provided for @monthEndSweptAutomatically.
+  ///
+  /// In en, this message translates to:
+  /// **'We moved {amount} of last month\'s leftovers into savings.'**
+  String monthEndSweptAutomatically(Object amount);
+
+  /// No description provided for @monthEndReviewSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Money left over'**
+  String get monthEndReviewSheetTitle;
+
+  /// No description provided for @monthEndReviewSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month ended with {amount} still in your budgets. Nothing moves until you confirm.'**
+  String monthEndReviewSheetBody(Object amount);
+
+  /// No description provided for @monthEndReviewCarryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Budgets set to roll over or accumulate already keep their leftovers.'**
+  String get monthEndReviewCarryNote;
+
+  /// No description provided for @monthEndReviewNoGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a savings goal first - then leftover money has somewhere to go.'**
+  String get monthEndReviewNoGoals;
+
+  /// No description provided for @monthEndReviewSendTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Send it to'**
+  String get monthEndReviewSendTo;
+
+  /// No description provided for @monthEndReviewMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move {amount} to {goal}'**
+  String monthEndReviewMove(Object amount, Object goal);
+
+  /// No description provided for @monthEndReviewKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it in the budget'**
+  String get monthEndReviewKeep;
+
+  /// No description provided for @monthEndReviewDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved {amount} to {goal}'**
+  String monthEndReviewDone(Object amount, Object goal);
+
+  /// No description provided for @monthEndReviewDontAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t ask me again'**
+  String get monthEndReviewDontAsk;
+
+  /// No description provided for @monthEndSweepSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Leftover money'**
+  String get monthEndSweepSetting;
+
+  /// No description provided for @monthEndSweepSettingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens to money still unspent when a budget month closes.'**
+  String get monthEndSweepSettingDesc;
+
+  /// No description provided for @monthEndSweepAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask me each month'**
+  String get monthEndSweepAsk;
+
+  /// No description provided for @monthEndSweepAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always move to savings'**
+  String get monthEndSweepAlways;
+
+  /// No description provided for @monthEndSweepNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave it in the budget'**
+  String get monthEndSweepNever;
+
   /// No description provided for @freqTerm.
   ///
   /// In en, this message translates to:

@@ -673,6 +673,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rollAccum => 'Keep accumulating';
 
   @override
+  String get monthEndReviewTitle => 'Month-end review';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return '$amount is still unspent from last month. Move it to savings, or keep it in the budget.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Review';
+
+  @override
+  String get monthEndReviewLater => 'Not now';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'We moved $amount of last month\'s leftovers into savings.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Money left over';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'Last month ended with $amount still in your budgets. Nothing moves until you confirm.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Budgets set to roll over or accumulate already keep their leftovers.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Create a savings goal first - then leftover money has somewhere to go.';
+
+  @override
+  String get monthEndReviewSendTo => 'Send it to';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Move $amount to $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Keep it in the budget';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Moved $amount to $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'Don\'t ask me again';
+
+  @override
+  String get monthEndSweepSetting => 'Leftover money';
+
+  @override
+  String get monthEndSweepSettingDesc => 'What happens to money still unspent when a budget month closes.';
+
+  @override
+  String get monthEndSweepAsk => 'Ask me each month';
+
+  @override
+  String get monthEndSweepAlways => 'Always move to savings';
+
+  @override
+  String get monthEndSweepNever => 'Leave it in the budget';
+
+  @override
   String get freqTerm => 'Per term (~3 months)';
 
   @override

@@ -681,6 +681,73 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rollAccum => 'Cumuler';
 
   @override
+  String get monthEndReviewTitle => 'Bilan de fin de mois';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return 'Il reste $amount non dépensés du mois dernier. Placez-les en épargne ou gardez-les dans le budget.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Vérifier';
+
+  @override
+  String get monthEndReviewLater => 'Plus tard';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'Nous avons placé $amount du reliquat du mois dernier en épargne.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Argent restant';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'Le mois dernier s\'est terminé avec $amount encore dans vos budgets. Rien ne bouge avant votre confirmation.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Les budgets en report ou en accumulation conservent déjà leur reliquat.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Créez d\'abord un objectif d\'épargne : l\'argent restant aura alors une destination.';
+
+  @override
+  String get monthEndReviewSendTo => 'Envoyer vers';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Déplacer $amount vers $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Garder dans le budget';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Déplacé $amount vers $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'Ne plus me demander';
+
+  @override
+  String get monthEndSweepSetting => 'Argent restant';
+
+  @override
+  String get monthEndSweepSettingDesc => 'Ce qu\'il advient de l\'argent non dépensé à la fin d\'un mois budgétaire.';
+
+  @override
+  String get monthEndSweepAsk => 'Me demander chaque mois';
+
+  @override
+  String get monthEndSweepAlways => 'Toujours placer en épargne';
+
+  @override
+  String get monthEndSweepNever => 'Garder dans le budget';
+
+  @override
   String get freqTerm => 'Par trimestre (~3 mois)';
 
   @override

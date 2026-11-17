@@ -295,6 +295,52 @@
   "rollReset": "Reset each month",
   "rollRoll": "Roll over what is left",
   "rollAccum": "Keep accumulating",
+  "monthEndReviewTitle": "Month-end review",
+  "monthEndReviewBody": "{amount} is still unspent from last month. Move it to savings, or keep it in the budget.",
+  "@monthEndReviewBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "monthEndReviewCta": "Review",
+  "monthEndReviewLater": "Not now",
+  "monthEndSweptAutomatically": "We moved {amount} of last month's leftovers into savings.",
+  "@monthEndSweptAutomatically": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "monthEndReviewSheetTitle": "Money left over",
+  "monthEndReviewSheetBody": "Last month ended with {amount} still in your budgets. Nothing moves until you confirm.",
+  "@monthEndReviewSheetBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "monthEndReviewCarryNote": "Budgets set to roll over or accumulate already keep their leftovers.",
+  "monthEndReviewNoGoals": "Create a savings goal first - then leftover money has somewhere to go.",
+  "monthEndReviewSendTo": "Send it to",
+  "monthEndReviewMove": "Move {amount} to {goal}",
+  "@monthEndReviewMove": {
+    "placeholders": {
+      "amount": {},
+      "goal": {}
+    }
+  },
+  "monthEndReviewKeep": "Keep it in the budget",
+  "monthEndReviewDone": "Moved {amount} to {goal}",
+  "@monthEndReviewDone": {
+    "placeholders": {
+      "amount": {},
+      "goal": {}
+    }
+  },
+  "monthEndReviewDontAsk": "Don't ask me again",
+  "monthEndSweepSetting": "Leftover money",
+  "monthEndSweepSettingDesc": "What happens to money still unspent when a budget month closes.",
+  "monthEndSweepAsk": "Ask me each month",
+  "monthEndSweepAlways": "Always move to savings",
+  "monthEndSweepNever": "Leave it in the budget",
   "freqTerm": "Per term (~3 months)",
   "budgetsTitle": "Budgets",
   "noEnvelopes": "No budgets yet",

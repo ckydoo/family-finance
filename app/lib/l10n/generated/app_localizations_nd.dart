@@ -677,6 +677,73 @@ class AppLocalizationsNd extends AppLocalizations {
   String get rollAccum => 'Yonga okusele';
 
   @override
+  String get monthEndReviewTitle => 'Ukubuyekezwa kokuphela kwenyanga';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return '$amount akukasetjenziswa kusukela ngenyanga ephelileyo. Kudlulisele emalini egciniweyo namkha kugcine ebhajetini.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Buyekeza';
+
+  @override
+  String get monthEndReviewLater => 'Hatshi gadesi';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'Sidlulisele $amount yensalela yenyanga ephelileyo emalini egciniweyo.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Imali eseleyo';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'Inyanga ephelileyo yaphela ine $amount isebhajetini yakho. Akukho okutjintjhako kuze uqinisekise.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Amabhajeti anadluliselako namkha aqongako agcina insalela yawo.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Qala wenze umgomo wokugcina imali - khonapho imali eseleyo inendawo yokuya.';
+
+  @override
+  String get monthEndReviewSendTo => 'Thumela ku';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Dlulisa $amount ku $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Yigcine ebhajetini';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Sidlulisele $amount ku $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'Ungabe usabuza godu';
+
+  @override
+  String get monthEndSweepSetting => 'Imali eseleyo';
+
+  @override
+  String get monthEndSweepSettingDesc => 'Okwenzekayo emalini engakatjenziswanga nasekupheleni kwenyanga yebhajeti.';
+
+  @override
+  String get monthEndSweepAsk => 'Ngibuze nyanga zonke';
+
+  @override
+  String get monthEndSweepAlways => 'Hlala udlulisela emalini egciniweyo';
+
+  @override
+  String get monthEndSweepNever => 'Yigcine ebhajeti';
+
+  @override
   String get freqTerm => 'Ngesikhashana (~inyanga 3)';
 
   @override

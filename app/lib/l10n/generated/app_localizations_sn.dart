@@ -676,6 +676,73 @@ class AppLocalizationsSn extends AppLocalizations {
   String get rollAccum => 'Wedzera zvinosara';
 
   @override
+  String get monthEndReviewTitle => 'Kuongorora pakupera kwemwedzi';
+
+  @override
+  String monthEndReviewBody(Object amount) {
+    return '$amount haisati yashandiswa kubva mwedzi wapfuura. Iendese kumaraki kana kuisiya mubhajeti.';
+  }
+
+  @override
+  String get monthEndReviewCta => 'Ongorora';
+
+  @override
+  String get monthEndReviewLater => 'Kwete iye zvino';
+
+  @override
+  String monthEndSweptAutomatically(Object amount) {
+    return 'Takaendesa $amount yezvakasara mwedzi wapfuura kumaraki.';
+  }
+
+  @override
+  String get monthEndReviewSheetTitle => 'Mari yasara';
+
+  @override
+  String monthEndReviewSheetBody(Object amount) {
+    return 'Mwedzi wapfuura wakapera uine $amount iri mumabhajeti ako. Hapana chinochinja kusvika wasimbisa.';
+  }
+
+  @override
+  String get monthEndReviewCarryNote => 'Mabhajeti anotakura kana kuunganidza anotochengeta zvaasara.';
+
+  @override
+  String get monthEndReviewNoGoals => 'Tanga wagadzira chinangwa chemari - ipapo mari yasara inenge iine kwainoenda.';
+
+  @override
+  String get monthEndReviewSendTo => 'Endesa ku';
+
+  @override
+  String monthEndReviewMove(Object amount, Object goal) {
+    return 'Endesa $amount ku $goal';
+  }
+
+  @override
+  String get monthEndReviewKeep => 'Isiya mubhajeti';
+
+  @override
+  String monthEndReviewDone(Object amount, Object goal) {
+    return 'Takaendesa $amount kuna $goal';
+  }
+
+  @override
+  String get monthEndReviewDontAsk => 'Usazondibvunza zvakare';
+
+  @override
+  String get monthEndSweepSetting => 'Mari yasara';
+
+  @override
+  String get monthEndSweepSettingDesc => 'Zvinoitika kumari isina kushandiswa kana mwedzi webhajeti wapedza.';
+
+  @override
+  String get monthEndSweepAsk => 'Ndivunze mwedzi wese';
+
+  @override
+  String get monthEndSweepAlways => 'Gara uchiendesa kumaraki';
+
+  @override
+  String get monthEndSweepNever => 'Isiya mubhajeti';
+
+  @override
   String get freqTerm => 'Pakutanga (~mwedzi 3)';
 
   @override
