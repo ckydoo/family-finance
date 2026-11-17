@@ -86,8 +86,9 @@ void main() {
       expect(review.cycleStart, DateTime(2026, 2, 1));
       expect(review.completedAt, DateTime(2026, 3, 1));
       expect(review.lines.length, 2);
-      // Groceries is the bigger leftover (150) and sorts first.
-      expect(review.lines.first.envelopeId, 'e1');
+      // Biggest leftover first: the buffer kept 300, groceries 150.
+      expect(review.lines.first.envelopeId, 'e7');
+      expect(review.lines.last.envelopeId, 'e1');
       expect(review.totalLeft.minor, 15000, reason: 'only reset budgets');
       expect(review.carriedLeft.minor, 30000, reason: 'rollover keeps its own');
       expect(review.sweepable.map((l) => l.envelopeId), ['e1']);
