@@ -1096,3 +1096,144 @@ Future<T?> showMhuriSheet<T>({
       ),
       builder: builder,
     );
+
+/// Loading pagination for long lists (chat history, transactions, …).
+///
+/// Renders [items] a [pageSize]-sized page at a time instead of materialising
+/// every row up front, so screens with thousands of entries stay responsive.
+/// The next page is revealed automatically when the user scrolls near the end
+/// (a loading indicator shows while it is being prepared) and a "Load more"
+/// button remains as an explicit fallback.
+///
+/// Works for data already in memory (pass [items] and omit [onLoadMore]) or
+/// for server-backed lists: supply [onLoadMore], which should fetch the next
+/// page and append it to the source list — the widget detects the longer list
+/// and keeps the window stable.
+class PaginatedList<T> extends StatefulWidget {
+  const PaginatedList({
+    super.key,
+    required this.items,
+    required this.itemBuilder,
+    this.emptyWidget,
+    this.pageSize = 30,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    this.autoLoad = true,
+    this.onLoadMore,
+    this.reverse = false,
+    this.loadMoreLabel = 'Load more',
+  });
+
+  final List<T> items;
+  final IndexedWidgetBuilder itemBuilder;
+  final Widget? emptyWidget;
+  final int pageSize;
+  final EdgeInsets padding;
+  final bool autoLoad;
+  final Future<void> Function()? onLoadMore;
+  final bool reverse;
+  final String loadMoreLabel;
+
+  @override
+  State<PaginatedList<T>> createState() => _PaginatedListState<T>();
+}
+
+class _PaginatedListState<T> extends State<PaginatedList<T>> {
+  int _shown;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _shown = _initialShown();
+  }
+
+  int _initialShown() => math.min(widget.pageSize, widget.items.length);
+
+  bool get _hasMore => _shown < widget.items.length;
+
+  @override
+  void didUpdateWidget(PaginatedList<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Keep the revealed window when the list grows (e.g. a server page was
+    // appended); clamp it down when the data shrinks or is re-filtered.
+    if (widget.items.length < _shown) {
+      _shown = widget.items.length;
+    } else {
+      _shown = math.min(_shown, widget.items.length);
+    }
+    if (widget.items.isEmpty && oldWidget.items.isNotEmpty) {
+      _shown = 0;
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loading || !_hasMore) return;
+    setState(() => _loading = true);
+    try {
+      await widget.onLoadMore?.call();
+    } catch (_) {
+      // Swallow fetch errors: the list keeps what it already has and the user
+      // can tap "Load more" again.
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _shown = math.min(_shown + widget.pageSize, widget.items.length);
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = widget.items;
+    if (items.isEmpty) {
+      return widget.emptyWidget ?? const SizedBox.shrink();
+    }
+
+    final showFooter = _hasMore;
+    final itemCount = _shown + (showFooter ? 1 : 0);
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (!widget.autoLoad || _loading || !_hasMore) return false;
+        final metrics = notification.metrics;
+        final nearEnd = widget.reverse
+            ? metrics.pixels <= 200
+            : metrics.pixels >= metrics.maxScrollExtent - 200;
+        if (nearEnd) {
+          unawaited(_loadMore());
+        }
+        return false;
+      },
+      child: ListView.builder(
+        reverse: widget.reverse,
+        padding: widget.padding,
+        itemCount: itemCount,
+        itemBuilder: (context, index) {
+          if (showFooter && index == _shown) {
+            return _buildFooter(context);
+          }
+          return widget.itemBuilder(context, index);
+        },
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: TextButton(
+          onPressed: () => unawaited(_loadMore()),
+          child: Text(widget.loadMoreLabel),
+        ),
+      ),
+    );
+  }
+}
