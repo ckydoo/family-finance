@@ -122,7 +122,7 @@ class SyncScreen extends StatelessWidget {
                               color: context.warning)),
                       const SizedBox(height: 5),
                       Text(
-                        'Another device changed these records while this device was offline. Choose which version the family should keep.',
+                        'Most concurrent edits are merged automatically by the family server, so every device agrees. These could not be merged automatically (for example a stale change that would corrupt a settled purchase), so a person has to choose.',
                         style:
                             TextStyle(fontSize: 12.5, color: context.inkSoft),
                       ),

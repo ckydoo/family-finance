@@ -1101,6 +1101,8 @@ class Persistence {
         'actual_minor': i.actual?.minor,
         'actual_currency': i.actual?.currency.name,
         'purchased_by_id': i.purchasedById,
+        'settled_tx_id': i.settledTxId,
+        'replanned_at': i.replannedAt?.toIso8601String(),
         'deleted_at': i.deletedAt?.toIso8601String(),
       };
 
@@ -1504,6 +1506,10 @@ class Persistence {
             : Money(m['actual_minor'] as int,
                 Currency.values.byName(m['actual_currency'] as String)),
         purchasedById: m['purchased_by_id'] as String?,
+        settledTxId: m['settled_tx_id'] as String?,
+        replannedAt: m['replanned_at'] == null
+            ? null
+            : DateTime.parse(m['replanned_at'] as String),
         deletedAt: m['deleted_at'] == null
             ? null
             : DateTime.parse(m['deleted_at'] as String),

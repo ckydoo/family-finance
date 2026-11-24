@@ -123,6 +123,20 @@ class RecurringRule {
 
   bool isDueWithin(Duration window) =>
       active && !nextDue.isAfter(DateTime.now().add(window));
+
+  RecurringRule copy() => RecurringRule(
+        id: id,
+        name: name,
+        emoji: emoji,
+        amount: amount,
+        memberId: memberId,
+        method: method,
+        frequency: frequency,
+        nextDue: nextDue,
+        envelopeId: envelopeId,
+        active: active,
+        isArchived: isArchived,
+      );
 }
 
 extension ItemStateX on ItemState {
@@ -186,6 +200,15 @@ class Account {
     this.isPrivate = false,
     this.ownerMemberId,
   });
+
+  Account copy() => Account(
+        id: id,
+        name: name,
+        emoji: emoji,
+        balance: balance,
+        isPrivate: isPrivate,
+        ownerMemberId: ownerMemberId,
+      );
 }
 
 /// Envelope = a category with a monthly limit (spec Module D).
@@ -208,6 +231,16 @@ class Envelope {
     this.isPersonal = false,
     this.isArchived = false,
   });
+
+  Envelope copy() => Envelope(
+        id: id,
+        name: name,
+        emoji: emoji,
+        limit: limit,
+        rollover: rollover,
+        isPersonal: isPersonal,
+        isArchived: isArchived,
+      );
 }
 
 /// A versioned snapshot of the family's plan for one budget cycle.
@@ -233,6 +266,17 @@ class BudgetCyclePlan {
     this.closedAt,
     this.copiedFrom,
   });
+
+  BudgetCyclePlan copy() => BudgetCyclePlan(
+        id: id,
+        cycleStart: cycleStart,
+        incomeMode: incomeMode,
+        allocations: Map<String, int>.of(allocations),
+        expectedIncome: expectedIncome,
+        isClosed: isClosed,
+        closedAt: closedAt,
+        copiedFrom: copiedFrom,
+      );
 }
 
 /// Immutable family audit event. Server events are authoritative; local
@@ -273,6 +317,15 @@ class ContributionCampaign {
     required this.createdById,
     this.status = 'active',
   });
+
+  ContributionCampaign copy() => ContributionCampaign(
+        id: id,
+        name: name,
+        target: target,
+        deadline: deadline,
+        createdById: createdById,
+        status: status,
+      );
 }
 
 class ContributionPledge {
@@ -289,6 +342,14 @@ class ContributionPledge {
     required this.amount,
     required this.createdAt,
   });
+
+  ContributionPledge copy() => ContributionPledge(
+        id: id,
+        campaignId: campaignId,
+        memberId: memberId,
+        amount: amount,
+        createdAt: createdAt,
+      );
 }
 
 class ContributionPayment {
@@ -305,6 +366,14 @@ class ContributionPayment {
     required this.amount,
     required this.paidAt,
   });
+
+  ContributionPayment copy() => ContributionPayment(
+        id: id,
+        campaignId: campaignId,
+        memberId: memberId,
+        amount: amount,
+        paidAt: paidAt,
+      );
 }
 
 class FamilyDebt {
@@ -327,6 +396,17 @@ class FamilyDebt {
     this.dueDate,
     this.status = 'active',
   });
+
+  FamilyDebt copy() => FamilyDebt(
+        id: id,
+        name: name,
+        direction: direction,
+        principal: principal,
+        createdById: createdById,
+        counterpartyMemberId: counterpartyMemberId,
+        dueDate: dueDate,
+        status: status,
+      );
 }
 
 class DebtRepayment {
@@ -471,6 +551,24 @@ class FamilyTask {
       requiresApproval &&
       status == FamilyTaskStatus.awaitingApproval &&
       approvedByMemberId == null;
+
+  FamilyTask copy() => FamilyTask(
+        id: id,
+        title: title,
+        note: note,
+        assigneeMemberId: assigneeMemberId,
+        createdByMemberId: createdByMemberId,
+        createdAt: createdAt,
+        dueDate: dueDate,
+        status: status,
+        points: points,
+        requiresApproval: requiresApproval,
+        approvedByMemberId: approvedByMemberId,
+        completedByMemberId: completedByMemberId,
+        approvedAt: approvedAt,
+        completedAt: completedAt,
+        isArchived: isArchived,
+      );
 }
 
 class FamilyReward {
@@ -491,6 +589,16 @@ class FamilyReward {
     this.redeemedByMemberId,
     this.redeemedAt,
   });
+
+  FamilyReward copy() => FamilyReward(
+        id: id,
+        name: name,
+        pointsCost: pointsCost,
+        description: description,
+        isArchived: isArchived,
+        redeemedByMemberId: redeemedByMemberId,
+        redeemedAt: redeemedAt,
+      );
 }
 
 class Tx {
@@ -521,6 +629,21 @@ class Tx {
     this.receiptUri,
     this.recurringRuleId,
   });
+
+  Tx copy() => Tx(
+        id: id,
+        memberId: memberId,
+        type: type,
+        amount: amount,
+        method: method,
+        note: note,
+        when: when,
+        accountId: accountId,
+        envelopeId: envelopeId,
+        deletedAt: deletedAt,
+        receiptUri: receiptUri,
+        recurringRuleId: recurringRuleId,
+      );
 }
 
 class TxAllocation {
@@ -534,6 +657,13 @@ class TxAllocation {
       required this.txId,
       required this.envelopeId,
       required this.amount});
+
+  TxAllocation copy() => TxAllocation(
+        id: id,
+        txId: txId,
+        envelopeId: envelopeId,
+        amount: amount,
+      );
 }
 
 class Goal {
@@ -560,6 +690,19 @@ class Goal {
     this.status = 'active',
     this.createdById,
   });
+
+  Goal copy() => Goal(
+        id: id,
+        name: name,
+        emoji: emoji,
+        target: target,
+        autoSave: autoSave,
+        deadline: deadline,
+        isKidJar: isKidJar,
+        ownerMemberId: ownerMemberId,
+        status: status,
+        createdById: createdById,
+      );
 }
 
 class GoalTx {
@@ -576,6 +719,14 @@ class GoalTx {
     required this.amount,
     required this.at,
   });
+
+  GoalTx copy() => GoalTx(
+        id: id,
+        goalId: goalId,
+        byMemberId: byMemberId,
+        amount: amount,
+        at: at,
+      );
 }
 
 class ListItem {
@@ -594,6 +745,19 @@ class ListItem {
   /// flag; devices remove their local copy on pull).
   DateTime? deletedAt;
 
+  /// Transaction that settled (paid for) this item when it was marked done
+  /// by a shopping checkout. Lets the app distinguish "re-plan for next time"
+  /// (keep the purchase, balance unchanged) from "undo the purchase"
+  /// (reverse the linked transaction so the money returns). Null = not yet
+  /// settled, or the item was moved back to to-buy for a new cycle.
+  String? settledTxId;
+
+  /// Explicit "deliberate done→tobuy" signal. Set only by a deliberate
+  /// re-plan / undo, never by a stale push. The server regression guard
+  /// accepts a done→tobuy transition only when this timestamp is set, so a
+  /// stale or rebased tobuy push (which leaves it null) is rejected.
+  DateTime? replannedAt;
+
   ListItem({
     required this.id,
     required this.name,
@@ -606,7 +770,25 @@ class ListItem {
     this.actual,
     this.purchasedById,
     this.deletedAt,
+    this.settledTxId,
+    this.replannedAt,
   });
+
+  ListItem copy() => ListItem(
+        id: id,
+        name: name,
+        qty: qty,
+        est: est,
+        addedById: addedById,
+        state: state,
+        checkedOut: checkedOut,
+        assignedToId: assignedToId,
+        actual: actual,
+        purchasedById: purchasedById,
+        deletedAt: deletedAt,
+        settledTxId: settledTxId,
+        replannedAt: replannedAt,
+      );
 }
 
 /// The shopping-list header (server `shopping_list`). Devices only need to
@@ -676,6 +858,15 @@ class Chore {
     this.assigneeMemberId,
     this.isArchived = false,
   });
+
+  Chore copy() => Chore(
+        id: id,
+        name: name,
+        stars: stars,
+        state: state,
+        assigneeMemberId: assigneeMemberId,
+        isArchived: isArchived,
+      );
 }
 
 class KidRequest {
@@ -692,6 +883,14 @@ class KidRequest {
     required this.reason,
     this.state = RequestState.pending,
   });
+
+  KidRequest copy() => KidRequest(
+        id: id,
+        kidId: kidId,
+        amount: amount,
+        reason: reason,
+        state: state,
+      );
 }
 
 /// Teen expense proposal (spec Module H2) - enters the parents' pending queue.
@@ -711,6 +910,15 @@ class Proposal {
     required this.reason,
     this.state = RequestState.pending,
   });
+
+  Proposal copy() => Proposal(
+        id: id,
+        teenId: teenId,
+        amount: amount,
+        envelopeId: envelopeId,
+        reason: reason,
+        state: state,
+      );
 }
 
 /// Teen logged earning (spec Module H3).
@@ -728,6 +936,14 @@ class Earning {
     required this.amount,
     required this.when,
   });
+
+  Earning copy() => Earning(
+        id: id,
+        memberId: memberId,
+        note: note,
+        amount: amount,
+        when: when,
+      );
 }
 
 /// Savings circle (ROSCA - rotation savings). Records only - never holds
@@ -752,6 +968,17 @@ class SavingsCircle {
     this.frequency = 'monthly',
     this.startedOnMs = 0,
   });
+
+  SavingsCircle copy() => SavingsCircle(
+        name: name,
+        contribution: contribution,
+        totalRounds: totalRounds,
+        currentRound: currentRound,
+        order: List<String>.of(order),
+        participantIds: List<String>.of(participantIds),
+        frequency: frequency,
+        startedOnMs: startedOnMs,
+      );
 
   /// A circle is configured once it has assigned participants.
   bool get isConfigured => participantIds.isNotEmpty;
@@ -827,4 +1054,13 @@ class MukandoPayment {
     required this.amount,
     required this.paidAt,
   });
+
+  MukandoPayment copy() => MukandoPayment(
+        id: id,
+        round: round,
+        memberId: memberId,
+        recordedBy: recordedBy,
+        amount: amount,
+        paidAt: paidAt,
+      );
 }

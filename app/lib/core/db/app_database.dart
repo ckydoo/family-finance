@@ -279,6 +279,7 @@ class AppDatabase {
       entity TEXT NOT NULL,
       op_id TEXT NOT NULL UNIQUE,
       payload TEXT NOT NULL,
+      base_payload TEXT,
       created_ms INTEGER NOT NULL,
       attempts INTEGER NOT NULL DEFAULT 0,
       conflict_reason TEXT,
@@ -308,6 +309,8 @@ class AppDatabase {
       actual_minor INTEGER,
       actual_currency TEXT,
       purchased_by_id TEXT,
+      settled_tx_id TEXT,
+      replanned_at TEXT,
       deleted_at TEXT
     )
     ''',
@@ -931,6 +934,30 @@ class AppDatabase {
       try {
         await d.execute(
             'ALTER TABLE family_task ADD COLUMN completed_by_member_id TEXT');
+      } catch (_) {
+        // Existing installations may already have the column.
+      }
+    }
+    if (oldVersion < 28) {
+      try {
+        await d.execute(
+            'ALTER TABLE list_item ADD COLUMN settled_tx_id TEXT');
+      } catch (_) {
+        // Existing installations may already have the column.
+      }
+    }
+    if (oldVersion < 29) {
+      try {
+        await d.execute(
+            'ALTER TABLE list_item ADD COLUMN replanned_at TEXT');
+      } catch (_) {
+        // Existing installations may already have the column.
+      }
+    }
+    if (oldVersion < 30) {
+      try {
+        await d.execute(
+            'ALTER TABLE outbox ADD COLUMN base_payload TEXT');
       } catch (_) {
         // Existing installations may already have the column.
       }

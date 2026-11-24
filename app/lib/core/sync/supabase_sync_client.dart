@@ -143,6 +143,56 @@ class SupabaseSyncClient {
     return decoded == null || (decoded is List && decoded.isNotEmpty);
   }
 
+  /// Server-authoritative deterministic merge (Paradigm B).
+  ///
+  /// Called when a compare-and-swap push fails because the row changed on the
+  /// server since the client's base. Sends the row the client started from
+  /// ([base]) and the row it wants ([newRow]); the server locks the row,
+  /// applies a deterministic field-level merge, persists it, and returns the
+  /// canonical merged row. Every device applies the same result, so the family
+  /// converges without a user vote.
+  ///
+  /// Returns the merged row map. Throws [SyncException] if the server rejects
+  /// the merge (e.g. an unknown table or a guard rejection).
+  Future<Map<String, Object?>> mergeRow(
+    String table,
+    String id,
+    String baseUpdatedAt,
+    Map<String, Object?> base,
+    Map<String, Object?> newRow,
+  ) async {
+    final headers = await _headers();
+    final body = jsonEncode({
+      'p_table': table,
+      'p_id': id,
+      'p_base_updated_at': baseUpdatedAt,
+      'p_base': base,
+      'p_new': newRow,
+    });
+    final response = await _call(() => _client.post(
+          Uri.parse('$_base/rest/v1/rpc/merge_sync_row'),
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation',
+          },
+          body: body,
+        ));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SyncException(response.statusCode, _msg(response));
+    }
+    final decoded =
+        response.body.isEmpty ? const {} : jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final row = decoded['row'];
+      if (row is Map<String, dynamic>) {
+        return row.cast<String, Object?>();
+      }
+    }
+    throw const SyncException(
+        500, 'Merge response did not contain a merged row.');
+  }
+
   /// Pull rows changed after [sinceIso] (empty/null → everything RLS allows).
   Future<List<Map<String, Object?>>> pullRows(
     String table, {

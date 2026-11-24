@@ -237,6 +237,7 @@ lib/features/lists/lists_screen.dart|Finish shopping
 lib/features/lists/lists_screen.dart|Item
 lib/features/lists/lists_screen.dart|Item actions
 lib/features/lists/lists_screen.dart|Payment method
+lib/features/lists/lists_screen.dart|Put on list for next time
 lib/features/lists/lists_screen.dart|Quantity
 lib/features/lists/lists_screen.dart|Record expense
 lib/features/lists/lists_screen.dart|Remove item
@@ -247,6 +248,7 @@ lib/features/lists/lists_screen.dart|Scanning…
 lib/features/lists/lists_screen.dart|Search shopping items
 lib/features/lists/lists_screen.dart|Shopping item updated
 lib/features/lists/lists_screen.dart|Undo
+lib/features/lists/lists_screen.dart|Undo purchase
 lib/features/meeting/family_meeting_screen.dart|Approve
 lib/features/meeting/family_meeting_screen.dart|Decline
 lib/features/meeting/family_meeting_screen.dart|Previous commitments

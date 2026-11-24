@@ -729,6 +729,8 @@ final kSyncAdapters = <String, SyncAdapter>{
         'actual_price_minor': i.actual?.minor,
         'actual_currency': i.actual?.currency.code,
         'purchased_by': i.purchasedById,
+        'settled_tx_id': i.settledTxId,
+        'replanned_at': i.replannedAt?.toUtc().toIso8601String(),
         'deleted_at': i.deletedAt?.toUtc().toIso8601String(),
       };
     },
@@ -745,6 +747,8 @@ final kSyncAdapters = <String, SyncAdapter>{
           ? null
           : _moneyOf(j, 'actual_price_minor', 'actual_currency'),
       purchasedById: j['purchased_by'] as String?,
+      settledTxId: j['settled_tx_id'] as String?,
+      replannedAt: _iso(j['replanned_at']),
       deletedAt: _iso(j['deleted_at']),
     ),
   ),
