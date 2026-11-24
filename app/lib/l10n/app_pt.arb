@@ -412,6 +412,8 @@
   "fabTip": "Toque + para registar entradas ou saídas",
   "emailLabel": "E-mail",
   "passwordLabel": "Palavra-passe",
+  "confirmPasswordLabel": "Confirmar palavra-passe",
+  "passwordsDoNotMatch": "As palavras-passe não coincidem.",
   "loginSignIn": "Entrar",
   "loginCreateAccount": "Criar conta",
   "welcomeBack": "Bem-vindo de volta",

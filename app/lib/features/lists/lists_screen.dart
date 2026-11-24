@@ -48,9 +48,7 @@ class _ListsScreenState extends State<ListsScreen> {
     final query = _query.trim().toLowerCase();
     final visible = s.items
         .where((item) =>
-            (_filter == null ||
-                item.state == _filter ||
-                (_filter == ItemState.tobuy && !item.checkedOut)) &&
+            (_filter == null || item.state == _filter) &&
             (query.isEmpty || item.name.toLowerCase().contains(query)))
         .toList();
 
@@ -67,7 +65,10 @@ class _ListsScreenState extends State<ListsScreen> {
         ? s.remainingOn(groceries).inCurrency(s.primaryCurrency, s.rate)
         : Money(0, s.primaryCurrency);
     final groceriesLimitMinor = groceries != null
-        ? s.effectiveLimit(groceries).inCurrency(s.primaryCurrency, s.rate).minor
+        ? s
+            .effectiveLimit(groceries)
+            .inCurrency(s.primaryCurrency, s.rate)
+            .minor
         : 0;
     final budgetUse = groceries != null && groceriesLimitMinor > 0
         ? (groceriesSpent.minor + estPrimary.minor) / groceriesLimitMinor
@@ -588,7 +589,10 @@ class _ListsScreenState extends State<ListsScreen> {
                 ? null
                 : () {
                     for (final item in purchased) {
-                      if (selected.contains(item.id)) state.advanceItem(item);
+                      if (selected.contains(item.id)) {
+                        state.addItem(item.name, item.qty, item.est,
+                            assignedToId: item.assignedToId);
+                      }
                     }
                     final count = selected.length;
                     final messenger = ScaffoldMessenger.of(context);
@@ -674,8 +678,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
       amountError = null;
     }
     scannedItems = result.items;
-    scanNotice =
-        result.total != null ? null : 'No total found on the receipt.';
+    scanNotice = result.total != null ? null : 'No total found on the receipt.';
     refresh();
   }
 
@@ -754,8 +757,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
               OutlinedButton.icon(
                 onPressed: scanning
                     ? null
-                    : () =>
-                        _scanReceipt(sheetContext, () => setSheet(() {})),
+                    : () => _scanReceipt(sheetContext, () => setSheet(() {})),
                 icon: scanning
                     ? const SizedBox(
                         width: 20,
@@ -787,14 +789,14 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
                 ),
                 const SizedBox(height: 6),
                 ...scannedItems.take(6).map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      '${item.name} — ${cur.symbol}${item.price.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 13),
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '${item.name} — ${cur.symbol}${item.price.toStringAsFixed(2)}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
                 const SizedBox(height: 8),
                 PrimaryButton(
                   label: 'Add to shopping list',
@@ -882,33 +884,35 @@ class _ItemRow extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
-            onChanged: (_) {
-              final messenger = ScaffoldMessenger.of(context);
-              final previousState = item.state;
-              final previousCheckedOut = item.checkedOut;
-              final previousActual = item.actual;
-              final previousPurchasedById = item.purchasedById;
-              s.advanceItem(item);
-              messenger
-                ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(
-                  content: Text(
-                    '${item.name} moved to ${item.state.label}',
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 80),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () => s.restoreItemStage(
-                      item,
-                      state: previousState,
-                      checkedOut: previousCheckedOut,
-                      actual: previousActual,
-                      purchasedById: previousPurchasedById,
-                    ),
-                  ),
-                ));
-            },
+            onChanged: done
+                ? null
+                : (_) {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final previousState = item.state;
+                    final previousCheckedOut = item.checkedOut;
+                    final previousActual = item.actual;
+                    final previousPurchasedById = item.purchasedById;
+                    s.advanceItem(item);
+                    messenger
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(SnackBar(
+                        content: Text(
+                          '${item.name} moved to ${item.state.label}',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin: const EdgeInsets.fromLTRB(20, 0, 20, 80),
+                        action: SnackBarAction(
+                          label: 'Undo',
+                          onPressed: () => s.restoreItemStage(
+                            item,
+                            state: previousState,
+                            checkedOut: previousCheckedOut,
+                            actual: previousActual,
+                            purchasedById: previousPurchasedById,
+                          ),
+                        ),
+                      ));
+                  },
           ),
           Expanded(
             child: Column(

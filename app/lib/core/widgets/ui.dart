@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
@@ -1138,7 +1139,7 @@ class PaginatedList<T> extends StatefulWidget {
 }
 
 class _PaginatedListState<T> extends State<PaginatedList<T>> {
-  int _shown;
+  late int _shown;
   bool _loading = false;
 
   @override
@@ -1175,11 +1176,12 @@ class _PaginatedListState<T> extends State<PaginatedList<T>> {
       // Swallow fetch errors: the list keeps what it already has and the user
       // can tap "Load more" again.
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _shown = math.min(_shown + widget.pageSize, widget.items.length);
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _shown = math.min(_shown + widget.pageSize, widget.items.length);
+          _loading = false;
+        });
+      }
     }
   }
 

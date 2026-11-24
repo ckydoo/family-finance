@@ -1405,6 +1405,12 @@ class AppLocalizationsSn extends AppLocalizations {
   String get passwordLabel => 'Password';
 
   @override
+  String get confirmPasswordLabel => 'Simbisazve password';
+
+  @override
+  String get passwordsDoNotMatch => 'Mapassword haasi kuenderana.';
+
+  @override
   String get loginSignIn => 'Pinda mukati';
 
   @override

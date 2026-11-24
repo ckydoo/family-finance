@@ -4324,16 +4324,9 @@ class AppState extends ChangeNotifier {
       debugPrint('Mhuri: unauthorized advanceItem for role: ${authRole.name}');
       return;
     }
-    if (item.checkedOut && item.state == ItemState.done) {
-      // Explicitly moving a purchased item back to "to buy" starts a new
-      // shopping cycle and makes it eligible for checkout again.
-      item.checkedOut = false;
-      item.state = ItemState.tobuy;
-      item.actual = null;
-      item.purchasedById = null;
-    } else {
-      item.state = item.state.next;
-    }
+    // Keep completed purchases as history. Buying again creates a new item.
+    if (item.state == ItemState.done) return;
+    item.state = item.state.next;
     _persistItem(item);
     _queue('list_item', item);
     pendingOps++;

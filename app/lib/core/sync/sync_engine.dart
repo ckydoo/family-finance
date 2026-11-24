@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart' show Database, Transaction;
+import 'package:sqflite/sqflite.dart'
+    show ConflictAlgorithm, Database, Transaction;
 
 import '../db/persistence.dart';
 import '../models/models.dart' show FamilyChatMessage, Goal, InviteInfo, Role;
@@ -497,6 +498,34 @@ class SyncEngine {
     if (versions.isNotEmpty) {
       payload['_base_updated_at'] =
           versions.first['server_updated_at']?.toString();
+      return;
+    }
+    // A list item can be created safely without a base version (insert-only).
+    // Existing legacy rows need a server version before they can be edited;
+    // otherwise stale local state could masquerade as a new insert.
+    if (entity == 'list_item') {
+      final remoteRows = await client.pullRows(
+        'list_item',
+        orderCol: 'updated_at',
+        eqFilters: {'id': 'eq.$id'},
+        limit: 1,
+      );
+      final remote = remoteRows.firstOrNull;
+      if (remote != null) {
+        final serverVersion = remote['updated_at']?.toString();
+        if (serverVersion != null && serverVersion.isNotEmpty) {
+          payload['_base_updated_at'] = serverVersion;
+          await _database.insert(
+            'sync_version',
+            {
+              'entity': entity,
+              'row_id': id,
+              'server_updated_at': serverVersion,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
     }
   }
 
@@ -736,6 +765,7 @@ class SyncEngine {
     required List<Map<String, String>> templates,
     required String stage,
   }) async {
+    final previousStage = state.onboardingStage;
     try {
       _setStatus(SyncStatus.syncing);
       await client.rpc('save_family_setup', {
@@ -759,16 +789,13 @@ class SyncEngine {
       return false;
     }
 
-    // The RPC above is the setup commit. A refresh failure after that point
-    // must not send the wizard backwards or encourage a duplicate retry. The
-    // locally persisted setup is enough to continue; normal sync will refresh
-    // the server-created envelopes when connectivity recovers.
-    try {
-      await _fullSync();
-    } catch (e) {
-      debugPrint('Mhuri post-setup refresh error: $e');
-      _setStatus(
-          SyncStatus.offline, 'Setup saved. We will refresh it shortly.');
+    // The RPC is the setup commit. Persist its settings locally and let the
+    // normal debounced sync refresh any server-created/archived envelopes in
+    // the background. Currency and completion-only saves need no immediate
+    // data refresh; template changes do.
+    if (_activeSync == null) _setStatus(SyncStatus.idle);
+    if (stage == 'ready' || (stage == 'complete' && previousStage != 'ready')) {
+      schedule();
     }
     return true;
   }
@@ -1507,6 +1534,39 @@ class SyncEngine {
             final base = versioned['_base_updated_at']?.toString();
             final row = Map<String, Object?>.of(versioned)
               ..remove('_base_updated_at');
+            if (entry.key == 'list_item' && base == null) {
+              // A never-synced item is created with INSERT/ignore-duplicates.
+              // If its id already exists remotely, leave it untouched and
+              // surface the server version for explicit conflict review.
+              final remoteRows = await client.pullRows(
+                adapter.table,
+                orderCol: 'updated_at',
+                eqFilters: {'id': 'eq.${row['id']}'},
+                limit: 1,
+              );
+              final remote = remoteRows.firstOrNull;
+              if (remote == null) {
+                final inserted = await client.pushRowCompareAndSwap(
+                  adapter.table,
+                  row,
+                );
+                if (inserted) {
+                  rows.add(row);
+                  entryDoneRowIds.addAll(entry.value
+                      .where((operation) =>
+                          operation.payload['id'] == row['id'])
+                      .map((operation) => operation.rowId));
+                }
+                continue;
+              }
+              for (final operation in entry.value.where(
+                (operation) => operation.payload['id'] == row['id'],
+              )) {
+                await _outbox.markConflict(operation.rowId,
+                    'This shopping item changed on another device.', remote);
+              }
+              continue;
+            }
             final applied = await client.pushRowCompareAndSwap(
               adapter.table,
               row,

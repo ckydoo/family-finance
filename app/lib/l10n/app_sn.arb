@@ -412,6 +412,8 @@
   "fabTip": "Dzvanya + kunyora mari inopinda kana kubuda",
   "emailLabel": "Email",
   "passwordLabel": "Password",
+  "confirmPasswordLabel": "Simbisazve password",
+  "passwordsDoNotMatch": "Mapassword haasi kuenderana.",
   "loginSignIn": "Pinda mukati",
   "loginCreateAccount": "Vhaka account",
   "welcomeBack": "Mauya zvakare",

@@ -1412,6 +1412,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get passwordLabel => 'Palavra-passe';
 
   @override
+  String get confirmPasswordLabel => 'Confirmar palavra-passe';
+
+  @override
+  String get passwordsDoNotMatch => 'As palavras-passe não coincidem.';
+
+  @override
   String get loginSignIn => 'Entrar';
 
   @override

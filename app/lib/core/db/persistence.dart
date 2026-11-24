@@ -308,46 +308,14 @@ class Persistence {
     // Every table read is an independent SQLite query. Issue them all at once so
     // the boot / full-sync pull overlaps the round trips instead of serialising
     // ~30 queries one after another.
-    final (
-      accountsRows,
-      envelopesRows,
-      txsRows,
-      txAllocationsRows,
-      goalsRows,
-      goalTxsRows,
-      itemsRows,
-      choresRows,
-      requestsRows,
-      proposalsRows,
-      earningsRows,
-      recurringRows,
-      budgetPlansRows,
-      familyActivitiesRows,
-      contributionCampaignsRows,
-      contributionPledgesRows,
-      contributionPaymentsRows,
-      familyDebtsRows,
-      debtRepaymentsRows,
-      familyChatMessagesRows,
-      familyTasksRows,
-      familyRewardsRows,
-      financialCommitmentsRows,
-      commitmentOccurrencesRows,
-      commitmentPaymentsRows,
-      periodPreparationsRows,
-      circleRows,
-      mukandoPaymentsRows,
-      kvRows,
-    ) = await Future.wait([
+    final rows = await Future.wait<List<Map<String, Object?>>>([
       _d.query('account'),
       _d.query('envelope', where: 'is_archived = 0'),
-      _d.query('tx',
-          where: 'deleted_at IS NULL', orderBy: 'when_ms DESC'),
+      _d.query('tx', where: 'deleted_at IS NULL', orderBy: 'when_ms DESC'),
       _d.query('tx_allocation'),
       _d.query('goal', where: "status <> 'archived'"),
       _d.query('goal_tx', orderBy: 'at_ms ASC'),
-      _d.query('list_item',
-          where: 'deleted_at IS NULL', orderBy: 'rowid DESC'),
+      _d.query('list_item', where: 'deleted_at IS NULL', orderBy: 'rowid DESC'),
       _d.query('chore', where: 'is_archived = 0'),
       _d.query('kid_request'),
       _d.query('proposal'),
@@ -363,8 +331,7 @@ class Persistence {
       _d.query('debt_repayment', orderBy: 'paid_at_ms DESC'),
       _d.query('family_chat_message',
           orderBy: 'created_at_ms DESC', limit: 500),
-      _d.query('family_task',
-          orderBy: 'due_at_ms ASC, created_at_ms DESC'),
+      _d.query('family_task', orderBy: 'due_at_ms ASC, created_at_ms DESC'),
       _d.query('family_reward'),
       _d.query('financial_commitment'),
       _d.query('commitment_occurrence', orderBy: 'due_at_ms ASC'),
@@ -374,6 +341,36 @@ class Persistence {
       _d.query('mukando_payment', orderBy: 'paid_at_ms DESC'),
       _d.query('kv'),
     ]);
+
+    final accountsRows = rows[0];
+    final envelopesRows = rows[1];
+    final txsRows = rows[2];
+    final txAllocationsRows = rows[3];
+    final goalsRows = rows[4];
+    final goalTxsRows = rows[5];
+    final itemsRows = rows[6];
+    final choresRows = rows[7];
+    final requestsRows = rows[8];
+    final proposalsRows = rows[9];
+    final earningsRows = rows[10];
+    final recurringRows = rows[11];
+    final budgetPlansRows = rows[12];
+    final familyActivitiesRows = rows[13];
+    final contributionCampaignsRows = rows[14];
+    final contributionPledgesRows = rows[15];
+    final contributionPaymentsRows = rows[16];
+    final familyDebtsRows = rows[17];
+    final debtRepaymentsRows = rows[18];
+    final familyChatMessagesRows = rows[19];
+    final familyTasksRows = rows[20];
+    final familyRewardsRows = rows[21];
+    final financialCommitmentsRows = rows[22];
+    final commitmentOccurrencesRows = rows[23];
+    final commitmentPaymentsRows = rows[24];
+    final periodPreparationsRows = rows[25];
+    final circleRows = rows[26];
+    final mukandoPaymentsRows = rows[27];
+    final kvRows = rows[28];
 
     final accounts = accountsRows.map(_accountFrom).toList();
     final envelopes = envelopesRows.map(_envelopeFrom).toList();
@@ -388,8 +385,7 @@ class Persistence {
     final earnings = earningsRows.map(_earningFrom).toList();
     final recurring = recurringRows.map(_recurringFrom).toList();
     final budgetPlans = budgetPlansRows.map(_budgetPlanFrom).toList();
-    final familyActivities =
-        familyActivitiesRows.map(_activityFrom).toList();
+    final familyActivities = familyActivitiesRows.map(_activityFrom).toList();
     final contributionCampaigns =
         contributionCampaignsRows.map(_campaignFrom).toList();
     final contributionPledges =
@@ -397,8 +393,7 @@ class Persistence {
     final contributionPayments =
         contributionPaymentsRows.map(_paymentFrom).toList();
     final familyDebts = familyDebtsRows.map(_debtFrom).toList();
-    final debtRepayments =
-        debtRepaymentsRows.map(_repaymentFrom).toList();
+    final debtRepayments = debtRepaymentsRows.map(_repaymentFrom).toList();
     final familyChatMessages =
         familyChatMessagesRows.map(_chatMessageFrom).toList();
     final familyTasks = familyTasksRows.map(_familyTaskFrom).toList();
@@ -413,8 +408,9 @@ class Persistence {
         .map((row) => PeriodPreparation.decode(row['payload_json'] as String))
         .toList();
 
-    final circle =
-        circleRows.isEmpty ? _fallbackSavingsCircle() : _circleFrom(circleRows.first);
+    final circle = circleRows.isEmpty
+        ? _fallbackSavingsCircle()
+        : _circleFrom(circleRows.first);
     final mukandoPayments =
         mukandoPaymentsRows.map(_mukandoPaymentFrom).toList();
 

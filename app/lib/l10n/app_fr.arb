@@ -417,6 +417,8 @@
   "fabTip": "Touchez + pour noter une entrée ou une sortie",
   "emailLabel": "Adresse e-mail",
   "passwordLabel": "Mot de passe",
+  "confirmPasswordLabel": "Confirmer le mot de passe",
+  "passwordsDoNotMatch": "Les mots de passe ne correspondent pas.",
   "loginSignIn": "Se connecter",
   "loginCreateAccount": "Créer un compte",
   "welcomeBack": "Bon retour",

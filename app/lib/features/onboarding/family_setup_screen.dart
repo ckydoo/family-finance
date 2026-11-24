@@ -238,15 +238,6 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
 
     final engine = widget.state.sync;
     if (engine != null) {
-      if (await engine.familyNameTaken(family)) {
-        if (!mounted) return;
-        setState(() {
-          _busy = false;
-          _error = l.setupNameTaken;
-        });
-        return;
-      }
-
       final ok = await engine.createSpace(
         family,
         baseCurrency: _currency.code,
@@ -309,15 +300,6 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
 
     final engine = widget.state.sync;
     if (engine != null) {
-      if (await engine.familyNameTaken(family)) {
-        if (!mounted) return;
-        setState(() {
-          _busy = false;
-          _error = l.setupNameTaken;
-        });
-        return;
-      }
-
       final ok = await engine.createSpace(
         family,
         baseCurrency: _currency.code,

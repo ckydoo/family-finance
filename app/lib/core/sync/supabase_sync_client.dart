@@ -98,6 +98,18 @@ class SupabaseSyncClient {
     final headers = await _headers();
     late final http.Response response;
     if (baseUpdatedAt == null || baseUpdatedAt.isEmpty) {
+      if (table == 'list_item') {
+        // A list-item create must never become an update through an upsert.
+        // Existing ids are handled as conflicts by the caller.
+        response = await _call(() => _client.post(
+              Uri.parse('$_base/rest/v1/$table?on_conflict=id'),
+              headers: {
+                ...headers,
+                'Prefer': 'resolution=ignore-duplicates,return=representation',
+              },
+              body: jsonEncode(row),
+            ));
+      } else {
       response = await _call(() => _client.post(
             Uri.parse('$_base/rest/v1/$table?on_conflict=id'),
             headers: {
@@ -106,6 +118,7 @@ class SupabaseSyncClient {
             },
             body: jsonEncode(row),
           ));
+      }
     } else {
       final uri = Uri.parse('$_base/rest/v1/$table').replace(
         queryParameters: {

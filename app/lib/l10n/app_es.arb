@@ -416,6 +416,8 @@
   "fabTip": "Toca + para registrar ingresos o gastos",
   "emailLabel": "Correo electrónico",
   "passwordLabel": "Contraseña",
+  "confirmPasswordLabel": "Confirmar contraseña",
+  "passwordsDoNotMatch": "Las contraseñas no coinciden.",
   "loginSignIn": "Iniciar sesión",
   "loginCreateAccount": "Crear cuenta",
   "welcomeBack": "Te damos la bienvenida de nuevo",

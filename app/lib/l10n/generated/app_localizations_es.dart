@@ -1413,6 +1413,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get passwordLabel => 'Contraseña';
 
   @override
+  String get confirmPasswordLabel => 'Confirmar contraseña';
+
+  @override
+  String get passwordsDoNotMatch => 'Las contraseñas no coinciden.';
+
+  @override
   String get loginSignIn => 'Iniciar sesión';
 
   @override

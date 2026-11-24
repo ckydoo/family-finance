@@ -27,6 +27,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   bool _createMode = false;
   bool _obscure = true;
   bool _confirmSent = false;
@@ -36,6 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -111,6 +113,14 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_password.text.length < 6) {
       setState(() {
         _error = l.loginShortPassword;
+        _errorCode = null;
+        _confirmSent = false;
+      });
+      return;
+    }
+    if (_createMode && _password.text != _confirmPassword.text) {
+      setState(() {
+        _error = l.passwordsDoNotMatch;
         _errorCode = null;
         _confirmSent = false;
       });
@@ -430,7 +440,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     ? AutofillHints.newPassword
                                                     : AutofillHints.password,
                                               ],
-                                              onSubmitted: (_) => _submit(),
+                                              textInputAction: _createMode
+                                                  ? TextInputAction.next
+                                                  : TextInputAction.done,
+                                              onSubmitted: (_) {
+                                                if (_createMode) {
+                                                  FocusScope.of(context)
+                                                      .nextFocus();
+                                                } else {
+                                                  _submit();
+                                                }
+                                              },
                                               style: TextStyle(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.w600,
@@ -466,6 +486,56 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     context.primary, 1.6),
                                               ),
                                             ),
+                                            if (_createMode) ...[
+                                              const SizedBox(height: 14),
+                                              TextField(
+                                                controller: _confirmPassword,
+                                                obscureText: _obscure,
+                                                autofillHints: const [
+                                                  AutofillHints.newPassword,
+                                                ],
+                                                textInputAction:
+                                                    TextInputAction.done,
+                                                onSubmitted: (_) => _submit(),
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: context.ink,
+                                                  letterSpacing: 0.8,
+                                                ),
+                                                decoration: InputDecoration(
+                                                  labelText:
+                                                      l.confirmPasswordLabel,
+                                                  prefixIcon: Icon(
+                                                    Icons.lock_outline_rounded,
+                                                    color: context.inkSoft,
+                                                  ),
+                                                  suffixIcon: IconButton(
+                                                    tooltip: l.togglePassword,
+                                                    onPressed: () => setState(
+                                                      () =>
+                                                          _obscure = !_obscure,
+                                                    ),
+                                                    icon: Icon(
+                                                      _obscure
+                                                          ? Icons
+                                                              .visibility_outlined
+                                                          : Icons
+                                                              .visibility_off_outlined,
+                                                      color: context.inkSoft,
+                                                    ),
+                                                  ),
+                                                  filled: true,
+                                                  fillColor: context.bg,
+                                                  border: fieldBorder(
+                                                      context.hairline),
+                                                  enabledBorder: fieldBorder(
+                                                      context.hairline),
+                                                  focusedBorder: fieldBorder(
+                                                      context.primary, 1.6),
+                                                ),
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       ),
@@ -645,6 +715,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     TextButton(
                                       onPressed: () => setState(() {
                                         _createMode = !_createMode;
+                                        _confirmPassword.clear();
                                         _error = null;
                                         _errorCode = null;
                                         _confirmSent = false;

@@ -412,6 +412,8 @@
   "fabTip": "Thelela + ukubhala imali engenayo nophumayo",
   "emailLabel": "I-imeyili",
   "passwordLabel": "Ipasiwedi",
+  "confirmPasswordLabel": "Qinisekisa ipasiwedi",
+  "passwordsDoNotMatch": "Amapasiwedi awahambelani.",
   "loginSignIn": "Ngena",
   "loginCreateAccount": "Yakha i-akhawunti",
   "welcomeBack": "Siyakwamukela futhi",

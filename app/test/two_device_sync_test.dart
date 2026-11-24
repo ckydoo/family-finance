@@ -88,7 +88,13 @@ class MockCloudBackend extends http.BaseClient {
     for (final table in tables.keys) {
       if (path.endsWith('/$table')) {
         if (request.method == 'GET') {
-          final list = tables[table]!;
+          final idFilter = request.url.queryParameters['id'];
+          final requestedId = idFilter?.startsWith('eq.') == true
+              ? idFilter!.substring(3)
+              : null;
+          final list = tables[table]!
+              .where((row) => requestedId == null || row['id'] == requestedId)
+              .toList();
           return http.StreamedResponse(
             Stream.value(utf8.encode(jsonEncode(list))),
             200,
@@ -517,6 +523,29 @@ void main() {
       await deviceA.sync();
       expect(deviceA.state.items.length, 1);
       expect(deviceA.state.items.first.name, 'Apples');
+    });
+
+    test('completed shopping items reject stale offline regressions', () async {
+      deviceA.state.addItem('Rice', 1, const Money(500, Currency.usd));
+      await deviceA.sync();
+      await deviceB.sync();
+
+      final itemA = deviceA.state.items.single;
+      final itemB = deviceB.state.items.single;
+      // Queue an old-device edit before the other device completes the item.
+      itemA.name = 'Rice (old edit)';
+      await deviceA.syncEngine.enqueue('list_item', itemA);
+      deviceB.state.advanceItem(itemB);
+      deviceB.state.advanceItem(itemB);
+      await deviceB.sync();
+
+      await deviceA.sync();
+      expect(
+        backend.tables['list_item']!.single['state'],
+        ItemState.done.name,
+      );
+      expect(deviceA.syncEngine.status, SyncStatus.needsReview);
+      expect(await deviceA.syncEngine.conflictCount(), 1);
     });
 
     test(

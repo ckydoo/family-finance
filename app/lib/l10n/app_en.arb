@@ -763,6 +763,8 @@
   "fabTip": "Tap + to record money in or out",
   "emailLabel": "Email",
   "passwordLabel": "Password",
+  "confirmPasswordLabel": "Confirm password",
+  "passwordsDoNotMatch": "Passwords do not match.",
   "loginSignIn": "Sign in",
   "loginCreateAccount": "Create account",
   "welcomeBack": "Welcome back",

@@ -1406,6 +1406,12 @@ class AppLocalizationsNd extends AppLocalizations {
   String get passwordLabel => 'Ipasiwedi';
 
   @override
+  String get confirmPasswordLabel => 'Qinisekisa ipasiwedi';
+
+  @override
+  String get passwordsDoNotMatch => 'Amapasiwedi awahambelani.';
+
+  @override
   String get loginSignIn => 'Ngena';
 
   @override

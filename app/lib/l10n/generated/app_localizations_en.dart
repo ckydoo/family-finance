@@ -1401,6 +1401,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordLabel => 'Password';
 
   @override
+  String get confirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match.';
+
+  @override
   String get loginSignIn => 'Sign in';
 
   @override

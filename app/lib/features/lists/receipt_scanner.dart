@@ -42,10 +42,9 @@ Future<ReceiptScanResult?> scanReceipt(BuildContext context) async {
   );
   if (picked == null) return null;
 
-  final bytes = await picked.readAsBytes();
   final recognizer = TextRecognizer();
   try {
-    final input = InputImage.fromBytes(bytes: bytes);
+    final input = InputImage.fromFilePath(picked.path);
     final result = await recognizer.processImage(input);
     return parseReceipt(result.text);
   } catch (_) {
@@ -63,9 +62,13 @@ Future<ReceiptScanResult?> scanReceipt(BuildContext context) async {
 /// when it ends in a positive price and is not a summary/tax/payment line, so
 /// the user reviews a short, plausible list rather than a noisy dump.
 ReceiptScanResult parseReceipt(String text) {
-  final lines = text.split('\n').map((line) => line.trim()).where(
+  final lines = text
+      .split('\n')
+      .map((line) => line.trim())
+      .where(
         (line) => line.isNotEmpty,
-      ).toList();
+      )
+      .toList();
 
   return ReceiptScanResult(
     total: _extractTotal(lines),
@@ -123,8 +126,7 @@ List<ReceiptItem> _extractItems(List<String> lines) {
 
     final before = line.substring(0, matches.last.start).trim();
     if (before.isEmpty) continue;
-    final name =
-        before.replaceAll(RegExp(r'[\s.:;\-]+$'), '').trim();
+    final name = before.replaceAll(RegExp(r'[\s.:;\-]+$'), '').trim();
     if (name.isEmpty) continue;
     items.add(ReceiptItem(name: name, price: price));
   }

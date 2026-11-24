@@ -1417,6 +1417,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get passwordLabel => 'Mot de passe';
 
   @override
+  String get confirmPasswordLabel => 'Confirmer le mot de passe';
+
+  @override
+  String get passwordsDoNotMatch => 'Les mots de passe ne correspondent pas.';
+
+  @override
   String get loginSignIn => 'Se connecter';
 
   @override
