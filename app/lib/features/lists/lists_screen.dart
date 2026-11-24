@@ -965,6 +965,39 @@ class _ItemRow extends StatelessWidget {
                 _editSheet(context, s);
                 return;
               }
+              if (action == 'replan') {
+                // Move the purchased item back to "to buy" for a new cycle.
+                // The purchase already happened and was deducted - this is
+                // purely re-planning, so the balance is intentionally unchanged.
+                s.replanItem(item);
+                final messenger = ScaffoldMessenger.of(context);
+                messenger.showSnackBar(SnackBar(
+                  content: Text('${item.name} is back on the list for next time'),
+                  behavior: SnackBarBehavior.floating,
+                ));
+                return;
+              }
+              if (action == 'undo') {
+                // The purchase was a mistake: reverse the settlement
+                // transaction so the money returns, and put the item back.
+                final ok = await confirmDialog(
+                  context,
+                  title: 'Undo purchase of ${item.name}?',
+                  body: 'This reverses the shopping expense so the money returns '
+                      'to your balance, and puts the item back on the list.',
+                  confirmLabel: 'Undo purchase',
+                  danger: true,
+                );
+                if (!ok || !context.mounted) return;
+                final ok2 = s.undoPurchase(item);
+                if (!ok2) return;
+                final messenger = ScaffoldMessenger.of(context);
+                messenger.showSnackBar(SnackBar(
+                  content: Text('Purchase undone - ${item.name} is back on the list'),
+                  behavior: SnackBarBehavior.floating,
+                ));
+                return;
+              }
               final remove = await confirmDialog(
                 context,
                 title: 'Remove ${item.name}?',
@@ -981,11 +1014,18 @@ class _ItemRow extends StatelessWidget {
                 behavior: SnackBarBehavior.floating,
               ));
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
+            itemBuilder: (_) => [
+              if (done)
+                PopupMenuItem(
+                    value: 'replan',
+                    child: Text('Put on list for next time')),
+              if (done && item.settledTxId != null)
+                PopupMenuItem(
+                    value: 'undo', child: Text('Undo purchase')),
+              const PopupMenuItem(
                   value: 'discuss', child: Text('Discuss with family')),
-              PopupMenuItem(value: 'edit', child: Text('Edit item')),
-              PopupMenuItem(value: 'remove', child: Text('Remove item')),
+              const PopupMenuItem(value: 'edit', child: Text('Edit item')),
+              const PopupMenuItem(value: 'remove', child: Text('Remove item')),
             ],
           ),
         ],

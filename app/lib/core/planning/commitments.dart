@@ -46,6 +46,19 @@ class FinancialCommitment {
   final List<int> reminderDaysBefore;
 
   bool get isRecurring => recurrence != CommitmentRecurrence.oneTime;
+
+  FinancialCommitment copy() => FinancialCommitment(
+        id: id,
+        name: name,
+        amount: amount,
+        firstDueDate: firstDueDate,
+        recurrence: recurrence,
+        createdById: createdById,
+        envelopeId: envelopeId,
+        status: status,
+        endDate: endDate,
+        reminderDaysBefore: List<int>.of(reminderDaysBefore),
+      );
 }
 
 class CommitmentOccurrence {
@@ -64,6 +77,15 @@ class CommitmentOccurrence {
   final DateTime dueDate;
   final Money amount;
   final CommitmentOccurrenceStatus status;
+
+  CommitmentOccurrence copy() => CommitmentOccurrence(
+        id: id,
+        commitmentId: commitmentId,
+        occurrenceKey: occurrenceKey,
+        dueDate: dueDate,
+        amount: amount,
+        status: status,
+      );
 }
 
 class CommitmentPayment {
@@ -82,6 +104,15 @@ class CommitmentPayment {
   final Money amount;
   final String createdById;
   final DateTime createdAt;
+
+  CommitmentPayment copy() => CommitmentPayment(
+        id: id,
+        occurrenceId: occurrenceId,
+        transactionId: transactionId,
+        amount: amount,
+        createdById: createdById,
+        createdAt: createdAt,
+      );
 }
 
 class CommitmentSchedule {

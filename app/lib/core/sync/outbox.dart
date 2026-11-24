@@ -12,13 +12,19 @@ class Outbox {
   final Database db;
 
   Future<void> enqueue(
-      String entity, String opId, Map<String, Object?> payload) async {
+      String entity,
+      String opId,
+      Map<String, Object?> payload,
+      {Map<String, Object?>? basePayload}) async {
     await db.insert(
       'outbox',
       {
         'entity': entity,
         'op_id': opId,
         'payload': jsonEncode(payload),
+        'base_payload': basePayload == null
+            ? null
+            : jsonEncode(basePayload),
         'created_ms': DateTime.now().millisecondsSinceEpoch,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -28,8 +34,12 @@ class Outbox {
   /// Atomically enqueue related operations whose server rows must stay in
   /// step (for example, a debt repayment and its cash-ledger transaction).
   Future<void> enqueueBatch(
-      List<({String entity, String opId, Map<String, Object?> payload})>
-          operations,
+      List<({
+        String entity,
+        String opId,
+        Map<String, Object?> payload,
+        Map<String, Object?>? basePayload,
+      })> operations,
       {Future<void> Function(Transaction txn)? persist}) async {
     if (operations.isEmpty) return;
     await db.transaction((txn) async {
@@ -42,6 +52,9 @@ class Outbox {
             'entity': operation.entity,
             'op_id': operation.opId,
             'payload': jsonEncode(operation.payload),
+            'base_payload': operation.basePayload == null
+                ? null
+                : jsonEncode(operation.basePayload),
             'created_ms': createdAt,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -172,6 +185,10 @@ class Outbox {
             ? null
             : (jsonDecode(r['server_payload'] as String)
                 as Map<String, dynamic>),
+        basePayload: r['base_payload'] == null
+            ? null
+            : (jsonDecode(r['base_payload'] as String)
+                as Map<String, dynamic>),
         payload: jsonDecode(r['payload'] as String) as Map<String, Object?>,
       );
 
@@ -213,6 +230,11 @@ class OutboxOp {
   final String? conflictReason;
   final Map<String, Object?>? serverPayload;
 
+  /// The row as it was on the server when the edit started (the CAS base).
+  /// Used by the server-authoritative merge to compute a deterministic
+  /// field-level merge when the row changed underneath the client.
+  final Map<String, Object?>? basePayload;
+
   const OutboxOp({
     required this.rowId,
     required this.entity,
@@ -221,6 +243,7 @@ class OutboxOp {
     this.createdMs = 0,
     this.conflictReason,
     this.serverPayload,
+    this.basePayload,
     required this.payload,
   });
 }

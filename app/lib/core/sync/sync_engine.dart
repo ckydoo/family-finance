@@ -422,22 +422,24 @@ class SyncEngine {
 
   /// Enqueue a domain object as final server-shaped JSON. Called by AppState
   /// on every live-mode mutation; nothing waits on the network here.
-  Future<void> enqueue(String entity, Object domain) async {
+  Future<void> enqueue(String entity, Object domain,
+      {Object? base}) async {
     final sid = _spaceId;
     if (sid == null) return;
     try {
       final adapter = kSyncAdapters[entity]!;
-      final payload = adapter.encode(
-        domain,
-        SyncCtx(
-          spaceId: sid,
-          actorId: state.realUser.id,
-          defaultListId: await _kvGet('default_list_id'),
-          newId: newClientId,
-        ),
+      final ctx = SyncCtx(
+        spaceId: sid,
+        actorId: state.realUser.id,
+        defaultListId: await _kvGet('default_list_id'),
+        newId: newClientId,
       );
+      final payload = adapter.encode(domain, ctx);
+      final basePayload =
+          base == null ? null : adapter.encode(base, ctx) as Map<String, Object?>;
       await _stampBaseVersion(entity, payload);
-      await _outbox.enqueue(entity, newClientId(), payload);
+      await _outbox.enqueue(entity, newClientId(), payload,
+          basePayload: basePayload);
       state.refreshPending();
       schedule();
     } catch (e) {
@@ -448,8 +450,8 @@ class SyncEngine {
 
   /// Atomically queues related domain writes so an offline retry cannot send
   /// only one half of a multi-row financial operation.
-  Future<void> enqueueBatch(
-    List<(String, Object)> mutations, {
+  Future<void> _enqueueBatchImpl(
+    List<(String, Object, Object?)> mutations, {
     Future<void> Function(Transaction txn)? persist,
   }) async {
     final sid = _spaceId;
@@ -463,11 +465,14 @@ class SyncEngine {
         newId: newClientId,
       );
       final operations = [
-        for (final (entity, domain) in mutations)
+        for (final (entity, domain, base) in mutations)
           (
             entity: entity,
             opId: newClientId(),
             payload: kSyncAdapters[entity]!.encode(domain, ctx),
+            basePayload:
+                base == null ? null : (kSyncAdapters[entity]!.encode(base, ctx)
+                    as Map<String, Object?>),
           ),
       ];
       for (final operation in operations) {
@@ -481,6 +486,15 @@ class SyncEngine {
       reportError?.call('outbox', e, StackTrace.current);
     }
   }
+
+  /// Enqueue related mutations. Each entry is (entity, domain, base) where
+  /// [base] is the row as it was before the edit (for server-authoritative
+  /// merge). Pass null for new rows.
+  Future<void> enqueueBatch(
+    List<(String, Object, Object?)> mutations, {
+    Future<void> Function(Transaction txn)? persist,
+  }) =>
+      _enqueueBatchImpl(mutations, persist: persist);
 
   Future<void> _stampBaseVersion(
       String entity, Map<String, Object?> payload) async {
@@ -1517,6 +1531,7 @@ class SyncEngine {
 
     var allOk = true;
     final doneRowIds = <int>[];
+    final conflictedRowIds = <int>[];
     for (final entry in byEntity.entries) {
       final adapter = kSyncAdapters[entry.key]!;
       final entryDoneRowIds = <int>[];
@@ -1580,20 +1595,53 @@ class SyncEngine {
                   .addAll(matchingOps.map((operation) => operation.rowId));
               continue;
             }
+            // CAS conflict: the row changed on the server since this client's
+            // base. Instead of a user-vote whole-record resolution (which
+            // diverges when different devices pick different sides), ask the
+            // server to compute a deterministic field-level merge and apply the
+            // canonical result. Every device converges on the same merged row.
+            final firstOp = matchingOps.firstOrNull;
+            final baseUpdatedAt = base;
+            final basePayload = firstOp?.basePayload;
+            if (basePayload != null && basePayload.isNotEmpty && baseUpdatedAt != null) {
+              try {
+                final merged = await client.mergeRow(
+                  adapter.table,
+                  row['id']!.toString(),
+                  baseUpdatedAt,
+                  basePayload,
+                  row,
+                );
+                // Apply the server's canonical merged row locally (SQLite +
+                // in-memory) so this device matches the family.
+                await _persistence.applyServerRows(entry.key, [merged]);
+                state.applyPulled(entry.key, [merged]);
+                rows.add(merged);
+                entryDoneRowIds
+                    .addAll(matchingOps.map((operation) => operation.rowId));
+                continue;
+              } on SyncException catch (mergeErr) {
+                // The merge itself was rejected (e.g. the shopping regression
+                // guard refused a stale done→tobuy). Surface it as a conflict
+                // for explicit review rather than retrying forever.
+                debugPrint('Mhuri merge rejected [${entry.key}]: $mergeErr');
+                reportError?.call('merge:${entry.key}', mergeErr,
+                    StackTrace.current);
+              }
+            }
+            // No base payload available (entity does not capture one yet), or
+            // the merge was rejected: fall back to a needs-review conflict.
             final remoteRows = await client.pullRows(
               adapter.table,
               orderCol: 'updated_at',
               eqFilters: {'id': 'eq.${row['id']}'},
               limit: 1,
             );
-            final remote = remoteRows.firstOrNull;
-            if (remote == null) {
-              throw const SyncException(
-                  409, 'The server rejected a versioned mutation.');
-            }
+            final remote = remoteRows.firstOrNull ?? const {};
             for (final operation in matchingOps) {
               await _outbox.markConflict(operation.rowId,
                   'This record changed on another device.', remote);
+              conflictedRowIds.add(operation.rowId);
             }
           }
         } else {
@@ -1641,12 +1689,50 @@ class SyncEngine {
             '${entry.value.length} op(s)]: $e');
         reportError?.call('push:${entry.key}', e, StackTrace.current);
         allOk = false;
+        // A shopping regression guard rejection (STALE_SHOPPING_*) means the
+        // server refused a done→tobuy revert. Retrying forever would leave the
+        // device stuck on a stale tobuy with a persistent error. Mark the ops
+        // as conflicts (surfaced in Sync & data for explicit review) instead.
+        if (e.message.contains('STALE_SHOPPING')) {
+          for (final operation in entry.value) {
+            final rowId = operation.payload['id']?.toString();
+            if (rowId == null) continue;
+            try {
+              final remoteRows = await client.pullRows(
+                adapter.table,
+                orderCol: 'updated_at',
+                eqFilters: {'id': 'eq.$rowId'},
+                limit: 1,
+              );
+              final remote = remoteRows.firstOrNull;
+              await _outbox.markConflict(
+                operation.rowId,
+                'The family list rejected this change as a stale shopping '
+                'regression. Review the server version before retrying.',
+                remote ?? {},
+              );
+              conflictedRowIds.add(operation.rowId);
+            } catch (_) {
+              // If we cannot fetch the server version, still avoid an endless
+              // retry loop by parking the op at the conflict boundary.
+              await _outbox.markConflict(
+                operation.rowId,
+                'The family list rejected this change as a stale shopping '
+                'regression.',
+                {},
+              );
+              conflictedRowIds.add(operation.rowId);
+            }
+          }
+        }
       }
     }
 
     if (doneRowIds.isNotEmpty) await _outbox.deleteRows(doneRowIds);
     if (!allOk) {
-      await _outbox.bumpAttempts([for (final op in ops) op.rowId]);
+      await _outbox.bumpAttempts(
+          [for (final op in ops)
+            if (!conflictedRowIds.contains(op.rowId)) op.rowId]);
       throw const SyncException(0, 'some changes have not been pushed yet');
     }
   }

@@ -1084,33 +1084,36 @@ class AppState extends ChangeNotifier {
       envelopeId: r.envelopeId,
       recurringRuleId: r.id,
     );
+    final base = r.copy();
     r.nextDue = r.frequency.advanceFrom(r.nextDue);
     final now = DateTime.now();
     while (r.nextDue.isBefore(now)) {
       r.nextDue = r.frequency.advanceFrom(r.nextDue);
     }
     _persistRecurring(r);
-    _queue('recurring', r);
+    _queue('recurring', r, base: base);
     _resyncReminders();
     notifyListeners();
   }
 
   /// Skip this period without spending.
   void skipRecurring(RecurringRule r) {
+    final base = r.copy();
     r.nextDue = r.frequency.advanceFrom(r.nextDue);
     while (r.nextDue.isBefore(DateTime.now())) {
       r.nextDue = r.frequency.advanceFrom(r.nextDue);
     }
     _persistRecurring(r);
-    _queue('recurring', r);
+    _queue('recurring', r, base: base);
     _resyncReminders();
     notifyListeners();
   }
 
   void toggleRecurring(RecurringRule r) {
+    final base = r.copy();
     r.active = !r.active;
     _persistRecurring(r);
-    _queue('recurring', r);
+    _queue('recurring', r, base: base);
     _resyncReminders();
     notifyListeners();
   }
@@ -1128,6 +1131,7 @@ class AppState extends ChangeNotifier {
     if (!canEditBudgets || name.trim().isEmpty || amount.minor <= 0) {
       return false;
     }
+    final base = rule.copy();
     rule
       ..name = name.trim()
       ..amount = amount
@@ -1137,7 +1141,7 @@ class AppState extends ChangeNotifier {
       ..memberId = memberId
       ..method = method;
     _persistRecurring(rule);
-    _queue('recurring', rule);
+    _queue('recurring', rule, base: base);
     pendingOps++;
     notifyListeners();
     return true;
@@ -1145,9 +1149,10 @@ class AppState extends ChangeNotifier {
 
   bool archiveRecurring(RecurringRule rule) {
     if (!canAdmin) return false;
+    final base = rule.copy();
     rule.isArchived = true;
     _persistRecurring(rule);
-    _queue('recurring', rule);
+    _queue('recurring', rule, base: base);
     recurring.removeWhere((r) => r.id == rule.id);
     pendingOps++;
     notifyListeners();
@@ -1505,10 +1510,10 @@ class AppState extends ChangeNotifier {
 
   /// Live-mode mutations land in the outbox via the engine (fire-and-forget;
   /// enqueue never throws into the caller's flow).
-  void _queue(String entity, Object domain) {
+  void _queue(String entity, Object domain, {Object? base}) {
     final e = sync;
     if (e == null || !env.isConfigured) return;
-    _fire(e.enqueue(entity, domain).then((_) => refreshPending()));
+    _fire(e.enqueue(entity, domain, base: base).then((_) => refreshPending()));
   }
 
   void addChatMessage(FamilyChatMessage message) {
@@ -1686,6 +1691,7 @@ class AppState extends ChangeNotifier {
 
   void _saveFamilyTask(FamilyTask task) {
     final existingIndex = familyTasks.indexWhere((t) => t.id == task.id);
+    final existing = existingIndex >= 0 ? familyTasks[existingIndex] : null;
     final clean = FamilyTask(
       id: task.id,
       title: task.title.trim(),
@@ -1717,7 +1723,7 @@ class AppState extends ChangeNotifier {
       return dueA.compareTo(dueB);
     });
     if (_store != null) _fire(_store!.saveFamilyTask(clean));
-    _queue('family_task', clean);
+    _queue('family_task', clean, base: existing?.copy());
     notifyListeners();
   }
 
@@ -1916,6 +1922,7 @@ class AppState extends ChangeNotifier {
     if (!canApprove) return false;
     final index = familyRewards.indexWhere((item) => item.id == reward.id);
     if (index < 0) return false;
+    final base = reward.copy();
     final archived = FamilyReward(
       id: reward.id,
       name: reward.name,
@@ -1927,7 +1934,7 @@ class AppState extends ChangeNotifier {
     );
     familyRewards[index] = archived;
     if (_store != null) _fire(_store!.saveFamilyReward(archived));
-    _queue('family_reward', archived);
+    _queue('family_reward', archived, base: base);
     notifyListeners();
     return true;
   }
@@ -1946,6 +1953,7 @@ class AppState extends ChangeNotifier {
         pointsForMember(actorId) < current.pointsCost) {
       return false;
     }
+    final base = current.copy();
     final redeemed = FamilyReward(
       id: current.id,
       name: current.name,
@@ -1956,7 +1964,7 @@ class AppState extends ChangeNotifier {
     );
     familyRewards[index] = redeemed;
     if (_store != null) _fire(_store!.saveFamilyReward(redeemed));
-    _queue('family_reward', redeemed);
+    _queue('family_reward', redeemed, base: base);
     if (hasPlusFeature('enhanced_family_chat')) {
       addChatMessage(FamilyChatMessage(
         id: newUuid(),
@@ -2600,6 +2608,22 @@ class AppState extends ChangeNotifier {
           final newlyAssigned = i.assignedToId == realUser.id &&
               i.state != ItemState.done &&
               previous?.assignedToId != realUser.id;
+          // Pull guard: a done (settled) item must not silently regress to
+          // tobuy from a pulled server row unless the row carries an explicit
+          // re-plan signal. A stale or corrupted server tobuy row (replannedAt
+          // null) is rejected locally - the done/settled state is preserved so
+          // the balance and the list stay consistent. applyServerRows already
+          // wrote the regressed row to SQLite, so re-persist the local done
+          // item to keep the local cache in sync with memory.
+          final isStaleRegression =
+              previous?.state == ItemState.done &&
+              i.state == ItemState.tobuy &&
+              i.replannedAt == null;
+          if (isStaleRegression && previous != null) {
+            _persistItem(previous);
+            changed = true;
+            continue;
+          }
           items.removeWhere((x) => x.id == i.id);
           if (i.deletedAt == null) {
             // Tombstones stay out of memory - they were removed above.
@@ -3165,6 +3189,7 @@ class AppState extends ChangeNotifier {
     var plan = currentBudgetPlan;
     if (plan?.isClosed ?? false) return false;
     final allocations = {for (final e in envelopes) e.id: e.limit.minor};
+    final existingPlan = plan;
     plan ??= BudgetCyclePlan(
       id: uuidFromSeed(
           '${sync?.spaceId ?? space.name}:${_cycleKey(cycleStart)}'),
@@ -3179,7 +3204,7 @@ class AppState extends ChangeNotifier {
       ..allocations = allocations;
     if (!budgetPlans.contains(plan)) budgetPlans.add(plan);
     _persistBudgetPlan(plan);
-    _queue('budget_cycle_plan', plan);
+    _queue('budget_cycle_plan', plan, base: existingPlan?.copy());
     pendingOps++;
     notifyListeners();
     return true;
@@ -3194,9 +3219,10 @@ class AppState extends ChangeNotifier {
     for (final envelope in envelopes) {
       final amount = source.allocations[envelope.id];
       if (amount == null) continue;
+      final base = envelope.copy();
       envelope.limit = Money(amount, envelope.limit.currency);
       _persistEnvelope(envelope);
-      _queue('envelope', envelope);
+      _queue('envelope', envelope, base: base);
     }
     final plan = BudgetCyclePlan(
       id: uuidFromSeed(
@@ -3344,11 +3370,13 @@ class AppState extends ChangeNotifier {
 
     for (final entry in proposal.allocations.entries) {
       final value = envelope(entry.key)!;
+      final base = value.copy();
       value.limit = entry.value;
       _persistEnvelope(value);
-      _queue('envelope', value);
+      _queue('envelope', value, base: base);
     }
-    final plan = targetPlans.firstOrNull ??
+    final existingTarget = targetPlans.firstOrNull;
+    final plan = existingTarget ??
         BudgetCyclePlan(
           id: expectedPlanId,
           cycleStart: proposal.targetCycle,
@@ -3364,7 +3392,7 @@ class AppState extends ChangeNotifier {
         );
     if (!budgetPlans.contains(plan)) budgetPlans.add(plan);
     _persistBudgetPlan(plan);
-    _queue('budget_cycle_plan', plan);
+    _queue('budget_cycle_plan', plan, base: existingTarget?.copy());
 
     final targetEnd =
         _cycleDate(proposal.targetCycle.year, proposal.targetCycle.month + 1)
@@ -3396,11 +3424,12 @@ class AppState extends ChangeNotifier {
     if (!canEditBudgets) return false;
     final plan = currentBudgetPlan;
     if (plan == null || plan.isClosed) return false;
+    final base = plan.copy();
     plan
       ..isClosed = true
       ..closedAt = now;
     _persistBudgetPlan(plan);
-    _queue('budget_cycle_plan', plan);
+    _queue('budget_cycle_plan', plan, base: base);
     pendingOps++;
     notifyListeners();
     return true;
@@ -3498,6 +3527,7 @@ class AppState extends ChangeNotifier {
     );
     if (existingIndex != -1) {
       final existing = envelopes[existingIndex];
+      final base = existing.copy();
       existing
         ..name = trimmedName
         ..emoji = emoji
@@ -3505,7 +3535,7 @@ class AppState extends ChangeNotifier {
         ..rollover = rollover
         ..isArchived = false;
       _persistEnvelope(existing);
-      _queue('envelope', existing);
+      _queue('envelope', existing, base: base);
       pendingOps++;
       notifyListeners();
       return;
@@ -3536,12 +3566,13 @@ class AppState extends ChangeNotifier {
     if (!canEditBudgets || name.trim().isEmpty || limit.minor <= 0) {
       return false;
     }
+    final base = envelope.copy();
     envelope
       ..name = name.trim()
       ..limit = limit
       ..rollover = rollover;
     _persistEnvelope(envelope);
-    _queue('envelope', envelope);
+    _queue('envelope', envelope, base: base);
     _recordLocalAudit(
         'envelope.update', 'envelope', envelope.id, {'name': envelope.name});
     pendingOps++;
@@ -3551,9 +3582,10 @@ class AppState extends ChangeNotifier {
 
   bool archiveEnvelope(Envelope envelope) {
     if (!canAdmin) return false;
+    final base = envelope.copy();
     envelope.isArchived = true;
     _persistEnvelope(envelope);
-    _queue('envelope', envelope);
+    _queue('envelope', envelope, base: base);
     _recordLocalAudit(
         'envelope.archive', 'envelope', envelope.id, {'name': envelope.name});
     envelopes.removeWhere((e) => e.id == envelope.id);
@@ -3628,9 +3660,10 @@ class AppState extends ChangeNotifier {
         }
 
         // Archive and delete duplicate
+        final dupBase = dup.copy();
         dup.isArchived = true;
         _persistEnvelope(dup);
-        _queue('envelope', dup);
+        _queue('envelope', dup, base: dupBase);
         envelopes.removeWhere((e) => e.id == dup.id);
         pendingOps++;
         changed = true;
@@ -3713,12 +3746,14 @@ class AppState extends ChangeNotifier {
     }
     _processedMutationIds.add(opId);
     final amtTo = amount.inCurrency(to.limit.currency, rate);
+    final fromBase = from.copy();
+    final toBase = to.copy();
     from.limit = Money(from.limit.minor - amount.minor, from.limit.currency);
     to.limit = Money(to.limit.minor + amtTo.minor, to.limit.currency);
     _persistEnvelope(from);
     _persistEnvelope(to);
-    _queue('envelope', from);
-    _queue('envelope', to);
+    _queue('envelope', from, base: fromBase);
+    _queue('envelope', to, base: toBase);
     pendingOps++;
     notifyListeners();
     return true;
@@ -4148,6 +4183,7 @@ class AppState extends ChangeNotifier {
             envelopeId != null)) {
       return false;
     }
+    final base = tx.copy();
     final updated = Tx(
       id: tx.id,
       accountId: tx.accountId,
@@ -4165,7 +4201,7 @@ class AppState extends ChangeNotifier {
     final index = txs.indexWhere((t) => t.id == tx.id);
     if (index >= 0) txs[index] = updated;
     _persistTx(updated);
-    _queue('tx', updated);
+    _queue('tx', updated, base: base);
     if (account?.isPrivate != true) {
       _recordLocalAudit('tx.update', 'transaction', tx.id, {
         'amount_minor': amount.minor,
@@ -4192,6 +4228,7 @@ class AppState extends ChangeNotifier {
             tx.memberId != realUser.id)) {
       return false;
     }
+    final base = tx.copy();
     final deleted = Tx(
       id: tx.id,
       accountId: tx.accountId,
@@ -4207,7 +4244,7 @@ class AppState extends ChangeNotifier {
       recurringRuleId: tx.recurringRuleId,
     );
     _persistTx(deleted);
-    _queue('tx', deleted);
+    _queue('tx', deleted, base: base);
     if (account?.isPrivate != true) {
       _recordLocalAudit('tx.delete', 'transaction', tx.id, {
         'amount_minor': tx.amount.minor,
@@ -4290,6 +4327,7 @@ class AppState extends ChangeNotifier {
     if (!canEditLists || name.trim().isEmpty || qty < 1 || estimate.minor < 0) {
       return false;
     }
+    final base = item.copy();
     item
       ..name = name.trim()
       ..qty = qty
@@ -4297,7 +4335,7 @@ class AppState extends ChangeNotifier {
       ..actual = actual
       ..assignedToId = assignedToId;
     _persistItem(item);
-    _queue('list_item', item);
+    _queue('list_item', item, base: base);
     pendingOps++;
     notifyListeners();
     return true;
@@ -4311,10 +4349,11 @@ class AppState extends ChangeNotifier {
       debugPrint('Mhuri: unauthorized deleteItem for role: ${authRole.name}');
       return;
     }
+    final base = item.copy();
     item.deletedAt = DateTime.now();
     items.removeWhere((x) => x.id == item.id);
     _persistItem(item); // kept locally with the tombstone for the push
-    _queue('list_item', item);
+    _queue('list_item', item, base: base);
     pendingOps++;
     notifyListeners();
   }
@@ -4326,9 +4365,10 @@ class AppState extends ChangeNotifier {
     }
     // Keep completed purchases as history. Buying again creates a new item.
     if (item.state == ItemState.done) return;
+    final base = item.copy();
     item.state = item.state.next;
     _persistItem(item);
-    _queue('list_item', item);
+    _queue('list_item', item, base: base);
     pendingOps++;
     notifyListeners();
   }
@@ -4341,15 +4381,81 @@ class AppState extends ChangeNotifier {
     String? purchasedById,
   }) {
     if (!canEditLists || !items.contains(item)) return;
+    final base = item.copy();
     item
       ..state = state
       ..checkedOut = checkedOut
       ..actual = actual
       ..purchasedById = purchasedById;
     _persistItem(item);
-    _queue('list_item', item);
+    _queue('list_item', item, base: base);
     pendingOps++;
     notifyListeners();
+  }
+
+  /// Move a completed (settled) shopping item back to "to buy" for a new
+  /// cycle WITHOUT touching the balance. The purchase that settled it already
+  /// happened and was deducted; this is purely re-planning ("I'll buy it again
+  /// next time"). Clears the purchase fields and the settlement link so the
+  /// item starts a fresh cycle - this is the explicit "new cycle" mutation
+  /// that the server's done→tobuy regression guard expects.
+  bool replanItem(ListItem item) {
+    if (!canEditLists || !items.contains(item)) return false;
+    if (item.state != ItemState.done) return false;
+    final base = item.copy();
+    item
+      ..state = ItemState.tobuy
+      ..checkedOut = false
+      ..actual = null
+      ..purchasedById = null
+      ..settledTxId = null
+      ..replannedAt = DateTime.now();
+    _persistItem(item);
+    _queue('list_item', item, base: base);
+    pendingOps++;
+    notifyListeners();
+    return true;
+  }
+
+  /// Undo a completed purchase: reverse the settlement transaction that paid
+  /// for this item so the money returns to the balance, and unsettle the item
+  /// (back to "to buy"). Used when the purchase was a mistake / never actually
+  /// happened.
+  ///
+  /// The settlement transaction may have covered several items at once (a
+  /// multi-item shopping trip). To keep the list and the ledger consistent,
+  /// reversing it also unsettles every other item that shares the same
+  /// settlement transaction - a partial reversal of one line from a shared
+  /// trip cannot be expressed as a state change alone.
+  bool undoPurchase(ListItem item) {
+    if (!canEditLists || !items.contains(item)) return false;
+    final txId = item.settledTxId;
+    if (txId == null) return false;
+    final tx = txs.where((t) => t.id == txId).firstOrNull;
+    if (tx == null || tx.deletedAt != null) return false;
+    if (isDebtRepaymentTransaction(tx)) return false;
+
+    // Reverse the transaction so the balance is restored.
+    if (!deleteTx(tx)) return false;
+
+    // Unsettle this item and any sibling items settled by the same transaction.
+    final now = DateTime.now();
+    for (final i in items.toList()) {
+      if (i.settledTxId != txId) continue;
+      final base = i.copy();
+      i
+        ..state = ItemState.tobuy
+        ..checkedOut = false
+        ..actual = null
+        ..purchasedById = null
+        ..settledTxId = null
+        ..replannedAt = now;
+      _persistItem(i);
+      _queue('list_item', i, base: base);
+    }
+    pendingOps++;
+    notifyListeners();
+    return true;
   }
 
   /// F5 - "Finish shopping" closes the loop: checked items become one expense
@@ -4446,8 +4552,13 @@ class AppState extends ChangeNotifier {
         : Money(sum, cur);
     if (total.isZero) return total;
 
+    // Resolve the settlement transaction id now so we can stamp it on every
+    // settled item - this link is what lets a done item be either re-planned
+    // (keep the purchase, balance unchanged) or undone (reverse the tx).
+    final settledId = txId ?? _seq('t');
+
     final recorded = addTx(
-      id: txId,
+      id: settledId,
       type: TxType.expense,
       amount: total,
       memberId: _user.id,
@@ -4467,11 +4578,14 @@ class AppState extends ChangeNotifier {
       eligible.first.actual = total;
     }
     for (final i in eligible) {
+      final base = i.copy();
       i.state = ItemState.done;
       i.checkedOut = true;
       i.purchasedById = _user.id;
+      i.settledTxId = settledId;
+      i.replannedAt = null;
       _persistItem(i);
-      _queue('list_item', i);
+      _queue('list_item', i, base: base);
     }
     return total;
   }
@@ -4529,6 +4643,7 @@ class AppState extends ChangeNotifier {
       return false;
     }
     final old = financialCommitments[index];
+    final base = old.copy();
     final updated = FinancialCommitment(
       id: old.id,
       name: old.name,
@@ -4543,7 +4658,7 @@ class AppState extends ChangeNotifier {
     );
     financialCommitments[index] = updated;
     if (_store != null) _fire(_store!.saveFinancialCommitment(updated));
-    _queue('financial_commitment', updated);
+    _queue('financial_commitment', updated, base: base);
     _resyncReminders();
     notifyListeners();
     return true;
@@ -4624,7 +4739,7 @@ class AppState extends ChangeNotifier {
     );
     commitmentOccurrences[index] = updated;
     if (_store != null) _fire(_store!.saveCommitmentOccurrence(updated));
-    _queue('commitment_occurrence', updated);
+    _queue('commitment_occurrence', updated, base: current.copy());
     _resyncReminders();
     notifyListeners();
     return true;
@@ -4676,6 +4791,7 @@ class AppState extends ChangeNotifier {
     _queue('commitment_payment', payment);
 
     final remaining = commitmentOutstanding(occurrence);
+    final occurrenceBase = occurrence.copy();
     final updated = CommitmentOccurrence(
       id: occurrence.id,
       commitmentId: occurrence.commitmentId,
@@ -4689,7 +4805,7 @@ class AppState extends ChangeNotifier {
     final index = commitmentOccurrences.indexOf(occurrence);
     commitmentOccurrences[index] = updated;
     if (_store != null) _fire(_store!.saveCommitmentOccurrence(updated));
-    _queue('commitment_occurrence', updated);
+    _queue('commitment_occurrence', updated, base: occurrenceBase);
     _resyncReminders();
     notifyListeners();
     return true;
@@ -4753,10 +4869,11 @@ class AppState extends ChangeNotifier {
             memberId: memberId,
             amount: amount,
             createdAt: now);
+    final pledgeBase = existing?.copy();
     value.amount = amount;
     if (existing == null) contributionPledges.add(value);
     if (_store != null) _fire(_store!.saveContributionPledge(value));
-    _queue('contribution_pledge', value);
+    _queue('contribution_pledge', value, base: pledgeBase);
     pendingOps++;
     notifyListeners();
     return true;
@@ -4827,6 +4944,7 @@ class AppState extends ChangeNotifier {
         principal.minor < repaid.minor) {
       return false;
     }
+    final base = debt.copy();
     debt
       ..name = name.trim()
       ..direction = direction
@@ -4835,7 +4953,7 @@ class AppState extends ChangeNotifier {
       ..dueDate = dueDate
       ..status = principal.minor == repaid.minor ? 'settled' : 'active';
     if (_store != null) _fire(_store!.saveFamilyDebt(debt));
-    _queue('family_debt', debt);
+    _queue('family_debt', debt, base: base);
     pendingOps++;
     notifyListeners();
     return true;
@@ -4843,9 +4961,10 @@ class AppState extends ChangeNotifier {
 
   bool archiveDebt(FamilyDebt debt) {
     if (!canManageDebts || debt.status == 'archived') return false;
+    final base = debt.copy();
     debt.status = 'archived';
     if (_store != null) _fire(_store!.saveFamilyDebt(debt));
-    _queue('family_debt', debt);
+    _queue('family_debt', debt, base: base);
     familyDebts.removeWhere((item) => item.id == debt.id);
     pendingOps++;
     notifyListeners();
@@ -4909,7 +5028,7 @@ class AppState extends ChangeNotifier {
       txs.removeWhere((item) => item.id == transaction.id);
       txs.insert(0, transaction);
       _persistTx(transaction);
-      _queue('tx', transaction);
+      _queue('tx', transaction, base: existing?.copy());
       repaired = true;
     }
     if (repaired) {
@@ -4963,10 +5082,10 @@ class AppState extends ChangeNotifier {
     // SQLite transaction.
     final syncEngine = sync;
     if (syncEngine != null && syncEngine.spaceId != null && env.isConfigured) {
-      final mutations = <(String, Object)>[
-        ('debt_repayment', value),
-        if (settled) ('family_debt', debt),
-        ('tx', transaction),
+      final mutations = <(String, Object, Object?)>[
+        ('debt_repayment', value, null),
+        if (settled) ('family_debt', debt, debt.copy()),
+        ('tx', transaction, null),
       ];
       _fire(syncEngine.enqueueBatch(
         mutations,
@@ -5046,6 +5165,7 @@ class AppState extends ChangeNotifier {
         target.minor <= 0) {
       return false;
     }
+    final base = goal.copy();
     final updated = Goal(
       id: goal.id,
       name: name.trim(),
@@ -5061,7 +5181,7 @@ class AppState extends ChangeNotifier {
     final index = goals.indexWhere((g) => g.id == goal.id);
     if (index >= 0) goals[index] = updated;
     _persistGoal(updated);
-    _queue('goal', updated);
+    _queue('goal', updated, base: base);
     pendingOps++;
     notifyListeners();
     return true;
@@ -5069,6 +5189,7 @@ class AppState extends ChangeNotifier {
 
   bool completeGoal(Goal goal) {
     if (!canManageSavingsGoal(goal)) return false;
+    final base = goal.copy();
     final updated = Goal(
       id: goal.id,
       name: goal.name,
@@ -5084,7 +5205,7 @@ class AppState extends ChangeNotifier {
     final index = goals.indexWhere((g) => g.id == goal.id);
     if (index >= 0) goals[index] = updated;
     _persistGoal(updated);
-    _queue('goal', updated);
+    _queue('goal', updated, base: base);
     pendingOps++;
     notifyListeners();
     return true;
@@ -5092,6 +5213,7 @@ class AppState extends ChangeNotifier {
 
   bool archiveGoal(Goal goal) {
     if (!canAdmin) return false;
+    final base = goal.copy();
     final archived = Goal(
       id: goal.id,
       name: goal.name,
@@ -5105,7 +5227,7 @@ class AppState extends ChangeNotifier {
       createdById: goal.createdById,
     );
     _persistGoal(archived);
-    _queue('goal', archived);
+    _queue('goal', archived, base: base);
     goals.removeWhere((g) => g.id == goal.id);
     pendingOps++;
     notifyListeners();
@@ -5149,9 +5271,10 @@ class AppState extends ChangeNotifier {
       final completedRound = circle.currentRound;
       final collector = circle.nextCollector;
       final pot = circle.roundPot;
+      final base = circle.copy();
       circle.currentRound++;
       _persistSavingsCircle();
-      _queue('mukando', circle);
+      _queue('mukando', circle, base: base);
       _recordLocalAudit('mukando.collect', 'mukando', 'round_$completedRound', {
         'round': completedRound,
         'collector': collector,
@@ -5210,6 +5333,7 @@ class AppState extends ChangeNotifier {
         : (circle.startedOnMs > 0
             ? circle.startedOnMs
             : DateTime.now().millisecondsSinceEpoch);
+    final base = circle.copy();
 
     circle = SavingsCircle(
       name: name.trim(),
@@ -5224,7 +5348,7 @@ class AppState extends ChangeNotifier {
     mukandoEnabled = true;
     _persistKv('mukando_enabled', '1');
     _persistSavingsCircle();
-    _queue('mukando', circle);
+    _queue('mukando', circle, base: base);
     _recordLocalAudit('mukando.configure', 'mukando', 'circle', {
       'name': circle.name,
       'amount_minor': contribution.minor,
@@ -5298,9 +5422,10 @@ class AppState extends ChangeNotifier {
     if (!canAdmin) return;
     if (circle.currentRound > 1) {
       final prevRound = circle.currentRound;
+      final base = circle.copy();
       circle.currentRound--;
       _persistSavingsCircle();
-      _queue('mukando', circle);
+      _queue('mukando', circle, base: base);
       _recordLocalAudit('mukando.undo_round', 'mukando', 'round_$prevRound', {
         'round': circle.currentRound,
       });
@@ -5335,12 +5460,13 @@ class AppState extends ChangeNotifier {
   bool updateChore(Chore chore,
       {required String name, required int starsReward, String? assigneeId}) {
     if (!canApprove || name.trim().isEmpty || starsReward < 1) return false;
+    final base = chore.copy();
     chore
       ..name = name.trim()
       ..stars = starsReward.clamp(1, 100)
       ..assigneeMemberId = assigneeId;
     _persistChore(chore);
-    _queue('chore', chore);
+    _queue('chore', chore, base: base);
     pendingOps++;
     notifyListeners();
     return true;
@@ -5348,9 +5474,10 @@ class AppState extends ChangeNotifier {
 
   bool archiveChore(Chore chore) {
     if (!canApprove) return false;
+    final base = chore.copy();
     chore.isArchived = true;
     _persistChore(chore);
-    _queue('chore', chore);
+    _queue('chore', chore, base: base);
     chores.removeWhere((c) => c.id == chore.id);
     pendingOps++;
     notifyListeners();
@@ -5360,10 +5487,11 @@ class AppState extends ChangeNotifier {
   void claimChore(Chore c) {
     if (authRole != Role.kid || c.state != ChoreState.todo) return;
     if (c.assigneeMemberId != null && c.assigneeMemberId != realUser.id) return;
+    final base = c.copy();
     c.assigneeMemberId ??= realUser.id;
     c.state = ChoreState.waiting;
     _persistChore(c);
-    _queue('chore', c);
+    _queue('chore', c, base: base);
     _resyncReminders();
     pendingOps++;
     notifyListeners();
@@ -5375,10 +5503,11 @@ class AppState extends ChangeNotifier {
       return;
     }
     if (c.state != ChoreState.waiting) return;
+    final base = c.copy();
     c.state = ChoreState.confirmed;
     stars += c.stars;
     _persistChore(c);
-    _queue('chore', c);
+    _queue('chore', c, base: base);
     _persistKv('stars', '$stars');
     pendingOps++;
     _resyncReminders();
@@ -5393,10 +5522,11 @@ class AppState extends ChangeNotifier {
       return;
     }
     if (c.state == ChoreState.confirmed) {
+      final base = c.copy();
       c.state = ChoreState.waiting;
       stars = (stars - c.stars).clamp(0, 1000000000);
       _persistChore(c);
-      _queue('chore', c);
+      _queue('chore', c, base: base);
       _persistKv('stars', '$stars');
       _resyncReminders();
       notifyListeners();
@@ -5428,9 +5558,10 @@ class AppState extends ChangeNotifier {
   void approveRequest(KidRequest r) {
     if (!canApprove) return;
     if (r.state != RequestState.pending) return;
+    final base = r.copy();
     r.state = RequestState.approved;
     _persistRequest(r);
-    _queue('kid_request', r);
+    _queue('kid_request', r, base: base);
     _resyncReminders();
     final jar = kidJarFor(r.kidId);
     if (jar != null) {
@@ -5452,9 +5583,10 @@ class AppState extends ChangeNotifier {
   void declineRequest(KidRequest r) {
     if (!canApprove) return;
     if (r.state != RequestState.pending) return;
+    final base = r.copy();
     r.state = RequestState.declined;
     _persistRequest(r);
-    _queue('kid_request', r);
+    _queue('kid_request', r, base: base);
     _resyncReminders();
     pendingOps++;
     notifyListeners();
@@ -5542,17 +5674,19 @@ class AppState extends ChangeNotifier {
       envelopeId: p.envelopeId,
     );
     if (!posted) return;
+    final base = p.copy();
     p.state = RequestState.approved;
     _persistProposal(p);
-    _queue('kid_request', p);
+    _queue('kid_request', p, base: base);
   }
 
   void declineProposal(Proposal p) {
     if (!canApprove) return;
     if (p.state != RequestState.pending) return;
+    final base = p.copy();
     p.state = RequestState.declined;
     _persistProposal(p);
-    _queue('kid_request', p);
+    _queue('kid_request', p, base: base);
     pendingOps++;
     notifyListeners();
   }
