@@ -282,9 +282,15 @@ void main() {
           (
             entity: 'debt_repayment',
             opId: 'repayment-op',
-            payload: {'id': 'p1'}
+            payload: {'id': 'p1'},
+            basePayload: null,
           ),
-          (entity: 'tx', opId: 'transaction-op', payload: {'id': 't1'}),
+          (
+            entity: 'tx',
+            opId: 'transaction-op',
+            payload: {'id': 't1'},
+            basePayload: null,
+          ),
         ],
         persist: (txn) async {
           await txn.insert('debt_repayment', {
@@ -308,7 +314,12 @@ void main() {
       await expectLater(
         outbox.enqueueBatch(
           [
-            (entity: 'tx', opId: 'rollback-op', payload: {'id': 't2'}),
+            (
+              entity: 'tx',
+              opId: 'rollback-op',
+              payload: {'id': 't2'},
+              basePayload: null,
+            ),
           ],
           persist: (txn) async {
             await txn.insert('debt_repayment', {

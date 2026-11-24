@@ -30,12 +30,13 @@ begin
      set settled_tx_id = (
        select t.id
          from public.transaction t
+         join public.transaction_split ts on ts.transaction_id = t.id
          join public.shopping_list l on l.id = li.list_id
-        where t.envelope_id = l.envelope_id
+        where ts.envelope_id = l.linked_envelope_id
           and t.type = 'expense'
           and t.deleted_at is null
-          and t.when is not null
-         order by t.when desc
+          and t.occurred_at is not null
+         order by t.occurred_at desc
          limit 1
      )
    where li.state = 'done'
@@ -44,7 +45,6 @@ begin
 
   get diagnostics v_count = row_count;
   -- Not an error if nothing matched; the link is simply left null.
-  void v_count;
 end;
 $$;
 
