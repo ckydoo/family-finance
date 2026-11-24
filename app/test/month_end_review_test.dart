@@ -344,5 +344,35 @@ void main() {
       expect(s.applyMonthEndAutomation(), isNull);
       expect(s.monthEndReviewedCycleKey, isNull);
     });
+
+    test('does not show mid-month on fresh login before cycle close', () {
+      // Today is Nov 24 with a 1st-of-month cycle: October closed 23 days ago,
+      // and November has not closed yet.
+      final midMonth = build(now: DateTime(2026, 11, 24, 22));
+      final groceries = env('e1', 'Groceries', 40000);
+      midMonth.envelopes.add(groceries);
+      earn(midMonth, 40000, DateTime(2026, 10, 2));
+      spend(midMonth, groceries, 10000, DateTime(2026, 10, 10));
+
+      expect(midMonth.monthEndReviewDue, isFalse);
+
+      final target = goal(midMonth);
+      midMonth.setMonthEndSweepMode(MonthEndSweepMode.always, goalId: target.id);
+      expect(midMonth.applyMonthEndAutomation(), isNull);
+
+      // Custom monthStartDay (25th): Nov 24 is still before month-end, whereas
+      // Nov 25 is the cycle close and opens the review window.
+      final beforeCustomEnd = build(now: DateTime(2026, 11, 24, 22))
+        ..monthStartDay = 25;
+      beforeCustomEnd.envelopes.add(env('e1', 'Groceries', 40000));
+      earn(beforeCustomEnd, 40000, DateTime(2026, 10, 1));
+      expect(beforeCustomEnd.monthEndReviewDue, isFalse);
+
+      final atCustomEnd = build(now: DateTime(2026, 11, 25, 8))
+        ..monthStartDay = 25;
+      atCustomEnd.envelopes.add(env('e1', 'Groceries', 40000));
+      earn(atCustomEnd, 40000, DateTime(2026, 11, 1));
+      expect(atCustomEnd.monthEndReviewDue, isTrue);
+    });
   });
 }

@@ -3,6 +3,7 @@ import test from 'node:test';
 
 let handler;
 let finalizeQuotaReservation;
+let openRouterModelsForPlan;
 globalThis.Deno = {
   env: {
     get(name) {
@@ -19,7 +20,7 @@ globalThis.Deno = {
   },
 };
 
-({ finalizeQuotaReservation } = await import('./index.ts'));
+({ finalizeQuotaReservation, openRouterModelsForPlan } = await import('./index.ts'));
 
 const askRequest = () => new Request('https://local.test/ask-mhuri', {
   method: 'POST',
@@ -82,4 +83,17 @@ test('quota finalization fails closed on released or missing reservations', asyn
   });
   assert.equal(unavailable, false);
   assert.equal(calls, 2);
+});
+
+test('tiered OpenRouter routing separates Plus and Free models', () => {
+  assert.deepEqual(openRouterModelsForPlan(true), [
+    'anthropic/claude-sonnet-4.6',
+    'google/gemini-3.8-pro',
+    'google/gemini-3.8-flash',
+  ]);
+  assert.deepEqual(openRouterModelsForPlan(false), [
+    'google/gemini-3.8-flash',
+    'openai/gpt-5-mini',
+    'qwen/qwen3.8-flash',
+  ]);
 });

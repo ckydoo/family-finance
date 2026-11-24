@@ -11,13 +11,21 @@ const json = (body: Row, status = 200) => new Response(JSON.stringify(body), {
   headers: { ...cors, 'Content-Type': 'application/json' },
 });
 const REQUEST_BUDGET_MS = 110_000;
-// Affordable, fast models. OpenRouter automatically routes across providers
-// and tries these in order when a model/provider cannot serve the request.
-const OPENROUTER_MODELS = [
-  'deepseek/deepseek-v4.1-flash-1017',
-  'qwen/qwen3.8-flash',
+// Tiered model routing on OpenRouter (with ZDR + automatic fallback).
+// Plus households get sharper reasoning/guardrail adherence; Free households
+// stay on fast, margin-friendly models.
+export const OPENROUTER_PLUS_MODELS = [
+  'anthropic/claude-sonnet-4.6',
+  'google/gemini-3.8-pro',
   'google/gemini-3.8-flash',
 ];
+export const OPENROUTER_FREE_MODELS = [
+  'google/gemini-3.8-flash',
+  'openai/gpt-5-mini',
+  'qwen/qwen3.8-flash',
+];
+export const openRouterModelsForPlan = (plus: boolean): string[] =>
+  plus ? OPENROUTER_PLUS_MODELS : OPENROUTER_FREE_MODELS;
 const timeoutSignal = (
   ms: number,
   requestStartedAt: number,
@@ -585,8 +593,11 @@ export async function handleAskMhuri(req: Request): Promise<Response> {
     ].filter(Boolean).join('\n\n');
     const provider = openRouterKey ? 'openrouter' : 'gemini';
     stage = provider;
-    const geminiModel = Deno.env.get('GEMINI_MODEL') || 'gemini-3.8-flash';
-    let activeModel = openRouterKey ? OPENROUTER_MODELS[0] : geminiModel;
+    const openRouterModels = openRouterModelsForPlan(plus);
+    const geminiModel = plus
+      ? (Deno.env.get('GEMINI_PLUS_MODEL') || 'gemini-3.8-pro')
+      : (Deno.env.get('GEMINI_MODEL') || 'gemini-3.8-flash');
+    let activeModel = openRouterKey ? openRouterModels[0] : geminiModel;
     const providerStartedAt = Date.now();
     console.info('ask-mhuri AI provider request', JSON.stringify({
       provider, model: activeModel, prompt_chars: prompt.length,
@@ -621,7 +632,7 @@ export async function handleAskMhuri(req: Request): Promise<Response> {
         },
       };
     const openRouterBody = {
-      models: OPENROUTER_MODELS,
+      models: openRouterModels,
       provider: {
         allow_fallbacks: true,
         zdr: true,

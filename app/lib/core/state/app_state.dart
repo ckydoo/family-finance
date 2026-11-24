@@ -3853,10 +3853,22 @@ class AppState extends ChangeNotifier {
     return Money(pool - saved, currency);
   }
 
+  /// Month-end review is only offered during the first 10 days after a cycle
+  /// closes (days 0..9 from [cycleStart]), so it never appears mid-month on
+  /// fresh logins or long after the cycle ended.
+  bool get _inMonthEndReviewWindow {
+    final current = now;
+    final today = DateTime(current.year, current.month, current.day);
+    final startDay = DateTime(cycleStart.year, cycleStart.month, cycleStart.day);
+    final daysSinceClose = today.difference(startDay).inDays;
+    return daysSinceClose >= 0 && daysSinceClose < 10;
+  }
+
   /// True when Home should invite the family to review last month's leftovers.
   bool get monthEndReviewDue {
     if (!canContributeSavings) return false;
     if (monthEndSweepMode != MonthEndSweepMode.ask) return false;
+    if (!_inMonthEndReviewWindow) return false;
     if (monthEndReviewedCycleKey == _cycleKey(cycleStart)) return false;
     final review = monthEndReview;
     return review != null && review.hasCashToMove;
@@ -3959,6 +3971,7 @@ class AppState extends ChangeNotifier {
         monthEndSweepMode != MonthEndSweepMode.always) {
       return null;
     }
+    if (!_inMonthEndReviewWindow) return null;
     if (monthEndReviewedCycleKey == _cycleKey(cycleStart)) return null;
     final goal = preferredMonthEndGoal;
     if (goal == null) return null;
