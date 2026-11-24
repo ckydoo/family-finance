@@ -305,94 +305,121 @@ class Persistence {
   // ── Load ───────────────────────────────────────────────────────────────
 
   Future<DbSnapshot> loadAll() async {
-    final accounts = (await _d.query('account')).map(_accountFrom).toList();
-    final envelopes = (await _d.query('envelope', where: 'is_archived = 0'))
-        .map(_envelopeFrom)
-        .toList();
-    final txs = (await _d.query('tx',
-            where: 'deleted_at IS NULL', orderBy: 'when_ms DESC'))
-        .map(_txFrom)
-        .toList();
-    final txAllocations =
-        (await _d.query('tx_allocation')).map(_allocationFrom).toList();
-    final goals = (await _d.query('goal', where: "status <> 'archived'"))
-        .map(_goalFrom)
-        .toList();
-    final goalTxs = (await _d.query('goal_tx', orderBy: 'at_ms ASC'))
-        .map(_goalTxFrom)
-        .toList();
-    final items = (await _d.query('list_item',
-            where: 'deleted_at IS NULL', orderBy: 'rowid DESC'))
-        .map(_itemFrom)
-        .toList();
-    final chores = (await _d.query('chore', where: 'is_archived = 0'))
-        .map(_choreFrom)
-        .toList();
-    final requests = (await _d.query('kid_request')).map(_requestFrom).toList();
-    final proposals = (await _d.query('proposal')).map(_proposalFrom).toList();
-    final earnings = (await _d.query('earning', orderBy: 'when_ms DESC'))
-        .map(_earningFrom)
-        .toList();
-    final recurring = (await _d.query('recurring',
-            where: 'is_archived = 0', orderBy: 'next_due_ms ASC'))
-        .map(_recurringFrom)
-        .toList();
-    final budgetPlans =
-        (await _d.query('budget_cycle_plan', orderBy: 'cycle_start DESC'))
-            .map(_budgetPlanFrom)
-            .toList();
+    // Every table read is an independent SQLite query. Issue them all at once so
+    // the boot / full-sync pull overlaps the round trips instead of serialising
+    // ~30 queries one after another.
+    final (
+      accountsRows,
+      envelopesRows,
+      txsRows,
+      txAllocationsRows,
+      goalsRows,
+      goalTxsRows,
+      itemsRows,
+      choresRows,
+      requestsRows,
+      proposalsRows,
+      earningsRows,
+      recurringRows,
+      budgetPlansRows,
+      familyActivitiesRows,
+      contributionCampaignsRows,
+      contributionPledgesRows,
+      contributionPaymentsRows,
+      familyDebtsRows,
+      debtRepaymentsRows,
+      familyChatMessagesRows,
+      familyTasksRows,
+      familyRewardsRows,
+      financialCommitmentsRows,
+      commitmentOccurrencesRows,
+      commitmentPaymentsRows,
+      periodPreparationsRows,
+      circleRows,
+      mukandoPaymentsRows,
+      kvRows,
+    ) = await Future.wait([
+      _d.query('account'),
+      _d.query('envelope', where: 'is_archived = 0'),
+      _d.query('tx',
+          where: 'deleted_at IS NULL', orderBy: 'when_ms DESC'),
+      _d.query('tx_allocation'),
+      _d.query('goal', where: "status <> 'archived'"),
+      _d.query('goal_tx', orderBy: 'at_ms ASC'),
+      _d.query('list_item',
+          where: 'deleted_at IS NULL', orderBy: 'rowid DESC'),
+      _d.query('chore', where: 'is_archived = 0'),
+      _d.query('kid_request'),
+      _d.query('proposal'),
+      _d.query('earning', orderBy: 'when_ms DESC'),
+      _d.query('recurring',
+          where: 'is_archived = 0', orderBy: 'next_due_ms ASC'),
+      _d.query('budget_cycle_plan', orderBy: 'cycle_start DESC'),
+      _d.query('family_activity', orderBy: 'at_ms DESC', limit: 500),
+      _d.query('contribution_campaign'),
+      _d.query('contribution_pledge'),
+      _d.query('contribution_payment', orderBy: 'paid_at_ms DESC'),
+      _d.query('family_debt'),
+      _d.query('debt_repayment', orderBy: 'paid_at_ms DESC'),
+      _d.query('family_chat_message',
+          orderBy: 'created_at_ms DESC', limit: 500),
+      _d.query('family_task',
+          orderBy: 'due_at_ms ASC, created_at_ms DESC'),
+      _d.query('family_reward'),
+      _d.query('financial_commitment'),
+      _d.query('commitment_occurrence', orderBy: 'due_at_ms ASC'),
+      _d.query('commitment_payment', orderBy: 'created_at_ms ASC'),
+      _d.query('period_preparation', orderBy: 'updated_at_ms DESC'),
+      _d.query('circle', limit: 1),
+      _d.query('mukando_payment', orderBy: 'paid_at_ms DESC'),
+      _d.query('kv'),
+    ]);
+
+    final accounts = accountsRows.map(_accountFrom).toList();
+    final envelopes = envelopesRows.map(_envelopeFrom).toList();
+    final txs = txsRows.map(_txFrom).toList();
+    final txAllocations = txAllocationsRows.map(_allocationFrom).toList();
+    final goals = goalsRows.map(_goalFrom).toList();
+    final goalTxs = goalTxsRows.map(_goalTxFrom).toList();
+    final items = itemsRows.map(_itemFrom).toList();
+    final chores = choresRows.map(_choreFrom).toList();
+    final requests = requestsRows.map(_requestFrom).toList();
+    final proposals = proposalsRows.map(_proposalFrom).toList();
+    final earnings = earningsRows.map(_earningFrom).toList();
+    final recurring = recurringRows.map(_recurringFrom).toList();
+    final budgetPlans = budgetPlansRows.map(_budgetPlanFrom).toList();
     final familyActivities =
-        (await _d.query('family_activity', orderBy: 'at_ms DESC', limit: 500))
-            .map(_activityFrom)
-            .toList();
+        familyActivitiesRows.map(_activityFrom).toList();
     final contributionCampaigns =
-        (await _d.query('contribution_campaign')).map(_campaignFrom).toList();
+        contributionCampaignsRows.map(_campaignFrom).toList();
     final contributionPledges =
-        (await _d.query('contribution_pledge')).map(_pledgeFrom).toList();
+        contributionPledgesRows.map(_pledgeFrom).toList();
     final contributionPayments =
-        (await _d.query('contribution_payment', orderBy: 'paid_at_ms DESC'))
-            .map(_paymentFrom)
-            .toList();
-    final familyDebts = (await _d.query('family_debt')).map(_debtFrom).toList();
+        contributionPaymentsRows.map(_paymentFrom).toList();
+    final familyDebts = familyDebtsRows.map(_debtFrom).toList();
     final debtRepayments =
-        (await _d.query('debt_repayment', orderBy: 'paid_at_ms DESC'))
-            .map(_repaymentFrom)
-            .toList();
-    final familyChatMessages = (await _d.query('family_chat_message',
-            orderBy: 'created_at_ms DESC', limit: 500))
-        .map(_chatMessageFrom)
-        .toList();
-    final familyTasks = (await _d.query('family_task',
-            orderBy: 'due_at_ms ASC, created_at_ms DESC'))
-        .map(_familyTaskFrom)
-        .toList();
-    final familyRewards =
-        (await _d.query('family_reward')).map(_familyRewardFrom).toList();
+        debtRepaymentsRows.map(_repaymentFrom).toList();
+    final familyChatMessages =
+        familyChatMessagesRows.map(_chatMessageFrom).toList();
+    final familyTasks = familyTasksRows.map(_familyTaskFrom).toList();
+    final familyRewards = familyRewardsRows.map(_familyRewardFrom).toList();
     final financialCommitments =
-        (await _d.query('financial_commitment')).map(_commitmentFrom).toList();
+        financialCommitmentsRows.map(_commitmentFrom).toList();
     final commitmentOccurrences =
-        (await _d.query('commitment_occurrence', orderBy: 'due_at_ms ASC'))
-            .map(_occurrenceFrom)
-            .toList();
+        commitmentOccurrencesRows.map(_occurrenceFrom).toList();
     final commitmentPayments =
-        (await _d.query('commitment_payment', orderBy: 'created_at_ms ASC'))
-            .map(_commitmentPaymentFrom)
-            .toList();
-    final periodPreparations = (await _d.query('period_preparation',
-            orderBy: 'updated_at_ms DESC'))
+        commitmentPaymentsRows.map(_commitmentPaymentFrom).toList();
+    final periodPreparations = periodPreparationsRows
         .map((row) => PeriodPreparation.decode(row['payload_json'] as String))
         .toList();
 
-    final mRows = await _d.query('circle', limit: 1);
     final circle =
-        mRows.isEmpty ? _fallbackSavingsCircle() : _circleFrom(mRows.first);
+        circleRows.isEmpty ? _fallbackSavingsCircle() : _circleFrom(circleRows.first);
     final mukandoPayments =
-        (await _d.query('mukando_payment', orderBy: 'paid_at_ms DESC'))
-            .map(_mukandoPaymentFrom)
-            .toList();
+        mukandoPaymentsRows.map(_mukandoPaymentFrom).toList();
 
     final kv = {
-      for (final r in await _d.query('kv')) r['k'] as String: r['v'] as String,
+      for (final r in kvRows) r['k'] as String: r['v'] as String,
     };
 
     return DbSnapshot(
