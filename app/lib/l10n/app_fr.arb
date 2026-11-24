@@ -203,13 +203,13 @@
   "rollRoll": "Reporter le reste",
   "rollAccum": "Cumuler",
   "monthEndReviewTitle": "Bilan de fin de mois",
-  "monthEndReviewBody": "Il reste {amount} non dépensés du mois dernier. Placez-les en épargne ou gardez-les dans le budget.",
+  "monthEndReviewBody": "Jusqu'à {amount} du solde de clôture du mois dernier reste disponible. Placez-le en épargne ou laissez-le disponible.",
   "monthEndReviewCta": "Vérifier",
   "monthEndReviewLater": "Plus tard",
   "monthEndSweptAutomatically": "Nous avons placé {amount} du reliquat du mois dernier en épargne.",
   "monthEndReviewSheetTitle": "Argent restant",
-  "monthEndReviewSheetBody": "Le mois dernier s'est terminé avec {amount} encore dans vos budgets. Rien ne bouge avant votre confirmation.",
-  "monthEndReviewCarryNote": "Les budgets en report ou en accumulation conservent déjà leur reliquat.",
+  "monthEndReviewSheetBody": "La famille disposait d'un solde à la clôture du mois dernier ; {amount} reste disponible pour un transfert. Rien ne bouge avant votre confirmation.",
+  "monthEndReviewCarryNote": "Les montants des budgets ci-dessous sont indicatifs ; le transfert porte sur le solde familial disponible à la clôture.",
   "monthEndReviewNoGoals": "Créez d'abord un objectif d'épargne : l'argent restant aura alors une destination.",
   "monthEndSavingsGoalName": "Épargne {month}",
   "@monthEndSavingsGoalName": {
@@ -735,5 +735,13 @@
   "applySplit": "Appliquer la répartition",
   "recordIn": "Enregistrer dans",
   "budgetCountLabel": "{count, plural, =1{1 budget} other{{count} budgets}}",
-  "amountLabel": "Montant"
+  "amountLabel": "Montant",
+  "chatHistoryTitle": "Historique des conversations",
+  "newChat": "Nouvelle conversation",
+  "noSavedChats": "Vos conversations enregistrées apparaîtront ici.",
+  "chatOptions": "Options de conversation",
+  "renameChat": "Renommer la conversation",
+  "chatName": "Nom de la conversation",
+  "deleteChatQuestion": "Supprimer la conversation ?",
+  "delete": "Supprimer"
 }

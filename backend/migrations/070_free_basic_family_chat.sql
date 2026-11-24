@@ -1,4 +1,4 @@
--- 068: align database enforcement with Mhuri Free basic chat + Mhuri Plus enhanced chat.
+-- 070: align database enforcement with Mhuri Free basic chat + Mhuri Plus enhanced chat.
 -- Ordinary plain-text messages, replies, and self-deletion of non-system messages
 -- are permitted on all plans. Enhanced chat payloads (photos, voice notes,
 -- stickers, interactive budget/task/shopping references, system cards, and
@@ -75,7 +75,7 @@ revoke all on function public.guard_family_chat_message()
 do $$
 begin
   if to_regprocedure('public.guard_family_chat_message()') is null then
-    raise exception '068 SELF-TEST FAILED: family chat guard missing';
+    raise exception '070 SELF-TEST FAILED: family chat guard missing';
   end if;
 end;
 $$;

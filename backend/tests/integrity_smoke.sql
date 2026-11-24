@@ -11,6 +11,16 @@ insert into auth.users (id, email, encrypted_password, email_confirmed_at) value
   ('22222222-2222-2222-2222-222222222222', 'bongi@example.com','x', now()),
   ('33333333-3333-3333-3333-333333333333', 'chipo@example.com','x', now());
 
+-- Active Plus always carries every advertised capability, including Ask Mhuri.
+do $$
+declare
+  required_features jsonb := public.mhuri_plus_feature_set();
+begin
+  if not required_features ? 'ask_mhuri' then
+    raise exception 'FAIL: active Plus feature set is missing ask_mhuri';
+  end if;
+end $$;
+
 -- ── 1. Ama creates the family ───────────────────────────────────────────────
 select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
 create table if not exists _t (k text primary key, v jsonb);

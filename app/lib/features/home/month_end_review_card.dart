@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/money/money.dart';
 import '../../core/planning/month_end_review.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
@@ -10,10 +9,8 @@ import '../../l10n/generated/app_localizations.dart';
 
 /// Month-end review (9.6).
 ///
-/// Last month's unspent money is never swept silently: Home asks once per
-/// closed cycle and the family decides whether to move it into savings or
-/// leave it in the budget. Envelopes set to roll over or accumulate are shown
-/// for context only - their money is already promised to next month.
+/// The last closed cycle's available family cash is never swept silently: Home
+/// asks once per cycle, then the family decides whether to move it into savings.
 class MonthEndReviewCard extends StatelessWidget {
   const MonthEndReviewCard({super.key});
 
@@ -133,8 +130,8 @@ class _Panel extends StatelessWidget {
       );
 }
 
-/// Review sheet: pick which envelopes give up their leftovers and which goal
-/// receives them. Nothing moves until the primary button is pressed.
+/// Review the closed-cycle cash balance and choose which goal receives it.
+/// Nothing moves until the primary button is pressed.
 Future<void> showMonthEndReviewSheet(BuildContext context) async {
   final s = AppScope.of(context);
   final l = AppLocalizations.of(context)!;
@@ -143,31 +140,19 @@ Future<void> showMonthEndReviewSheet(BuildContext context) async {
   final month = DateFormat.yMMMM(Localizations.localeOf(context).toString())
       .format(review.cycleStart);
   final goalName = l.monthEndSavingsGoalName(month);
-  final matchingGoal = s.monthEndSweepGoals
-      .where((goal) => goal.name == goalName)
-      .firstOrNull;
+  final matchingGoal =
+      s.monthEndSweepGoals.where((goal) => goal.name == goalName).firstOrNull;
   final monthGoal = s.ensureMonthEndSavingsGoal(
     name: goalName,
     target: review.totalLeft,
   );
   final createdMonthGoal = matchingGoal == null ? monthGoal : null;
   final goals = s.monthEndSweepGoals;
-  final lines = review.sweepable.toList(growable: false);
-
-  final selected = <String>{for (final line in lines) line.envelopeId};
+  final lines = review.lines;
   String? goalId = monthGoal?.id ??
       s.preferredMonthEndGoal?.id ??
       (goals.isEmpty ? null : goals.first.id);
   var busy = false;
-
-  Money selectedTotal() {
-    var sum = 0;
-    for (final line in lines) {
-      if (!selected.contains(line.envelopeId)) continue;
-      sum += line.remaining.inCurrency(s.displayCurrency, s.rate).minor;
-    }
-    return Money(sum, s.displayCurrency);
-  }
 
   await showMhuriSheet<void>(
     context: context,
@@ -176,7 +161,7 @@ Future<void> showMonthEndReviewSheet(BuildContext context) async {
         final goal = goalId == null
             ? null
             : goals.where((g) => g.id == goalId).firstOrNull;
-        final total = selectedTotal();
+        final total = review.totalLeft;
         final canMove = !busy && goal != null && total.minor > 0;
 
         return MhuriSheetShell(
@@ -190,17 +175,7 @@ Future<void> showMonthEndReviewSheet(BuildContext context) async {
               for (final line in lines)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
-                  child: _LineRow(
-                    line: line,
-                    selected: selected.contains(line.envelopeId),
-                    onChanged: (on) => setSheet(() {
-                      if (on) {
-                        selected.add(line.envelopeId);
-                      } else {
-                        selected.remove(line.envelopeId);
-                      }
-                    }),
-                  ),
+                  child: _LineRow(line: line),
                 ),
               if (review.carried.isNotEmpty) ...[
                 const SizedBox(height: 4),
@@ -212,8 +187,7 @@ Future<void> showMonthEndReviewSheet(BuildContext context) async {
               if (createdMonthGoal != null) ...[
                 const SizedBox(height: 12),
                 StatusBanner(
-                  message:
-                      l.monthEndReviewGoalCreated(createdMonthGoal.name),
+                  message: l.monthEndReviewGoalCreated(createdMonthGoal.name),
                 ),
               ],
               const SizedBox(height: 16),
@@ -260,10 +234,7 @@ Future<void> showMonthEndReviewSheet(BuildContext context) async {
                     ? null
                     : () {
                         setSheet(() => busy = true);
-                        final moved = s.sweepMonthEndToGoal(
-                          goal,
-                          envelopeIds: selected,
-                        );
+                        final moved = s.sweepMonthEndToGoal(goal);
                         if (!sheetCtx.mounted) return;
                         Navigator.pop(sheetCtx);
                         if (moved != null) {
@@ -309,27 +280,18 @@ Future<void> showMonthEndReviewSheet(BuildContext context) async {
 }
 
 class _LineRow extends StatelessWidget {
-  const _LineRow({
-    required this.line,
-    required this.selected,
-    required this.onChanged,
-  });
+  const _LineRow({required this.line});
 
   final MonthEndLine line;
-  final bool selected;
-  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) => Material(
         color: context.card,
         borderRadius: kBRadiusM,
-        child: InkWell(
-          borderRadius: kBRadiusM,
-          onTap: () => onChanged(!selected),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
               Expanded(
                 child: Text(
                   '${line.emoji}  ${line.name}',
@@ -349,13 +311,11 @@ class _LineRow extends StatelessWidget {
                   color: context.primary,
                 ),
               ),
-              const SizedBox(width: 4),
-              Switch(
-                value: selected,
-                onChanged: onChanged,
-              ),
-              ],
-            ),
+              const SizedBox(width: 8),
+              if (line.carries)
+                Icon(Icons.autorenew_rounded,
+                    size: 16, color: context.inkFaint),
+            ],
           ),
         ),
       );

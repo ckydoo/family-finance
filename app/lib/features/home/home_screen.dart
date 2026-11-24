@@ -27,7 +27,6 @@ import 'month_end_review_card.dart';
 import '../planner/planning_hub_screen.dart';
 import '../quickadd/quick_add_sheet.dart';
 import '../reports/reports_screen.dart';
-import '../reports/weekly_summary_sheet.dart';
 import '../settings/settings_screen.dart';
 import '../settings/private_accounts_screen.dart';
 
@@ -684,10 +683,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 if (!isNewHousehold) _HomeBudgets(budgets: householdBudgets),
 
-                if (!isNewHousehold && s.weeklySummary.hasActivity) ...[
-                  const SizedBox(height: 10),
-                  const WeeklySummaryPreviewCard(),
-                ],
                 if (!isNewHousehold) ...[
                   const SizedBox(height: 10),
                   const _HomeToolShortcuts(),
@@ -2703,58 +2698,68 @@ class _HomeToolShortcuts extends StatelessWidget {
       ),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const SizedBox(width: 8),
-            Material(
-              color: Colors.transparent,
-              borderRadius: kBRadiusS,
-              child: InkWell(
-                key: ValueKey(items[i].$1),
-                borderRadius: kBRadiusS,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => items[i].$4),
-                  );
-                },
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 44),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: kBRadiusS,
-                      border: Border.all(color: context.hairline),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(items[i].$3, size: 17, color: context.primaryDark),
-                        const SizedBox(width: 7),
-                        Text(
-                          items[i].$2,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: context.ink,
+    return Column(
+      children: [
+        for (var row = 0; row < 2; row++) ...[
+          if (row > 0) const SizedBox(height: 10),
+          Row(
+            children: [
+              for (var column = 0; column < 2; column++) ...[
+                if (column > 0) const SizedBox(width: 10),
+                Expanded(
+                  child: Material(
+                    color: context.card,
+                    borderRadius: kBRadiusM,
+                    child: InkWell(
+                      key: ValueKey(items[row * 2 + column].$1),
+                      borderRadius: kBRadiusM,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => items[row * 2 + column].$4,
                           ),
+                        );
+                      },
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 44),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 9,
                         ),
-                      ],
+                        decoration: BoxDecoration(
+                          color: context.primarySoft,
+                          borderRadius: kBRadiusM,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(items[row * 2 + column].$3,
+                                size: 17, color: context.primaryDark),
+                            const SizedBox(width: 7),
+                            Flexible(
+                              child: Text(
+                                items[row * 2 + column].$2,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.ink,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }

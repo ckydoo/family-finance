@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/config/app_version.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ui.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 enum LegalSection { privacy, terms, disclaimer, dataRights }
 
@@ -133,7 +134,7 @@ class _LegalScreenState extends State<LegalScreen> {
         _cardItem(
           title: 'Account Credentials',
           description:
-              'Email address and password. Passwords are salted and cryptographically hashed by our authentication infrastructure (Supabase Auth). We never have access to your plain-text password.',
+              'Email address and password. Passwords are securely hashed by our sign-in service. We never have access to your plain-text password.',
         ),
         _cardItem(
           title: 'Family Financial Content',
@@ -141,9 +142,9 @@ class _LegalScreenState extends State<LegalScreen> {
               'Envelopes, income and expense transactions, shopping lists, bills, savings goals, family tasks, task completion and approval records, points, and reward redemptions. Shared items are visible to authorized members of the relevant Family Space. Private account transactions are restricted to their owner.',
         ),
         _cardItem(
-          title: 'Ask Mhuri (temporarily unavailable)',
+          title: AppLocalizations.of(context)!.askMhuriTitle,
           description:
-              'Ask Mhuri is currently unavailable and cannot be used in the app. If restored in a future release, this policy will be updated to explain how questions and financial data are handled before the feature is enabled.',
+              'When an adult family member asks a question, Mhuri sends the question, up to six recent chat turns, and a limited summary of relevant shared family financial records to an external AI service to prepare a response. Private account records, raw notes, receipts, and member profile data are excluded; anything typed into the question or chat may be included. The service processes this information under its privacy terms. Chat history is saved locally on this device, scoped to the signed-in account and family space. It is not synced to other devices or shared with family members, and can be deleted from the history screen.',
         ),
         _cardItem(
           title: 'Children & Minor Profiles',
@@ -173,8 +174,8 @@ class _LegalScreenState extends State<LegalScreen> {
         const SizedBox(height: 16),
         _sectionTitle('3. Security & Row-Level Protection'),
         Text(
-          'All database writes and reads are enforced by Postgres Row-Level Security (RLS) policies at the database layer. '
-          'A user from Family A cannot view, query, or mutate records from Family B. '
+          'Family information is restricted to authorized members of that family space. '
+          'A member of one family cannot access another family’s records. '
           'All network communication occurs over encrypted TLS/HTTPS.',
           style:
               TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.45),
@@ -304,8 +305,7 @@ class _LegalScreenState extends State<LegalScreen> {
         Text(
           'Content, envelope recommendations, safe-per-day spending limits, and reports within Mhuri '
           'are computational estimations for educational and organizational purposes only. '
-          'Ask Mhuri is currently unavailable. '
-          'Nothing in the app constitutes certified financial, legal, tax, or investment advice. '
+          'Ask Mhuri responses are estimates based on shared records in Mhuri, not certified financial, legal, tax, or investment advice. '
           'Consult a licensed financial professional for individual financial planning decisions.',
           style:
               TextStyle(fontSize: 13.5, color: context.inkSoft, height: 1.45),
@@ -373,7 +373,7 @@ class _LegalScreenState extends State<LegalScreen> {
         _cardItem(
           title: 'Deleting a Family Space (Owner)',
           description:
-              'The family owner can transfer ownership to another parent, or permanently delete the entire family space. Deleting a space triggers a database cascade deletion of all budgets, transactions, lists, and avatars.',
+              'The family owner can transfer ownership to another parent, or permanently delete the entire family space and its budgets, transactions, lists, and avatars.',
         ),
         _cardItem(
           title: 'Permanent Account Purge',

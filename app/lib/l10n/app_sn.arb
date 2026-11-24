@@ -202,13 +202,13 @@
   "rollRoll": "Endesa zvinosara",
   "rollAccum": "Wedzera zvinosara",
   "monthEndReviewTitle": "Kuongorora pakupera kwemwedzi",
-  "monthEndReviewBody": "{amount} haisati yashandiswa kubva mwedzi wapfuura. Iendese kumaraki kana kuisiya mubhajeti.",
+  "monthEndReviewBody": "Mari inosvika {amount} yebhalansi yekupera kwemwedzi wapfuura ichiripo. Iendese kumari yakachengetwa kana kuisiya iripo.",
   "monthEndReviewCta": "Ongorora",
   "monthEndReviewLater": "Kwete iye zvino",
   "monthEndSweptAutomatically": "Takaendesa {amount} yezvakasara mwedzi wapfuura kumaraki.",
   "monthEndReviewSheetTitle": "Mari yasara",
-  "monthEndReviewSheetBody": "Mwedzi wapfuura wakapera uine {amount} iri mumabhajeti ako. Hapana chinochinja kusvika wasimbisa.",
-  "monthEndReviewCarryNote": "Mabhajeti anotakura kana kuunganidza anotochengeta zvaasara.",
+  "monthEndReviewSheetBody": "Pakupera kwemwedzi wapfuura mhuri yaiva nemari; {amount} ichiripo kuti iendeswe. Hapana chinofamba kusvikira wasimbisa.",
+  "monthEndReviewCarryNote": "Mari iri pamabhajeti pazasi inongoratidza marongero; mari ichaendeswa inobva pamari yemhuri iripo pakupera kwemwedzi.",
   "monthEndReviewNoGoals": "Tanga wagadzira chinangwa chemari - ipapo mari yasara inenge iine kwainoenda.",
   "monthEndSavingsGoalName": "Kuchengetera kwa {month}",
   "@monthEndSavingsGoalName": {
@@ -735,5 +735,13 @@
   "applySplit": "Shandisa kugovanisa",
   "recordIn": "Nyora mu",
   "budgetCountLabel": "{count, plural, =1{bhajeti 1} other{mabhajeti {count}}}",
-  "amountLabel": "Mari"
+  "amountLabel": "Mari",
+  "chatHistoryTitle": "Nhoroondo yehurukuro",
+  "newChat": "Hurukuro itsva",
+  "noSavedChats": "Hurukuro dzako dzakachengetwa dzichaonekwa pano.",
+  "chatOptions": "Sarudzo dzehurukuro",
+  "renameChat": "Tumidza hurukuro patsva",
+  "chatName": "Zita rehurukuro",
+  "deleteChatQuestion": "Dzima hurukuro here?",
+  "delete": "Dzima"
 }

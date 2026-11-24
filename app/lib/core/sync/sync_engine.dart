@@ -912,11 +912,19 @@ class SyncEngine {
     if (familyId == null || familyId.isEmpty) {
       throw const SyncException(0, 'FAMILY_REQUIRED');
     }
-    final response = await client.invokeFunction('ask-mhuri', {
-      'family_id': familyId,
-      'question': question,
-      if (history.isNotEmpty) 'history': history,
-    });
+    final response = await client.invokeFunction(
+      'ask-mhuri',
+      {
+        'family_id': familyId,
+        'question': question,
+        if (history.isNotEmpty) 'history': history,
+      },
+      // The Edge Function has a 110-second server budget for gathering the
+      // family summary and waiting for the AI provider. Let it finish before the app
+      // reports a misleading connectivity error.
+      timeout: const Duration(seconds: 120),
+      timeoutMessage: 'AI_REQUEST_TIMEOUT',
+    );
     if (response is! Map) {
       throw const SyncException(0, 'INVALID_AI_RESPONSE');
     }

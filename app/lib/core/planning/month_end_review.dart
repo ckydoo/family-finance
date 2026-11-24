@@ -34,9 +34,8 @@ class MonthEndLine {
   /// currency. Always positive - overspent envelopes never produce a line.
   final Money remaining;
 
-  /// True for `Rollover.roll` / `Rollover.accumulate` envelopes. Their money is
-  /// already promised to next month by the family's own choice, so the review
-  /// shows them for context but never sweeps them.
+  /// True for `Rollover.roll` / `Rollover.accumulate` envelopes. The review
+  /// shows this setting as context; the amount moved comes from real cash.
   final bool carries;
 }
 
@@ -58,18 +57,18 @@ class MonthEndReview {
 
   final List<MonthEndLine> lines;
 
-  /// Leftover in envelopes that will be swept back to zero, in the household's
-  /// display currency.
+  /// Shared cash available at cycle close, capped to cash still available now.
   final Money totalLeft;
 
-  /// Leftover that rollover/accumulate envelopes are already keeping.
+  /// Budgeted leftovers in rollover/accumulate envelopes, shown for context.
   final Money carriedLeft;
 
-  /// Envelopes the family can actually choose to sweep.
-  Iterable<MonthEndLine> get sweepable => lines.where((line) => !line.carries);
+  /// Reset envelopes shown to explain the budget plan at cycle close.
+  Iterable<MonthEndLine> get resetEnvelopes =>
+      lines.where((line) => !line.carries);
 
   /// Envelopes that keep their money automatically.
   Iterable<MonthEndLine> get carried => lines.where((line) => line.carries);
 
-  bool get hasSweepableLeftover => totalLeft.minor > 0;
+  bool get hasCashToMove => totalLeft.minor > 0;
 }

@@ -296,7 +296,7 @@
   "rollRoll": "Roll over what is left",
   "rollAccum": "Keep accumulating",
   "monthEndReviewTitle": "Month-end review",
-  "monthEndReviewBody": "{amount} is still unspent from last month. Move it to savings, or keep it in the budget.",
+  "monthEndReviewBody": "Up to {amount} from last month's closing balance is still available. Move it to savings, or keep it available.",
   "@monthEndReviewBody": {
     "placeholders": {
       "amount": {}
@@ -311,13 +311,13 @@
     }
   },
   "monthEndReviewSheetTitle": "Money left over",
-  "monthEndReviewSheetBody": "Last month ended with {amount} still in your budgets. Nothing moves until you confirm.",
+  "monthEndReviewSheetBody": "The family had cash available at last month's close; {amount} is still available to move. Nothing moves until you confirm.",
   "@monthEndReviewSheetBody": {
     "placeholders": {
       "amount": {}
     }
   },
-  "monthEndReviewCarryNote": "Budgets set to roll over or accumulate already keep their leftovers.",
+  "monthEndReviewCarryNote": "Envelope amounts below are budget context; the move amount is the shared balance available at month-end.",
   "monthEndReviewNoGoals": "Create a savings goal first - then leftover money has somewhere to go.",
   "monthEndSavingsGoalName": "{month} savings",
   "@monthEndSavingsGoalName": {
@@ -1159,5 +1159,13 @@
       "count": {}
     }
   },
-  "amountLabel": "Amount"
+  "amountLabel": "Amount",
+  "chatHistoryTitle": "Chat history",
+  "newChat": "New chat",
+  "noSavedChats": "Your saved chats will appear here.",
+  "chatOptions": "Chat options",
+  "renameChat": "Rename chat",
+  "chatName": "Chat name",
+  "deleteChatQuestion": "Delete chat?",
+  "delete": "Delete"
 }

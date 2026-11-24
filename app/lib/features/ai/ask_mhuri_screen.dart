@@ -3,9 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/db/app_database.dart';
 import '../../core/money/money.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/ids.dart';
+import '../../l10n/generated/app_localizations.dart';
+import 'ask_mhuri_history.dart';
 import '../settings/plus_screen.dart';
 
 class AskMhuriScreen extends StatefulWidget {
@@ -26,9 +30,16 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final List<_ChatTurn> _turns = [];
+  final List<AskMhuriConversation> _conversations = [];
   bool _sending = false;
+  bool _historyLoading = false;
   bool _quotaReached = false;
   String? _statusMessage;
+  String? _conversationId;
+  String? _conversationTitle;
+  String? _historyUserId;
+  String? _historyFamilyId;
+  int _scopeGeneration = 0;
   int? _remaining;
   int? _limit;
   String _plan = 'free';
@@ -40,10 +51,359 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final state = AppScope.of(context);
+    final userId = state.user.id;
+    final familyId = state.sync?.spaceId;
+    if (userId == _historyUserId && familyId == _historyFamilyId) return;
+    _historyUserId = userId;
+    _historyFamilyId = familyId;
+    final generation = ++_scopeGeneration;
+    _conversationId = null;
+    _conversationTitle = null;
+    _turns.clear();
+    _conversations.clear();
+    if (familyId != null && state.db != null) {
+      unawaited(_loadInitialHistory(
+        state.db!,
+        userId,
+        familyId,
+        generation,
+      ));
+    }
+  }
+
+  String _activeChatKey(String userId, String familyId) =>
+      'ask_mhuri_active_${userId}_$familyId';
+
+  Future<void> _loadInitialHistory(
+    AppDatabase db,
+    String userId,
+    String familyId,
+    int generation,
+  ) async {
+    if (mounted) setState(() => _historyLoading = true);
+    final store = AskMhuriHistoryStore(db.raw);
+    try {
+      final conversations = await store.listConversations(
+        userId: userId,
+        familyId: familyId,
+      );
+      final active = await db.kvGet(_activeChatKey(userId, familyId));
+      if (!mounted || generation != _scopeGeneration) return;
+      setState(() {
+        _conversations
+          ..clear()
+          ..addAll(conversations);
+        _historyLoading = false;
+      });
+      if (active == 'new' || conversations.isEmpty) return;
+      AskMhuriConversation? selected;
+      for (final conversation in conversations) {
+        if (conversation.id == active) {
+          selected = conversation;
+          break;
+        }
+      }
+      selected ??= conversations.first;
+      await _openConversation(selected, db, userId, familyId);
+    } catch (error) {
+      debugPrint('Ask Mhuri history load failed: $error');
+      if (mounted && generation == _scopeGeneration) {
+        setState(() => _historyLoading = false);
+      }
+    }
+  }
+
+  Future<void> _openConversation(
+    AskMhuriConversation conversation,
+    AppDatabase db,
+    String userId,
+    String familyId,
+  ) async {
+    final messages = await AskMhuriHistoryStore(db.raw).loadMessages(
+      conversationId: conversation.id,
+      userId: userId,
+      familyId: familyId,
+    );
+    if (!mounted || userId != _historyUserId || familyId != _historyFamilyId) {
+      return;
+    }
+    final turns = <_ChatTurn>[];
+    var latestQuestion = '';
+    for (final message in messages) {
+      final isAssistant = message.role == 'assistant';
+      if (!isAssistant) latestQuestion = message.content;
+      turns.add(_ChatTurn(
+        text: message.content,
+        question: isAssistant ? latestQuestion : '',
+        isAssistant: isAssistant,
+        facts: message.facts,
+      ));
+    }
+    setState(() {
+      _conversationId = conversation.id;
+      _conversationTitle = conversation.title;
+      _turns
+        ..clear()
+        ..addAll(turns);
+      _statusMessage = null;
+      _quotaReached = false;
+    });
+    await db.kvSet(_activeChatKey(userId, familyId), conversation.id);
+    _scrollToEnd();
+  }
+
+  Future<void> _startNewChat() async {
+    if (_sending) return;
+    final state = AppScope.of(context);
+    final userId = state.user.id;
+    final familyId = state.sync?.spaceId;
+    setState(() {
+      _conversationId = null;
+      _conversationTitle = null;
+      _turns.clear();
+      _statusMessage = null;
+      _quotaReached = false;
+      _input.clear();
+    });
+    if (familyId != null) {
+      await state.db?.kvSet(_activeChatKey(userId, familyId), 'new');
+    }
+  }
+
+  Future<void> _showHistory() async {
+    final state = AppScope.of(context);
+    final db = state.db;
+    final userId = state.user.id;
+    final familyId = state.sync?.spaceId;
+    final l = AppLocalizations.of(context)!;
+    if (db == null || familyId == null) return;
+    final selection = await showModalBottomSheet<Object?>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(sheetContext).height * .72,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 12, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(l.chatHistoryTitle,
+                          style: TextStyle(
+                              fontSize: 19, fontWeight: FontWeight.w700)),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(l.newChat),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: _historyLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _conversations.isEmpty
+                        ? Center(child: Text(l.noSavedChats))
+                        : ListView.builder(
+                            itemCount: _conversations.length,
+                            itemBuilder: (context, index) {
+                              final conversation = _conversations[index];
+                              return ListTile(
+                                leading: const Icon(
+                                    Icons.chat_bubble_outline_rounded),
+                                title: Text(conversation.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                                subtitle: Text(
+                                    _historyDate(conversation.updatedAtMs)),
+                                onTap: () => Navigator.pop(
+                                  sheetContext,
+                                  conversation.id,
+                                ),
+                                trailing: PopupMenuButton<String>(
+                                  tooltip: l.chatOptions,
+                                  onSelected: (action) async {
+                                    Navigator.pop(sheetContext);
+                                    if (action == 'rename') {
+                                      await _renameConversation(
+                                        conversation,
+                                        db,
+                                        userId,
+                                        familyId,
+                                      );
+                                    } else if (action == 'delete') {
+                                      await _deleteConversation(
+                                        conversation,
+                                        db,
+                                        userId,
+                                        familyId,
+                                      );
+                                    }
+                                  },
+                                  itemBuilder: (_) => [
+                                    PopupMenuItem(
+                                      value: 'rename',
+                                      child: Text(l.renameChat),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text(l.delete),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (selection == true) {
+      await _startNewChat();
+    } else if (selection is String) {
+      final chosen = _conversations.where((c) => c.id == selection).firstOrNull;
+      if (chosen != null) {
+        await _openConversation(chosen, db, userId, familyId);
+      }
+    }
+  }
+
+  Future<void> _renameConversation(
+    AskMhuriConversation conversation,
+    AppDatabase db,
+    String userId,
+    String familyId,
+  ) async {
+    final l = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: conversation.title);
+    final title = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.renameChat),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 52,
+          decoration: InputDecoration(labelText: l.chatName),
+          onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (title == null || title.trim().isEmpty || !mounted) return;
+    await AskMhuriHistoryStore(db.raw).renameConversation(
+      conversationId: conversation.id,
+      userId: userId,
+      familyId: familyId,
+      title: title,
+    );
+    if (!mounted) return;
+    final updated = AskMhuriConversation(
+      id: conversation.id,
+      title: title.trim(),
+      createdAtMs: conversation.createdAtMs,
+      updatedAtMs: DateTime.now().millisecondsSinceEpoch,
+    );
+    setState(() {
+      final index = _conversations.indexWhere((c) => c.id == conversation.id);
+      if (index >= 0) _conversations[index] = updated;
+      if (_conversationId == conversation.id)
+        _conversationTitle = updated.title;
+    });
+  }
+
+  Future<void> _deleteConversation(
+    AskMhuriConversation conversation,
+    AppDatabase db,
+    String userId,
+    String familyId,
+  ) async {
+    final l = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.deleteChatQuestion),
+        content: Text(
+            '“${conversation.title}” and its messages will be deleted from this device.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await AskMhuriHistoryStore(db.raw).deleteConversation(
+      conversationId: conversation.id,
+      userId: userId,
+      familyId: familyId,
+    );
+    await db.kvDelete(_activeChatKey(userId, familyId));
+    if (!mounted) return;
+    setState(() {
+      _conversations.removeWhere((c) => c.id == conversation.id);
+      if (_conversationId == conversation.id) {
+        _conversationId = null;
+        _conversationTitle = null;
+        _turns.clear();
+      }
+    });
+  }
+
+  String _historyDate(int milliseconds) {
+    final date = DateTime.fromMillisecondsSinceEpoch(milliseconds).toLocal();
+    final now = DateTime.now();
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
+      return 'Today';
+    }
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (date.year == yesterday.year &&
+        date.month == yesterday.month &&
+        date.day == yesterday.day) {
+      return 'Yesterday';
+    }
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
   Future<void> _send([String? suggested]) async {
     final question = (suggested ?? _input.text).trim();
     final state = AppScope.of(context);
     final engine = state.sync;
+    final database = state.db;
+    final userId = state.user.id;
+    final familyId = state.sync?.spaceId;
+    final requestGeneration = _scopeGeneration;
+    final requestConversationId = _conversationId ?? newUuid();
     if (question.isEmpty || _sending || engine == null || !state.hasSpace) {
       return;
     }
@@ -64,15 +424,45 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
     _scrollToEnd();
     try {
       final result = await engine.askMhuri(question, history: history);
-      if (!mounted) return;
       final facts = result['facts'] is Map
           ? Map<String, Object?>.from(result['facts'] as Map)
           : const <String, Object?>{};
+      final answer =
+          result['answer']?.toString() ?? 'I could not prepare an answer.';
+      AskMhuriConversation? savedConversation;
+      if (database != null && familyId != null) {
+        try {
+          savedConversation =
+              await AskMhuriHistoryStore(database.raw).saveExchange(
+            conversationId: requestConversationId,
+            userId: userId,
+            familyId: familyId,
+            question: question,
+            answer: answer,
+            facts: facts,
+            createdAtMs: DateTime.now().millisecondsSinceEpoch,
+          );
+          if (requestGeneration == _scopeGeneration && mounted) {
+            await database.kvSet(
+              _activeChatKey(userId, familyId),
+              savedConversation.id,
+            );
+            _conversations.removeWhere((c) => c.id == savedConversation!.id);
+            _conversations.insert(0, savedConversation);
+          }
+        } catch (error) {
+          debugPrint('Ask Mhuri history save failed: $error');
+        }
+      }
+      if (!mounted) return;
+      if (requestGeneration != _scopeGeneration) return;
       setState(() {
+        _conversationId = requestConversationId;
+        _conversationTitle =
+            savedConversation?.title ?? _conversationTitle ?? question;
         _turns.add(_ChatTurn(
           question: question,
-          text:
-              result['answer']?.toString() ?? 'I could not prepare an answer.',
+          text: answer,
           isAssistant: true,
           facts: facts,
         ));
@@ -93,8 +483,10 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
       _input.text = question;
     } finally {
       if (mounted) {
-        setState(() => _sending = false);
-        _scrollToEnd();
+        if (requestGeneration == _scopeGeneration) {
+          setState(() => _sending = false);
+          _scrollToEnd();
+        }
       }
     }
   }
@@ -108,7 +500,7 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
       return 'A few Ask Mhuri requests are still processing. Please try again in a moment.';
     }
     if (text.contains('AI_PROVIDER_TIMEOUT')) {
-      return 'Gemini is taking longer than expected. Your daily allowance was not used; please try again shortly.';
+      return 'That took longer than expected. Your daily allowance was not used; please try again shortly.';
     }
     if (text.contains('AI_REQUEST_TIMEOUT')) {
       return 'This request took too long to complete. Please try again shortly.';
@@ -160,20 +552,19 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
         titleSpacing: 20,
         title: Row(
           children: [
-            Icon(Icons.auto_awesome_rounded,
-                size: 23, color: context.primary),
+            Icon(Icons.auto_awesome_rounded, size: 23, color: context.primary),
             const SizedBox(width: 9),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Ask Mhuri',
+                  const Text('Ask Mhuri',
                       style: TextStyle(fontSize: 17),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
-                  Text('Family money, made clearer',
-                      style: TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w500),
+                  Text(_conversationTitle ?? 'Family money, made clearer',
+                      style:
+                          TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                 ],
@@ -182,12 +573,27 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: AppLocalizations.of(context)!.chatHistoryTitle,
+            onPressed: _showHistory,
+            icon: Badge(
+              isLabelVisible: _conversations.isNotEmpty,
+              smallSize: 7,
+              child: const Icon(Icons.history_rounded),
+            ),
+          ),
+          IconButton(
+            tooltip: AppLocalizations.of(context)!.newChat,
+            onPressed: _sending ? null : _startNewChat,
+            icon: const Icon(Icons.edit_outlined),
+          ),
           if (!plus)
-            TextButton(
+            IconButton(
+              tooltip: 'Explore Mhuri Plus',
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PlusScreen()),
               ),
-              child: const Text('Mhuri Plus'),
+              icon: const Icon(Icons.workspace_premium_outlined),
             ),
           const SizedBox(width: 8),
         ],
@@ -745,7 +1151,7 @@ class _GroundingNote extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(18, 5, 18, 8),
         child: Text(
-          'Your question, recent chat context, and selected shared figures go to Google Gemini. Estimates use Mhuri records; you decide.',
+          'Ask Mhuri uses your question, recent chat context, and selected shared financial figures to prepare an answer. Private account details are excluded; estimates use Mhuri records.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 10, color: context.inkFaint),
         ),

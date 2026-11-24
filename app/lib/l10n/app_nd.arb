@@ -202,13 +202,13 @@
   "rollRoll": "Dlulisela okusele",
   "rollAccum": "Yonga okusele",
   "monthEndReviewTitle": "Ukubuyekezwa kokuphela kwenyanga",
-  "monthEndReviewBody": "{amount} akukasetjenziswa kusukela ngenyanga ephelileyo. Kudlulisele emalini egciniweyo namkha kugcine ebhajetini.",
+  "monthEndReviewBody": "Kusesekhona {amount} yemali ebikhona ekupheleni kwenyanga edluleko. Yisa emalini egciniweyo kumbe uyitshiye ikhona.",
   "monthEndReviewCta": "Buyekeza",
   "monthEndReviewLater": "Hatshi gadesi",
   "monthEndSweptAutomatically": "Sidlulisele {amount} yensalela yenyanga ephelileyo emalini egciniweyo.",
   "monthEndReviewSheetTitle": "Imali eseleyo",
-  "monthEndReviewSheetBody": "Inyanga ephelileyo yaphela ine {amount} isebhajetini yakho. Akukho okutjintjhako kuze uqinisekise.",
-  "monthEndReviewCarryNote": "Amabhajeti anadluliselako namkha aqongako agcina insalela yawo.",
+  "monthEndReviewSheetBody": "Imuli ibile lemali ekupheleni kwenyanga edluleko; {amount} isekhona ukuthi idluliselwe. Akukho mali ezasuswa ungakaqinisekisi.",
+  "monthEndReviewCarryNote": "Amanani amabhajethi angezansi ngawokuchasisa; imali ezasuswa yibhalansi yemuli ebikhona ekupheleni kwenyanga.",
   "monthEndReviewNoGoals": "Qala wenze umgomo wokugcina imali - khonapho imali eseleyo inendawo yokuya.",
   "monthEndSavingsGoalName": "Ukonga kwe {month}",
   "@monthEndSavingsGoalName": {
@@ -735,5 +735,13 @@
   "applySplit": "Sebenzisa ukwaba",
   "recordIn": "Rekhoda ku",
   "budgetCountLabel": "{count, plural, =1{ibhajeti 1} other{amabhajeti {count}}}",
-  "amountLabel": "Imali"
+  "amountLabel": "Imali",
+  "chatHistoryTitle": "Umlando wengxoxo",
+  "newChat": "Ingxoxo entsha",
+  "noSavedChats": "Izingxoxo zakho ezigciniweyo zizavela lapha.",
+  "chatOptions": "Izinketho zengxoxo",
+  "renameChat": "Tshintsha ibizo lengxoxo",
+  "chatName": "Ibizo lengxoxo",
+  "deleteChatQuestion": "Susa ingxoxo?",
+  "delete": "Susa"
 }

@@ -3682,13 +3682,9 @@ class AppState extends ChangeNotifier {
 
   // ── Month-end review (9.6) ────────────────────────────────────────────────
   //
-  // Money left when a cycle closes is never moved silently. A bare "start at
-  // 0.00" sweep would (a) undo the promise made by `Rollover.roll` and
-  // `Rollover.accumulate` envelopes, (b) break the identity between the pool
-  // balance and the bank account, and (c) strand a bill that falls due just
-  // after payday. So the review *offers* the move instead - only for
-  // `Rollover.reset` envelopes, which are the only ones that lose the money
-  // when the cycle flips - and records the choice per cycle.
+  // Month-end cash is never moved silently. The review uses the shared cash
+  // balance at the closed-cycle boundary (capped by cash still available now),
+  // then requires an explicit choice before contributing it to savings.
 
   /// The cycle that has just closed, or null while no cycle has completed yet,
   /// while onboarding is still running, or when the closed cycle saw no money
@@ -3711,9 +3707,7 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
-  /// Snapshot of what the last closed cycle left in each budget, or null when
-  /// there is nothing to look at. Overspent envelopes are skipped: Mhuri never
-  /// carries a deficit, so there is no leftover to sweep either.
+  /// Snapshot of the last closed cycle's shared cash and budget context.
   MonthEndReview? get monthEndReview {
     final cycle = lastClosedCycle;
     if (cycle == null) return null;
@@ -3737,18 +3731,18 @@ class AppState extends ChangeNotifier {
         ),
       );
     }
-    if (lines.isEmpty) return null;
     lines.sort((a, b) => b.remaining.minor.compareTo(a.remaining.minor));
-    var sweepable = 0;
     var carried = 0;
     for (final line in lines) {
       final inDisplay = line.remaining.inCurrency(displayCurrency, rate).minor;
       if (line.carries) {
         carried += inDisplay;
-      } else {
-        sweepable += inDisplay;
       }
     }
+    final atClose = _availableToSpendAt(displayCurrency, cycle.end).minor;
+    final availableNow = availableToSpend(displayCurrency).minor;
+    final sweepable = atClose < availableNow ? atClose : availableNow;
+    if (lines.isEmpty && sweepable <= 0) return null;
     return MonthEndReview(
       cycleStart: cycle.start,
       completedAt: cycle.end,
@@ -3758,13 +3752,35 @@ class AppState extends ChangeNotifier {
     );
   }
 
+  /// Reconstructs shared spendable cash immediately before a cycle boundary
+  /// from opening account balances and ledger activity, excluding later rows.
+  Money _availableToSpendAt(Currency currency, DateTime before) {
+    var pool = 0;
+    for (final account in accounts) {
+      if (account.isPrivate) continue;
+      pool += account.balance.inCurrency(currency, rate).minor;
+    }
+    for (final transaction in familyTransactions) {
+      if (!transaction.when.isBefore(before)) continue;
+      final amount = transaction.amount.inCurrency(currency, rate).minor;
+      pool += transaction.type == TxType.income ? amount : -amount;
+    }
+    var saved = 0;
+    for (final contribution in goalTxs) {
+      if (contribution.at.isBefore(before)) {
+        saved += contribution.amount.inCurrency(currency, rate).minor;
+      }
+    }
+    return Money(pool - saved, currency);
+  }
+
   /// True when Home should invite the family to review last month's leftovers.
   bool get monthEndReviewDue {
     if (!canContributeSavings) return false;
     if (monthEndSweepMode != MonthEndSweepMode.ask) return false;
     if (monthEndReviewedCycleKey == _cycleKey(cycleStart)) return false;
     final review = monthEndReview;
-    return review != null && review.hasSweepableLeftover;
+    return review != null && review.hasCashToMove;
   }
 
   /// Where "always move leftovers" sends the money.
@@ -3824,15 +3840,16 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Moves last month's leftovers into [goal] and returns the amount moved, or
+  /// Moves the last closed cycle's available shared cash into [goal] and
+  /// returns the amount moved, or
   /// null when nothing was (no admin, no review, nothing left, no goal).
   ///
-  /// Individual envelopes can be excluded with [envelopeIds]; the move is
-  /// capped at cash the family can still spend, so a sweep can never create a
-  /// negative pool. Every contribution goes through [contribute], which means
+  /// The move is capped at cash that was available at cycle close and remains
+  /// available now, so it never sweeps later income or creates a negative
+  /// pool. Every contribution goes through [contribute], which means
   /// it is persisted, queued for sync, audited and mile-stoned like any other
   /// savings contribution.
-  Money? sweepMonthEndToGoal(Goal goal, {Set<String>? envelopeIds}) {
+  Money? sweepMonthEndToGoal(Goal goal) {
     if (!canContributeSavings) {
       debugPrint('Mhuri: unauthorized month-end sweep: ${authRole.name}');
       return null;
@@ -3841,21 +3858,16 @@ class AppState extends ChangeNotifier {
     final review = monthEndReview;
     if (review == null) return null;
     var moved = 0;
-    for (final line in review.sweepable) {
-      if (envelopeIds != null && !envelopeIds.contains(line.envelopeId)) {
-        continue;
-      }
-      if (line.remaining.minor <= 0) continue;
-      final currency = line.remaining.currency;
-      final available = availableToSpend(currency).minor;
-      if (available <= 0) break;
-      final amount = line.remaining.minor > available
-          ? Money(available, currency)
-          : line.remaining;
-      if (amount.minor <= 0) break;
-      contribute(goal, amount, id: newUuid());
-      moved += amount.inCurrency(displayCurrency, rate).minor;
-    }
+    final currency = review.totalLeft.currency;
+    final available = availableToSpend(currency).minor;
+    if (available <= 0) return null;
+    final amount = Money(
+      review.totalLeft.minor < available ? review.totalLeft.minor : available,
+      currency,
+    );
+    if (amount.minor <= 0) return null;
+    contribute(goal, amount, id: newUuid());
+    moved = amount.minor;
     if (moved <= 0) return null;
     markMonthEndReviewed();
     return Money(moved, displayCurrency);
@@ -4372,9 +4384,8 @@ class AppState extends ChangeNotifier {
         }
       }
     }
-    final cur = target?.limit.currency ??
-        customTotal?.currency ??
-        primaryCurrency;
+    final cur =
+        target?.limit.currency ?? customTotal?.currency ?? primaryCurrency;
 
     if (!canAuthorTransact) {
       debugPrint(

@@ -681,7 +681,7 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String monthEndReviewBody(Object amount) {
-    return '$amount akukasetjenziswa kusukela ngenyanga ephelileyo. Kudlulisele emalini egciniweyo namkha kugcine ebhajetini.';
+    return 'Kusesekhona $amount yemali ebikhona ekupheleni kwenyanga edluleko. Yisa emalini egciniweyo kumbe uyitshiye ikhona.';
   }
 
   @override
@@ -700,12 +700,12 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String monthEndReviewSheetBody(Object amount) {
-    return 'Inyanga ephelileyo yaphela ine $amount isebhajetini yakho. Akukho okutjintjhako kuze uqinisekise.';
+    return 'Imuli ibile lemali ekupheleni kwenyanga edluleko; $amount isekhona ukuthi idluliselwe. Akukho mali ezasuswa ungakaqinisekisi.';
   }
 
   @override
   String get monthEndReviewCarryNote =>
-      'Amabhajeti anadluliselako namkha aqongako agcina insalela yawo.';
+      'Amanani amabhajethi angezansi ngawokuchasisa; imali ezasuswa yibhalansi yemuli ebikhona ekupheleni kwenyanga.';
 
   @override
   String get monthEndReviewNoGoals =>
@@ -2461,4 +2461,28 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get amountLabel => 'Imali';
+
+  @override
+  String get chatHistoryTitle => 'Umlando wengxoxo';
+
+  @override
+  String get newChat => 'Ingxoxo entsha';
+
+  @override
+  String get noSavedChats => 'Izingxoxo zakho ezigciniweyo zizavela lapha.';
+
+  @override
+  String get chatOptions => 'Izinketho zengxoxo';
+
+  @override
+  String get renameChat => 'Tshintsha ibizo lengxoxo';
+
+  @override
+  String get chatName => 'Ibizo lengxoxo';
+
+  @override
+  String get deleteChatQuestion => 'Susa ingxoxo?';
+
+  @override
+  String get delete => 'Susa';
 }

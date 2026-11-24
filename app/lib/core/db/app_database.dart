@@ -66,6 +66,8 @@ class AppDatabase {
     'commitment_occurrence',
     'commitment_payment',
     'period_preparation',
+    'ask_mhuri_conversation',
+    'ask_mhuri_message',
   ];
 
   static const Set<String> _familyKvKeys = {
@@ -155,6 +157,8 @@ class AppDatabase {
       'commitment_occurrence',
       'commitment_payment',
       'period_preparation',
+      'ask_mhuri_conversation',
+      'ask_mhuri_message',
       'kv',
       'account_cache',
     ]) {
@@ -167,7 +171,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 28,
+        version: 29,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -575,10 +579,42 @@ class AppDatabase {
       updated_at_ms INTEGER NOT NULL
     )
     ''',
+    '''
+    CREATE TABLE IF NOT EXISTS ask_mhuri_conversation (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      family_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      created_at_ms INTEGER NOT NULL,
+      updated_at_ms INTEGER NOT NULL
+    )
+    ''',
+    '''
+    CREATE INDEX IF NOT EXISTS ask_mhuri_conversation_scope_idx
+      ON ask_mhuri_conversation (user_id, family_id, updated_at_ms DESC)
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS ask_mhuri_message (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      family_id TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+      content TEXT NOT NULL,
+      facts_json TEXT,
+      created_at_ms INTEGER NOT NULL
+    )
+    ''',
+    '''
+    CREATE INDEX IF NOT EXISTS ask_mhuri_message_conversation_idx
+      ON ask_mhuri_message (conversation_id, created_at_ms)
+    ''',
   ];
 
   bool _isFamilyKv(String key) =>
-      _familyKvKeys.contains(key) || key.startsWith('sync_cursor_');
+      _familyKvKeys.contains(key) ||
+      key.startsWith('sync_cursor_') ||
+      key.startsWith('ask_mhuri_active_');
 
   /// Parks the active account's complete family cache, including its outbox.
   /// The snapshot never contains auth tokens or device-wide preferences.

@@ -680,7 +680,7 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String monthEndReviewBody(Object amount) {
-    return '$amount haisati yashandiswa kubva mwedzi wapfuura. Iendese kumaraki kana kuisiya mubhajeti.';
+    return 'Mari inosvika $amount yebhalansi yekupera kwemwedzi wapfuura ichiripo. Iendese kumari yakachengetwa kana kuisiya iripo.';
   }
 
   @override
@@ -699,12 +699,12 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String monthEndReviewSheetBody(Object amount) {
-    return 'Mwedzi wapfuura wakapera uine $amount iri mumabhajeti ako. Hapana chinochinja kusvika wasimbisa.';
+    return 'Pakupera kwemwedzi wapfuura mhuri yaiva nemari; $amount ichiripo kuti iendeswe. Hapana chinofamba kusvikira wasimbisa.';
   }
 
   @override
   String get monthEndReviewCarryNote =>
-      'Mabhajeti anotakura kana kuunganidza anotochengeta zvaasara.';
+      'Mari iri pamabhajeti pazasi inongoratidza marongero; mari ichaendeswa inobva pamari yemhuri iripo pakupera kwemwedzi.';
 
   @override
   String get monthEndReviewNoGoals =>
@@ -2458,4 +2458,28 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get amountLabel => 'Mari';
+
+  @override
+  String get chatHistoryTitle => 'Nhoroondo yehurukuro';
+
+  @override
+  String get newChat => 'Hurukuro itsva';
+
+  @override
+  String get noSavedChats => 'Hurukuro dzako dzakachengetwa dzichaonekwa pano.';
+
+  @override
+  String get chatOptions => 'Sarudzo dzehurukuro';
+
+  @override
+  String get renameChat => 'Tumidza hurukuro patsva';
+
+  @override
+  String get chatName => 'Zita rehurukuro';
+
+  @override
+  String get deleteChatQuestion => 'Dzima hurukuro here?';
+
+  @override
+  String get delete => 'Dzima';
 }

@@ -202,13 +202,13 @@
   "rollRoll": "Arrastrar el resto",
   "rollAccum": "Acumular",
   "monthEndReviewTitle": "Revisión de fin de mes",
-  "monthEndReviewBody": "Quedan {amount} sin gastar del mes pasado. Muévelos a ahorros o déjalos en el presupuesto.",
+  "monthEndReviewBody": "Siguen disponibles hasta {amount} del saldo al cierre del mes pasado. Muévelo a ahorros o déjalo disponible.",
   "monthEndReviewCta": "Revisar",
   "monthEndReviewLater": "Ahora no",
   "monthEndSweptAutomatically": "Movimos {amount} de lo que sobró el mes pasado a ahorros.",
   "monthEndReviewSheetTitle": "Dinero sobrante",
-  "monthEndReviewSheetBody": "El mes pasado terminó con {amount} aún en tus presupuestos. Nada se mueve hasta que confirmes.",
-  "monthEndReviewCarryNote": "Los presupuestos con arrastre o acumulación ya conservan sus sobrantes.",
+  "monthEndReviewSheetBody": "La familia tenía saldo disponible al cierre del mes pasado; aún hay {amount} para mover. Nada se mueve hasta que confirmes.",
+  "monthEndReviewCarryNote": "Los importes de los presupuestos son orientativos; el importe que se mueve corresponde al saldo familiar disponible al cierre.",
   "monthEndReviewNoGoals": "Crea primero una meta de ahorro y el dinero sobrante tendrá un destino.",
   "monthEndSavingsGoalName": "Ahorro de {month}",
   "@monthEndSavingsGoalName": {
@@ -735,5 +735,13 @@
   "applySplit": "Aplicar división",
   "recordIn": "Registrar en",
   "budgetCountLabel": "{count, plural, =1{1 presupuesto} other{{count} presupuestos}}",
-  "amountLabel": "Importe"
+  "amountLabel": "Importe",
+  "chatHistoryTitle": "Historial de chats",
+  "newChat": "Nuevo chat",
+  "noSavedChats": "Tus chats guardados aparecerán aquí.",
+  "chatOptions": "Opciones del chat",
+  "renameChat": "Cambiar nombre del chat",
+  "chatName": "Nombre del chat",
+  "deleteChatQuestion": "¿Eliminar chat?",
+  "delete": "Eliminar"
 }

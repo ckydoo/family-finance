@@ -1327,7 +1327,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthEndReviewBody.
   ///
   /// In en, this message translates to:
-  /// **'{amount} is still unspent from last month. Move it to savings, or keep it in the budget.'**
+  /// **'Up to {amount} from last month\'s closing balance is still available. Move it to savings, or keep it available.'**
   String monthEndReviewBody(Object amount);
 
   /// No description provided for @monthEndReviewCta.
@@ -1357,13 +1357,13 @@ abstract class AppLocalizations {
   /// No description provided for @monthEndReviewSheetBody.
   ///
   /// In en, this message translates to:
-  /// **'Last month ended with {amount} still in your budgets. Nothing moves until you confirm.'**
+  /// **'The family had cash available at last month\'s close; {amount} is still available to move. Nothing moves until you confirm.'**
   String monthEndReviewSheetBody(Object amount);
 
   /// No description provided for @monthEndReviewCarryNote.
   ///
   /// In en, this message translates to:
-  /// **'Budgets set to roll over or accumulate already keep their leftovers.'**
+  /// **'Envelope amounts below are budget context; the move amount is the shared balance available at month-end.'**
   String get monthEndReviewCarryNote;
 
   /// No description provided for @monthEndReviewNoGoals.
@@ -4461,6 +4461,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Amount'**
   String get amountLabel;
+
+  /// No description provided for @chatHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat history'**
+  String get chatHistoryTitle;
+
+  /// No description provided for @newChat.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get newChat;
+
+  /// No description provided for @noSavedChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved chats will appear here.'**
+  String get noSavedChats;
+
+  /// No description provided for @chatOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat options'**
+  String get chatOptions;
+
+  /// No description provided for @renameChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename chat'**
+  String get renameChat;
+
+  /// No description provided for @chatName.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat name'**
+  String get chatName;
+
+  /// No description provided for @deleteChatQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat?'**
+  String get deleteChatQuestion;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
 }
 
 class _AppLocalizationsDelegate

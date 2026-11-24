@@ -201,4 +201,5 @@ const Set<String> kPlusV2Features = {
   'advanced_insights',
   'advanced_reports',
   'enhanced_reports',
+  'ask_mhuri',
 };

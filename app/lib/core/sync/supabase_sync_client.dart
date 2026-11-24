@@ -32,12 +32,19 @@ class SupabaseSyncClient {
   /// engine maps to the offline/error state like any other failure.
   static const Duration _timeout = Duration(seconds: 20);
 
-  Future<http.Response> _call(Future<http.Response> Function() fn) async {
+  Future<http.Response> _call(
+    Future<http.Response> Function() fn, {
+    Duration timeout = _timeout,
+    String? timeoutMessage,
+  }) async {
     try {
-      return await fn().timeout(_timeout);
+      return await fn().timeout(timeout);
     } on TimeoutException {
-      throw const SyncException(
-          0, 'Connection timed out - check your internet and try again.');
+      throw SyncException(
+        0,
+        timeoutMessage ??
+            'Connection timed out - check your internet and try again.',
+      );
     }
   }
 
@@ -204,13 +211,20 @@ class SupabaseSyncClient {
   /// token is forwarded; privileged work remains server-side and the service
   /// role key is never shipped in the app.
   Future<dynamic> invokeFunction(
-      String fn, Map<String, Object?> payload) async {
+    String fn,
+    Map<String, Object?> payload, {
+    Duration timeout = _timeout,
+    String? timeoutMessage,
+  }) async {
     final h = await _headers();
-    final r = await _call(() => _client.post(
-          Uri.parse('$_base/functions/v1/$fn'),
-          headers: h,
-          body: jsonEncode(payload),
-        ));
+    final r = await _call(
+        () => _client.post(
+              Uri.parse('$_base/functions/v1/$fn'),
+              headers: h,
+              body: jsonEncode(payload),
+            ),
+        timeout: timeout,
+        timeoutMessage: timeoutMessage);
     if (r.statusCode < 200 || r.statusCode >= 300) {
       throw SyncException(r.statusCode, _msg(r));
     }

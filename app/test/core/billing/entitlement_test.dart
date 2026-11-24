@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mhuri_money/core/billing/billing_coordinator.dart';
 import 'package:mhuri_money/core/billing/entitlement.dart';
+import 'package:mhuri_money/core/state/app_state.dart';
 
 void main() {
   group('FamilyEntitlement', () {
@@ -39,6 +40,20 @@ void main() {
       expect(entitlement.plusActive, isTrue);
       expect(entitlement.features, contains('advanced_reports'));
     });
+  });
+
+  test('active Plus unlocks the same feature keys used by app modules', () {
+    final state = AppState();
+    state.familyEntitlement = const FamilyEntitlement(
+      familyId: 'family-1',
+      status: EntitlementStatus.active,
+      features: {},
+    );
+
+    for (final feature in kPlusV2Features) {
+      expect(state.hasPlusFeature(feature), isTrue, reason: feature);
+    }
+    expect(state.hasPlusFeature('ask_mhuri'), isTrue);
   });
 
   test('billing feature flag defaults off', () {

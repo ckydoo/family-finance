@@ -677,7 +677,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String monthEndReviewBody(Object amount) {
-    return '$amount is still unspent from last month. Move it to savings, or keep it in the budget.';
+    return 'Up to $amount from last month\'s closing balance is still available. Move it to savings, or keep it available.';
   }
 
   @override
@@ -696,12 +696,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String monthEndReviewSheetBody(Object amount) {
-    return 'Last month ended with $amount still in your budgets. Nothing moves until you confirm.';
+    return 'The family had cash available at last month\'s close; $amount is still available to move. Nothing moves until you confirm.';
   }
 
   @override
   String get monthEndReviewCarryNote =>
-      'Budgets set to roll over or accumulate already keep their leftovers.';
+      'Envelope amounts below are budget context; the move amount is the shared balance available at month-end.';
 
   @override
   String get monthEndReviewNoGoals =>
@@ -2449,4 +2449,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get amountLabel => 'Amount';
+
+  @override
+  String get chatHistoryTitle => 'Chat history';
+
+  @override
+  String get newChat => 'New chat';
+
+  @override
+  String get noSavedChats => 'Your saved chats will appear here.';
+
+  @override
+  String get chatOptions => 'Chat options';
+
+  @override
+  String get renameChat => 'Rename chat';
+
+  @override
+  String get chatName => 'Chat name';
+
+  @override
+  String get deleteChatQuestion => 'Delete chat?';
+
+  @override
+  String get delete => 'Delete';
 }

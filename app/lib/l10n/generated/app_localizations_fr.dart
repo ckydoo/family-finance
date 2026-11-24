@@ -685,7 +685,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String monthEndReviewBody(Object amount) {
-    return 'Il reste $amount non dépensés du mois dernier. Placez-les en épargne ou gardez-les dans le budget.';
+    return 'Jusqu\'à $amount du solde de clôture du mois dernier reste disponible. Placez-le en épargne ou laissez-le disponible.';
   }
 
   @override
@@ -704,12 +704,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String monthEndReviewSheetBody(Object amount) {
-    return 'Le mois dernier s\'est terminé avec $amount encore dans vos budgets. Rien ne bouge avant votre confirmation.';
+    return 'La famille disposait d\'un solde à la clôture du mois dernier ; $amount reste disponible pour un transfert. Rien ne bouge avant votre confirmation.';
   }
 
   @override
   String get monthEndReviewCarryNote =>
-      'Les budgets en report ou en accumulation conservent déjà leur reliquat.';
+      'Les montants des budgets ci-dessous sont indicatifs ; le transfert porte sur le solde familial disponible à la clôture.';
 
   @override
   String get monthEndReviewNoGoals =>
@@ -2480,4 +2480,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get amountLabel => 'Montant';
+
+  @override
+  String get chatHistoryTitle => 'Historique des conversations';
+
+  @override
+  String get newChat => 'Nouvelle conversation';
+
+  @override
+  String get noSavedChats => 'Vos conversations enregistrées apparaîtront ici.';
+
+  @override
+  String get chatOptions => 'Options de conversation';
+
+  @override
+  String get renameChat => 'Renommer la conversation';
+
+  @override
+  String get chatName => 'Nom de la conversation';
+
+  @override
+  String get deleteChatQuestion => 'Supprimer la conversation ?';
+
+  @override
+  String get delete => 'Supprimer';
 }

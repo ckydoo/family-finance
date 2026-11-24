@@ -202,13 +202,13 @@
   "rollRoll": "Transportar o resto",
   "rollAccum": "Acumular",
   "monthEndReviewTitle": "Revisão de fim de mês",
-  "monthEndReviewBody": "Ainda há {amount} não gastos do mês passado. Mova para a poupança ou mantenha no orçamento.",
+  "monthEndReviewBody": "Até {amount} do saldo no fecho do mês passado continua disponível. Mova para a poupança ou mantenha disponível.",
   "monthEndReviewCta": "Revisar",
   "monthEndReviewLater": "Agora não",
   "monthEndSweptAutomatically": "Movemos {amount} das sobras do mês passado para a poupança.",
   "monthEndReviewSheetTitle": "Dinheiro sobrando",
-  "monthEndReviewSheetBody": "O mês passado terminou com {amount} ainda nos seus orçamentos. Nada muda até você confirmar.",
-  "monthEndReviewCarryNote": "Orçamentos com transição ou acumulação já guardam as sobras.",
+  "monthEndReviewSheetBody": "A família tinha saldo disponível no fecho do mês passado; ainda há {amount} para mover. Nada será movido até confirmar.",
+  "monthEndReviewCarryNote": "Os valores dos orçamentos abaixo são informativos; o valor movido corresponde ao saldo familiar disponível no fecho.",
   "monthEndReviewNoGoals": "Crie primeiro uma meta de poupança - assim o dinheiro sobrando tem para onde ir.",
   "monthEndSavingsGoalName": "Poupança de {month}",
   "@monthEndSavingsGoalName": {
@@ -735,5 +735,13 @@
   "applySplit": "Aplicar divisão",
   "recordIn": "Registar em",
   "budgetCountLabel": "{count, plural, =1{1 orçamento} other{{count} orçamentos}}",
-  "amountLabel": "Valor"
+  "amountLabel": "Valor",
+  "chatHistoryTitle": "Histórico de conversas",
+  "newChat": "Nova conversa",
+  "noSavedChats": "As conversas guardadas aparecerão aqui.",
+  "chatOptions": "Opções da conversa",
+  "renameChat": "Renomear conversa",
+  "chatName": "Nome da conversa",
+  "deleteChatQuestion": "Eliminar conversa?",
+  "delete": "Eliminar"
 }

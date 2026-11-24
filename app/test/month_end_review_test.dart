@@ -73,14 +73,15 @@ void main() {
   }
 
   group('review snapshot', () {
-    test('lists what each budget left and totals only sweepable money', () {
+    test('shows budget context and totals the real cycle closing balance', () {
       final s = build();
       final groceries = env('e1', 'Groceries', 40000);
-      final buffer = env('e7', 'Emergency buffer', 50000,
-          rollover: Rollover.roll);
+      final buffer =
+          env('e7', 'Emergency buffer', 50000, rollover: Rollover.roll);
       s.envelopes.addAll([groceries, buffer]);
       spend(s, groceries, 25000, DateTime(2026, 2, 12));
       spend(s, buffer, 20000, DateTime(2026, 2, 14));
+      earn(s, 100000, DateTime(2026, 2, 2));
 
       final review = s.monthEndReview!;
       expect(review.cycleStart, DateTime(2026, 2, 1));
@@ -89,9 +90,10 @@ void main() {
       // Biggest leftover first: the buffer kept 300, groceries 150.
       expect(review.lines.first.envelopeId, 'e7');
       expect(review.lines.last.envelopeId, 'e1');
-      expect(review.totalLeft.minor, 15000, reason: 'only reset budgets');
+      expect(review.totalLeft.minor, 55000,
+          reason: 'closing cash is income less family spending');
       expect(review.carriedLeft.minor, 30000, reason: 'rollover keeps its own');
-      expect(review.sweepable.map((l) => l.envelopeId), ['e1']);
+      expect(review.resetEnvelopes.map((l) => l.envelopeId), ['e1']);
       expect(review.carried.map((l) => l.envelopeId), ['e7']);
     });
 
@@ -135,6 +137,7 @@ void main() {
       spend(s, shared, 4000, DateTime(2026, 2, 3));
       spend(s, personal, 1000, DateTime(2026, 2, 3));
       spend(s, archived, 1000, DateTime(2026, 2, 3));
+      earn(s, 20000, DateTime(2026, 2, 1));
 
       final review = s.monthEndReview!;
       expect(review.lines.map((l) => l.envelopeId), ['e1']);
@@ -151,29 +154,33 @@ void main() {
       final g = env('e1', 'Groceries', 10000);
       firstDay.envelopes.add(g);
       spend(firstDay, g, 5000, DateTime(2026, 2, 10));
+      earn(firstDay, 10000, DateTime(2026, 2, 1));
       expect(firstDay.monthEndReview, isNotNull);
       expect(firstDay.monthEndReview!.totalLeft.minor, 5000);
     });
   });
 
   group('asking', () {
-    test('due once per cycle, and never for carry-only leftovers', () {
+    test('due once per cycle when closing cash remains available', () {
       final s = build();
       final groceries = env('e1', 'Groceries', 40000);
       s.envelopes.add(groceries);
       spend(s, groceries, 25000, DateTime(2026, 2, 12));
+      earn(s, 40000, DateTime(2026, 2, 2));
 
       expect(s.monthEndReviewDue, isTrue);
       s.markMonthEndReviewed();
       expect(s.monthEndReviewDue, isFalse,
           reason: 'answered for this cycle - never nags twice');
 
-      // Carry-only money never triggers the review.
+      // The prompt follows actual shared cash, even if the budget remainder
+      // happens to be in a rollover envelope.
       final carried = build();
       carried.envelopes
           .add(env('e7', 'Buffer', 50000, rollover: Rollover.roll));
       spend(carried, carried.envelopes.first, 10000, DateTime(2026, 2, 2));
-      expect(carried.monthEndReviewDue, isFalse);
+      earn(carried, 20000, DateTime(2026, 2, 1));
+      expect(carried.monthEndReviewDue, isTrue);
     });
 
     test('"never" silences the review until the family opts back in', () {
@@ -181,6 +188,7 @@ void main() {
       final groceries = env('e1', 'Groceries', 40000);
       s.envelopes.add(groceries);
       spend(s, groceries, 25000, DateTime(2026, 2, 12));
+      earn(s, 40000, DateTime(2026, 2, 2));
 
       s.setMonthEndSweepMode(MonthEndSweepMode.never);
       expect(s.monthEndReviewDue, isFalse);
@@ -190,16 +198,17 @@ void main() {
           reason: 'switching the preference re-opens the question');
     });
 
-    test('carry-only leftovers are never swept even when selected', () {
+    test('moves the real balance even when only rollover budgets remain', () {
       final s = build();
-      final buffer =
-          env('e7', 'Buffer', 50000, rollover: Rollover.roll);
+      final buffer = env('e7', 'Buffer', 50000, rollover: Rollover.roll);
       s.envelopes.add(buffer);
       spend(s, buffer, 10000, DateTime(2026, 2, 2));
+      earn(s, 20000, DateTime(2026, 2, 1));
       final target = goal(s);
 
-      expect(s.sweepMonthEndToGoal(target), isNull);
-      expect(s.savedOn(target).minor, 0);
+      expect(s.monthEndReview!.totalLeft.minor, 10000);
+      expect(s.sweepMonthEndToGoal(target)!.minor, 10000);
+      expect(s.savedOn(target).minor, 10000);
     });
   });
 
@@ -215,9 +224,9 @@ void main() {
 
       final movedKind = s.sweepMonthEndToGoal(target)!;
 
-      expect(movedKind.minor, 15000);
-      expect(s.savedOn(target).minor, 15000);
-      expect(s.availableToSpend(usd).minor, cashBefore - 15000,
+      expect(movedKind.minor, 75000);
+      expect(s.savedOn(target).minor, 75000);
+      expect(s.availableToSpend(usd).minor, cashBefore - 75000,
           reason: 'swept money leaves the spendable pool');
       // Budget limits are untouched: lowering a limit to 0 would read as
       // "no cap" and quietly unlock unlimited spending.
@@ -225,7 +234,7 @@ void main() {
       expect(s.monthEndReviewDue, isFalse);
     });
 
-    test('respects the envelopes the family left unticked', () {
+    test('moves all cycle closing cash, including unallocated balance', () {
       final s = build();
       final groceries = env('e1', 'Groceries', 40000);
       final transport = env('e3', 'Transport', 20000);
@@ -235,10 +244,39 @@ void main() {
       earn(s, 100000, DateTime(2026, 2, 2));
       final target = goal(s);
 
-      final moved = s.sweepMonthEndToGoal(target, envelopeIds: {'e1'})!;
+      final moved = s.sweepMonthEndToGoal(target)!;
 
-      expect(moved.minor, 15000);
-      expect(s.savedOn(target).minor, 15000);
+      expect(moved.minor, 63000);
+      expect(s.savedOn(target).minor, 63000);
+    });
+
+    test('review amount matches the 33.95 closing balance', () {
+      final s = build();
+      final groceries = env('e1', 'Groceries', 100000);
+      s.envelopes.add(groceries);
+      earn(s, 10000, DateTime(2026, 2, 1));
+      spend(s, groceries, 6605, DateTime(2026, 2, 28));
+      final target = goal(s);
+
+      expect(s.availableToSpend(usd).minor, 3395);
+      expect(s.monthEndReview!.totalLeft.minor, 3395);
+      expect(s.sweepMonthEndToGoal(target)!.minor, 3395);
+      expect(s.availableToSpend(usd).minor, 0);
+      expect(s.savedOn(target).minor, 3395);
+    });
+
+    test('caps old month-end balance at cash still available today', () {
+      final s = build();
+      final groceries = env('e1', 'Groceries', 100000);
+      s.envelopes.add(groceries);
+      earn(s, 10000, DateTime(2026, 2, 1));
+      spend(s, groceries, 6605, DateTime(2026, 2, 28));
+      spend(s, groceries, 2000, DateTime(2026, 3, 5));
+      final target = goal(s);
+
+      expect(s.monthEndReview!.totalLeft.minor, 1395);
+      expect(s.sweepMonthEndToGoal(target)!.minor, 1395);
+      expect(s.availableToSpend(usd).minor, 0);
     });
 
     test('never sweeps more cash than the family can still spend', () {
@@ -258,6 +296,7 @@ void main() {
       final groceries = env('e1', 'Groceries', 40000);
       s.envelopes.add(groceries);
       spend(s, groceries, 25000, DateTime(2026, 2, 12));
+      earn(s, 40000, DateTime(2026, 2, 2));
       final jar = goal(s, kidJar: true);
 
       expect(s.monthEndReviewDue, isTrue);
@@ -276,16 +315,17 @@ void main() {
       final target = goal(s);
 
       s.setMonthEndSweepMode(MonthEndSweepMode.always, goalId: target.id);
-      expect(s.monthEndReviewDue, isFalse, reason: 'automation replaces asking');
+      expect(s.monthEndReviewDue, isFalse,
+          reason: 'automation replaces asking');
 
       final moved = s.applyMonthEndAutomation();
-      expect(moved?.minor, 15000);
-      expect(s.lastMonthEndSweep?.minor, 15000);
-      expect(s.savedOn(target).minor, 15000);
+      expect(moved?.minor, 75000);
+      expect(s.lastMonthEndSweep?.minor, 75000);
+      expect(s.savedOn(target).minor, 75000);
 
       // A second run in the same cycle is a no-op.
       expect(s.applyMonthEndAutomation(), isNull);
-      expect(s.savedOn(target).minor, 15000);
+      expect(s.savedOn(target).minor, 75000);
 
       s.clearLastMonthEndSweep();
       expect(s.lastMonthEndSweep, isNull);
@@ -296,6 +336,7 @@ void main() {
       final groceries = env('e1', 'Groceries', 40000);
       s.envelopes.add(groceries);
       spend(s, groceries, 25000, DateTime(2026, 2, 12));
+      earn(s, 40000, DateTime(2026, 2, 2));
 
       s.setMonthEndSweepMode(MonthEndSweepMode.always);
 

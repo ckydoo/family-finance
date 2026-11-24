@@ -685,7 +685,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String monthEndReviewBody(Object amount) {
-    return 'Ainda há $amount não gastos do mês passado. Mova para a poupança ou mantenha no orçamento.';
+    return 'Até $amount do saldo no fecho do mês passado continua disponível. Mova para a poupança ou mantenha disponível.';
   }
 
   @override
@@ -704,12 +704,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String monthEndReviewSheetBody(Object amount) {
-    return 'O mês passado terminou com $amount ainda nos seus orçamentos. Nada muda até você confirmar.';
+    return 'A família tinha saldo disponível no fecho do mês passado; ainda há $amount para mover. Nada será movido até confirmar.';
   }
 
   @override
   String get monthEndReviewCarryNote =>
-      'Orçamentos com transição ou acumulação já guardam as sobras.';
+      'Os valores dos orçamentos abaixo são informativos; o valor movido corresponde ao saldo familiar disponível no fecho.';
 
   @override
   String get monthEndReviewNoGoals =>
@@ -2465,4 +2465,28 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get amountLabel => 'Valor';
+
+  @override
+  String get chatHistoryTitle => 'Histórico de conversas';
+
+  @override
+  String get newChat => 'Nova conversa';
+
+  @override
+  String get noSavedChats => 'As conversas guardadas aparecerão aqui.';
+
+  @override
+  String get chatOptions => 'Opções da conversa';
+
+  @override
+  String get renameChat => 'Renomear conversa';
+
+  @override
+  String get chatName => 'Nome da conversa';
+
+  @override
+  String get deleteChatQuestion => 'Eliminar conversa?';
+
+  @override
+  String get delete => 'Eliminar';
 }

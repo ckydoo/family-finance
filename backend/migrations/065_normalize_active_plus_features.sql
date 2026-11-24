@@ -19,7 +19,8 @@ as $$
     "enhanced_family_chat",
     "advanced_insights",
     "advanced_reports",
-    "enhanced_reports"
+    "enhanced_reports",
+    "ask_mhuri"
   ]'::jsonb;
 $$;
 
