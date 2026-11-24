@@ -227,6 +227,7 @@ lib/features/legal/legal_screen.dart|Open Source Licenses
 lib/features/legal/legal_screen.dart|Permanent Account Purge
 lib/features/legal/legal_screen.dart|View Open Source Licenses
 lib/features/lists/lists_screen.dart|Add first item
+lib/features/lists/lists_screen.dart|Add to shopping list
 lib/features/lists/lists_screen.dart|Anyone
 lib/features/lists/lists_screen.dart|Assign to
 lib/features/lists/lists_screen.dart|Budget category
@@ -241,6 +242,8 @@ lib/features/lists/lists_screen.dart|Record expense
 lib/features/lists/lists_screen.dart|Remove item
 lib/features/lists/lists_screen.dart|Reuse purchased items
 lib/features/lists/lists_screen.dart|Save changes
+lib/features/lists/lists_screen.dart|Scan receipt
+lib/features/lists/lists_screen.dart|Scanning…
 lib/features/lists/lists_screen.dart|Search shopping items
 lib/features/lists/lists_screen.dart|Shopping item updated
 lib/features/lists/lists_screen.dart|Undo

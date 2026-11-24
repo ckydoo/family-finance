@@ -10,6 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/widgets/ui.dart';
 import '../family_chat/family_chat_screen.dart';
+import 'receipt_scanner.dart';
 
 /// Shared shopping list connected to the budget (spec Module F, §7.6).
 class ListsScreen extends StatefulWidget {
@@ -652,6 +653,53 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
         : '',
   );
   String? amountError;
+  // Items detected by the receipt scanner, offered to be added to the list.
+  List<ReceiptItem> scannedItems = const [];
+  String? scanNotice;
+  bool scanning = false;
+
+  Future<void> _scanReceipt(
+    BuildContext sheetContext,
+    void Function() refresh,
+  ) async {
+    if (scanning) return;
+    scanning = true;
+    refresh();
+    final result = await scanReceipt(sheetContext);
+    scanning = false;
+    if (result == null) return;
+    if (!sheetContext.mounted) return;
+    if (result.total != null) {
+      amountController.text = result.total!.toStringAsFixed(2);
+      amountError = null;
+    }
+    scannedItems = result.items;
+    scanNotice =
+        result.total != null ? null : 'No total found on the receipt.';
+    refresh();
+  }
+
+  void _addScannedItems(
+    BuildContext sheetContext,
+    AppState state,
+    Currency cur,
+    void Function() refresh,
+  ) {
+    if (scannedItems.isEmpty) return;
+    final count = scannedItems.length;
+    for (final item in scannedItems) {
+      state.addItem(item.name, 1, Money.fromMajor(item.price, cur));
+    }
+    scannedItems = const [];
+    scanNotice = null;
+    refresh();
+    ScaffoldMessenger.of(sheetContext).showSnackBar(
+      SnackBar(
+        content: Text('Added $count item${count == 1 ? '' : 's'} to the list'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   return showMhuriSheet<
       ({String? envelopeId, Method method, Money customTotal})>(
@@ -702,6 +750,62 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
                   errorText: amountError,
                 ),
               ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: scanning
+                    ? null
+                    : () =>
+                        _scanReceipt(sheetContext, () => setSheet(() {})),
+                icon: scanning
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.receipt_long_outlined, size: 20),
+                label: Text(scanning ? 'Scanning…' : 'Scan receipt'),
+              ),
+              if (scanNotice != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  scanNotice!,
+                  style: const TextStyle(
+                    color: Colors.orange,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+              if (scannedItems.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'Detected ${scannedItems.length} item'
+                  '${scannedItems.length == 1 ? '' : 's'}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...scannedItems.take(6).map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${item.name} — ${cur.symbol}${item.price.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                PrimaryButton(
+                  label: 'Add to shopping list',
+                  onPressed: () => _addScannedItems(
+                    sheetContext,
+                    state,
+                    cur,
+                    () => setSheet(() {}),
+                  ),
+                ),
+              ],
               const SizedBox(height: 14),
               if (available.isNotEmpty) ...[
                 DropdownButtonFormField<String>(
