@@ -364,67 +364,65 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   ),
                 ),
               Expanded(
-                child: rows.isEmpty
-                    ? ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
-                        children: [
-                          if (_hasFilters) ...[
-                            EmptyState(
-                              icon: Icons.filter_alt_off_outlined,
-                              title: AppLocalizations.of(context)!
-                                  .noMatchingActivity,
-                              subtitle: AppLocalizations.of(context)!
-                                  .noMatchingActivityHint,
-                            ),
-                            Center(
-                              child: TextButton(
-                                onPressed: _clearFilters,
-                                child: Text(
-                                    AppLocalizations.of(context)!.clearFilters),
-                              ),
-                            ),
-                          ] else
-                            EmptyState(
-                              icon: Icons.receipt_long,
-                              title:
-                                  AppLocalizations.of(context)!.noActivityTitle,
-                              subtitle:
-                                  AppLocalizations.of(context)!.noActivityHint,
-                            ),
-                        ],
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                        itemCount: rows.length,
-                        itemBuilder: (context, index) {
-                          final row = rows[index];
-                          if (row is String) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.only(top: 14, bottom: 8),
-                              child: Text(
-                                row,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.inkSoft,
-                                ),
-                              ),
-                            );
-                          }
-                          final activity = row as FamilyActivity;
-                          if (activity.entity == 'transaction') {
-                            final tx = s.txs
-                                .where((t) => t.id == activity.entityId)
-                                .firstOrNull;
-                            if (tx != null) {
-                              return TxTile(
-                                  tx: tx, dense: true, surface: false);
-                            }
-                          }
-                          return _FamilyActivityTile(activity: activity);
-                        },
-                      ),
+                child: PaginatedList<Object>(
+                  items: rows,
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                  pageSize: 25,
+                  emptyWidget: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
+                    children: [
+                      if (_hasFilters) ...[
+                        EmptyState(
+                          icon: Icons.filter_alt_off_outlined,
+                          title: AppLocalizations.of(context)!
+                              .noMatchingActivity,
+                          subtitle: AppLocalizations.of(context)!
+                              .noMatchingActivityHint,
+                        ),
+                        Center(
+                          child: TextButton(
+                            onPressed: _clearFilters,
+                            child: Text(
+                                AppLocalizations.of(context)!.clearFilters),
+                          ),
+                        ),
+                      ] else
+                        EmptyState(
+                          icon: Icons.receipt_long,
+                          title:
+                              AppLocalizations.of(context)!.noActivityTitle,
+                          subtitle:
+                              AppLocalizations.of(context)!.noActivityHint,
+                        ),
+                    ],
+                  ),
+                  itemBuilder: (context, index) {
+                    final row = rows[index];
+                    if (row is String) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 14, bottom: 8),
+                        child: Text(
+                          row,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: context.inkSoft,
+                          ),
+                        ),
+                      );
+                    }
+                    final activity = row as FamilyActivity;
+                    if (activity.entity == 'transaction') {
+                      final tx = s.txs
+                          .where((t) => t.id == activity.entityId)
+                          .firstOrNull;
+                      if (tx != null) {
+                        return TxTile(tx: tx, dense: true, surface: false);
+                      }
+                    }
+                    return _FamilyActivityTile(activity: activity);
+                  },
+                ),
               ),
             ],
           ),
