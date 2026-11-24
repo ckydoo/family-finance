@@ -268,7 +268,9 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     widget.state
       ..setMyName(person)
       ..setPrimaryCurrency(_currency);
-    await _uploadPhotoIfNeeded();
+    // The avatar upload is non-fatal and can be slow on a poor connection -
+    // never block the step transition on it. Fire it and move on.
+    unawaited(_uploadPhotoIfNeeded());
     mhuriEvent(
       MhuriAnalyticsEvents.onboardingStepCompleted,
       {'step': 'create', 'locale': widget.state.localeCode},
@@ -339,7 +341,9 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       ..setPrimaryCurrency(_currency)
       ..setSecondaryCurrency(_secondaryCurrency)
       ..setMonthStartDay(_monthStartDay);
-    await _uploadPhotoIfNeeded();
+    // Non-fatal avatar upload: run in the background so quick-start setup is
+    // not delayed by a slow photo upload.
+    unawaited(_uploadPhotoIfNeeded());
 
     final selected = _allTemplates
         .where((t) => _selectedTemplateKeys.contains(t.key))
@@ -723,6 +727,21 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             ],
           ),
         ),
+        // Pin the primary action above the keyboard on every device. The action
+        // is a bottomNavigationBar (not body content), so it is not resized away
+        // by the Scaffold and must clear the IME inset explicitly - the same
+        // keyboard-safe contract the quick-add sheet already relies on.
+        bottomNavigationBar: Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              child: _actionBar(),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -759,21 +778,65 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     );
   }
 
-  Widget _page(List<Widget> children, Widget bottom) {
-    return Column(
-      children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-            children: children,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-          child: bottom,
-        ),
-      ],
+  /// Scrollable body for a wizard step. The action button is no longer part of
+  /// this column - it lives in the Scaffold's keyboard-safe bottomNavigationBar.
+  Widget _scrollContent(List<Widget> children) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+      children: children,
     );
+  }
+
+  /// Primary action for the current step, pinned above the keyboard by the
+  /// Scaffold's bottomNavigationBar.
+  Widget _actionBar() {
+    return switch (_step) {
+      _Step.create => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _primaryButton('Continue  →', _busy ? null : _handleCreateFamily),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                key: const ValueKey('onboarding_quick_start_button'),
+                onPressed: _busy ? null : _handleQuickStartFamily,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.primary,
+                  side: BorderSide(color: context.hairline),
+                  minimumSize: const Size.fromHeight(44),
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                ),
+                child: const Text(
+                  'Quick start with defaults',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+      _Step.currencies =>
+          _primaryButton('Continue  →', _busy ? null : _handleSaveCurrencies),
+      _Step.spending =>
+          _primaryButton('Continue  →', _busy ? null : _handleSaveSpendingAreas),
+      _Step.ready => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _primaryButton(
+                  'Add money coming in', _busy ? null : _finishWithIncome),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _busy ? null : _finishToHome,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.primary,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
+                ),
+                child: const Text('Go to Home',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+      _Step.join =>
+          _primaryButton('Join family', _busy ? null : _handleJoinFamily),
+    };
   }
 
   Widget _title(String text, [String? subtitle]) {
@@ -857,7 +920,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   // ── Step 1: Create your family ─────────────────────────────────────────────
   Widget _createStep() {
     final l = AppLocalizations.of(context)!;
-    return _page(
+    return _scrollContent(
       [
         Center(
           child: GestureDetector(
@@ -970,33 +1033,12 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           ),
         ),
       ],
-      Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _primaryButton('Continue  →', _busy ? null : _handleCreateFamily),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            key: const ValueKey('onboarding_quick_start_button'),
-            onPressed: _busy ? null : _handleQuickStartFamily,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.primary,
-              side: BorderSide(color: context.hairline),
-              minimumSize: const Size.fromHeight(44),
-              shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-            ),
-            child: const Text(
-              'Quick start with defaults',
-              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   // ── Step 2: Currencies ─────────────────────────────────────────────────────
   Widget _currenciesStep() {
-    return _page(
+    return _scrollContent(
       [
         _title(
           'Which currencies do you use?',
@@ -1119,13 +1161,12 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         ),
         if (_error != null) _errorBox(),
       ],
-      _primaryButton('Continue  →', _busy ? null : _handleSaveCurrencies),
     );
   }
 
   // ── Step 3: Choose spending areas ──────────────────────────────────────────
   Widget _spendingStep() {
-    return _page(
+    return _scrollContent(
       [
         _title(
           'What do you normally spend money on?',
@@ -1236,13 +1277,12 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           ),
         if (_error != null) _errorBox(),
       ],
-      _primaryButton('Continue  →', _busy ? null : _handleSaveSpendingAreas),
     );
   }
 
   // ── Step 4: Family Ready ───────────────────────────────────────────────────
   Widget _readyStep() {
-    return _page(
+    return _scrollContent(
       [
         const SizedBox(height: 16),
         Center(
@@ -1308,23 +1348,6 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         ),
         if (_error != null) _errorBox(),
       ],
-      Column(
-        children: [
-          _primaryButton(
-              'Add money coming in', _busy ? null : _finishWithIncome),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: _busy ? null : _finishToHome,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.primary,
-              minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(borderRadius: kBRadiusM),
-            ),
-            child: const Text('Go to Home',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1339,7 +1362,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         ? '${invite['inviter_name'] ?? 'A family admin'} invited you to manage family money together. You\'ll join as an Adult Member.'
         : 'Use the code shared by a family member.';
 
-    return _page(
+    return _scrollContent(
       [
         _title(familyTitle, subTitle),
         const SizedBox(height: 24),
@@ -1387,7 +1410,6 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           ),
         ),
       ],
-      _primaryButton('Join family', _busy ? null : _handleJoinFamily),
     );
   }
 }

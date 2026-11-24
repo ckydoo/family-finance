@@ -574,6 +574,18 @@ class AppState extends ChangeNotifier {
     if (_store != null) _fire(_store!.saveKv(k, v));
   }
 
+  /// Reads many kv keys in one concurrent batch. Each `kvGet` is a separate
+  /// SQLite query; doing them one-by-one serialised the boot splash behind a
+  /// long chain of round trips. One `Future.wait` batch keeps startup snappy.
+  Future<Map<String, String?>> _readKvs(List<String> keys) async {
+    final database = db;
+    if (database == null) return const {};
+    final values = await Future.wait(keys.map(database.kvGet));
+    return {
+      for (var i = 0; i < keys.length; i++) keys[i]: values[i],
+    };
+  }
+
   Future<void> _hydrate() async {
     final store = _store!;
     try {
@@ -595,34 +607,66 @@ class AppState extends ChangeNotifier {
         if (!adopted) await db?.wipeUserData();
         await db?.kvSet('live_purged_v1', '1');
       }
+      // Read the identity + settings keys in one concurrent batch (see
+      // [_readKvs]) instead of serialising the splash behind many round trips.
+      final kv = await _readKvs([
+        'members_v1',
+        'space_name',
+        'me_id',
+        'space_id',
+        'mukando_enabled',
+        'onboarding_done',
+        'onboarding_stage',
+        'onboarding_templates',
+        'dismissed_getting_started',
+        'month_start_day',
+        'month_end_sweep_mode',
+        'month_end_sweep_goal',
+        'month_end_review_cycle',
+        'theme_mode',
+        'hide_amounts',
+        'auto_hide',
+        'primary_currency',
+        'secondary_currency',
+        'displayCurrency',
+        'custom_rate',
+        'notify_enabled',
+        'large_text',
+        'locale',
+        'overspend_policy',
+        'last_tx_currency',
+        'last_tx_method',
+        'last_tx_envelope',
+        'chat_last_read_ms',
+        'notification_read_keys',
+      ]);
       // Device-local family identity (live): owner member + space name.
-      final rawMembers = await db?.kvGet('members_v1');
+      final rawMembers = kv['members_v1'];
       if (rawMembers != null && rawMembers.isNotEmpty) {
         _loadMembersJson(rawMembers);
       }
-      final savedName = await db?.kvGet('space_name');
+      final savedName = kv['space_name'];
       if (savedName != null && savedName.isNotEmpty) {
         space = FamilySpace(name: savedName);
       }
-      final meId = await db?.kvGet('me_id');
+      final meId = kv['me_id'];
       if (members.isNotEmpty) {
         _user = members.firstWhere(
           (m) => m.id == meId,
           orElse: () => members.first,
         );
       }
-      final muk = await db?.kvGet('mukando_enabled');
-      mukandoEnabled = muk == '1';
+      mukandoEnabled = kv['mukando_enabled'] == '1';
       // Onboarding state is valid even before a new family has envelopes or
       // transactions. Previously it was only read inside `hasData()`, so an
       // empty but successfully created family reopened the create screen.
-      final onboardingMarker = await db?.kvGet('onboarding_done');
-      final savedStage = await db?.kvGet('onboarding_stage');
+      final onboardingMarker = kv['onboarding_done'];
+      final savedStage = kv['onboarding_stage'];
       if (savedStage != null && savedStage.isNotEmpty) {
         onboardingStage = savedStage;
       }
       onboardingComplete = onboardingMarker == '1';
-      final savedTemplates = await db?.kvGet('onboarding_templates');
+      final savedTemplates = kv['onboarding_templates'];
       if (savedTemplates != null && savedTemplates.isNotEmpty) {
         try {
           final decoded = jsonDecode(savedTemplates);
@@ -644,55 +688,54 @@ class AppState extends ChangeNotifier {
       // while new staged families always persist `onboarding_stage`.
       if (onboardingMarker == null &&
           (savedStage == null || savedStage.isEmpty)) {
-        final existingSpaceId = await db?.kvGet('space_id');
+        final existingSpaceId = kv['space_id'];
         if (existingSpaceId != null && existingSpaceId.isNotEmpty) {
           onboardingComplete = true;
         }
       }
-      final dismissedMarker = await db?.kvGet('dismissed_getting_started');
-      gettingStartedDismissed = dismissedMarker == '1';
-      final monthStartMarker = await db?.kvGet('month_start_day');
+      gettingStartedDismissed = kv['dismissed_getting_started'] == '1';
+      final monthStartMarker = kv['month_start_day'];
       if (monthStartMarker != null && monthStartMarker.isNotEmpty) {
         final parsed = int.tryParse(monthStartMarker);
         if (parsed != null && parsed >= 1 && parsed <= 28) {
           monthStartDay = parsed;
         }
       }
-      final sweepModeMarker = await db?.kvGet('month_end_sweep_mode');
+      final sweepModeMarker = kv['month_end_sweep_mode'];
       if (sweepModeMarker != null && sweepModeMarker.isNotEmpty) {
         final parsed = int.tryParse(sweepModeMarker);
         if (parsed != null) {
           monthEndSweepMode = MonthEndSweepModeX.fromIndex(parsed);
         }
       }
-      final sweepGoalMarker = await db?.kvGet('month_end_sweep_goal');
+      final sweepGoalMarker = kv['month_end_sweep_goal'];
       if (sweepGoalMarker != null && sweepGoalMarker.isNotEmpty) {
         monthEndSweepGoalId = sweepGoalMarker;
       }
-      final reviewedMarker = await db?.kvGet('month_end_review_cycle');
+      final reviewedMarker = kv['month_end_review_cycle'];
       if (reviewedMarker != null && reviewedMarker.isNotEmpty) {
         monthEndReviewedCycleKey = reviewedMarker;
       }
-      final tm = await db?.kvGet('theme_mode');
+      final tm = kv['theme_mode'];
       if (tm != null && tm.isNotEmpty) {
         final parsed = int.tryParse(tm);
         if (parsed != null) themeMode = parsed.clamp(0, 2);
       }
-      final ha = await db?.kvGet('hide_amounts');
+      final ha = kv['hide_amounts'];
       if (ha != null && ha.isNotEmpty) {
         hideAmounts = ha == '1';
       }
-      final ah = await db?.kvGet('auto_hide');
+      final ah = kv['auto_hide'];
       if (ah != null && ah.isNotEmpty) {
         autoHideAmounts = ah == '1';
       }
-      final pc = await db?.kvGet('primary_currency');
+      final pc = kv['primary_currency'];
       if (pc != null && pc.isNotEmpty) {
         for (final c in Currency.values) {
           if (c.name == pc) primaryCurrency = c;
         }
       }
-      final sc = await db?.kvGet('secondary_currency');
+      final sc = kv['secondary_currency'];
       if (sc != null) {
         if (sc.isEmpty || sc == 'none') {
           secondaryCurrency = null;
@@ -702,7 +745,7 @@ class AppState extends ChangeNotifier {
           }
         }
       }
-      final dc = await db?.kvGet('displayCurrency');
+      final dc = kv['displayCurrency'];
       if (dc != null && dc.isNotEmpty) {
         for (final c in Currency.values) {
           if (c.name == dc) displayCurrency = c;
@@ -712,6 +755,9 @@ class AppState extends ChangeNotifier {
       Money.secondaryCurrency = secondaryCurrency;
 
       // FX precedence: user custom rate for active pair > benchmark default.
+      // `custom_rate` is already in the batch; only the pair-specific key needs
+      // a separate read (it depends on the resolved currency pair).
+      final customRate = kv['custom_rate'];
       if (secondaryCurrency != null) {
         final pairKey =
             'rate_${primaryCurrency.name}_${secondaryCurrency!.name}';
@@ -720,10 +766,9 @@ class AppState extends ChangeNotifier {
           final v = double.tryParse(pairRate);
           if (v != null && v > 0) rate = v;
         } else {
-          final custom = await db?.kvGet('custom_rate');
           final isZwgPair = primaryCurrency == Currency.zwg ||
               secondaryCurrency == Currency.zwg;
-          final v = custom != null ? double.tryParse(custom) : null;
+          final v = customRate != null ? double.tryParse(customRate) : null;
           if (v != null && v > 0 && (isZwgPair || v < 15)) {
             rate = v;
           } else {
@@ -735,50 +780,49 @@ class AppState extends ChangeNotifier {
         // temporarily disabled. Re-enabling that currency must not silently
         // discard a deliberate setting, and Settings should round-trip
         // independently from whether financial rows already exist.
-        final custom = await db?.kvGet('custom_rate');
-        final value = custom == null ? null : double.tryParse(custom);
+        final value = customRate == null ? null : double.tryParse(customRate);
         if (value != null && value > 0) rate = value;
       }
-      final ne = await db?.kvGet('notify_enabled');
+      final ne = kv['notify_enabled'];
       if (ne != null && ne.isNotEmpty) {
         notifyEnabled = ne != '0';
       }
-      final lt = await db?.kvGet('large_text');
+      final lt = kv['large_text'];
       if (lt != null && lt.isNotEmpty) {
         largeText = lt == '1';
       }
-      final lc = await db?.kvGet('locale');
+      final lc = kv['locale'];
       if (lc != null && lc.isNotEmpty) {
         localeCode = lc;
       }
-      final op = await db?.kvGet('overspend_policy');
+      final op = kv['overspend_policy'];
       if (op != null && op.isNotEmpty) {
         for (final p in OverspendPolicy.values) {
           if (p.name == op) overspendPolicy = p;
         }
       }
-      final lastCur = await db?.kvGet('last_tx_currency');
+      final lastCur = kv['last_tx_currency'];
       if (lastCur != null && lastCur.isNotEmpty) {
         for (final c in Currency.values) {
           if (c.name == lastCur) lastUsedExpenseCurrency = c;
         }
       }
-      final lastMethod = await db?.kvGet('last_tx_method');
+      final lastMethod = kv['last_tx_method'];
       if (lastMethod != null && lastMethod.isNotEmpty) {
         for (final m in Method.values) {
           if (m.name == lastMethod) lastUsedPaymentMethod = m;
         }
       }
-      final lastEnv = await db?.kvGet('last_tx_envelope');
+      final lastEnv = kv['last_tx_envelope'];
       if (lastEnv != null && lastEnv.isNotEmpty) {
         lastUsedExpenseEnvelopeId = lastEnv;
       }
-      final chatRead = await db?.kvGet('chat_last_read_ms');
+      final chatRead = kv['chat_last_read_ms'];
       final chatReadMs = int.tryParse(chatRead ?? '');
       if (chatReadMs != null) {
         _chatLastReadAt = DateTime.fromMillisecondsSinceEpoch(chatReadMs);
       }
-      _readNotificationKeys = (await db?.kvGet('notification_read_keys') ?? '')
+      _readNotificationKeys = (kv['notification_read_keys'] ?? '')
           .split(',')
           .where((key) => key.isNotEmpty)
           .toSet();
@@ -4417,7 +4461,7 @@ class AppState extends ChangeNotifier {
       method: method,
       note: (note != null && note.trim().isNotEmpty)
           ? note.trim()
-          : 'Groceries run - FreshMart',
+          : 'Groceries run',
       envelopeId: target?.id,
       force: true,
     );

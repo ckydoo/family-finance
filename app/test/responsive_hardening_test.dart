@@ -8,6 +8,7 @@ import 'package:mhuri_money/core/widgets/ui.dart';
 import 'package:mhuri_money/features/budgets/budgets_screen.dart';
 import 'package:mhuri_money/features/home/home_screen.dart';
 import 'package:mhuri_money/features/lists/lists_screen.dart';
+import 'package:mhuri_money/features/onboarding/family_setup_screen.dart';
 import 'package:mhuri_money/features/quickadd/quick_add_sheet.dart';
 import 'package:mhuri_money/features/savings/savings_screen.dart';
 import 'package:mhuri_money/features/settings/settings_screen.dart';
@@ -140,6 +141,32 @@ void main() {
     expect(find.text('Add expense'), findsOneWidget);
     expect(tester.getBottomRight(find.text('Add expense')).dy,
         lessThanOrEqualTo(640));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Family setup keeps the create action above a keyboard inset',
+      (tester) async {
+    viewport(tester, const Size(360, 640), textScale: 1.5);
+    final state = AppState();
+    await tester.pumpWidget(
+      AppScope(
+        notifier: state,
+        child: MaterialApp(
+          localizationsDelegates: mhuriLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: FamilySetupScreen(state: state),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Continue  →'), findsOneWidget);
+    // The wizard action is pinned in the keyboard-safe bottomNavigationBar, so
+    // its bottom edge must clear the IME inset rather than sit under it.
+    expect(tester.getBottomRight(find.text('Continue  →')).dy,
+        lessThanOrEqualTo(640 - 280));
     expect(tester.takeException(), isNull);
   });
 
