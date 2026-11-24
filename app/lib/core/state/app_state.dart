@@ -4450,7 +4450,7 @@ class AppState extends ChangeNotifier {
       method: method,
       note: (note != null && note.trim().isNotEmpty)
           ? note.trim()
-          : 'Groceries run - FreshMart',
+          : 'Groceries run',
       envelopeId: target?.id,
       force: true,
     );
