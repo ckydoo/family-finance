@@ -1741,16 +1741,35 @@ class AppState extends ChangeNotifier {
       debugPrint('Mhuri: reopen a completed task before changing its reward');
       return;
     }
+    if (previous != null &&
+        previous.status == FamilyTaskStatus.done &&
+        previous.approvedByMemberId != null &&
+        previous.points > 0 &&
+        (task.status != FamilyTaskStatus.done ||
+            task.approvedByMemberId == null)) {
+      final earnerId =
+          previous.completedByMemberId ?? previous.assigneeMemberId;
+      if (earnerId != null &&
+          (earnedPointsForMember(earnerId) - previous.points) <
+              spentPointsForMember(earnerId)) {
+        debugPrint(
+            'Mhuri: cannot reopen task whose points have already been redeemed');
+        return;
+      }
+    }
     if (previous != null && previous.isComplete && !task.isComplete) {
       _taskSystemMessage('Reopened: ${task.title}', task, 'Task reopened');
     }
     if (previous != null && !previous.isComplete && task.isComplete) {
-      if (task.requiresApproval) {
+      if (task.status == FamilyTaskStatus.awaitingApproval) {
         _taskSystemMessage('Ready for approval: ${task.title}', task,
             'Awaiting family approval');
       } else {
         _taskSystemMessage(
-            'Completed: ${task.title}', task, '${task.points} pts earned');
+          'Completed: ${task.title}',
+          task,
+          task.points > 0 ? '${task.points} pts earned' : 'Completed',
+        );
       }
     }
     _saveFamilyTask(task);
@@ -1779,32 +1798,39 @@ class AppState extends ChangeNotifier {
     final index = familyTasks.indexWhere((t) => t.id == task.id);
     final actorId = realUser.id;
     if (index < 0 ||
-        (authRole != Role.kid && authRole != Role.teen) ||
+        authRole == Role.viewer ||
         (isPreviewing && _user.id != actorId)) {
       return false;
     }
     final current = familyTasks[index];
     if (current.isArchived || current.isComplete) return false;
-    if (current.assigneeMemberId != null &&
+    if (!canApprove &&
+        current.assigneeMemberId != null &&
         current.assigneeMemberId != actorId) {
       return false;
     }
+    final needsParentApproval = current.requiresApproval && !canApprove;
+    final completerId =
+        canApprove ? (current.assigneeMemberId ?? actorId) : actorId;
     final next = current.copyWith(
-      assigneeMemberId: current.assigneeMemberId ?? actorId,
-      completedByMemberId: actorId,
-      status: current.requiresApproval
+      assigneeMemberId: current.assigneeMemberId ?? completerId,
+      completedByMemberId: completerId,
+      status: needsParentApproval
           ? FamilyTaskStatus.awaitingApproval
           : FamilyTaskStatus.done,
       completedAt: now,
-      approvedByMemberId: current.requiresApproval ? null : actorId,
-      approvedAt: current.requiresApproval ? null : now,
+      approvedByMemberId: needsParentApproval ? null : actorId,
+      approvedAt: needsParentApproval ? null : now,
     );
-    if (current.requiresApproval) {
+    if (needsParentApproval) {
       _taskSystemMessage('Ready for approval: ${next.title}', next,
           'Awaiting family approval');
     } else {
       _taskSystemMessage(
-          'Completed: ${next.title}', next, '${next.points} pts earned');
+        'Completed: ${next.title}',
+        next,
+        next.points > 0 ? '${next.points} pts earned' : 'Completed',
+      );
     }
     _saveFamilyTask(next);
     return true;
@@ -1840,7 +1866,7 @@ class AppState extends ChangeNotifier {
   }
 
   void toggleFamilyTaskCompletion(FamilyTask task) {
-    if (task.isComplete) {
+    if (task.status == FamilyTaskStatus.done) {
       if (!canManageFamilyTasks) return;
       updateFamilyTask(task.copyWith(
         status: FamilyTaskStatus.open,
@@ -1851,52 +1877,61 @@ class AppState extends ChangeNotifier {
       ));
       return;
     }
-    if (!canManageFamilyTasks) {
-      submitFamilyTask(task);
+    if (task.status == FamilyTaskStatus.awaitingApproval) {
+      if (canApprove) {
+        approveFamilyTask(task);
+        return;
+      }
+      if (canManageFamilyTasks &&
+          (task.completedByMemberId == realUser.id ||
+              task.assigneeMemberId == realUser.id)) {
+        updateFamilyTask(task.copyWith(
+          status: FamilyTaskStatus.open,
+          approvedByMemberId: null,
+          approvedAt: null,
+          completedAt: null,
+          completedByMemberId: null,
+        ));
+      }
       return;
     }
-    final nextStatus = task.status == FamilyTaskStatus.inProgress
-        ? (task.requiresApproval
-            ? FamilyTaskStatus.awaitingApproval
-            : FamilyTaskStatus.done)
-        : FamilyTaskStatus.inProgress;
-    updateFamilyTask(task.copyWith(
-      status: nextStatus,
-      completedAt: nextStatus == FamilyTaskStatus.awaitingApproval ||
-              nextStatus == FamilyTaskStatus.done
-          ? now
-          : null,
-      completedByMemberId: nextStatus == FamilyTaskStatus.awaitingApproval ||
-              nextStatus == FamilyTaskStatus.done
-          ? (task.assigneeMemberId ?? realUser.id)
-          : null,
-      approvedByMemberId:
-          nextStatus == FamilyTaskStatus.done && !task.requiresApproval
-              ? realUser.id
-              : null,
-      approvedAt: nextStatus == FamilyTaskStatus.done && !task.requiresApproval
-          ? now
-          : null,
-    ));
+    submitFamilyTask(task);
   }
 
-  bool get canSubmitFamilyTasks =>
-      authRole == Role.kid || authRole == Role.teen;
+  bool get canSubmitFamilyTasks => authRole != Role.viewer;
 
-  int get familyTaskPoints => familyTasks
-      .where((task) =>
-          !task.isArchived &&
-          task.isComplete &&
-          task.approvedByMemberId != null)
-      .fold(0, (total, task) => total + task.points);
+  bool get canRedeemFamilyRewards => authRole != Role.viewer;
 
-  int pointsForMember(String memberId) => familyTasks
+  int earnedPointsForMember(String memberId) => familyTasks
       .where((task) =>
-          !task.isArchived &&
-          task.isComplete &&
+          task.status == FamilyTaskStatus.done &&
           task.approvedByMemberId != null &&
+          task.points > 0 &&
           (task.completedByMemberId ?? task.assigneeMemberId) == memberId)
       .fold(0, (total, task) => total + task.points);
+
+  int spentPointsForMember(String memberId) => familyRewards
+      .where((reward) =>
+          reward.redeemedAt != null && reward.redeemedByMemberId == memberId)
+      .fold(0, (total, reward) => total + reward.pointsCost);
+
+  int pointsForMember(String memberId) {
+    final available =
+        earnedPointsForMember(memberId) - spentPointsForMember(memberId);
+    return available < 0 ? 0 : available;
+  }
+
+  int get familyTaskPoints {
+    final memberIds = <String>{
+      for (final m in members) m.id,
+      for (final t in familyTasks)
+        if ((t.completedByMemberId ?? t.assigneeMemberId) != null)
+          (t.completedByMemberId ?? t.assigneeMemberId)!,
+      for (final r in familyRewards)
+        if (r.redeemedByMemberId != null) r.redeemedByMemberId!,
+    };
+    return memberIds.fold(0, (sum, id) => sum + pointsForMember(id));
+  }
 
   bool addFamilyReward(
       {required String name, required int pointsCost, String? description}) {
@@ -1940,7 +1975,7 @@ class AppState extends ChangeNotifier {
     final index = familyRewards.indexWhere((item) => item.id == reward.id);
     final actorId = realUser.id;
     if (index < 0 ||
-        (authRole != Role.kid && authRole != Role.teen) ||
+        !canRedeemFamilyRewards ||
         (isPreviewing && _user.id != actorId)) {
       return false;
     }
@@ -3620,7 +3655,7 @@ class AppState extends ChangeNotifier {
   Money get _remainingUsd {
     var sum = 0;
     for (final e in envelopes) {
-      final left = e.limit.inCurrency(primaryCurrency, rate).minor -
+      final left = effectiveLimit(e).inCurrency(primaryCurrency, rate).minor -
           spentOn(e).inCurrency(primaryCurrency, rate).minor;
       if (left > 0) sum += left;
     }

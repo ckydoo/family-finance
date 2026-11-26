@@ -589,7 +589,7 @@ class MembersScreen extends StatelessWidget {
               icon: Icons.workspace_premium_outlined,
               title: 'Points & rewards',
               subtitle: '${s.familyTaskPoints} family points',
-              screen: const _PointsRewardsScreen(),
+              screen: const PointsRewardsScreen(),
             ),
             _familyDestination(
               context,
@@ -1531,8 +1531,8 @@ void showPrivacySettingsSheet(BuildContext context, AppState s) {
   );
 }
 
-class _PointsRewardsScreen extends StatelessWidget {
-  const _PointsRewardsScreen();
+class PointsRewardsScreen extends StatelessWidget {
+  const PointsRewardsScreen({super.key});
 
   Future<void> _editLegacyChore(
     BuildContext context,
@@ -1646,11 +1646,17 @@ class _PointsRewardsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    final rosterById = <String, Member>{
+      for (final member in state.members) member.id: member,
+    };
+    if (rosterById.isEmpty) {
+      rosterById[state.user.id] = state.user;
+    }
     final pointsByMember = <String, int>{
-      for (final member in state.members)
+      for (final member in rosterById.values)
         member.id: state.pointsForMember(member.id),
     };
-    final ranking = state.members.toList()
+    final ranking = rosterById.values.toList()
       ..sort((a, b) =>
           (pointsByMember[b.id] ?? 0).compareTo(pointsByMember[a.id] ?? 0));
     return Scaffold(
@@ -1672,22 +1678,101 @@ class _PointsRewardsScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           for (var index = 0; index < ranking.length; index++)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: SizedBox(
-                width: 28,
-                child: Text('${index + 1}',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ),
-              title: Text(ranking[index].name),
-              trailing: Text('${pointsByMember[ranking[index].id] ?? 0} pts'),
+            Builder(builder: (context) {
+              final member = ranking[index];
+              final available = pointsByMember[member.id] ?? 0;
+              final earned = state.earnedPointsForMember(member.id);
+              final spent = state.spentPointsForMember(member.id);
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: SizedBox(
+                  width: 28,
+                  child: Text('${index + 1}',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                title: Text(member.name),
+                subtitle: spent > 0
+                    ? Text('$earned earned · $spent redeemed')
+                    : null,
+                trailing: Text(
+                  '$available pts',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              );
+            }),
+          const Divider(height: 28),
+          Text('Rewards', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (state.familyRewards.where((reward) => !reward.isArchived).isEmpty)
+            Text(
+              state.canApprove
+                  ? 'Add a reward for family members to work toward.'
+                  : 'No family rewards have been added yet.',
+              style: TextStyle(color: context.inkSoft),
             ),
+          for (final reward
+              in state.familyRewards.where((item) => !item.isArchived))
+            Builder(builder: (context) {
+              final actorName = state.member(reward.redeemedByMemberId ?? '')
+                      ?.name ??
+                  (reward.redeemedByMemberId == state.realUser.id
+                      ? state.realUser.name
+                      : null);
+              final memberPoints = state.pointsForMember(state.realUser.id);
+              final canRedeem = state.canRedeemFamilyRewards &&
+                  reward.redeemedAt == null &&
+                  memberPoints >= reward.pointsCost;
+              final showRedeemButton = state.canRedeemFamilyRewards &&
+                  (!state.canApprove || canRedeem);
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.card_giftcard_outlined),
+                title: Text(reward.name),
+                subtitle: Text(reward.description?.isNotEmpty == true
+                    ? '${reward.description} · ${reward.pointsCost} pts'
+                    : '${reward.pointsCost} pts'),
+                trailing: reward.redeemedAt != null
+                    ? Text('Redeemed by ${actorName ?? 'member'}')
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (showRedeemButton)
+                            FilledButton.tonal(
+                              onPressed: canRedeem
+                                  ? () => state.redeemFamilyReward(reward)
+                                  : null,
+                              child: Text(
+                                canRedeem
+                                    ? 'Redeem'
+                                    : '${(reward.pointsCost - memberPoints).clamp(0, reward.pointsCost)} more',
+                              ),
+                            ),
+                          if (state.canApprove)
+                            IconButton(
+                              tooltip: 'Archive reward',
+                              onPressed: () =>
+                                  state.archiveFamilyReward(reward),
+                              icon: const Icon(Icons.archive_outlined),
+                            ),
+                        ],
+                      ),
+              );
+            }),
           const Divider(height: 28),
           Row(
             children: [
               Expanded(
-                child: Text('Kids Mode chores',
-                    style: Theme.of(context).textTheme.titleMedium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Kids Mode chores',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Legacy chores award stars in Kids Mode.',
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                  ],
+                ),
               ),
               if (state.canApprove)
                 IconButton(
@@ -1716,53 +1801,6 @@ class _PointsRewardsScreen extends StatelessWidget {
                   ? () => _editLegacyChore(context, state, chore: chore)
                   : null,
             ),
-          const Divider(height: 28),
-          Text('Rewards', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (state.familyRewards.where((reward) => !reward.isArchived).isEmpty)
-            Text(
-              state.canApprove
-                  ? 'Add a reward for family members to work toward.'
-                  : 'No family rewards have been added yet.',
-              style: TextStyle(color: context.inkSoft),
-            ),
-          for (final reward
-              in state.familyRewards.where((item) => !item.isArchived))
-            Builder(builder: (context) {
-              final redeemedBy = reward.redeemedByMemberId == null
-                  ? null
-                  : state.member(reward.redeemedByMemberId!);
-              final memberPoints = state.pointsForMember(state.realUser.id);
-              final canRedeem = state.canSubmitFamilyTasks &&
-                  reward.redeemedAt == null &&
-                  memberPoints >= reward.pointsCost;
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.card_giftcard_outlined),
-                title: Text(reward.name),
-                subtitle: Text(reward.description?.isNotEmpty == true
-                    ? '${reward.description} · ${reward.pointsCost} pts'
-                    : '${reward.pointsCost} pts'),
-                trailing: reward.redeemedAt != null
-                    ? Text('Redeemed by ${redeemedBy?.name ?? 'member'}')
-                    : state.canApprove
-                        ? IconButton(
-                            tooltip: 'Archive reward',
-                            onPressed: () => state.archiveFamilyReward(reward),
-                            icon: const Icon(Icons.archive_outlined),
-                          )
-                        : state.canSubmitFamilyTasks
-                            ? FilledButton.tonal(
-                                onPressed: canRedeem
-                                    ? () => state.redeemFamilyReward(reward)
-                                    : null,
-                                child: Text(canRedeem
-                                    ? 'Redeem'
-                                    : '${(reward.pointsCost - memberPoints).clamp(0, reward.pointsCost)} more'),
-                              )
-                            : null,
-              );
-            }),
         ],
       ),
     );

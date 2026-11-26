@@ -6,6 +6,7 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ids.dart';
 import '../family_chat/family_chat_screen.dart';
+import '../members/members_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class FamilyTasksScreen extends StatefulWidget {
@@ -52,16 +53,30 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
   void _submitTask(AppState state, FamilyTask task) {
     final submitted = state.submitFamilyTask(task);
     if (!mounted) return;
+    final needsApproval = task.requiresApproval && !state.canApprove;
+    final msg = submitted
+        ? (needsApproval
+            ? 'Task submitted for family approval.'
+            : (task.points > 0
+                ? 'Task completed. You earned ${task.points} points.'
+                : 'Task completed.'))
+        : 'This task could not be submitted. Refresh and try again.';
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(submitted
-            ? (task.requiresApproval
-                ? 'Task submitted for family approval.'
-                : 'Task completed. You earned ${task.points} points.')
-            : 'This task could not be submitted. Refresh and try again.'),
-      ),
+      SnackBar(content: Text(msg)),
     );
   }
+
+  String _completeActionLabel(AppState state, FamilyTask task) =>
+      task.requiresApproval && !state.canApprove
+          ? 'Submit for approval'
+          : 'Mark done';
+
+  String _startTaskLabel() => 'Start task';
+
+  String _inlineApproveLabel(FamilyTask task) =>
+      task.points > 0 ? 'Approve +${task.points}' : 'Approve';
+
+  String _pointsSummaryLabel(int pts) => '$pts pts';
 
   Future<void> _taskSheet(AppState state, FamilyTask task) async {
     final assignee = task.assigneeMemberId == null
@@ -121,7 +136,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                       ),
                     ),
                   Chip(label: Text(_statusLabel(task.status))),
-                  Chip(label: Text('${task.points} pts')),
+                  if (task.points > 0)
+                    Chip(label: Text('${task.points} pts')),
                   if (task.requiresApproval)
                     Chip(
                         label: Text(task.approvedByMemberId == null
@@ -148,85 +164,52 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                   if (!task.isComplete)
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: state.canManageFamilyTasks ||
-                                state.canSubmitFamilyTasks
+                        onPressed: state.canSubmitFamilyTasks &&
+                                (state.canApprove ||
+                                    task.assigneeMemberId == null ||
+                                    task.assigneeMemberId == state.realUser.id)
                             ? () {
                                 Navigator.of(sheetContext).pop();
-                                if (!state.canManageFamilyTasks) {
-                                  _submitTask(state, task);
-                                  return;
-                                }
-                                final nextStatus =
-                                    task.status == FamilyTaskStatus.inProgress
-                                        ? (task.requiresApproval
-                                            ? FamilyTaskStatus.awaitingApproval
-                                            : FamilyTaskStatus.done)
-                                        : FamilyTaskStatus.inProgress;
-                                state.updateFamilyTask(
-                                  task.copyWith(
-                                    status: nextStatus,
-                                    completedAt:
-                                        nextStatus == FamilyTaskStatus.done ||
-                                                nextStatus ==
-                                                    FamilyTaskStatus
-                                                        .awaitingApproval
-                                            ? DateTime.now()
-                                            : null,
-                                    completedByMemberId:
-                                        nextStatus == FamilyTaskStatus.done ||
-                                                nextStatus ==
-                                                    FamilyTaskStatus
-                                                        .awaitingApproval
-                                            ? (task.assigneeMemberId ??
-                                                state.realUser.id)
-                                            : null,
-                                    approvedByMemberId:
-                                        nextStatus == FamilyTaskStatus.done
-                                            ? task.approvedByMemberId
-                                            : null,
-                                    approvedAt:
-                                        nextStatus == FamilyTaskStatus.done
-                                            ? task.approvedAt
-                                            : null,
-                                  ),
-                                );
+                                _submitTask(state, task);
                               }
                             : null,
                         icon: Icon(
-                          !state.canManageFamilyTasks
+                          task.requiresApproval && !state.canApprove
                               ? Icons.upload_rounded
-                              : task.status == FamilyTaskStatus.inProgress
-                                  ? Icons.check_rounded
-                                  : Icons.play_arrow_rounded,
+                              : Icons.check_rounded,
                         ),
-                        label: Text(
-                          !state.canManageFamilyTasks
-                              ? 'Submit for approval'
-                              : task.status == FamilyTaskStatus.inProgress
-                                  ? (task.requiresApproval
-                                      ? 'Submit for approval'
-                                      : 'Mark done')
-                                  : 'Start task',
-                        ),
+                        label: Text(_completeActionLabel(state, task)),
                       ),
                     ),
+                  if (task.status == FamilyTaskStatus.open &&
+                      state.canManageFamilyTasks) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        state.updateFamilyTask(
+                          task.copyWith(status: FamilyTaskStatus.inProgress),
+                        );
+                      },
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: Text(_startTaskLabel()),
+                    ),
+                  ],
                   if (task.isComplete && state.canManageFamilyTasks)
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: state.canManageFamilyTasks
-                            ? () {
-                                Navigator.of(sheetContext).pop();
-                                state.updateFamilyTask(
-                                  task.copyWith(
-                                    status: FamilyTaskStatus.open,
-                                    approvedByMemberId: null,
-                                    approvedAt: null,
-                                    completedAt: null,
-                                    completedByMemberId: null,
-                                  ),
-                                );
-                              }
-                            : null,
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          state.updateFamilyTask(
+                            task.copyWith(
+                              status: FamilyTaskStatus.open,
+                              approvedByMemberId: null,
+                              approvedAt: null,
+                              completedAt: null,
+                              completedByMemberId: null,
+                            ),
+                          );
+                        },
                         icon: const Icon(Icons.refresh_rounded),
                         label: const Text('Reopen task'),
                       ),
@@ -289,12 +272,17 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
     if (!state.canManageFamilyTasks) return;
     final titleController = TextEditingController(text: task?.title ?? '');
     final noteController = TextEditingController(text: task?.note ?? '');
-    String? assigneeId = task?.assigneeMemberId ??
-        (state.members.isNotEmpty ? state.members.first.id : null);
+    String? assigneeId = task?.assigneeMemberId;
+    final initialAssignee =
+        assigneeId == null ? null : state.member(assigneeId);
+    final initialYouth = initialAssignee != null &&
+        (initialAssignee.role == Role.kid ||
+            initialAssignee.role == Role.teen);
     DateTime? dueDate = task?.dueDate;
-    int points = task?.points ?? 1;
+    int points = task?.points ?? (initialYouth ? 2 : 0);
     var status = task?.status ?? FamilyTaskStatus.open;
-    bool requiresApproval = task?.requiresApproval ?? true;
+    bool requiresApproval = task?.requiresApproval ?? initialYouth;
+    bool customPointsChosen = editing;
 
     final ok = await showDialog<bool>(
       context: context,
@@ -305,143 +293,178 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
               title: Text(editing ? 'Edit family task' : 'Add family task'),
               content: SizedBox(
                 width: 420,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Task title',
-                        hintText: 'School forms / groceries / check-in',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: noteController,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes',
-                        hintText: 'Who’s involved and what needs done?',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (state.members.isNotEmpty)
-                      DropdownButtonFormField<String?>(
-                        initialValue: assigneeId,
-                        decoration:
-                            const InputDecoration(labelText: 'Assignee'),
-                        items: [
-                          const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('Unassigned'),
-                          ),
-                          ...state.members.map((m) => DropdownMenuItem(
-                                value: m.id,
-                                child: Text(m.name),
-                              )),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => assigneeId = value),
-                      ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: dueDate ?? DateTime.now(),
-                                firstDate: DateTime.now().subtract(
-                                  const Duration(days: 365),
-                                ),
-                                lastDate: DateTime.now().add(
-                                  const Duration(days: 3650),
-                                ),
-                              );
-                              if (picked != null) {
-                                setState(() => dueDate = picked);
-                              }
-                            },
-                            child: Text(
-                              dueDate == null
-                                  ? 'Add due date'
-                                  : DateFormat('MMM d').format(dueDate!),
-                            ),
-                          ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: titleController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Task title',
+                          hintText: 'School forms / groceries / check-in',
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Text('Status'),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<FamilyTaskStatus>(
-                            initialValue: status,
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: noteController,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes',
+                          hintText: 'Who’s involved and what needs done?',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (state.members.isNotEmpty)
+                        DropdownButtonFormField<String?>(
+                          initialValue: assigneeId,
+                          decoration:
+                              const InputDecoration(labelText: 'Assignee'),
+                          items: [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('Unassigned'),
+                            ),
+                            ...state.members.map((m) => DropdownMenuItem(
+                                  value: m.id,
+                                  child: Text(m.name),
+                                )),
+                          ],
+                          onChanged: (value) => setState(() {
+                            assigneeId = value;
+                            if (!editing && !customPointsChosen) {
+                              final pickedMember =
+                                  value == null ? null : state.member(value);
+                              final isYouth = pickedMember != null &&
+                                  (pickedMember.role == Role.kid ||
+                                      pickedMember.role == Role.teen);
+                              points = isYouth ? 2 : 0;
+                              requiresApproval = isYouth;
+                            }
+                          }),
+                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: dueDate ?? DateTime.now(),
+                                  firstDate: DateTime.now().subtract(
+                                    const Duration(days: 365),
+                                  ),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 3650),
+                                  ),
+                                );
+                                if (picked != null) {
+                                  setState(() => dueDate = picked);
+                                }
+                              },
+                              child: Text(
+                                dueDate == null
+                                    ? 'Add due date'
+                                    : DateFormat('MMM d').format(dueDate!),
                               ),
                             ),
-                            items: FamilyTaskStatus.values
-                                .map((value) => DropdownMenuItem(
-                                      value: value,
-                                      child: Text(_statusLabel(value)),
-                                    ))
-                                .toList(),
-                            onChanged: (value) =>
-                                setState(() => status = value!),
                           ),
+                        ],
+                      ),
+                      if (editing) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Text('Status'),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<FamilyTaskStatus>(
+                                initialValue: status,
+                                decoration: const InputDecoration(
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                ),
+                                items: FamilyTaskStatus.values
+                                    .map((value) => DropdownMenuItem(
+                                          value: value,
+                                          child: Text(_statusLabel(value)),
+                                        ))
+                                    .toList(),
+                                onChanged: (value) =>
+                                    setState(() => status = value!),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    SwitchListTile.adaptive(
-                      contentPadding: EdgeInsets.zero,
-                      value: requiresApproval,
-                      onChanged: (value) => setState(() {
-                        requiresApproval = value;
-                      }),
-                      title: const Text('Requires family approval'),
-                      subtitle: const Text(
-                          'Hold rewards until a parent approves completion.'),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Text('Points'),
-                        const Spacer(),
-                        IconButton(
-                          tooltip: AppLocalizations.of(context)!
-                              .decreaseValue,
-                          onPressed: () => setState(
-                              () => points = (points - 1).clamp(0, 20)),
-                          icon: const Icon(Icons.remove_rounded),
-                        ),
-                        SizedBox(
-                          width: 40,
-                          child: Text(
-                            '$points',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Text('Points'),
+                          const Spacer(),
+                          IconButton(
+                            tooltip:
+                                AppLocalizations.of(context)!.decreaseValue,
+                            onPressed: () => setState(() {
+                              customPointsChosen = true;
+                              points = (points - 1).clamp(0, 20);
+                            }),
+                            icon: const Icon(Icons.remove_rounded),
                           ),
+                          SizedBox(
+                            width: 40,
+                            child: Text(
+                              '$points',
+                              textAlign: TextAlign.center,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip:
+                                AppLocalizations.of(context)!.increaseValue,
+                            onPressed: () => setState(() {
+                              customPointsChosen = true;
+                              points = (points + 1).clamp(0, 20);
+                            }),
+                            icon: const Icon(Icons.add_rounded),
+                          ),
+                        ],
+                      ),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Wrap(
+                          spacing: 6,
+                          children: [
+                            for (final preset in const [0, 1, 2, 5, 10])
+                              ChoiceChip(
+                                label: Text('$preset'),
+                                selected: points == preset,
+                                onSelected: (_) => setState(() {
+                                  customPointsChosen = true;
+                                  points = preset;
+                                }),
+                              ),
+                          ],
                         ),
-                        IconButton(
-                          tooltip: AppLocalizations.of(context)!
-                              .increaseValue,
-                          onPressed: () => setState(
-                              () => points = (points + 1).clamp(0, 20)),
-                          icon: const Icon(Icons.add_rounded),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: requiresApproval,
+                        onChanged: (value) => setState(() {
+                          customPointsChosen = true;
+                          requiresApproval = value;
+                        }),
+                        title: const Text('Requires family approval'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -565,6 +588,15 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
               )
             : const Text('Tasks & responsibilities'),
         actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PointsRewardsScreen()),
+            ),
+            icon: const Icon(Icons.workspace_premium_outlined, size: 18),
+            label: Text(
+              _pointsSummaryLabel(state.pointsForMember(state.realUser.id)),
+            ),
+          ),
           IconButton(
             tooltip: _searching ? 'Close search' : 'Search tasks',
             onPressed: () => setState(() {
@@ -665,6 +697,15 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                         final assignee = task.assigneeMemberId == null
                             ? null
                             : state.member(task.assigneeMemberId!);
+                        final canActOnOpen = state.canSubmitFamilyTasks &&
+                            (state.canApprove ||
+                                task.assigneeMemberId == null ||
+                                task.assigneeMemberId == state.realUser.id);
+                        final checkboxValue = task.isDone
+                            ? true
+                            : task.isAwaitingApproval
+                                ? null
+                                : false;
 
                         return InkWell(
                           onTap: () => _taskSheet(state, task),
@@ -675,14 +716,21 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Checkbox(
-                                  value: task.isComplete,
-                                  onChanged: state.canManageFamilyTasks
-                                      ? (_) =>
-                                          state.toggleFamilyTaskCompletion(task)
-                                      : state.canSubmitFamilyTasks &&
-                                              !task.isComplete
-                                          ? (_) => _submitTask(state, task)
-                                          : null,
+                                  tristate: true,
+                                  value: checkboxValue,
+                                  onChanged: task.isDone
+                                      ? (state.canManageFamilyTasks
+                                          ? (_) => state
+                                              .toggleFamilyTaskCompletion(task)
+                                          : null)
+                                      : task.isAwaitingApproval
+                                          ? (state.canApprove
+                                              ? (_) =>
+                                                  state.approveFamilyTask(task)
+                                              : null)
+                                          : (canActOnOpen
+                                              ? (_) => _submitTask(state, task)
+                                              : null),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -695,10 +743,10 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
-                                          color: task.isComplete
+                                          color: task.isDone
                                               ? context.inkSoft
                                               : context.ink,
-                                          decoration: task.isComplete
+                                          decoration: task.isDone
                                               ? TextDecoration.lineThrough
                                               : TextDecoration.none,
                                         ),
@@ -721,7 +769,8 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                           assignee?.name ?? 'Anyone',
                                           if (task.dueDate != null)
                                             'Due ${DateFormat('MMM d').format(task.dueDate!)}',
-                                          '${task.points} pts',
+                                          if (task.points > 0)
+                                            '${task.points} pts',
                                           if (task.status ==
                                               FamilyTaskStatus.inProgress)
                                             'In progress',
@@ -739,6 +788,19 @@ class _FamilyTasksScreenState extends State<FamilyTasksScreen> {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
+                                    if (task.isAwaitingApproval &&
+                                        state.canApprove)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsetsDirectional.only(
+                                                end: 4),
+                                        child: FilledButton.tonal(
+                                          onPressed: () =>
+                                              state.approveFamilyTask(task),
+                                          child:
+                                              Text(_inlineApproveLabel(task)),
+                                        ),
+                                      ),
                                     IconButton(
                                       onPressed: () => openFamilyChat(
                                         context,
