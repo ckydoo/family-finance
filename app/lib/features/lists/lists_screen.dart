@@ -48,7 +48,11 @@ class _ListsScreenState extends State<ListsScreen> {
     final query = _query.trim().toLowerCase();
     final visible = s.items
         .where((item) =>
-            (_filter == null || item.state == _filter) &&
+            (_filter == null ||
+                item.state == _filter ||
+                (_filter == ItemState.tobuy &&
+                    item.state == ItemState.incart &&
+                    !item.checkedOut)) &&
             (query.isEmpty || item.name.toLowerCase().contains(query)))
         .toList();
 

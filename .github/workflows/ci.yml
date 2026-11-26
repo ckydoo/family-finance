@@ -160,8 +160,9 @@ jobs:
         run: |
           if ! out=$(flutter test --reporter expanded 2>&1); then
             echo "$out"
-            summary=$( { echo "$out" | grep -A 35 "EXCEPTION CAUGHT"; echo "$out" | grep -B 10 -A 5 "\[E\]"; } | head -n 120 | tr '\n' ' ')
-            echo "::error title=flutter_test::$summary"
+            echo "$out" | grep -B 12 "\[E\]" | tr '\n' ' ' | sed 's/\[E\]/\[E\]\n/g' | head -n 10 | while IFS= read -r line; do
+              [ -n "$line" ] && echo "::error title=flutter_test_case::${line:0:900}"
+            done
             exit 1
           fi
           echo "$out" | tail -n 5
