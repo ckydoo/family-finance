@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart'
@@ -12,6 +13,7 @@ import '../utils/ids.dart';
 import 'outbox.dart';
 import '../observability/reporter.dart';
 import '../billing/entitlement.dart';
+import 'realtime_sync_signal.dart';
 import 'supabase_sync_client.dart';
 import 'sync_mappers.dart';
 
@@ -92,11 +94,39 @@ class SyncEngine {
     required Future<void> Function(String key, String value) kvSet,
     this.retryAuth,
     this.autoSchedule = true,
+    this.useBatchProtocol,
+    bool? enableRealtime,
+    RealtimeSocketConnector? realtimeConnector,
   })  : _persistence = persistence,
         _database = database,
         _outbox = Outbox(database),
         _kvGet = kvGet,
-        _kvSet = kvSet;
+        _kvSet = kvSet,
+        _enableRealtime = enableRealtime ?? !client.hasCustomHttpClient {
+    if (_enableRealtime && autoSchedule) {
+      _realtime = RealtimeSyncSignal(
+        baseUrl: client.baseUrl,
+        anonKey: client.anonKey,
+        tokenGet: client.currentToken,
+        connector: realtimeConnector,
+        onConnected: () {
+          _restartForegroundTimer();
+          if (_spaceId != null && _foregroundActive) {
+            unawaited(syncNow());
+          }
+        },
+        onSignal: (remoteSeq) {
+          final sid = _spaceId;
+          if (sid == null || !_foregroundActive) return;
+          final known = _lastKnownSignalSeq[sid];
+          if (remoteSeq != null && known != null && remoteSeq <= known) {
+            return;
+          }
+          unawaited(syncNow());
+        },
+      );
+    }
+  }
 
   final SupabaseSyncClient client;
   final Persistence _persistence;
@@ -106,6 +136,13 @@ class SyncEngine {
   final Future<void> Function(String key, String value) _kvSet;
   final Outbox _outbox;
   final bool autoSchedule;
+
+  /// Explicit Sync Protocol v2 override (`push_sync_ops` + `pull_family_changes`).
+  /// When null, protocol v2 is auto-detected from space RPC metadata or
+  /// `family_space.sync_seq` and cached per space in KV.
+  final bool? useBatchProtocol;
+  final bool _enableRealtime;
+  RealtimeSyncSignal? _realtime;
 
   /// Forces a token refresh after a 401 and lets [syncNow] retry exactly
   /// once before surfacing "sign in". Null (tests) = no retry.
@@ -117,6 +154,11 @@ class SyncEngine {
   Future<void>? _activeSync;
   Future<void>? _activeChatRefresh;
   bool _reconciling = false;
+  bool _foregroundActive = true;
+  bool _started = false;
+
+  final Set<String> _v2Spaces = <String>{};
+  final Map<String, int> _lastKnownSignalSeq = <String, int>{};
 
   SyncStatus status = SyncStatus.idle;
   String? lastError;
@@ -131,9 +173,7 @@ class SyncEngine {
   /// Reliability: exponential backoff after failed syncs (8s→30s), with
   /// every queued write retried indefinitely. [maxAttempts] is only the point
   /// at which a repeatedly rejected row is surfaced in Sync & data; it never
-  /// stops automatic delivery. A
-  /// pluggable error-report hook (wire Sentry/Crashlytics here in live
-  /// mode; optional SENTRY_DSN env stays post-8).
+  /// stops automatic delivery.
   static const int maxAttempts = 8;
   static void Function(String where, Object error, StackTrace stack)?
       reportError;
@@ -143,21 +183,91 @@ class SyncEngine {
   String? get spaceId => _spaceId;
   bool get spaceIdentityLoaded => _spaceIdentityLoaded;
   bool get familySetupResolutionComplete => _familySetupResolutionComplete;
+  bool get isRealtimeConnected => _realtime?.isConnected ?? false;
+
+  bool _isSyncV2(String sid) =>
+      useBatchProtocol ?? _v2Spaces.contains(sid);
+
+  Future<void> _enableSyncV2ForSpace(String sid) async {
+    if (sid.isEmpty || useBatchProtocol == false) return;
+    if (_v2Spaces.add(sid)) {
+      await _kvSet('sync_cursor_proto_v2_$sid', '1');
+      _restartForegroundTimer();
+    }
+  }
+
+  Future<void> _disableSyncV2ForSpace(String sid) async {
+    if (_v2Spaces.remove(sid)) {
+      await _kvSet('sync_cursor_proto_v2_$sid', '');
+      _restartForegroundTimer();
+    }
+  }
+
+  void _recordKnownSeq(String sid, int? seq) {
+    if (seq == null || seq <= 0) return;
+    final prev = _lastKnownSignalSeq[sid];
+    if (prev == null || seq > prev) {
+      _lastKnownSignalSeq[sid] = seq;
+    }
+  }
+
+  Duration _pollInterval() {
+    final sid = _spaceId;
+    if (sid != null && _isSyncV2(sid)) {
+      return isRealtimeConnected
+          ? const Duration(seconds: 20)
+          : const Duration(seconds: 8);
+    }
+    return const Duration(seconds: 5);
+  }
+
+  void _restartForegroundTimer() {
+    _timer?.cancel();
+    _timer = null;
+    if (!autoSchedule || !_started || !_foregroundActive) return;
+    _timer = Timer.periodic(_pollInterval(), (_) {
+      if (_spaceId != null && _foregroundActive) syncNow();
+    });
+  }
+
+  /// Pauses background polling and WebSocket activity while the app is
+  /// backgrounded, and reconnects + catches up immediately on resume.
+  void setForegroundActive(bool active) {
+    if (_foregroundActive == active) return;
+    _foregroundActive = active;
+    _realtime?.configure(spaceId: _spaceId, active: active);
+    _restartForegroundTimer();
+    if (active && _spaceId != null) {
+      unawaited(syncNow());
+    }
+  }
+
+  void disconnectRealtime() {
+    _realtime?.configure(spaceId: _spaceId, active: false);
+  }
 
   // ── lifecycle ───────────────────────────────────────────────────────────
 
   Future<void> start() async {
+    _started = true;
     _spaceIdentityLoaded = false;
     _familySetupResolutionComplete = false;
     state.syncIdentityChanged();
     _spaceId = await _kvGet('space_id');
     spaceName = await _kvGet('space_name');
     inviteCode = await _kvGet('invite_code');
+    if (_spaceId != null && _spaceId!.isNotEmpty) {
+      if (await _kvGet('sync_cursor_proto_v2_${_spaceId!}') == '1') {
+        _v2Spaces.add(_spaceId!);
+      }
+    }
     _spaceIdentityLoaded = true;
     _familySetupResolutionComplete = _spaceId != null;
     state.syncIdentityChanged();
 
     if (!autoSchedule) return;
+
+    _realtime?.configure(spaceId: _spaceId, active: _foregroundActive);
 
     // Pull-on-start once state hydration has finished.
     final bootSync = state.ready().then((_) async {
@@ -169,17 +279,14 @@ class SyncEngine {
     });
     state.db?.trackWrite(bootSync);
 
-    // Family pushes normally trigger an immediate pull. This fallback keeps
-    // devices current when notifications are disabled or delivery is delayed.
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (_spaceId != null) syncNow();
-    });
+    _restartForegroundTimer();
     // Cursor sync is efficient, while a periodic full snapshot makes it
     // self-healing if OS backup/restore resurrects a cursor without all of
     // its corresponding rows. The versioned marker also forces one complete
     // reconciliation after this reliability fix ships.
+    _reconcileTimer?.cancel();
     _reconcileTimer = Timer.periodic(const Duration(hours: 6), (_) {
-      if (_spaceId != null) _syncOrReconcile();
+      if (_spaceId != null && _foregroundActive) _syncOrReconcile();
     });
   }
 
@@ -221,6 +328,7 @@ class SyncEngine {
         localMember.isNotEmpty &&
         localMember != userId;
     if (belongsToAnotherUser || legacyMismatch) {
+      _realtime?.configure(spaceId: null, active: false);
       _spaceIdentityLoaded = false;
       _familySetupResolutionComplete = false;
       state.syncIdentityChanged();
@@ -247,8 +355,13 @@ class SyncEngine {
         _spaceId = await _kvGet('space_id');
         spaceName = await _kvGet('space_name');
         inviteCode = await _kvGet('invite_code');
+        if (_spaceId != null &&
+            await _kvGet('sync_cursor_proto_v2_${_spaceId!}') == '1') {
+          _v2Spaces.add(_spaceId!);
+        }
         await state.refresh();
       }
+      _realtime?.configure(spaceId: _spaceId, active: _foregroundActive);
       _spaceIdentityLoaded = true;
       _familySetupResolutionComplete = _spaceId != null;
       state.syncIdentityChanged();
@@ -257,9 +370,11 @@ class SyncEngine {
   }
 
   void dispose() {
+    _started = false;
     _timer?.cancel();
     _debounce?.cancel();
     _reconcileTimer?.cancel();
+    _realtime?.dispose();
   }
 
   Future<int> pendingCount() => _outbox.count();
@@ -289,7 +404,11 @@ class SyncEngine {
   Future<void> acceptServerConflict(OutboxOp op) async {
     final server = op.serverPayload;
     if (server == null) return;
-    await _persistence.applyServerRows(op.entity, [server]);
+    await _persistence.applyServerRows(
+      op.entity,
+      [server],
+      allowOverwriteDirty: true,
+    );
     state.applyPulled(op.entity, [server]);
     await _outbox.deleteRow(op.rowId);
     await state.refreshPending();
@@ -338,8 +457,12 @@ class SyncEngine {
         _setFamilySetupResolutionComplete();
         return FamilyRestoreResult.notFound;
       }
+      final sid = r['space_id'].toString();
+      if ((r['sync_protocol'] as num?)?.toInt() == 2) {
+        await _enableSyncV2ForSpace(sid);
+      }
       await _adoptSpace(
-        id: r['space_id'].toString(),
+        id: sid,
         code: r['invite_code']?.toString(),
         name: r['name']?.toString(),
       );
@@ -367,8 +490,16 @@ class SyncEngine {
   Future<List<FamilySpaceSummary>> listFamilySpaces() async {
     final result = await client.rpc('list_my_spaces', {});
     if (result is! List) return const [];
-    return result
-        .whereType<Map>()
+    final rows = result.whereType<Map>().toList(growable: false);
+    for (final row in rows) {
+      final sid = '${row['space_id'] ?? row['id'] ?? ''}';
+      if (sid.isNotEmpty &&
+          sid != 'null' &&
+          (row['sync_protocol'] as num?)?.toInt() == 2) {
+        await _enableSyncV2ForSpace(sid);
+      }
+    }
+    return rows
         .map((row) => FamilySpaceSummary.fromJson(row))
         .where((space) => space.id.isNotEmpty && space.id != 'null')
         .toList(growable: false);
@@ -435,9 +566,9 @@ class SyncEngine {
         newId: newClientId,
       );
       final payload = adapter.encode(domain, ctx);
+      final encodedBase = base == null ? null : adapter.encode(base, ctx);
       final basePayload =
-          base == null ? null : adapter.encode(base, ctx) as Map<String, Object?>;
-      await _stampBaseVersion(entity, payload);
+          await _stampBaseVersion(entity, payload, encodedBase: encodedBase);
       await _outbox.enqueue(entity, newClientId(), payload,
           basePayload: basePayload);
       state.refreshPending();
@@ -464,19 +595,24 @@ class SyncEngine {
         defaultListId: defaultListId,
         newId: newClientId,
       );
-      final operations = [
-        for (final (entity, domain, base) in mutations)
-          (
-            entity: entity,
-            opId: newClientId(),
-            payload: kSyncAdapters[entity]!.encode(domain, ctx),
-            basePayload:
-                base == null ? null : (kSyncAdapters[entity]!.encode(base, ctx)
-                    as Map<String, Object?>),
-          ),
-      ];
-      for (final operation in operations) {
-        await _stampBaseVersion(operation.entity, operation.payload);
+      final operations = <({
+        String entity,
+        String opId,
+        Map<String, Object?> payload,
+        Map<String, Object?>? basePayload,
+      })>[];
+      for (final (entity, domain, base) in mutations) {
+        final adapter = kSyncAdapters[entity]!;
+        final payload = adapter.encode(domain, ctx);
+        final encodedBase = base == null ? null : adapter.encode(base, ctx);
+        final basePayload =
+            await _stampBaseVersion(entity, payload, encodedBase: encodedBase);
+        operations.add((
+          entity: entity,
+          opId: newClientId(),
+          payload: payload,
+          basePayload: basePayload,
+        ));
       }
       await _outbox.enqueueBatch(operations, persist: persist);
       await state.refreshPending();
@@ -496,28 +632,50 @@ class SyncEngine {
   }) =>
       _enqueueBatchImpl(mutations, persist: persist);
 
-  Future<void> _stampBaseVersion(
-      String entity, Map<String, Object?> payload) async {
+  Future<Map<String, Object?>?> _stampBaseVersion(
+    String entity,
+    Map<String, Object?> payload, {
+    Map<String, Object?>? encodedBase,
+  }) async {
     final id = payload['id']?.toString();
-    if (!_conflictEntities.contains(entity) || id == null || id.isEmpty) {
-      return;
+    if (id == null || id.isEmpty) {
+      return encodedBase;
     }
     final versions = await _database.query(
       'sync_version',
-      columns: ['server_updated_at'],
+      columns: ['server_updated_at', 'server_payload'],
       where: 'entity = ? AND row_id = ?',
       whereArgs: [entity, id],
       limit: 1,
     );
     if (versions.isNotEmpty) {
-      payload['_base_updated_at'] =
-          versions.first['server_updated_at']?.toString();
-      return;
+      if (_conflictEntities.contains(entity) || encodedBase != null) {
+        payload['_base_updated_at'] =
+            versions.first['server_updated_at']?.toString();
+      }
+      if (encodedBase != null) {
+        final rawServer = versions.first['server_payload']?.toString();
+        if (rawServer != null && rawServer.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(rawServer);
+            if (decoded is Map) {
+              return <String, Object?>{
+                for (final entry in decoded.entries)
+                  entry.key.toString(): entry.value,
+                ...encodedBase,
+              };
+            }
+          } catch (_) {}
+        }
+      }
+      return encodedBase;
     }
     // A list item can be created safely without a base version (insert-only).
     // Existing legacy rows need a server version before they can be edited;
     // otherwise stale local state could masquerade as a new insert.
-    if (entity == 'list_item') {
+    if (entity == 'list_item' &&
+        _conflictEntities.contains(entity) &&
+        !_isSyncV2(_spaceId ?? '')) {
       final remoteRows = await client.pullRows(
         'list_item',
         orderCol: 'updated_at',
@@ -535,12 +693,17 @@ class SyncEngine {
               'entity': entity,
               'row_id': id,
               'server_updated_at': serverVersion,
+              'server_payload': jsonEncode(remote),
             },
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
+          if (encodedBase != null) {
+            return <String, Object?>{...remote, ...encodedBase};
+          }
         }
       }
     }
+    return encodedBase;
   }
 
   /// Chat is latency-sensitive and deliberately bypasses the offline outbox.
@@ -624,8 +787,17 @@ class SyncEngine {
         limit: 200,
       );
       if (rows.isEmpty) return;
-      await _persistence.applyServerRows(entity, rows);
-      state.applyPulled(entity, rows);
+      final dirtyIds = await _outbox.dirtyRowIdsForEntity(entity);
+      await _persistence.applyServerRows(entity, rows, dirtyIds: dirtyIds);
+      final cleanRows = dirtyIds.isEmpty
+          ? rows
+          : [
+              for (final row in rows)
+                if (!dirtyIds.contains('${row['id'] ?? ''}')) row,
+            ];
+      if (cleanRows.isNotEmpty) {
+        state.applyPulled(entity, cleanRows);
+      }
       String? maxCursor = since;
       for (final row in rows) {
         final updatedAt = row['updated_at'];
@@ -698,11 +870,19 @@ class SyncEngine {
       if (result is! Map) {
         throw const SyncException(0, 'unexpected response from server');
       }
+      final sid = result['id'].toString();
+      if ((result['sync_protocol'] as num?)?.toInt() == 2) {
+        await _enableSyncV2ForSpace(sid);
+      }
       await _adoptSpace(
-        id: result['id'].toString(),
+        id: sid,
         code: result['invite_code']?.toString(),
         name: name,
       );
+      final defaultListId = result['default_list_id']?.toString();
+      if (defaultListId != null && defaultListId.isNotEmpty) {
+        await _kvSet('default_list_id', defaultListId);
+      }
       await _fullSync();
       return true;
     } on SyncException catch (e) {
@@ -1246,11 +1426,15 @@ class SyncEngine {
       await _kvSet('space_name', name);
     }
     await _kvSet('space_id', id);
+    if (await _kvGet('sync_cursor_proto_v2_$id') == '1') {
+      _v2Spaces.add(id);
+    }
     // Any list id from a previous family is void - the join path relearns it
     // from the shopping_list header pull; the create path sets it from the
     // RPC result right after this.
     await _kvSet('default_list_id', '');
     await _kvSet('sync_cursor', ''); // retire the unsafe shared cursor
+    await _kvSet('sync_cursor_v2_$id', '');
     for (final entity in kPullOrder) {
       await _kvSet('sync_cursor_$entity', '');
     }
@@ -1259,6 +1443,7 @@ class SyncEngine {
     await _persistence.wipeSynced();
     await _outbox.clear();
     state.onSpaceAdopted(spaceName: name);
+    _realtime?.configure(spaceId: id, active: _foregroundActive);
 
     // Join path: the RPC returns only the id - fetch the family's real name
     // (best effort; the UI falls back to the placeholder until this lands).
@@ -1271,6 +1456,9 @@ class SyncEngine {
           limit: 1,
         );
         if (rows.isNotEmpty) {
+          if (rows.first['sync_seq'] != null) {
+            await _enableSyncV2ForSpace(id);
+          }
           final fetched = (rows.first['name'] ?? '').toString();
           if (fetched.isNotEmpty) {
             spaceName = fetched;
@@ -1363,7 +1551,9 @@ class SyncEngine {
     try {
       try {
         await _backfillLocalFamilyTasks(sid);
-        await _detectConflicts();
+        if (!_isSyncV2(sid)) {
+          await _detectConflicts();
+        }
         await _push();
         await _pull(sid);
       } on SyncException catch (e) {
@@ -1376,7 +1566,9 @@ class SyncEngine {
         if (!refreshed) {
           rethrow;
         }
-        await _detectConflicts();
+        if (!_isSyncV2(sid)) {
+          await _detectConflicts();
+        }
         await _push();
         await _pull(sid);
       }
@@ -1420,6 +1612,12 @@ class SyncEngine {
     'financial_commitment',
   };
 
+  static bool _isMissingRpcError(SyncException e, String fnName) =>
+      (e.statusCode == 404 || e.statusCode == 400) &&
+      (e.message.contains(fnName) ||
+          e.message.contains('PGRST202') ||
+          e.message.contains('Could not find the function'));
+
   /// Family tasks pre-dated their server table. Publish only local rows that
   /// are genuinely absent from the server. Re-publishing an existing row can
   /// replace a newer state with a stale device snapshot because the backfill
@@ -1450,8 +1648,12 @@ class SyncEngine {
 
   Future<void> _detectConflicts() async {
     final pending = (await _outbox.take(200))
-        .where((op) => _conflictEntities.contains(op.entity))
+        .where(
+          (op) =>
+              _conflictEntities.contains(op.entity) && op.basePayload == null,
+        )
         .toList();
+    if (pending.isEmpty) return;
     final grouped = <String, List<OutboxOp>>{};
     for (final op in pending) {
       if (op.payload['id'] == null) continue;
@@ -1459,7 +1661,7 @@ class SyncEngine {
     }
     for (final entry in grouped.entries) {
       final adapter = kSyncAdapters[entry.key]!;
-      final ids = entry.value.map((op) => op.payload['id']).join(',');
+      final ids = entry.value.map((op) => op.payload['id']).toSet().join(',');
       final rows = await client.pullRows(adapter.table,
           orderCol: 'updated_at', eqFilters: {'id': 'in.($ids)'}, limit: 200);
       final byId = {for (final row in rows) '${row['id']}': row};
@@ -1468,9 +1670,8 @@ class SyncEngine {
         if (remote == null || _samePayload(op.payload, remote)) continue;
         final serverVersion = remote['updated_at']?.toString();
         final baseVersion = op.payload['_base_updated_at']?.toString();
-        // Never trust a device clock to order writes. A mutation may update an
-        // existing row only when it names the exact server version it was
-        // based on. Legacy/stale outbox rows have no base and fail closed.
+        // Never trust a device clock to order writes. Legacy/unbased mutations
+        // without a basePayload cannot run 3-way merge and fail closed.
         if (serverVersion == null ||
             baseVersion == null ||
             serverVersion != baseVersion) {
@@ -1483,7 +1684,10 @@ class SyncEngine {
 
   bool _samePayload(Map<String, Object?> local, Map<String, Object?> remote) {
     for (final entry in local.entries) {
-      if (entry.key == 'updated_at' || entry.key == '_base_updated_at') {
+      if (entry.key == 'updated_at' ||
+          entry.key == '_base_updated_at' ||
+          entry.key == '_has_envelope_link' ||
+          entry.key == '_envelope_id') {
         continue;
       }
       if ('${entry.value ?? ''}' != '${remote[entry.key] ?? ''}') return false;
@@ -1491,68 +1695,302 @@ class SyncEngine {
     return true;
   }
 
-  /// One row per `id`, merged in queue order (later fields win). Rows
-  /// without an id are passed through untouched.
-  static List<Map<String, Object?>> _collapseById(
-      List<Map<String, Object?>> payloads) {
-    final merged = <String, Map<String, Object?>>{};
-    final out = <Map<String, Object?>>[];
-    for (final p in payloads) {
-      final id = p['id'];
-      if (id == null) {
-        out.add(p);
-        continue;
-      }
-      final existing = merged['$id'];
-      if (existing == null) {
-        final copy = Map<String, Object?>.of(p);
-        merged['$id'] = copy;
-        out.add(copy);
+  /// Collapses multiple queued mutations targeting the same `(entity, id)`
+  /// while preserving the initial op's CAS base (`_base_updated_at` and
+  /// `basePayload`) and ordering independent entities by topological FK order.
+  static List<_CollapsedPushUnit> _buildPushUnits(List<OutboxOp> ops) {
+    // 1. Group explicit atomic batches (`groupId != null`) so their ops remain
+    //    contiguous for server savepoints, ordered internally by FK topology.
+    final byGroup = <String, List<OutboxOp>>{};
+    final standalone = <OutboxOp>[];
+    for (final op in ops) {
+      final gid = op.groupId;
+      if (gid != null && gid.isNotEmpty) {
+        byGroup.putIfAbsent(gid, () => <OutboxOp>[]).add(op);
       } else {
-        existing.addAll(p);
+        standalone.add(op);
       }
     }
-    return out;
+
+    // 2. Collapse standalone ops by `(entity, id)` in queue order.
+    final collapsedStandalone = <_CollapsedPushUnit>[];
+    final byEntityAndId = <String, List<OutboxOp>>{};
+    final withoutId = <OutboxOp>[];
+    for (final op in standalone) {
+      final rowId = op.payload['id']?.toString();
+      if (rowId == null || rowId.isEmpty) {
+        withoutId.add(op);
+      } else {
+        byEntityAndId.putIfAbsent('${op.entity}::$rowId', () => []).add(op);
+      }
+    }
+    for (final op in withoutId) {
+      collapsedStandalone.add(_CollapsedPushUnit.fromOps([op]));
+    }
+    for (final groupOps in byEntityAndId.values) {
+      collapsedStandalone.add(_CollapsedPushUnit.fromOps(groupOps));
+    }
+
+    // 3. Build ordered bundles so FK parents always precede FK children while
+    //    multi-row `groupId` savepoints stay contiguous.
+    final bundles = <({int rank, int firstRowId, List<_CollapsedPushUnit> units})>[
+      for (final unit in collapsedStandalone)
+        (
+          rank: pushOrderIndex(unit.entity),
+          firstRowId: unit.outboxRowIds.first,
+          units: [unit],
+        ),
+    ];
+    for (final entry in byGroup.entries) {
+      final sortedGroupOps = List.of(entry.value)
+        ..sort((a, b) {
+          final cmp =
+              pushOrderIndex(a.entity).compareTo(pushOrderIndex(b.entity));
+          return cmp != 0 ? cmp : a.rowId.compareTo(b.rowId);
+        });
+      // Collapse duplicate `(entity, id)` within the same group if any.
+      final unitsInGroup = <_CollapsedPushUnit>[];
+      final seenInGroup = <String, List<OutboxOp>>{};
+      for (final op in sortedGroupOps) {
+        final id = op.payload['id']?.toString();
+        if (id == null || id.isEmpty) {
+          unitsInGroup.add(_CollapsedPushUnit.fromOps([op]));
+        } else {
+          seenInGroup.putIfAbsent('${op.entity}::$id', () => []).add(op);
+        }
+      }
+      for (final gOps in seenInGroup.values) {
+        unitsInGroup.add(_CollapsedPushUnit.fromOps(gOps));
+      }
+      unitsInGroup.sort((a, b) {
+        final cmp =
+            pushOrderIndex(a.entity).compareTo(pushOrderIndex(b.entity));
+        return cmp != 0
+            ? cmp
+            : a.outboxRowIds.first.compareTo(b.outboxRowIds.first);
+      });
+      final minRank = unitsInGroup
+          .map((u) => pushOrderIndex(u.entity))
+          .reduce((a, b) => a < b ? a : b);
+      bundles.add((
+        rank: minRank,
+        firstRowId: sortedGroupOps.first.rowId,
+        units: unitsInGroup,
+      ));
+    }
+
+    bundles.sort((a, b) {
+      final cmp = a.rank.compareTo(b.rank);
+      return cmp != 0 ? cmp : a.firstRowId.compareTo(b.firstRowId);
+    });
+
+    return [
+      for (final bundle in bundles) ...bundle.units,
+    ];
   }
 
-  /// Ordered, grouped, verbatim push. A failed entity batch stays in the
-  /// outbox (attempts++) and retries on the next sync.
   Future<void> _push() async {
+    final sid = _spaceId;
+    if (sid != null && _isSyncV2(sid)) {
+      await _pushV2(sid);
+      return;
+    }
+    await _pushLegacy();
+  }
+
+  Future<void> _pushV2(String sid) async {
+    while (true) {
+      final taken = await _outbox.take(200);
+      if (taken.isEmpty) return;
+
+      final units = _buildPushUnits(taken);
+      final rpcOps = <Map<String, Object?>>[];
+      for (final unit in units) {
+        final adapter = kSyncAdapters[unit.entity];
+        if (adapter == null) continue;
+        final cleanPayload = Map<String, Object?>.of(unit.payload)
+          ..remove('_base_updated_at');
+        rpcOps.add({
+          'op_id': unit.opId,
+          if (unit.groupId != null) 'group_id': unit.groupId,
+          'space_id': sid,
+          'table': adapter.table,
+          'id': cleanPayload['id'],
+          if (unit.baseUpdatedAt != null) 'base_updated_at': unit.baseUpdatedAt,
+          if (unit.basePayload != null) 'base': unit.basePayload,
+          'payload': cleanPayload,
+        });
+      }
+
+      List<Map<String, Object?>> results;
+      try {
+        results = await client.pushSyncOps(rpcOps);
+      } on SyncException catch (e) {
+        if (_isMissingRpcError(e, 'push_sync_ops')) {
+          await _disableSyncV2ForSpace(sid);
+          await _detectConflicts();
+          await _pushLegacy();
+          return;
+        }
+        if (!e.isAuthError) {
+          await _outbox.bumpAttempts([for (final op in taken) op.rowId]);
+        }
+        rethrow;
+      }
+
+      final byOpId = <String, Map<String, Object?>>{
+        for (final r in results)
+          if (r['op_id'] != null) r['op_id'].toString(): r,
+      };
+
+      final doneRowIds = <int>[];
+      final retryRowIds = <int>[];
+      final sentChatIds = <String>[];
+
+      for (final unit in units) {
+        final res = byOpId[unit.opId];
+        if (res == null) {
+          retryRowIds.addAll(unit.outboxRowIds);
+          continue;
+        }
+        final seq = (res['sync_seq'] as num?)?.toInt();
+        _recordKnownSeq(sid, seq);
+
+        final resStatus = res['status']?.toString();
+        final outcome = res['outcome']?.toString();
+        final serverRow = res['row'] is Map
+            ? Map<String, Object?>.from(res['row'] as Map)
+            : null;
+        final fallbackServerRow = res['server_row'] is Map
+            ? Map<String, Object?>.from(res['server_row'] as Map)
+            : null;
+
+        if (resStatus == 'applied') {
+          doneRowIds.addAll(unit.outboxRowIds);
+          final replacedId = res['replaced_id']?.toString();
+          if (outcome == 'adopted_existing' &&
+              replacedId != null &&
+              replacedId.isNotEmpty &&
+              serverRow != null) {
+            final canonicalId = serverRow['id']?.toString() ?? '';
+            await _handleAdoptedExisting(
+              unit.entity,
+              replacedId,
+              canonicalId,
+              serverRow,
+            );
+          } else if (serverRow != null) {
+            await _persistence.applyServerRows(
+              unit.entity,
+              [serverRow],
+              allowOverwriteDirty: true,
+            );
+            state.applyPulled(unit.entity, [serverRow]);
+          }
+          if (unit.entity == 'family_chat_message') {
+            final chatId =
+                (serverRow?['id'] ?? unit.payload['id'])?.toString() ?? '';
+            if (chatId.isNotEmpty) sentChatIds.add(chatId);
+          }
+        } else if (resStatus == 'rejected' && res['permanent'] == true) {
+          // Permanent server guard or RLS rejection: converge locally on the
+          // authoritative server row when available and remove the poisoned op
+          // so it never blocks subsequent family changes.
+          reportError?.call(
+            'push:${unit.entity}',
+            SyncException(409, '${res['error'] ?? 'rejected'}'),
+            StackTrace.current,
+          );
+          if (fallbackServerRow != null) {
+            await _persistence.applyServerRows(
+              unit.entity,
+              [fallbackServerRow],
+              allowOverwriteDirty: true,
+            );
+            state.applyPulled(unit.entity, [fallbackServerRow]);
+          }
+          doneRowIds.addAll(unit.outboxRowIds);
+        } else {
+          retryRowIds.addAll(unit.outboxRowIds);
+        }
+      }
+
+      if (sentChatIds.isNotEmpty) {
+        state.markChatMessagesSent(sentChatIds);
+      }
+      if (doneRowIds.isNotEmpty) {
+        await _outbox.deleteRows(doneRowIds);
+      }
+      if (retryRowIds.isNotEmpty) {
+        await _outbox.bumpAttempts(retryRowIds);
+        throw const SyncException(0, 'some changes have not been pushed yet');
+      }
+      if (taken.length < 200) return;
+    }
+  }
+
+  Future<void> _handleAdoptedExisting(
+    String entity,
+    String oldId,
+    String newId,
+    Map<String, Object?> serverRow,
+  ) async {
+    await _persistence.remapEntityId(
+      entity: entity,
+      oldId: oldId,
+      newId: newId,
+      serverRow: serverRow,
+    );
+    await _outbox.rewriteEntityIdReferences(entity, oldId, newId);
+    state.remapEntityId(entity, oldId, newId, serverRow);
+  }
+
+  /// Legacy PostgREST push path used when Sync Protocol v2 RPCs are absent
+  /// (for example lightweight HTTP unit-test fakes).
+  Future<void> _pushLegacy() async {
     final taken = await _outbox.take(200);
     if (taken.isEmpty) return;
-    // Attempts are diagnostic only. Long-failing rows remain eligible so
-    // they upload automatically when Supabase or connectivity recovers.
     final ops = taken;
+    final units = _buildPushUnits(ops);
 
-    final byEntity = <String, List<OutboxOp>>{};
-    for (final op in ops) {
-      byEntity.putIfAbsent(op.entity, () => []).add(op);
+    // Group ordered units by contiguous entity runs so topological FK order
+    // (`envelope -> recurring -> tx -> list_item`) is preserved!
+    final runs = <({String entity, List<_CollapsedPushUnit> units})>[];
+    for (final unit in units) {
+      if (runs.isNotEmpty && runs.last.entity == unit.entity) {
+        runs.last.units.add(unit);
+      } else {
+        runs.add((entity: unit.entity, units: [unit]));
+      }
     }
 
     var allOk = true;
     final doneRowIds = <int>[];
     final conflictedRowIds = <int>[];
-    for (final entry in byEntity.entries) {
-      final adapter = kSyncAdapters[entry.key]!;
+    for (final run in runs) {
+      final entityKey = run.entity;
+      final adapter = kSyncAdapters[entityKey]!;
       final entryDoneRowIds = <int>[];
-      // Several edits to the same record (e.g. a list item moved to the
-      // cart, then checked out) queue several ops. One upsert statement may
-      // not touch a row twice - Postgres rejects the whole batch with
-      // "ON CONFLICT DO UPDATE command cannot affect row a second time" - so
-      // collapse them in queue order, later fields winning.
-      final versionedRows = _collapseById(
-          [for (final operation in entry.value) operation.payload]);
+      final txEnvIntents = <String, ({bool hasLink, String? envId, String? base})>{};
       var rows = <Map<String, Object?>>[];
       try {
-        if (_conflictEntities.contains(entry.key)) {
-          for (final versioned in versionedRows) {
-            final base = versioned['_base_updated_at']?.toString();
-            final row = Map<String, Object?>.of(versioned)
-              ..remove('_base_updated_at');
-            if (entry.key == 'list_item' && base == null) {
-              // A never-synced item is created with INSERT/ignore-duplicates.
-              // If its id already exists remotely, leave it untouched and
-              // surface the server version for explicit conflict review.
+        if (_conflictEntities.contains(entityKey)) {
+          for (final unit in run.units) {
+            final base = unit.baseUpdatedAt;
+            final hasEnvLink = unit.payload['_has_envelope_link'] == true;
+            final envId = unit.payload['_envelope_id'] as String?;
+            final row = Map<String, Object?>.of(unit.payload)
+              ..remove('_base_updated_at')
+              ..remove('_has_envelope_link')
+              ..remove('_envelope_id');
+            if (entityKey == 'tx' && row['id'] != null) {
+              txEnvIntents['${row['id']}'] = (
+                hasLink: hasEnvLink,
+                envId: envId,
+                base: base,
+              );
+            }
+            if (entityKey == 'list_item' && base == null) {
               final remoteRows = await client.pullRows(
                 adapter.table,
                 orderCol: 'updated_at',
@@ -1567,18 +2005,19 @@ class SyncEngine {
                 );
                 if (inserted) {
                   rows.add(row);
-                  entryDoneRowIds.addAll(entry.value
-                      .where((operation) =>
-                          operation.payload['id'] == row['id'])
-                      .map((operation) => operation.rowId));
+                  entryDoneRowIds.addAll(unit.outboxRowIds);
                 }
                 continue;
               }
-              for (final operation in entry.value.where(
-                (operation) => operation.payload['id'] == row['id'],
-              )) {
-                await _outbox.markConflict(operation.rowId,
+              if (_samePayload(row, remote)) {
+                rows.add(remote);
+                entryDoneRowIds.addAll(unit.outboxRowIds);
+                continue;
+              }
+              for (final rowId in unit.outboxRowIds) {
+                await _outbox.markConflict(rowId,
                     'This shopping item changed on another device.', remote);
+                conflictedRowIds.add(rowId);
               }
               continue;
             }
@@ -1587,23 +2026,21 @@ class SyncEngine {
               row,
               baseUpdatedAt: base,
             );
-            final matchingOps = entry.value
-                .where((operation) => operation.payload['id'] == row['id']);
             if (applied) {
               rows.add(row);
-              entryDoneRowIds
-                  .addAll(matchingOps.map((operation) => operation.rowId));
+              entryDoneRowIds.addAll(unit.outboxRowIds);
               continue;
             }
-            // CAS conflict: the row changed on the server since this client's
-            // base. Instead of a user-vote whole-record resolution (which
-            // diverges when different devices pick different sides), ask the
-            // server to compute a deterministic field-level merge and apply the
-            // canonical result. Every device converges on the same merged row.
-            final firstOp = matchingOps.firstOrNull;
             final baseUpdatedAt = base;
-            final basePayload = firstOp?.basePayload;
-            if (basePayload != null && basePayload.isNotEmpty && baseUpdatedAt != null) {
+            final basePayload = unit.basePayload == null
+                ? null
+                : (Map<String, Object?>.of(unit.basePayload!)
+                  ..remove('_base_updated_at')
+                  ..remove('_has_envelope_link')
+                  ..remove('_envelope_id'));
+            if (basePayload != null &&
+                basePayload.isNotEmpty &&
+                baseUpdatedAt != null) {
               try {
                 final merged = await client.mergeRow(
                   adapter.table,
@@ -1612,66 +2049,93 @@ class SyncEngine {
                   basePayload,
                   row,
                 );
-                // Apply the server's canonical merged row locally (SQLite +
-                // in-memory) so this device matches the family.
-                await _persistence.applyServerRows(entry.key, [merged]);
-                state.applyPulled(entry.key, [merged]);
+                await _persistence.applyServerRows(
+                  entityKey,
+                  [merged],
+                  allowOverwriteDirty: true,
+                );
+                state.applyPulled(entityKey, [merged]);
                 rows.add(merged);
-                entryDoneRowIds
-                    .addAll(matchingOps.map((operation) => operation.rowId));
+                entryDoneRowIds.addAll(unit.outboxRowIds);
                 continue;
               } on SyncException catch (mergeErr) {
-                // The merge itself was rejected (e.g. the shopping regression
-                // guard refused a stale done→tobuy). Surface it as a conflict
-                // for explicit review rather than retrying forever.
-                debugPrint('Mhuri merge rejected [${entry.key}]: $mergeErr');
-                reportError?.call('merge:${entry.key}', mergeErr,
-                    StackTrace.current);
+                debugPrint('Mhuri merge rejected [$entityKey]: $mergeErr');
+                reportError?.call(
+                    'merge:$entityKey', mergeErr, StackTrace.current);
               }
             }
-            // No base payload available (entity does not capture one yet), or
-            // the merge was rejected: fall back to a needs-review conflict.
             final remoteRows = await client.pullRows(
               adapter.table,
               orderCol: 'updated_at',
               eqFilters: {'id': 'eq.${row['id']}'},
               limit: 1,
             );
-            final remote = remoteRows.firstOrNull ?? const {};
-            for (final operation in matchingOps) {
-              await _outbox.markConflict(operation.rowId,
-                  'This record changed on another device.', remote);
-              conflictedRowIds.add(operation.rowId);
+            final remote = remoteRows.firstOrNull;
+            if (remote != null && _samePayload(row, remote)) {
+              rows.add(remote);
+              entryDoneRowIds.addAll(unit.outboxRowIds);
+              continue;
+            }
+            for (final rowId in unit.outboxRowIds) {
+              await _outbox.markConflict(rowId,
+                  'This record changed on another device.', remote ?? const {});
+              conflictedRowIds.add(rowId);
             }
           }
         } else {
           rows = [
-            for (final versioned in versionedRows)
-              Map<String, Object?>.of(versioned)..remove('_base_updated_at')
+            for (final unit in run.units)
+              Map<String, Object?>.of(unit.payload)
+                ..remove('_base_updated_at')
+                ..remove('_has_envelope_link')
+                ..remove('_envelope_id')
           ];
           await client.pushRows(adapter.table, rows);
-          entryDoneRowIds
-              .addAll(entry.value.map((operation) => operation.rowId));
+          for (final unit in run.units) {
+            entryDoneRowIds.addAll(unit.outboxRowIds);
+          }
         }
-        if (entry.key == 'family_chat_message') {
+        if (entityKey == 'family_chat_message') {
           state.markChatMessagesSent(rows.map((row) => row['id'].toString()));
         }
-        // Sprint B: budget attribution rides with transaction pushes - the
-        // server models it as the envelope_tx junction (no envelope_id col).
-        if (entry.key == 'tx') {
+        if (entityKey == 'tx') {
           final byId = {for (final t in state.txs) t.id: t};
-          final links = <Map<String, Object?>>[
-            for (final row in rows)
-              if (byId[row['id']] case final transaction?
-                  when transaction.accountId == null &&
-                      transaction.envelopeId?.isNotEmpty == true)
-                {
-                  'envelope_id': transaction.envelopeId!,
-                  'transaction_id': row['id'],
-                  'allocated_minor': transaction.amount.minor,
-                  'currency': transaction.amount.currency.code,
-                },
-          ];
+          final links = <Map<String, Object?>>[];
+          final unlinkTxIds = <String>[];
+          for (final row in rows) {
+            final txId = row['id']?.toString();
+            if (txId == null) continue;
+            final intent = txEnvIntents[txId];
+            final memTx = byId[txId];
+            final effectiveEnvId = intent != null && intent.hasLink
+                ? intent.envId
+                : (memTx?.accountId == null ? memTx?.envelopeId : null);
+            if (effectiveEnvId != null && effectiveEnvId.isNotEmpty) {
+              if (intent?.base != null) {
+                unlinkTxIds.add(txId);
+              }
+              links.add({
+                'envelope_id': effectiveEnvId,
+                'transaction_id': txId,
+                'allocated_minor':
+                    row['amount_minor'] ?? memTx?.amount.minor ?? 0,
+                'currency':
+                    row['currency'] ?? memTx?.amount.currency.code ?? 'USD',
+              });
+            } else if (intent != null &&
+                intent.hasLink &&
+                intent.base != null) {
+              unlinkTxIds.add(txId);
+            }
+          }
+          for (final txId in unlinkTxIds) {
+            try {
+              await client.deleteRows(
+                'envelope_tx',
+                {'transaction_id': 'eq.$txId'},
+              );
+            } catch (_) {}
+          }
           if (links.isNotEmpty) {
             await client.pushRows(
               'envelope_tx',
@@ -1680,22 +2144,16 @@ class SyncEngine {
             );
           }
         }
-        // A transaction is complete only after its envelope attribution is
-        // durable too. Both idempotent writes retry together on failure.
         doneRowIds.addAll(entryDoneRowIds);
       } on SyncException catch (e) {
         if (e.isAuthError) rethrow;
-        debugPrint('Mhuri push failed [${entry.key} → ${adapter.table}, '
-            '${entry.value.length} op(s)]: $e');
-        reportError?.call('push:${entry.key}', e, StackTrace.current);
+        debugPrint('Mhuri push failed [$entityKey → ${adapter.table}, '
+            '${run.units.length} unit(s)]: $e');
+        reportError?.call('push:$entityKey', e, StackTrace.current);
         allOk = false;
-        // A shopping regression guard rejection (STALE_SHOPPING_*) means the
-        // server refused a done→tobuy revert. Retrying forever would leave the
-        // device stuck on a stale tobuy with a persistent error. Mark the ops
-        // as conflicts (surfaced in Sync & data for explicit review) instead.
         if (e.message.contains('STALE_SHOPPING')) {
-          for (final operation in entry.value) {
-            final rowId = operation.payload['id']?.toString();
+          for (final unit in run.units) {
+            final rowId = unit.payload['id']?.toString();
             if (rowId == null) continue;
             try {
               final remoteRows = await client.pullRows(
@@ -1705,23 +2163,25 @@ class SyncEngine {
                 limit: 1,
               );
               final remote = remoteRows.firstOrNull;
-              await _outbox.markConflict(
-                operation.rowId,
-                'The family list rejected this change as a stale shopping '
-                'regression. Review the server version before retrying.',
-                remote ?? {},
-              );
-              conflictedRowIds.add(operation.rowId);
+              for (final outboxId in unit.outboxRowIds) {
+                await _outbox.markConflict(
+                  outboxId,
+                  'The family list rejected this change as a stale shopping '
+                  'regression. Review the server version before retrying.',
+                  remote ?? {},
+                );
+                conflictedRowIds.add(outboxId);
+              }
             } catch (_) {
-              // If we cannot fetch the server version, still avoid an endless
-              // retry loop by parking the op at the conflict boundary.
-              await _outbox.markConflict(
-                operation.rowId,
-                'The family list rejected this change as a stale shopping '
-                'regression.',
-                {},
-              );
-              conflictedRowIds.add(operation.rowId);
+              for (final outboxId in unit.outboxRowIds) {
+                await _outbox.markConflict(
+                  outboxId,
+                  'The family list rejected this change as a stale shopping '
+                  'regression.',
+                  {},
+                );
+                conflictedRowIds.add(outboxId);
+              }
             }
           }
         }
@@ -1730,14 +2190,21 @@ class SyncEngine {
 
     if (doneRowIds.isNotEmpty) await _outbox.deleteRows(doneRowIds);
     if (!allOk) {
-      await _outbox.bumpAttempts(
-          [for (final op in ops)
-            if (!conflictedRowIds.contains(op.rowId)) op.rowId]);
+      await _outbox.bumpAttempts([
+        for (final op in ops)
+          if (!conflictedRowIds.contains(op.rowId) &&
+              !doneRowIds.contains(op.rowId))
+            op.rowId,
+      ]);
       throw const SyncException(0, 'some changes have not been pushed yet');
     }
   }
 
   Future<void> _pull(String sid) async {
+    if (_isSyncV2(sid)) {
+      final handled = await _pullV2(sid, full: false);
+      if (handled) return;
+    }
     SyncException? pullError;
     try {
       await _pullSince(sid, full: false);
@@ -1756,11 +2223,161 @@ class SyncEngine {
     if (pullError != null) throw pullError;
   }
 
-  /// Full resync (right after adopting a space): forget the cursor, pull all.
+  Future<bool> _pullV2(String sid, {required bool full}) async {
+    final cursorKey = 'sync_cursor_v2_$sid';
+    final cursors = <String, int>{};
+    if (!full) {
+      final raw = await _kvGet(cursorKey);
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map) {
+            for (final entry in decoded.entries) {
+              final v = entry.value;
+              if (v is num) {
+                cursors[entry.key.toString()] = v.toInt();
+              } else if (v != null) {
+                final parsed = int.tryParse(v.toString());
+                if (parsed != null) cursors[entry.key.toString()] = parsed;
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (full) {
+      await _persistence.clearAccounts();
+      state.clearAccountsForServerSnapshot(notify: false);
+    }
+
+    final dirtyByEntity = await _outbox.dirtyIdsByEntity();
+    var anyEntityMutated = full;
+    var pages = 0;
+
+    while (pages < 50) {
+      pages++;
+      Map<String, Object?> response;
+      try {
+        response =
+            await client.pullFamilyChanges(sid, cursors, pageLimit: 500);
+      } on SyncException catch (e) {
+        if (_isMissingRpcError(e, 'pull_family_changes')) {
+          await _disableSyncV2ForSpace(sid);
+          return false;
+        }
+        rethrow;
+      }
+
+      _recordKnownSeq(
+        sid,
+        ((response['signal_seq'] ?? response['server_max_seq']) as num?)
+            ?.toInt(),
+      );
+
+      final changes = response['changes'];
+      if (changes is Map) {
+        for (final entity in kPullOrder) {
+          final rawRows = changes[entity];
+          if (rawRows is! List || rawRows.isEmpty) continue;
+          final rows = [
+            for (final item in rawRows)
+              if (item is Map) Map<String, Object?>.from(item),
+          ];
+          if (rows.isEmpty) continue;
+          final dirtyIds = dirtyByEntity[entity] ?? const <String>{};
+          await _persistence.applyServerRows(
+            entity,
+            rows,
+            dirtyIds: dirtyIds,
+          );
+          final cleanRows = dirtyIds.isEmpty
+              ? rows
+              : [
+                  for (final r in rows)
+                    if (!dirtyIds.contains('${r['id'] ?? ''}')) r,
+                ];
+          if (cleanRows.isNotEmpty) {
+            state.applyPulled(entity, cleanRows, notify: false);
+            if (entity == 'shopping_list') {
+              await _captureDefaultList(cleanRows);
+            }
+            anyEntityMutated = true;
+          }
+        }
+      }
+
+      final spacePayload = response['family_space'] ?? response['space'];
+      if (spacePayload is List && spacePayload.isNotEmpty) {
+        final firstSpace = spacePayload.first;
+        if (firstSpace is Map) {
+          await _applyFamilySpaceRow(Map<String, Object?>.from(firstSpace));
+        }
+      } else if (spacePayload is Map) {
+        await _applyFamilySpaceRow(Map<String, Object?>.from(spacePayload));
+      }
+
+      final roster = response['roster'];
+      if (roster is Map && roster['changed'] != false) {
+        final rawMemberships = roster['membership'] ?? roster['memberships'];
+        final rawProfiles = roster['user_profile'] ?? roster['profiles'];
+        if (rawMemberships is List) {
+          final memberships = [
+            for (final m in rawMemberships)
+              if (m is Map) Map<String, Object?>.from(m),
+          ];
+          final profiles = [
+            if (rawProfiles is List)
+              for (final p in rawProfiles)
+                if (p is Map) Map<String, Object?>.from(p),
+          ];
+          if (memberships.isNotEmpty) {
+            final list = membersFromServer(
+              membershipRows: memberships,
+              profileRows: profiles,
+              meId: state.user.id,
+            );
+            await state.setFamilyMembers(list);
+          }
+        }
+      }
+
+      final rateRows = response['rate_snapshot'];
+      if (rateRows is List && rateRows.isNotEmpty) {
+        final firstRate = rateRows.first;
+        if (firstRate is Map) {
+          final rateVal = (firstRate['usd_zwg'] as num?)?.toDouble();
+          if (rateVal != null && rateVal > 0) {
+            await state.applyServerRate(rateVal);
+          }
+        }
+      }
+
+      final nextCursors = response['cursors'];
+      if (nextCursors is Map) {
+        for (final entry in nextCursors.entries) {
+          final val = entry.value;
+          if (val is num) {
+            cursors[entry.key.toString()] = val.toInt();
+          } else if (val != null) {
+            final parsed = int.tryParse(val.toString());
+            if (parsed != null) cursors[entry.key.toString()] = parsed;
+          }
+        }
+        await _kvSet(cursorKey, jsonEncode(cursors));
+      }
+
+      if (response['has_more'] != true) break;
+    }
+
+    if (anyEntityMutated) {
+      state.publishPulledMerge();
+    }
+    return true;
+  }
+
   /// Pulls the envelope_tx junction and mirrors it into local tx.envelopeId,
-  /// so budget attribution follows the family across devices. Full-refresh
-  /// semantics: the server is the truth for links (upserts are idempotent,
-  /// conflicts are rare single-field edits).
+  /// so budget attribution follows the family across devices.
   Future<void> _pullEnvelopeLinks({bool notify = true}) async {
     final envIds = state.envelopes.map((e) => e.id).toList();
     if (envIds.isEmpty) return;
@@ -1774,7 +2391,13 @@ class SyncEngine {
       for (final r in rows)
         r['transaction_id'].toString(): r['envelope_id'].toString(),
     };
-    await state.applyEnvelopeLinks(links, notify: notify);
+    final dirtyTxIds = await _outbox.dirtyRowIdsForEntity('tx');
+    await state.applyEnvelopeLinks(
+      links,
+      notify: notify,
+      clearMissing: rows.length < 2000,
+      dirtyTxIds: dirtyTxIds,
+    );
   }
 
   /// Latest rbz snapshot wins unless the user set a custom rate. Falls back
@@ -1844,71 +2467,91 @@ class SyncEngine {
         limit: 1,
       );
       if (rows.isEmpty) return;
-      final name = rows.first['name']?.toString();
-      if (name != null && name.trim().isNotEmpty) {
-        spaceName = name.trim();
-        await _kvSet('space_name', spaceName!);
-        state.adoptSpaceName(spaceName!);
+      if (rows.first['sync_seq'] != null) {
+        await _enableSyncV2ForSpace(sid);
       }
-      final settings = rows.first['settings'];
-      final perms = <String, bool>{};
-      if (settings is Map) {
-        final rp = settings['role_permissions'];
-        if (rp is Map) {
-          perms.addAll({
-            for (final e in rp.entries)
-              e.key.toString(): '${e.value}' == 'true',
-          });
-        }
-        final rawStage = settings['onboarding_stage']?.toString();
-        final rawTemplates = settings['onboarding_templates'];
-        final templates = rawTemplates is List
-            ? rawTemplates
-                .whereType<Map>()
-                .map((item) => <String, String>{
-                      for (final entry in item.entries)
-                        entry.key.toString(): entry.value.toString(),
-                    })
-                .toList(growable: false)
-            : null;
-        // Existing families pre-date this marker and are established.
-        final familyStage =
-            rawStage == null || rawStage.isEmpty ? 'complete' : rawStage;
-        // Setup is a family-admin responsibility. Invited adults, teens,
-        // children and viewers must enter the shared experience directly,
-        // even if the creator has not finished every optional setup step.
-        final stage = state.user.role == Role.owner ? familyStage : 'complete';
-        await state.applyFamilySetupSettings(
-          stage: stage,
-          primary: settings['primary_currency']?.toString() ??
-              rows.first['base_currency']?.toString(),
-          secondary: settings['secondary_currency']?.toString(),
-          // The typed family_space column is authoritative. Older setup
-          // versions also stored this in JSON and could leave the two values
-          // out of sync, causing totals to jump after the settings pull.
-          monthStart: int.tryParse(
-              '${rows.first['month_start_day'] ?? settings['month_start_day'] ?? ''}'),
-          templates: templates,
-        );
-      }
-      if (settings is! Map) {
-        await state.applyFamilySetupSettings(stage: 'complete');
-      }
-      await state.applyRolePermissions(perms);
+      await _applyFamilySpaceRow(rows.first);
     } catch (_) {
       // Non-fatal - defaults keep the UI consistent with the server defaults.
     }
   }
 
+  Future<void> _applyFamilySpaceRow(Map<String, Object?> spaceRow) async {
+    final name = spaceRow['name']?.toString();
+    if (name != null && name.trim().isNotEmpty) {
+      spaceName = name.trim();
+      await _kvSet('space_name', spaceName!);
+      state.adoptSpaceName(spaceName!);
+    }
+    final settings = spaceRow['settings'];
+    final perms = <String, bool>{};
+    if (settings is Map) {
+      final rp = settings['role_permissions'];
+      if (rp is Map) {
+        perms.addAll({
+          for (final e in rp.entries) e.key.toString(): '${e.value}' == 'true',
+        });
+      }
+      final rawStage = settings['onboarding_stage']?.toString();
+      final rawTemplates = settings['onboarding_templates'];
+      final templates = rawTemplates is List
+          ? rawTemplates
+              .whereType<Map>()
+              .map((item) => <String, String>{
+                    for (final entry in item.entries)
+                      entry.key.toString(): entry.value.toString(),
+                  })
+              .toList(growable: false)
+          : null;
+      // Existing families pre-date this marker and are established.
+      final familyStage =
+          rawStage == null || rawStage.isEmpty ? 'complete' : rawStage;
+      // Setup is a family-admin responsibility. Invited adults, teens,
+      // children and viewers must enter the shared experience directly,
+      // even if the creator has not finished every optional setup step.
+      final stage = state.user.role == Role.owner ? familyStage : 'complete';
+      await state.applyFamilySetupSettings(
+        stage: stage,
+        primary: settings['primary_currency']?.toString() ??
+            spaceRow['base_currency']?.toString(),
+        secondary: settings['secondary_currency']?.toString(),
+        // The typed family_space column is authoritative. Older setup
+        // versions also stored this in JSON and could leave the two values
+        // out of sync, causing totals to jump after the settings pull.
+        monthStart: int.tryParse(
+            '${spaceRow['month_start_day'] ?? settings['month_start_day'] ?? ''}'),
+        templates: templates,
+      );
+    }
+    if (settings is! Map) {
+      await state.applyFamilySetupSettings(stage: 'complete');
+    }
+    await state.applyRolePermissions(perms);
+  }
+
   Future<void> _fullSync() async {
+    final sid = _spaceId!;
     await _kvSet('sync_cursor', '');
+    await _kvSet('sync_cursor_v2_$sid', '');
     for (final entity in kPullOrder) {
       await _kvSet('sync_cursor_$entity', '');
     }
     await _push();
+    if (_isSyncV2(sid)) {
+      final handled = await _pullV2(sid, full: true);
+      if (handled) {
+        lastSyncAt = DateTime.now();
+        await _kvSet('last_sync_ms', '${lastSyncAt!.millisecondsSinceEpoch}');
+        _setStatus(await _outbox.countConflicts() > 0
+            ? SyncStatus.needsReview
+            : SyncStatus.idle);
+        await state.refreshPending();
+        return;
+      }
+    }
     SyncException? pullError;
     try {
-      await _pullSince(_spaceId!, full: true);
+      await _pullSince(sid, full: true);
     } on SyncException catch (e) {
       pullError = e;
     }
@@ -1919,19 +2562,22 @@ class SyncEngine {
     if (pullError != null) throw pullError;
     lastSyncAt = DateTime.now();
     await _kvSet('last_sync_ms', '${lastSyncAt!.millisecondsSinceEpoch}');
-    _setStatus(SyncStatus.idle);
+    _setStatus(await _outbox.countConflicts() > 0
+        ? SyncStatus.needsReview
+        : SyncStatus.idle);
     await state.refreshPending();
   }
 
   Future<void> _pullSince(String sid, {required bool full}) async {
     SyncException? firstError;
+    final dirtyByEntity = await _outbox.dirtyIdsByEntity();
     for (final entity in kPullOrder) {
       final adapter = kSyncAdapters[entity]!;
       final key = 'sync_cursor_$entity';
       final stored = full ? null : await _kvGet(key);
       // `gt` can skip sibling rows committed with the same updated_at value.
       // Re-read a tiny overlap; merges are idempotent by row id.
-      final since = stored == null || stored.isEmpty
+      var since = stored == null || stored.isEmpty
           ? null
           : (DateTime.tryParse(stored)
                   ?.subtract(const Duration(milliseconds: 1))
@@ -1939,62 +2585,85 @@ class SyncEngine {
                   .toIso8601String() ??
               stored);
       try {
-        final orderCol = adapter.orderCol;
-        List<Map<String, Object?>> rows;
-        try {
-          rows = await client.pullRows(
-            adapter.table,
-            orderCol: orderCol,
-            sinceIso: since,
-            spaceId: adapter.spaceScoped ? sid : null,
-            spaceCol: adapter.spaceScoped ? 'space_id' : null,
-          );
-        } on SyncException catch (e) {
-          if (orderCol == 'updated_at' &&
-              e.statusCode == 400 &&
-              e.message.contains('.updated_at does not exist')) {
+        var orderCol = adapter.orderCol;
+        final dirtyIds = dirtyByEntity[entity] ?? const <String>{};
+        var clearedAccounts = false;
+        var page = 0;
+
+        while (page < 20) {
+          page++;
+          List<Map<String, Object?>> rows;
+          try {
             rows = await client.pullRows(
               adapter.table,
-              orderCol: 'created_at',
+              orderCol: orderCol,
               sinceIso: since,
               spaceId: adapter.spaceScoped ? sid : null,
               spaceCol: adapter.spaceScoped ? 'space_id' : null,
+              limit: 500,
             );
+          } on SyncException catch (e) {
+            if (orderCol == 'updated_at' &&
+                e.statusCode == 400 &&
+                e.message.contains('.updated_at does not exist')) {
+              orderCol = 'created_at';
+              rows = await client.pullRows(
+                adapter.table,
+                orderCol: orderCol,
+                sinceIso: since,
+                spaceId: adapter.spaceScoped ? sid : null,
+                spaceCol: adapter.spaceScoped ? 'space_id' : null,
+                limit: 500,
+              );
+            } else {
+              rethrow;
+            }
+          }
+          if (full && entity == 'account' && !clearedAccounts) {
+            clearedAccounts = true;
+            await _persistence.clearAccounts();
+            state.clearAccountsForServerSnapshot(notify: rows.isEmpty);
+          }
+          if (rows.isEmpty) break;
+          var maxCursor = since;
+          for (final row in rows) {
+            final ua = row[orderCol] ?? row['updated_at'] ?? row['created_at'];
+            if (ua is String &&
+                (maxCursor == null || ua.compareTo(maxCursor) > 0)) {
+              maxCursor = ua;
+            }
+          }
+          await _persistence.applyServerRows(entity, rows, dirtyIds: dirtyIds);
+          final cleanRows = dirtyIds.isEmpty
+              ? rows
+              : [
+                  for (final r in rows)
+                    if (!dirtyIds.contains('${r['id'] ?? ''}')) r,
+                ];
+          if (cleanRows.isNotEmpty) {
+            if (entity == 'tx') {
+              state.applyPulled(entity, cleanRows, notify: false);
+              try {
+                await _pullEnvelopeLinks(notify: false);
+              } finally {
+                state.publishPulledMerge();
+              }
+            } else {
+              state.applyPulled(entity, cleanRows);
+            }
+            if (entity == 'shopping_list') {
+              await _captureDefaultList(cleanRows);
+            }
+          }
+          if (maxCursor != null && maxCursor != since) {
+            await _kvSet(key, maxCursor);
+            since = maxCursor;
           } else {
-            rethrow;
+            if (maxCursor != null) await _kvSet(key, maxCursor);
+            break;
           }
+          if (rows.length < 500) break;
         }
-        if (full && entity == 'account') {
-          // Accounts used to be device-local. A successful full pull is the
-          // authoritative snapshot, including an empty result.
-          await _persistence.clearAccounts();
-          state.clearAccountsForServerSnapshot(notify: rows.isEmpty);
-        }
-        if (rows.isEmpty) continue;
-        var maxCursor = since;
-        for (final row in rows) {
-          final ua = row[orderCol] ?? row['updated_at'] ?? row['created_at'];
-          if (ua is String &&
-              (maxCursor == null || ua.compareTo(maxCursor) > 0)) {
-            maxCursor = ua;
-          }
-        }
-        await _persistence.applyServerRows(entity, rows);
-        if (entity == 'tx') {
-          // A transaction and its budget attribution are stored in separate
-          // server tables. Keep this merge invisible until both have landed,
-          // otherwise the home screen briefly renders an unallocated expense.
-          state.applyPulled(entity, rows, notify: false);
-          try {
-            await _pullEnvelopeLinks(notify: false);
-          } finally {
-            state.publishPulledMerge();
-          }
-        } else {
-          state.applyPulled(entity, rows);
-        }
-        if (entity == 'shopping_list') await _captureDefaultList(rows);
-        if (maxCursor != null) await _kvSet(key, maxCursor);
       } catch (e, st) {
         // A broken optional module must not prevent budgets or lists loading.
         // Its cursor stays unchanged, so missed rows retry next sync.
@@ -2023,6 +2692,52 @@ class SyncEngine {
         return;
       }
     }
+  }
+}
+
+class _CollapsedPushUnit {
+  const _CollapsedPushUnit({
+    required this.entity,
+    required this.opId,
+    required this.groupId,
+    required this.outboxRowIds,
+    required this.payload,
+    required this.baseUpdatedAt,
+    required this.basePayload,
+  });
+
+  final String entity;
+  final String opId;
+  final String? groupId;
+  final List<int> outboxRowIds;
+  final Map<String, Object?> payload;
+  final String? baseUpdatedAt;
+  final Map<String, Object?>? basePayload;
+
+  factory _CollapsedPushUnit.fromOps(List<OutboxOp> ops) {
+    final first = ops.first;
+    final last = ops.last;
+    final initialBaseUpdatedAt = first.payload['_base_updated_at']?.toString();
+    final hasInitialBase =
+        initialBaseUpdatedAt != null && initialBaseUpdatedAt.isNotEmpty;
+    final mergedPayload = <String, Object?>{};
+    for (final op in ops) {
+      mergedPayload.addAll(op.payload);
+    }
+    if (hasInitialBase) {
+      mergedPayload['_base_updated_at'] = initialBaseUpdatedAt;
+    } else {
+      mergedPayload.remove('_base_updated_at');
+    }
+    return _CollapsedPushUnit(
+      entity: first.entity,
+      opId: last.opId,
+      groupId: first.groupId,
+      outboxRowIds: [for (final op in ops) op.rowId],
+      payload: mergedPayload,
+      baseUpdatedAt: hasInitialBase ? initialBaseUpdatedAt : null,
+      basePayload: hasInitialBase ? first.basePayload : null,
+    );
   }
 }
 

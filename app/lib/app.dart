@@ -168,6 +168,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
 
   void _onAuthChanged() {
     if (!_auth.isLoggedIn) {
+      _engine?.disconnectRealtime();
       unawaited(FirebaseServices.unbindUser());
       _resolvedFamilyForUser = null;
       _resolvingFamily = false;
@@ -275,6 +276,11 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      _engine?.setForegroundActive(false);
+    }
     // G5: left the foreground → hide balances (Monzo-style privacy).
     // The user reveals them again with the eye on the pool card.
     if ((state == AppLifecycleState.paused ||
@@ -284,8 +290,9 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       _state.setHideAmounts(true);
     }
     // Premium pass: back in the foreground → pull the family's changes now
-    // (narrows the 45s poll window to ~0 for the "just opened the app" case).
+    // and re-open Realtime signal subscription.
     if (state == AppLifecycleState.resumed && _configured && _auth.isLoggedIn) {
+      _engine?.setForegroundActive(true);
       _engine?.syncNow();
       _state.refreshPending();
       unawaited(_bindFirebaseUser());

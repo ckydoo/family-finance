@@ -128,37 +128,7 @@ class AppDatabase {
   /// the purge. Real adopted data is never present when this may run.
   Future<void> wipeUserData() async {
     for (final t in const [
-      'account',
-      'envelope',
-      'tx',
-      'goal',
-      'goal_tx',
-      'recurring',
-      'outbox',
-      'list_item',
-      'chore',
-      'kid_request',
-      'proposal',
-      'earning',
-      'circle',
-      'mukando_payment',
-      'budget_cycle_plan',
-      'family_activity',
-      'contribution_campaign',
-      'contribution_pledge',
-      'contribution_payment',
-      'family_debt',
-      'debt_repayment',
-      'tx_allocation',
-      'family_chat_message',
-      'family_task',
-      'family_reward',
-      'financial_commitment',
-      'commitment_occurrence',
-      'commitment_payment',
-      'period_preparation',
-      'ask_mhuri_conversation',
-      'ask_mhuri_message',
+      ..._accountTables,
       'kv',
       'account_cache',
     ]) {
@@ -171,7 +141,7 @@ class AppDatabase {
       final dir = await getDatabasesPath();
       final db = await openDatabase(
         p.join(dir, 'mhuri_money.db'),
-        version: 29,
+        version: 31,
         onCreate: (d, version) async => createSchema(d),
         onUpgrade: (d, oldV, newV) async => upgrade(d, oldV),
       );
@@ -278,6 +248,7 @@ class AppDatabase {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       entity TEXT NOT NULL,
       op_id TEXT NOT NULL UNIQUE,
+      group_id TEXT,
       payload TEXT NOT NULL,
       base_payload TEXT,
       created_ms INTEGER NOT NULL,
@@ -291,6 +262,7 @@ class AppDatabase {
       entity TEXT NOT NULL,
       row_id TEXT NOT NULL,
       server_updated_at TEXT NOT NULL,
+      server_payload TEXT,
       PRIMARY KEY (entity, row_id)
     )
     ''',
@@ -960,6 +932,18 @@ class AppDatabase {
             'ALTER TABLE outbox ADD COLUMN base_payload TEXT');
       } catch (_) {
         // Existing installations may already have the column.
+      }
+    }
+    if (oldVersion < 31) {
+      for (final sql in const [
+        'ALTER TABLE outbox ADD COLUMN group_id TEXT',
+        'ALTER TABLE sync_version ADD COLUMN server_payload TEXT',
+      ]) {
+        try {
+          await d.execute(sql);
+        } catch (_) {
+          // Existing installations may already have the column.
+        }
       }
     }
     // v24 tables are created by the idempotent schema pass below. Keeping
