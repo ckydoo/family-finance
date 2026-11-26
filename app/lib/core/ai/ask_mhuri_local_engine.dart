@@ -1106,7 +1106,7 @@ class _Snapshot {
     final prevCycleIso = _isoDay(prevCycleStart);
 
     final facts = <String, Object?>{
-      'as_of': now.toUtc().toIso8601String(),
+      'as_of': wall.toUtc().toIso8601String(),
       'currency': state.primaryCurrency.code,
       'cycle_start': cycleStartIso,
       'next_cycle_start': nextCycleIso,
