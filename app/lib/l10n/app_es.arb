@@ -749,5 +749,17 @@
   "askMhuriDeepAdvice": "Pedir consejo detallado a la IA",
   "askMhuriInstantBadge": "Instantáneo · 0 límite usado",
   "askMhuriPrivacyCaption": "Solo registros familiares compartidos · Las cuentas privadas siguen siendo privadas",
-  "askMhuriFollowUpLabel": "Preguntar después"
+  "askMhuriFollowUpLabel": "Preguntar después",
+  "householdTimezone": "Zona horaria del hogar",
+  "householdTimezoneSub": "Los ciclos de pago cambian a la medianoche en esta zona horaria: las mismas fechas de presupuesto para la familia en casa y en el extranjero",
+  "receiptPhoto": "Foto del recibo",
+  "receiptSavedToCloud": "Sincronizada con la nube familiar",
+  "receiptWaitingUpload": "Se subirá cuando vuelvas a tener conexión",
+  "receiptOnThisDevice": "Guardada en este dispositivo",
+  "receiptLoadFailed": "No se pudo cargar esta foto del recibo",
+  "receiptCameraButton": "Cámara",
+  "receiptGalleryButton": "Galería",
+  "receiptAdded": "Recibo añadido",
+  "removeReceipt": "Quitar recibo",
+  "cameraUnavailable": "Cámara no disponible. Revisa el permiso de cámara e inténtalo de nuevo."
 }

@@ -14,6 +14,7 @@ import 'l10n/generated/app_localizations.dart';
 import 'core/db/persistence.dart';
 import 'core/models/models.dart' show Role;
 import 'core/state/app_state.dart';
+import 'core/sync/receipt_storage_service.dart';
 import 'core/sync/supabase_sync_client.dart';
 import 'core/sync/sync_engine.dart';
 import 'core/observability/reporter.dart';
@@ -105,6 +106,14 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     final url = env.supabaseUrl;
     final key = env.supabaseAnonKey;
     if (_configured && db != null && (url?.isNotEmpty ?? false)) {
+      // #1: one shared receipt store for uploads (sync engine) and viewing
+      // (transaction tiles); both use the same auth token source.
+      final receiptStorage = ReceiptStorageService(
+        baseUrl: url!,
+        anonKey: key ?? '',
+        tokenGet: _auth.validAccessToken,
+      );
+      _state.attachReceiptStorage(receiptStorage);
       final engine = SyncEngine(
         client: SupabaseSyncClient(
           baseUrl: url!,
@@ -118,6 +127,9 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         state: _state,
         kvGet: db.kvGet,
         kvSet: db.kvSet,
+        // #1: offline-first receipt photo upload/cache against the private
+        // `receipts` bucket. Same credentials as the sync client.
+        receiptStorage: receiptStorage,
         // 401 mid-session → force one token refresh, retry once (#8).
         retryAuth: () async => await _auth.refreshAccessToken() != null,
       );

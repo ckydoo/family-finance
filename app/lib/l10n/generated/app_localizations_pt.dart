@@ -2507,4 +2507,40 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get askMhuriFollowUpLabel => 'Perguntar a seguir';
+  @override
+  String get householdTimezone => 'Fuso horário do agregado';
+
+  @override
+  String get householdTimezoneSub => 'Os ciclos de pagamento viram à meia-noite neste fuso horário — as mesmas datas de orçamento para a família em casa e no estrangeiro';
+
+  @override
+  String get receiptPhoto => 'Foto do recibo';
+
+  @override
+  String get receiptSavedToCloud => 'Sincronizada com a nuvem da família';
+
+  @override
+  String get receiptWaitingUpload => 'Será enviada quando voltar a ter ligação';
+
+  @override
+  String get receiptOnThisDevice => 'Guardada neste dispositivo';
+
+  @override
+  String get receiptLoadFailed => 'Não foi possível carregar esta foto do recibo';
+
+  @override
+  String get receiptCameraButton => 'Câmara';
+
+  @override
+  String get receiptGalleryButton => 'Galeria';
+
+  @override
+  String get receiptAdded => 'Recibo adicionado';
+
+  @override
+  String get removeReceipt => 'Remover recibo';
+
+  @override
+  String get cameraUnavailable => 'Câmara indisponível. Verifique a permissão da câmara e tente novamente.';
+
 }

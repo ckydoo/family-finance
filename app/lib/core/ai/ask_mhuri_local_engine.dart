@@ -772,17 +772,13 @@ class _Snapshot {
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   factory _Snapshot.fromState(AppState state, String question) {
-    final now = state.now;
-    final today = DateTime(now.year, now.month, now.day);
+    // Household-anchored wall clock (#2): a Harare family with members in
+    // London or New York gets the same cycle dates in Ask Mhuri answers.
+    final wall = state.householdNow;
+    final today = DateTime(wall.year, wall.month, wall.day);
     final cycleStart = state.cycleStart;
     final nextCycle = state.nextCycleStart;
-    final prevMonth = DateTime(cycleStart.year, cycleStart.month - 1, 1);
-    final prevLastDay = DateTime(prevMonth.year, prevMonth.month + 1, 0).day;
-    final prevCycleStart = DateTime(
-      prevMonth.year,
-      prevMonth.month,
-      state.monthStartDay.clamp(1, prevLastDay),
-    );
+    final prevCycleStart = state.cycleStartAtOffset(1);
 
     final sharedTxs = state.familyTransactions;
     final currencies = <Currency>{

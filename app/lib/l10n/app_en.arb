@@ -1173,5 +1173,17 @@
   "askMhuriDeepAdvice": "Ask AI for deeper advice",
   "askMhuriInstantBadge": "Instant · 0 limit used",
   "askMhuriPrivacyCaption": "Shared family records only · Private accounts stay private",
-  "askMhuriFollowUpLabel": "Ask next"
+  "askMhuriFollowUpLabel": "Ask next",
+  "householdTimezone": "Household timezone",
+  "householdTimezoneSub": "Payday cycles roll over at midnight in this timezone — the same budget dates for family at home and abroad",
+  "receiptPhoto": "Receipt photo",
+  "receiptSavedToCloud": "Synced to the family cloud",
+  "receiptWaitingUpload": "Will upload when you're back online",
+  "receiptOnThisDevice": "Saved on this device",
+  "receiptLoadFailed": "Could not load this receipt photo",
+  "receiptCameraButton": "Camera",
+  "receiptGalleryButton": "Gallery",
+  "receiptAdded": "Receipt added",
+  "removeReceipt": "Remove receipt",
+  "cameraUnavailable": "Camera unavailable. Check camera permission and try again."
 }

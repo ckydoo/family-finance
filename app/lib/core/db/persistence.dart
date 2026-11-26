@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/models.dart';
+import '../sync/receipt_storage_service.dart';
 import '../sync/sync_mappers.dart';
 import '../money/money.dart';
 import '../planning/commitments.dart';
@@ -46,6 +47,7 @@ class DbSnapshot {
   final String? primaryCurrency;
   final String? secondaryCurrency;
   final int? monthStartDay;
+  final String? householdTimezone;
   final bool onboardingDone;
   final bool? notifyEnabled;
   final String? notifyPrefs;
@@ -93,6 +95,7 @@ class DbSnapshot {
     this.primaryCurrency,
     this.secondaryCurrency,
     this.monthStartDay,
+    this.householdTimezone,
     required this.onboardingDone,
     this.notifyEnabled,
     this.notifyPrefs,
@@ -299,6 +302,13 @@ class Persistence {
       {'k': 'secondary_currency', 'v': s.secondaryCurrency?.name ?? 'none'},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    if (s.householdTimezone != null && s.householdTimezone!.isNotEmpty) {
+      batch.insert(
+        'kv',
+        {'k': 'household_timezone', 'v': s.householdTimezone!},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
     await batch.commit(noResult: true);
   }
 
@@ -453,6 +463,9 @@ class Persistence {
       primaryCurrency: kv['primary_currency'],
       secondaryCurrency: kv['secondary_currency'],
       monthStartDay: int.tryParse(kv['month_start_day'] ?? ''),
+      householdTimezone: (kv['household_timezone']?.trim().isNotEmpty ?? false)
+          ? kv['household_timezone']!.trim()
+          : null,
       onboardingDone: kv['onboarding_done'] == '1',
       notifyEnabled: kv['notify_enabled'] != '0',
       notifyPrefs: kv['notify_prefs'],
@@ -642,16 +655,20 @@ class Persistence {
 
     final knownTxEnvelopes = <String, String?>{};
     final knownTxAccounts = <String, String?>{};
+    final knownPendingLocalReceipts = <String, String>{};
     if (entity == 'tx' && effectiveRows.isNotEmpty) {
       for (final row in effectiveRows) {
         final id = row['id']?.toString();
         if (id == null || row['deleted_at'] != null) continue;
-        if (row['_has_envelope_link'] == true && row['account_id'] != null) {
+        final needsEnvelopeOrAccount =
+            !(row['_has_envelope_link'] == true && row['account_id'] != null);
+        final needsReceiptCheck = row['receipt_uri'] == null;
+        if (!needsEnvelopeOrAccount && !needsReceiptCheck) {
           continue;
         }
         final existing = await _d.query(
           'tx',
-          columns: ['envelope_id', 'account_id'],
+          columns: ['envelope_id', 'account_id', 'receipt_uri'],
           where: 'id = ?',
           whereArgs: [id],
           limit: 1,
@@ -660,6 +677,13 @@ class Persistence {
             existing.isEmpty ? null : existing.first['envelope_id'] as String?;
         knownTxAccounts[id] =
             existing.isEmpty ? null : existing.first['account_id'] as String?;
+        final localReceipt =
+            existing.isEmpty ? null : existing.first['receipt_uri'] as String?;
+        if (localReceipt != null &&
+            localReceipt.isNotEmpty &&
+            !isRemoteReceiptUri(localReceipt)) {
+          knownPendingLocalReceipts[id] = localReceipt;
+        }
       }
     }
     final batch = _d.batch();
@@ -701,8 +725,11 @@ class Persistence {
                 ? pulled.envelopeId
                 : (pulled.envelopeId ?? knownTxEnvelopes[pulled.id]);
             final accountId = pulled.accountId ?? knownTxAccounts[pulled.id];
+            final receiptUri =
+                pulled.receiptUri ?? knownPendingLocalReceipts[pulled.id];
             final merged = (envelopeId == pulled.envelopeId &&
-                    accountId == pulled.accountId)
+                    accountId == pulled.accountId &&
+                    receiptUri == pulled.receiptUri)
                 ? pulled
                 : Tx(
                     id: pulled.id,
@@ -715,7 +742,7 @@ class Persistence {
                     note: pulled.note,
                     when: pulled.when,
                     deletedAt: pulled.deletedAt,
-                    receiptUri: pulled.receiptUri,
+                    receiptUri: receiptUri,
                     recurringRuleId: pulled.recurringRuleId,
                   );
             batch.insert('tx', _txRow(merged),

@@ -22,6 +22,8 @@ import '../planning/commitments.dart';
 import '../planning/month_end_review.dart';
 import '../planning/period_preparation.dart';
 import '../planning/weekly_summary.dart';
+import '../sync/receipt_storage_service.dart';
+import '../time/household_timezone.dart';
 import '../utils/ids.dart';
 
 /// Exposes [AppState] to the widget tree. Lightweight stand-in for Riverpod
@@ -114,6 +116,14 @@ class AppState extends ChangeNotifier {
 
   /// Sync engine (M3) - attached by app.dart; null until then.
   SyncEngine? sync;
+
+  /// Offline receipt photo store (#1) - attached by app.dart next to the sync
+  /// engine; null in tests, where only device-local previews stay available.
+  ReceiptStorageService? _receiptStorage;
+  ReceiptStorageService? get receiptStorage => _receiptStorage;
+  void attachReceiptStorage(ReceiptStorageService storage) {
+    _receiptStorage = storage;
+  }
   FamilyEntitlement? familyEntitlement;
   bool entitlementLoading = false;
   String? entitlementError;
@@ -211,6 +221,22 @@ class AppState extends ChangeNotifier {
 
   /// Payday-aligned cycle start (spec A1/B5). 1 = calendar month.
   int monthStartDay = 1;
+
+  /// Household IANA timezone anchoring every payday cycle, budget rollover
+  /// and recurring-bill window (spec #2 - diaspora-safe cycles). Null keeps
+  /// legacy device-local [DateTime] semantics for unconfigured unit tests;
+  /// live spaces always converge on a synced value (default Africa/Harare).
+  String? householdTimezone;
+
+  /// Effective household timezone. Falls back to `Africa/Harare` (the server
+  /// default) when this device has never synced the space's timezone.
+  String get effectiveHouseholdTimezone =>
+      HouseholdTimezone.normalize(householdTimezone);
+
+  /// Wall-clock "now" in the household timezone. When unconfigured this is
+  /// the raw device-local clock (epoch instant is preserved either way).
+  DateTime get householdNow =>
+      HouseholdTimezone.wallNow(now, householdTimezone);
 
   /// M5 notifications (J2/J3) - device-local; config persisted in kv.
   bool notifyEnabled = true;
@@ -618,6 +644,7 @@ class AppState extends ChangeNotifier {
         'onboarding_templates',
         'dismissed_getting_started',
         'month_start_day',
+        'household_timezone',
         'month_end_sweep_mode',
         'month_end_sweep_goal',
         'month_end_review_cycle',
@@ -695,9 +722,13 @@ class AppState extends ChangeNotifier {
       final monthStartMarker = kv['month_start_day'];
       if (monthStartMarker != null && monthStartMarker.isNotEmpty) {
         final parsed = int.tryParse(monthStartMarker);
-        if (parsed != null && parsed >= 1 && parsed <= 28) {
+        if (parsed != null && parsed >= 1 && parsed <= 31) {
           monthStartDay = parsed;
         }
+      }
+      final tzMarker = kv['household_timezone'];
+      if (tzMarker != null && tzMarker.trim().isNotEmpty) {
+        householdTimezone = HouseholdTimezone.normalize(tzMarker);
       }
       final sweepModeMarker = kv['month_end_sweep_mode'];
       if (sweepModeMarker != null && sweepModeMarker.isNotEmpty) {
@@ -925,6 +956,11 @@ class AppState extends ChangeNotifier {
           ..addAll(data.debtRepayments);
         _reconcileDebtRepaymentTransactions();
         if (data.monthStartDay != null) monthStartDay = data.monthStartDay!;
+        if (data.householdTimezone != null &&
+            data.householdTimezone!.trim().isNotEmpty) {
+          householdTimezone =
+              HouseholdTimezone.normalize(data.householdTimezone);
+        }
         onboardingComplete = onboardingComplete || data.onboardingDone;
         notifyEnabled = data.notifyEnabled ?? true;
         if (data.notifyPrefs != null) {
@@ -1005,7 +1041,7 @@ class AppState extends ChangeNotifier {
   /// Active rules due within 3 days (or overdue), soonest first. Home's
   /// smart card surfaces these for a parent to post or skip.
   List<RecurringRule> get dueRecurring {
-    final soon = DateTime.now().add(const Duration(days: 3));
+    final soon = householdNow.add(const Duration(days: 3));
     final due = recurring
         .where((r) => r.active && !r.nextDue.isAfter(soon))
         .toList()
@@ -1026,7 +1062,8 @@ class AppState extends ChangeNotifier {
   }
 
   List<RecurringRule> get sortedBills {
-    final today = DateTime(now.year, now.month, now.day);
+    final wall = householdNow;
+    final today = DateTime(wall.year, wall.month, wall.day);
     int rank(RecurringRule rule) {
       if (!rule.active) return 4;
       final due =
@@ -1090,8 +1127,8 @@ class AppState extends ChangeNotifier {
     );
     final base = r.copy();
     r.nextDue = r.frequency.advanceFrom(r.nextDue);
-    final now = DateTime.now();
-    while (r.nextDue.isBefore(now)) {
+    final catchUpTo = householdNow;
+    while (r.nextDue.isBefore(catchUpTo)) {
       r.nextDue = r.frequency.advanceFrom(r.nextDue);
     }
     _persistRecurring(r);
@@ -1104,7 +1141,7 @@ class AppState extends ChangeNotifier {
   void skipRecurring(RecurringRule r) {
     final base = r.copy();
     r.nextDue = r.frequency.advanceFrom(r.nextDue);
-    while (r.nextDue.isBefore(DateTime.now())) {
+    while (r.nextDue.isBefore(householdNow)) {
       r.nextDue = r.frequency.advanceFrom(r.nextDue);
     }
     _persistRecurring(r);
@@ -1183,6 +1220,7 @@ class AppState extends ChangeNotifier {
     double? customRate,
     String? rateMode,
     int? monthStart,
+    String? timezone,
     List<Map<String, String>>? templates,
   }) async {
     onboardingStage = stage;
@@ -1249,6 +1287,13 @@ class AppState extends ChangeNotifier {
       }
     }
     if (monthStart != null) setMonthStartDay(monthStart);
+    if (timezone != null && timezone.trim().isNotEmpty) {
+      final canonical = HouseholdTimezone.normalize(timezone);
+      if (canonical != householdTimezone) {
+        householdTimezone = canonical;
+        await db?.kvSet('household_timezone', canonical);
+      }
+    }
     notifyListeners();
   }
 
@@ -1328,6 +1373,36 @@ class AppState extends ChangeNotifier {
     if (day < 1 || day > 31) return;
     monthStartDay = day;
     _persistKv('month_start_day', '$day');
+    _resyncReminders();
+    notifyListeners();
+  }
+
+  /// Household timezone (spec #2). Every device in the family computes the
+  /// same payday-cycle boundaries regardless of where a member lives.
+  Future<void> setHouseholdTimezone(String timezone) async {
+    if (!HouseholdTimezone.isValid(timezone)) return;
+    final canonical = HouseholdTimezone.normalize(timezone);
+    if (canonical == householdTimezone) return;
+    householdTimezone = canonical;
+    _persistKv('household_timezone', canonical);
+    _resyncReminders();
+    notifyListeners();
+  }
+
+  /// One shared save for the Settings "Payday & timezone" card: payday start
+  /// day plus the household timezone the cycle is anchored to.
+  Future<void> setCycleSettings({
+    required int day,
+    String? timezone,
+  }) async {
+    if (day < 1 || day > 31) return;
+    monthStartDay = day;
+    _persistKv('month_start_day', '$day');
+    if (timezone != null && HouseholdTimezone.isValid(timezone)) {
+      final canonical = HouseholdTimezone.normalize(timezone);
+      householdTimezone = canonical;
+      _persistKv('household_timezone', canonical);
+    }
     _resyncReminders();
     notifyListeners();
   }
@@ -2534,7 +2609,10 @@ class AppState extends ChangeNotifier {
             note: pulled.note,
             when: pulled.when,
             deletedAt: pulled.deletedAt,
-            receiptUri: pulled.receiptUri,
+            // An empty server receipt_uri must never erase a photo this
+            // device staged offline but has not uploaded yet (#1). The local
+            // path is replaced as soon as the storage upload promotes it.
+            receiptUri: pulled.receiptUri ?? existing?.receiptUri,
             recurringRuleId: pulled.recurringRuleId,
           );
           txs.removeWhere((x) => x.id == t.id);
@@ -3390,10 +3468,11 @@ class AppState extends ChangeNotifier {
   // ── Cycle math (M4: payday-aligned months + rollover carry) ──────────────
 
   /// Start of the cycle containing [now] (e.g. day 25 for salary cycles).
-  DateTime _cycleDate(int year, int month) {
-    final lastDay = DateTime(year, month + 1, 0).day;
-    return DateTime(year, month, monthStartDay.clamp(1, lastDay));
-  }
+  /// Anchored to the household timezone and clamped to the target month's
+  /// real length, so Day 31 never overflows into the next month (#2).
+  DateTime _cycleDate(int year, int month) =>
+      HouseholdTimezone.cycleDateForMonth(
+          year, month, monthStartDay, householdTimezone);
 
   DateTime cycleStartFor(DateTime now) {
     final thisMonth = _cycleDate(now.year, now.month);
@@ -3407,24 +3486,33 @@ class AppState extends ChangeNotifier {
     return _cycleDate(cs.year, cs.month + 1);
   }
 
+  /// Cycle start [offset] cycles before the current one (0 = current). The
+  /// short-month overflow bug is avoided by walking clamped boundaries
+  /// instead of raw `month - offset` arithmetic (Reports history).
+  DateTime cycleStartAtOffset(int offset) {
+    var cursor = cycleStart;
+    for (var i = 0; i < offset; i++) {
+      cursor = _cycleDate(cursor.year, cursor.month - 1);
+    }
+    return cursor;
+  }
+
   DateTime get now => _clock();
   DateTime get cycleStart => cycleStartFor(now);
   DateTime get nextCycleStart => nextCycleStartFor(now);
 
   /// Calendar-day boundary helpers for explaining cycle resets in the UI.
   /// Date-only math avoids time-of-day rounding making "tomorrow" disappear
-  /// during the final hours of a cycle.
-  int get daysUntilNextCycle {
-    final current = now;
-    final today = DateTime(current.year, current.month, current.day);
-    final next = nextCycleStartFor(current);
-    final nextDay = DateTime(next.year, next.month, next.day);
-    return nextDay.difference(today).inDays;
-  }
+  /// during the final hours of a cycle, and stays correct across DST and
+  /// across members living outside the household timezone.
+  int get daysUntilNextCycle => HouseholdTimezone.calendarDaysBetween(
+        householdNow,
+        nextCycleStartFor(now),
+      );
 
   bool get isCycleStartToday {
-    final current = now;
-    final start = cycleStartFor(current);
+    final start = cycleStartFor(now);
+    final current = householdNow;
     return current.year == start.year &&
         current.month == start.month &&
         current.day == start.day;
@@ -3711,7 +3799,8 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  int get daysLeftInCycle => nextCycleStart.difference(now).inDays + 1;
+  int get daysLeftInCycle =>
+      HouseholdTimezone.calendarDaysBetween(householdNow, nextCycleStart);
 
   Money _spentInCycle(Envelope e, DateTime from, DateTime to) {
     var sum = 0;
@@ -3962,8 +4051,7 @@ class AppState extends ChangeNotifier {
     // A zero base limit means the family deliberately has no spending cap.
     if (e.limit.minor <= 0) return e.limit;
     if (e.rollover == Rollover.reset) return e.limit;
-    final prevStart =
-        DateTime(cycleStart.year, cycleStart.month - 1, cycleStart.day);
+    final prevStart = _cycleDate(cycleStart.year, cycleStart.month - 1);
     final prevSpent = _spentInCycle(e, prevStart, cycleStart)
         .inCurrency(e.limit.currency, rate)
         .minor;
@@ -3994,9 +4082,11 @@ class AppState extends ChangeNotifier {
   }
 
   Pace paceOf(Envelope e) {
-    final now = this.now;
-    final totalDays = nextCycleStart.difference(cycleStart).inDays;
-    final elapsed = now.difference(cycleStart).inDays;
+    final current = householdNow;
+    final start = cycleStart;
+    final totalDays =
+        HouseholdTimezone.calendarDaysBetween(start, nextCycleStart);
+    final elapsed = HouseholdTimezone.calendarDaysBetween(start, current);
     final timeRatio = totalDays <= 0 ? 1.0 : elapsed / totalDays;
     final lim = effectiveLimit(e).minor;
     if (lim <= 0) return Pace.onTrack;
@@ -4133,10 +4223,10 @@ class AppState extends ChangeNotifier {
   /// closes (days 0..9 from [cycleStart]), so it never appears mid-month on
   /// fresh logins or long after the cycle ended.
   bool get _inMonthEndReviewWindow {
-    final current = now;
-    final today = DateTime(current.year, current.month, current.day);
-    final startDay = DateTime(cycleStart.year, cycleStart.month, cycleStart.day);
-    final daysSinceClose = today.difference(startDay).inDays;
+    final current = householdNow;
+    final startDay = cycleStart;
+    final daysSinceClose =
+        HouseholdTimezone.calendarDaysBetween(startDay, current);
     return daysSinceClose >= 0 && daysSinceClose < 10;
   }
 
@@ -4446,6 +4536,52 @@ class AppState extends ChangeNotifier {
     }
     pendingOps++;
     _resyncReminders();
+    notifyListeners();
+    return true;
+  }
+
+  /// Replaces a pending device-local receipt path with the canonical remote
+  /// Storage URL after [ReceiptStorageService] uploads it (#1). Persists the
+  /// row and re-queues the transaction so every family member's pull sees the
+  /// same photo; safe to call again (idempotent by URL).
+  Future<bool> promoteTxReceiptUri(
+    String txId,
+    String remoteReceiptUrl, {
+    bool scheduleSync = true,
+  }) async {
+    final index = txs.indexWhere((t) => t.id == txId);
+    if (index < 0 || remoteReceiptUrl.trim().isEmpty) return false;
+    final tx = txs[index];
+    if (tx.receiptUri == remoteReceiptUrl) return true;
+    final base = tx.copy();
+    final updated = Tx(
+      id: tx.id,
+      accountId: tx.accountId,
+      envelopeId: tx.envelopeId,
+      memberId: tx.memberId,
+      type: tx.type,
+      amount: tx.amount,
+      method: tx.method,
+      note: tx.note,
+      when: tx.when,
+      deletedAt: tx.deletedAt,
+      receiptUri: remoteReceiptUrl,
+      recurringRuleId: tx.recurringRuleId,
+    );
+    txs[index] = updated;
+    if (_store != null) await _store!.saveTx(updated);
+    final engine = sync;
+    if (engine != null) {
+      // Same seam as [_queue], but [triggerSchedule] follows [scheduleSync]:
+      // during a push-driven promotion the running sync cycle delivers the
+      // re-queued row itself; a manual promotion schedules a debounced sync.
+      _fire(
+        engine
+            .enqueue('tx', updated,
+                base: base, triggerSchedule: scheduleSync)
+            .then((_) => refreshPending()),
+      );
+    }
     notifyListeners();
     return true;
   }
@@ -4965,6 +5101,7 @@ class AppState extends ChangeNotifier {
         commitment,
         through: through,
         idForKey: (key) => uuidFromSeed('commitment:${commitment.id}:$key'),
+        timezone: householdTimezone,
       );
       for (final occurrence in generated) {
         if (!existingKeys

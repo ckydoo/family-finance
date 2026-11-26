@@ -1,4 +1,5 @@
 import '../money/money.dart';
+import '../time/household_timezone.dart';
 import 'financial_planner.dart';
 
 enum CommitmentStatus { active, paused, ended, archived }
@@ -122,16 +123,23 @@ class CommitmentSchedule {
     FinancialCommitment commitment, {
     required DateTime through,
     required String Function(String occurrenceKey) idForKey,
+    String? timezone,
   }) {
+    final anchorStart = HouseholdTimezone.dateAtMidnight(
+      commitment.firstDueDate.year,
+      commitment.firstDueDate.month,
+      commitment.firstDueDate.day,
+      timezone,
+    );
     if (commitment.status == CommitmentStatus.paused ||
         commitment.status == CommitmentStatus.archived ||
         commitment.status == CommitmentStatus.ended ||
-        through.isBefore(commitment.firstDueDate)) {
+        through.isBefore(anchorStart)) {
       return const [];
     }
     final result = <CommitmentOccurrence>[];
     var occurrenceIndex = 0;
-    var due = commitment.firstDueDate;
+    var due = anchorStart;
     while (!due.isAfter(through) &&
         (commitment.endDate == null || !due.isAfter(commitment.endDate!))) {
       final key = _dateKey(due);
@@ -145,9 +153,10 @@ class CommitmentSchedule {
       if (!commitment.isRecurring) break;
       occurrenceIndex++;
       due = _atIndex(
-        commitment.firstDueDate,
+        anchorStart,
         commitment.recurrence,
         occurrenceIndex,
+        timezone,
       );
     }
     return List.unmodifiable(result);
@@ -222,23 +231,37 @@ class CommitmentSchedule {
     DateTime value,
     CommitmentRecurrence recurrence,
     int index,
+    String? timezone,
   ) =>
       switch (recurrence) {
         CommitmentRecurrence.oneTime => value,
-        CommitmentRecurrence.weekly => value.add(Duration(days: 7 * index)),
-        CommitmentRecurrence.fortnightly =>
-          value.add(Duration(days: 14 * index)),
-        CommitmentRecurrence.monthly => _addMonths(value, index),
-        CommitmentRecurrence.quarterly => _addMonths(value, 3 * index),
-        CommitmentRecurrence.yearly => _addMonths(value, 12 * index),
+        CommitmentRecurrence.weekly => HouseholdTimezone.dateAtMidnight(
+            value.year,
+            value.month,
+            value.day + 7 * index,
+            timezone,
+          ),
+        CommitmentRecurrence.fortnightly => HouseholdTimezone.dateAtMidnight(
+            value.year,
+            value.month,
+            value.day + 14 * index,
+            timezone,
+          ),
+        CommitmentRecurrence.monthly => _addMonths(value, index, timezone),
+        CommitmentRecurrence.quarterly =>
+          _addMonths(value, 3 * index, timezone),
+        CommitmentRecurrence.yearly => _addMonths(value, 12 * index, timezone),
       };
 
-  DateTime _addMonths(DateTime value, int count) {
+  DateTime _addMonths(DateTime value, int count, String? timezone) {
     final total = value.year * 12 + value.month - 1 + count;
     final year = total ~/ 12;
     final month = total % 12 + 1;
-    final day = value.day.clamp(1, DateTime(year, month + 1, 0).day);
-    return DateTime(year, month, day, value.hour, value.minute);
+    final day = value.day.clamp(1, DateTime.utc(year, month + 1, 0).day);
+    if (timezone == null || timezone.trim().isEmpty) {
+      return DateTime(year, month, day, value.hour, value.minute);
+    }
+    return HouseholdTimezone.dateAtMidnight(year, month, day, timezone);
   }
 
   String _dateKey(DateTime value) => '${value.year.toString().padLeft(4, '0')}-'

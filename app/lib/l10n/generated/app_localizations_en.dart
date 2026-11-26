@@ -2491,4 +2491,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get askMhuriFollowUpLabel => 'Ask next';
+  @override
+  String get householdTimezone => 'Household timezone';
+
+  @override
+  String get householdTimezoneSub => 'Payday cycles roll over at midnight in this timezone — the same budget dates for family at home and abroad';
+
+  @override
+  String get receiptPhoto => 'Receipt photo';
+
+  @override
+  String get receiptSavedToCloud => 'Synced to the family cloud';
+
+  @override
+  String get receiptWaitingUpload => 'Will upload when you\'re back online';
+
+  @override
+  String get receiptOnThisDevice => 'Saved on this device';
+
+  @override
+  String get receiptLoadFailed => 'Could not load this receipt photo';
+
+  @override
+  String get receiptCameraButton => 'Camera';
+
+  @override
+  String get receiptGalleryButton => 'Gallery';
+
+  @override
+  String get receiptAdded => 'Receipt added';
+
+  @override
+  String get removeReceipt => 'Remove receipt';
+
+  @override
+  String get cameraUnavailable => 'Camera unavailable. Check camera permission and try again.';
+
 }

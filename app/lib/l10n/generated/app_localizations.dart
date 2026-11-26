@@ -4541,6 +4541,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask next'**
   String get askMhuriFollowUpLabel;
+
+  /// No description provided for @householdTimezone.
+  ///
+  /// In en, this message translates to:
+  /// **'Household timezone'**
+  String get householdTimezone;
+
+  /// No description provided for @householdTimezoneSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Payday cycles roll over at midnight in this timezone — the same budget dates for family at home and abroad'**
+  String get householdTimezoneSub;
+
+  /// No description provided for @receiptPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt photo'**
+  String get receiptPhoto;
+
+  /// No description provided for @receiptSavedToCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced to the family cloud'**
+  String get receiptSavedToCloud;
+
+  /// No description provided for @receiptWaitingUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Will upload when you're back online'**
+  String get receiptWaitingUpload;
+
+  /// No description provided for @receiptOnThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device'**
+  String get receiptOnThisDevice;
+
+  /// No description provided for @receiptLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this receipt photo'**
+  String get receiptLoadFailed;
+
+  /// No description provided for @receiptCameraButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get receiptCameraButton;
+
+  /// No description provided for @receiptGalleryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get receiptGalleryButton;
+
+  /// No description provided for @receiptAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt added'**
+  String get receiptAdded;
+
+  /// No description provided for @removeReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove receipt'**
+  String get removeReceipt;
+
+  /// No description provided for @cameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera unavailable. Check camera permission and try again.'**
+  String get cameraUnavailable;
 }
 
 class _AppLocalizationsDelegate

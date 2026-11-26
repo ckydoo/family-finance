@@ -10,6 +10,7 @@ import '../../core/notifications/reminders.dart';
 import '../../core/planning/month_end_review.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/time/household_timezone.dart';
 import '../instructions/instructions_screen.dart';
 import '../legal/legal_screen.dart';
 import '../members/members_screen.dart'
@@ -331,6 +332,29 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   onTap: () => _editPayday(context, s),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.public, size: 20),
+                  title: Text(
+                      AppLocalizations.of(context)!.householdTimezone),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.householdTimezoneSub,
+                    style: TextStyle(fontSize: 12, color: context.inkSoft),
+                  ),
+                  trailing: Flexible(
+                    child: Text(
+                      HouseholdTimezone.displayLabel(
+                          s.effectiveHouseholdTimezone),
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        color: context.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  onTap: () => _editTimezone(context, s),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -716,7 +740,10 @@ class SettingsScreen extends StatelessWidget {
     if (day == null) return;
     final engine = state.sync;
     if (engine != null && state.env.isConfigured) {
-      final saved = await engine.saveFamilyMonthStart(day);
+      final saved = await engine.saveFamilyCycleSettings(
+        day: day,
+        timezone: state.householdTimezone,
+      );
       if (!saved) {
         if (context.mounted) {
           _showMessage(context,
@@ -726,6 +753,74 @@ class SettingsScreen extends StatelessWidget {
       }
     }
     state.setMonthStartDay(day);
+  }
+
+  /// Household timezone picker (spec #2). Every payday cycle on every device
+  /// rolls over at midnight in this timezone, so family members abroad see
+  /// the same budget dates as the family at home.
+  Future<void> _editTimezone(BuildContext context, AppState state) async {
+    final current = state.effectiveHouseholdTimezone;
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+              child: Text(
+                AppLocalizations.of(sheetContext)!.householdTimezone,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            for (final option in kHouseholdTimezoneOptions)
+              RadioListTile<String>(
+                value: option.id,
+                groupValue: current,
+                onChanged: (value) =>
+                    Navigator.pop(sheetContext, value),
+                title: Text(
+                  option.label,
+                  style: const TextStyle(
+                      fontSize: 13.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+            // Any synced-but-not-quick-picked IANA timezone stays selectable.
+            if (!kHouseholdTimezoneOptions.any((o) => o.id == current))
+              RadioListTile<String>(
+                value: current,
+                groupValue: current,
+                onChanged: (value) => Navigator.pop(sheetContext, value),
+                title: Text(
+                  HouseholdTimezone.displayLabel(current),
+                  style: const TextStyle(
+                      fontSize: 13.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+            const SizedBox(height: 6),
+          ],
+        ),
+      ),
+    );
+    if (selected == null || selected == state.householdTimezone) return;
+    // Optimistic local apply: cycle math and reminders update immediately,
+    // then the server copy (and every other member device) follows.
+    await state.setHouseholdTimezone(selected);
+    final engine = state.sync;
+    if (engine != null && state.env.isConfigured) {
+      final saved = await engine.saveFamilyCycleSettings(
+        day: state.monthStartDay,
+        timezone: selected,
+      );
+      if (!saved && context.mounted) {
+        _showMessage(context,
+            'Could not update the family budget cycle. Please try again.');
+      }
+    }
   }
 
 

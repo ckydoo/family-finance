@@ -370,6 +370,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         primary: _currency.code,
         secondary: _secondaryCurrency?.code,
         monthStart: _monthStartDay,
+        timezone: widget.state.householdTimezone,
         templates: _selectedTemplatePayload,
       );
     }
@@ -442,6 +443,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         primary: _currency.code,
         secondary: _secondaryCurrency?.code,
         monthStart: _monthStartDay,
+        timezone: widget.state.householdTimezone,
       );
     }
 

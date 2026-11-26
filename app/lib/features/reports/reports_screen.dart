@@ -34,11 +34,11 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   int _cycleOffset = 0;
 
-  DateTime _cycleStart(AppState state, int offset) => DateTime(
-        state.cycleStart.year,
-        state.cycleStart.month - offset,
-        state.monthStartDay,
-      );
+  // Household-timezone-anchored, short-month-clamped cycle boundary (#2).
+  // Raw `month - offset` arithmetic overflowed (day 31 → March 3) and ignored
+  // the family's payday timezone; the state helper handles both.
+  DateTime _cycleStart(AppState state, int offset) =>
+      state.cycleStartAtOffset(offset);
 
   String _periodLabel(BuildContext context, DateTime start, DateTime end) {
     final language = Localizations.localeOf(context).languageCode;

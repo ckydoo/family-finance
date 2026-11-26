@@ -61,6 +61,16 @@ const asRows = (value: unknown): Row[] => Array.isArray(value)
 const int = (value: unknown) => Number.isSafeInteger(Number(value)) ? Number(value) : 0;
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 
+const isValidTimeZone = (tz: string): boolean => {
+  if (!tz) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const parseAmount = (question: string, fallbackCurrency: string) => {
   const marked = question.match(
     /(?:US\$|USD|ZWG|ZIG|ZIG\$|\$|R)\s*(\d[\d,]*(?:\.\d{1,2})?)|(\d[\d,]*(?:\.\d{1,2})?)\s*(USD|ZWG|ZIG|ZIG\$|DOLLARS?)/i,
@@ -325,7 +335,7 @@ export async function handleAskMhuri(req: Request): Promise<Response> {
       stage = 'family_context';
       const [spaceRows, entitlements] = await Promise.all([
         rows('family_space', {
-          select: 'id,name,base_currency,month_start_day', id: `eq.${familyId}`, limit: '1',
+          select: 'id,name,base_currency,month_start_day,timezone', id: `eq.${familyId}`, limit: '1',
         }),
         rows('family_entitlement', {
           select: 'status,features,expires_at', ...eqFamily, limit: '1',
@@ -432,13 +442,53 @@ export async function handleAskMhuri(req: Request): Promise<Response> {
       const currency = String(space.base_currency ?? 'USD');
       const today = new Date();
       const cycleDay = Math.max(1, Math.min(31, int(space.month_start_day) || 1));
-      const cycleAt = (year: number, month: number) => new Date(Date.UTC(
-        year, month, Math.min(cycleDay, new Date(Date.UTC(year, month + 1, 0)).getUTCDate()),
-      ));
-      let cycleStart = cycleAt(today.getUTCFullYear(), today.getUTCMonth());
-      if (cycleStart > today) cycleStart = cycleAt(today.getUTCFullYear(), today.getUTCMonth() - 1);
-      const nextCycle = cycleAt(cycleStart.getUTCFullYear(), cycleStart.getUTCMonth() + 1);
-      const previousCycleStart = cycleAt(cycleStart.getUTCFullYear(), cycleStart.getUTCMonth() - 1);
+      // Household timezone anchoring (#2): every member device — and this
+      // edge function — must agree on the same payday-cycle boundaries.
+      // Falls back to the server default (Africa/Harare) for invalid values.
+      const tzRaw = typeof space.timezone === 'string' ? space.timezone.trim() : '';
+      const householdTz = isValidTimeZone(tzRaw) ? tzRaw : 'Africa/Harare';
+      const wallParts = (at: number): Row => {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: householdTz, hourCycle: 'h23',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+        }).formatToParts(at);
+        const out: Row = {};
+        for (const part of parts) {
+          if (part.type !== 'literal') out[part.type] = int(part.value);
+        }
+        return out;
+      };
+      const offsetMinutes = (at: number) => {
+        const p = wallParts(at);
+        const asUTC = Date.UTC(
+          Number(p.year), Number(p.month) - 1, Number(p.day),
+          Number(p.hour) % 24, Number(p.minute), Number(p.second),
+        );
+        return (asUTC - at) / 60000;
+      };
+      // Midnight of (year, month0, day) inside the household timezone, as a
+      // UTC instant (two-pass fixed point, safe across DST shifts).
+      const zonedMidnightMs = (year: number, month0: number, day: number) => {
+        const guess = Date.UTC(year, month0, day);
+        const first = guess - offsetMinutes(guess) * 60000;
+        return guess - offsetMinutes(first) * 60000;
+      };
+      const cycleFor = (year: number, month0: number) => {
+        const daysInMonth = new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
+        return {
+          at: new Date(zonedMidnightMs(year, month0, Math.min(cycleDay, daysInMonth))),
+          year,
+          month0,
+        };
+      };
+      const wall = wallParts(today.getTime());
+      let cycleStart = cycleFor(Number(wall.year), Number(wall.month) - 1);
+      if (cycleStart.at.getTime() > today.getTime()) {
+        cycleStart = cycleFor(Number(wall.year), Number(wall.month) - 2);
+      }
+      const nextCycle = cycleFor(cycleStart.year, cycleStart.month0 + 1).at;
+      const previousCycleStart = cycleFor(cycleStart.year, cycleStart.month0 - 1).at;
 
       stage = 'transactions';
       const fetchTransactionPage = (offset: number) => rows('transaction', {

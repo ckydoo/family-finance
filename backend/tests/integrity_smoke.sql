@@ -919,8 +919,48 @@ begin
     raise exception 'FAIL: single-currency reset failed';
   end if;
 
-  -- Verify 082 language CHECK: 'es' allowed, 'sn' and 'nd' rejected.
+  -- Verify 083 household timezone & payday cycle sync + receipt object access guards.
+  if (public.set_family_cycle_settings(v_space, 25, 'Europe/London')->>'timezone') <> 'Europe/London' then
+    raise exception 'FAIL: set_family_cycle_settings did not persist Europe/London';
+  end if;
+  begin
+    perform public.set_family_cycle_settings(v_space, 25, 'Invalid/Zone');
+    raise exception 'FAIL: set_family_cycle_settings accepted invalid timezone';
+  exception
+    when others then
+      if sqlerrm not like '%INVALID_TIMEZONE%' then
+        raise;
+      end if;
+  end;
+
+  -- Shared receipt readable by both members; private receipt isolated to owner.
+  if not public.can_access_receipt_object(v_space::text || '/shared/tx1.jpg', 'read')
+     or not public.can_access_receipt_object(v_space::text || '/private/' || v_u1::text || '/tx2.jpg', 'read') then
+    raise exception 'FAIL: owner could not access own shared/private receipt paths';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
+  if not public.can_access_receipt_object(v_space::text || '/shared/tx1.jpg', 'read') then
+    raise exception 'FAIL: co-parent could not read shared receipt path';
+  end if;
+  if public.can_access_receipt_object(v_space::text || '/private/' || v_u1::text || '/tx2.jpg', 'read') then
+    raise exception 'FAIL: co-parent accessed private receipt path of another member';
+  end if;
+  v_pull := public.pull_family_changes(v_space, v_pull->'cursors', 50);
+  if (v_pull->'family_space'->0->>'timezone') <> 'Europe/London'
+     or ((v_pull->'family_space'->0->>'month_start_day')::int) <> 25 then
+    raise exception 'FAIL: pull_family_changes did not sync cycle day + timezone: %', v_pull->'family_space';
+  end if;
+
   reset role;
+  if not exists (select 1 from storage.buckets where id = 'receipts' and public = false) then
+    raise exception 'FAIL: private receipts bucket missing';
+  end if;
+  if (public.get_ask_mhuri_context(v_space, v_u1)->>'timezone') <> 'Europe/London' then
+    raise exception 'FAIL: get_ask_mhuri_context did not expose household timezone';
+  end if;
+
+  -- Verify 082 language CHECK: 'es' allowed, 'sn' and 'nd' rejected.
   update public.user_profile set language = 'es' where id = v_u1;
   begin
     update public.user_profile set language = 'sn' where id = v_u1;
@@ -960,7 +1000,7 @@ begin
     raise exception 'FAIL: unindexed foreign key detected in public schema';
   end if;
 
-  raise notice 'PASS Industrial Sync Engine v2 + 081 Hardening + 082 Supported Locales';
+  raise notice 'PASS Industrial Sync Engine v2 + 081 Hardening + 082 Locales + 083 Receipts & Household TZ';
 end $$;
 
 select set_config('request.jwt.claim.sub', '', false);

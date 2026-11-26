@@ -2522,4 +2522,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get askMhuriFollowUpLabel => 'Question suivante';
+  @override
+  String get householdTimezone => 'Fuseau horaire du foyer';
+
+  @override
+  String get householdTimezoneSub => 'Les cycles de paie basculent à minuit dans ce fuseau horaire — les mêmes dates de budget pour la famille au pays et à l\'étranger';
+
+  @override
+  String get receiptPhoto => 'Photo du reçu';
+
+  @override
+  String get receiptSavedToCloud => 'Synchronisée avec le cloud familial';
+
+  @override
+  String get receiptWaitingUpload => 'Sera envoyée à votre retour en ligne';
+
+  @override
+  String get receiptOnThisDevice => 'Enregistrée sur cet appareil';
+
+  @override
+  String get receiptLoadFailed => 'Impossible de charger cette photo de reçu';
+
+  @override
+  String get receiptCameraButton => 'Appareil photo';
+
+  @override
+  String get receiptGalleryButton => 'Galerie';
+
+  @override
+  String get receiptAdded => 'Reçu ajouté';
+
+  @override
+  String get removeReceipt => 'Retirer le reçu';
+
+  @override
+  String get cameraUnavailable => 'Appareil photo indisponible. Vérifiez l\'autorisation de l\'appareil photo et réessayez.';
+
 }
