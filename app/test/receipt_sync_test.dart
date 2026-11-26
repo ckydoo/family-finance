@@ -16,7 +16,6 @@ import 'package:mhuri_money/core/sync/outbox.dart';
 import 'package:mhuri_money/core/sync/receipt_storage_service.dart';
 import 'package:mhuri_money/core/sync/supabase_sync_client.dart';
 import 'package:mhuri_money/core/sync/sync_engine.dart';
-import 'package:mhuri_money/core/sync/sync_mappers.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'fake_auth.dart';
