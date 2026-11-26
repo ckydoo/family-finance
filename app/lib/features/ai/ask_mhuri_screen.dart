@@ -1129,30 +1129,38 @@ class _MessageBubble extends StatelessWidget {
                       color: context.primary,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      'ASK MHURI',
-                      style: TextStyle(
-                        color: context.primary,
-                        fontSize: 9,
-                        letterSpacing: 1,
-                        fontWeight: FontWeight.w900,
+                    Expanded(
+                      child: Text(
+                        'ASK MHURI',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.primary,
+                          fontSize: 9,
+                          letterSpacing: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                     if (turn.isLocal) ...[
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: context.primarySoft,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          l.askMhuriInstantBadge,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
-                            color: context.primary,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: context.primarySoft,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            l.askMhuriInstantBadge,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              color: context.primary,
+                            ),
                           ),
                         ),
                       ),
@@ -1266,22 +1274,18 @@ class _FormattedAnswerText extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: baseStyle,
-                children: _parseInlineSpans(body, baseStyle),
-              ),
+            child: Text.rich(
+              TextSpan(children: _parseInlineSpans(body, baseStyle)),
+              style: baseStyle,
             ),
           ),
         ],
       );
     }
 
-    return RichText(
-      text: TextSpan(
-        style: baseStyle,
-        children: _parseInlineSpans(cleaned, baseStyle),
-      ),
+    return Text.rich(
+      TextSpan(children: _parseInlineSpans(cleaned, baseStyle)),
+      style: baseStyle,
     );
   }
 
@@ -1703,8 +1707,12 @@ class _ThinkingBubble extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 9),
-            Text('Checking your family’s plan…',
-                style: TextStyle(fontSize: 12, color: context.inkSoft)),
+            Flexible(
+              child: Text(
+                'Checking your family’s plan…',
+                style: TextStyle(fontSize: 12, color: context.inkSoft),
+              ),
+            ),
           ]),
         ),
       );

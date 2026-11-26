@@ -273,22 +273,26 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Where are we spending the most?'));
+    final starter = find.text('Where are we spending the most?');
+    await tester.scrollUntilVisible(
+      starter,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(starter);
     await tester.pumpAndSettle();
 
     expect(find.text('Instant · 0 limit used'), findsOneWidget);
     expect(find.text('NUMBERS USED'), findsOneWidget);
     expect(find.textContaining('**'), findsNothing);
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is RichText && w.text.toPlainText().contains('**'),
-      ),
-      findsNothing,
-    );
 
-    // Tap deep-link shortcut to BudgetsScreen
+    // Scroll to and tap deep-link shortcut to BudgetsScreen
     final budgetsButton = find.text('Budgets');
-    await tester.ensureVisible(budgetsButton);
+    await tester.scrollUntilVisible(
+      budgetsButton,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(budgetsButton);
     await tester.pumpAndSettle();
