@@ -175,7 +175,7 @@ class SyncScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: context.card,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: context.border, width: 1.2),
+                    border: Border.all(color: context.hairline, width: 1.2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

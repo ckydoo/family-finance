@@ -662,7 +662,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
   String? scanNotice;
   bool scanning = false;
 
-  Future<void> _scanReceipt(
+  Future<void> doScanReceipt(
     BuildContext sheetContext,
     void Function() refresh,
   ) async {
@@ -682,7 +682,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
     refresh();
   }
 
-  void _addScannedItems(
+  void addScannedItems(
     BuildContext sheetContext,
     AppState state,
     Currency cur,
@@ -757,7 +757,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
               OutlinedButton.icon(
                 onPressed: scanning
                     ? null
-                    : () => _scanReceipt(sheetContext, () => setSheet(() {})),
+                    : () => doScanReceipt(sheetContext, () => setSheet(() {})),
                 icon: scanning
                     ? const SizedBox(
                         width: 20,
@@ -800,7 +800,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
                 const SizedBox(height: 8),
                 PrimaryButton(
                   label: 'Add to shopping list',
-                  onPressed: () => _addScannedItems(
+                  onPressed: () => addScannedItems(
                     sheetContext,
                     state,
                     cur,
@@ -1016,11 +1016,11 @@ class _ItemRow extends StatelessWidget {
             },
             itemBuilder: (_) => [
               if (done)
-                PopupMenuItem(
+                const PopupMenuItem(
                     value: 'replan',
                     child: Text('Put on list for next time')),
               if (done && item.settledTxId != null)
-                PopupMenuItem(
+                const PopupMenuItem(
                     value: 'undo', child: Text('Undo purchase')),
               const PopupMenuItem(
                   value: 'discuss', child: Text('Discuss with family')),

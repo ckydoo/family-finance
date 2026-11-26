@@ -196,7 +196,7 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
                   children: [
                     Expanded(
                       child: Text(l.chatHistoryTitle,
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 19, fontWeight: FontWeight.w700)),
                     ),
                     TextButton.icon(
@@ -330,8 +330,9 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
     setState(() {
       final index = _conversations.indexWhere((c) => c.id == conversation.id);
       if (index >= 0) _conversations[index] = updated;
-      if (_conversationId == conversation.id)
+      if (_conversationId == conversation.id) {
         _conversationTitle = updated.title;
+      }
     });
   }
 
@@ -563,8 +564,8 @@ class _AskMhuriScreenState extends State<AskMhuriScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                   Text(_conversationTitle ?? 'Family money, made clearer',
-                      style:
-                          TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w500),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                 ],
