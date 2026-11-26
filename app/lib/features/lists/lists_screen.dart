@@ -48,7 +48,11 @@ class _ListsScreenState extends State<ListsScreen> {
     final query = _query.trim().toLowerCase();
     final visible = s.items
         .where((item) =>
-            (_filter == null || item.state == _filter) &&
+            (_filter == null ||
+                item.state == _filter ||
+                (_filter == ItemState.tobuy &&
+                    item.state == ItemState.incart &&
+                    !item.checkedOut)) &&
             (query.isEmpty || item.name.toLowerCase().contains(query)))
         .toList();
 
@@ -590,8 +594,7 @@ class _ListsScreenState extends State<ListsScreen> {
                 : () {
                     for (final item in purchased) {
                       if (selected.contains(item.id)) {
-                        state.addItem(item.name, item.qty, item.est,
-                            assignedToId: item.assignedToId);
+                        state.replanItem(item);
                       }
                     }
                     final count = selected.length;
@@ -662,7 +665,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
   String? scanNotice;
   bool scanning = false;
 
-  Future<void> _scanReceipt(
+  Future<void> doScanReceipt(
     BuildContext sheetContext,
     void Function() refresh,
   ) async {
@@ -682,7 +685,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
     refresh();
   }
 
-  void _addScannedItems(
+  void addScannedItems(
     BuildContext sheetContext,
     AppState state,
     Currency cur,
@@ -696,9 +699,10 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
     scannedItems = const [];
     scanNotice = null;
     refresh();
+    final itemWord = count == 1 ? 'item' : 'items';
     ScaffoldMessenger.of(sheetContext).showSnackBar(
       SnackBar(
-        content: Text('Added $count item${count == 1 ? '' : 's'} to the list'),
+        content: Text('Added $count $itemWord to the list'),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -757,7 +761,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
               OutlinedButton.icon(
                 onPressed: scanning
                     ? null
-                    : () => _scanReceipt(sheetContext, () => setSheet(() {})),
+                    : () => doScanReceipt(sheetContext, () => setSheet(() {})),
                 icon: scanning
                     ? const SizedBox(
                         width: 20,
@@ -800,7 +804,7 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
                 const SizedBox(height: 8),
                 PrimaryButton(
                   label: 'Add to shopping list',
-                  onPressed: () => _addScannedItems(
+                  onPressed: () => addScannedItems(
                     sheetContext,
                     state,
                     cur,
@@ -1016,11 +1020,11 @@ class _ItemRow extends StatelessWidget {
             },
             itemBuilder: (_) => [
               if (done)
-                PopupMenuItem(
+                const PopupMenuItem(
                     value: 'replan',
                     child: Text('Put on list for next time')),
               if (done && item.settledTxId != null)
-                PopupMenuItem(
+                const PopupMenuItem(
                     value: 'undo', child: Text('Undo purchase')),
               const PopupMenuItem(
                   value: 'discuss', child: Text('Discuss with family')),

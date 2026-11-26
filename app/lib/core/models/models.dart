@@ -1045,6 +1045,7 @@ class MukandoPayment {
   final String recordedBy;
   final Money amount;
   final DateTime paidAt;
+  final DateTime? deletedAt;
 
   const MukandoPayment({
     required this.id,
@@ -1053,6 +1054,7 @@ class MukandoPayment {
     required this.recordedBy,
     required this.amount,
     required this.paidAt,
+    this.deletedAt,
   });
 
   MukandoPayment copy() => MukandoPayment(
@@ -1062,5 +1064,6 @@ class MukandoPayment {
         recordedBy: recordedBy,
         amount: amount,
         paidAt: paidAt,
+        deletedAt: deletedAt,
       );
 }

@@ -12,6 +12,7 @@ import 'package:mhuri_money/core/theme/app_theme.dart';
 import 'package:mhuri_money/features/home/home_screen.dart';
 import 'package:mhuri_money/features/onboarding/family_setup_screen.dart';
 import 'package:mhuri_money/features/quickadd/quick_add_sheet.dart';
+import 'package:mhuri_money/features/reports/reports_screen.dart';
 import 'package:mhuri_money/features/reports/weekly_summary_sheet.dart';
 import 'package:mhuri_money/features/shell/adult_shell.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
@@ -326,7 +327,14 @@ void main() {
       // Urgent Budget 5 is surfaced in top 3, while 4th/5th unspent budgets are hidden behind See all
       expect(find.text('Budget 5'), findsOneWidget);
       expect(find.text('Budget 4'), findsNothing);
-      await tester.drag(find.byType(ListView).first, const Offset(0, -350));
+
+      // Weekly Summary card lives on ReportsScreen when weeklySummary.hasActivity is true
+      await tester.pumpWidget(_wrapWithState(state, const Scaffold(body: ReportsScreen())));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('weekly_summary_card')),
+        250,
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('weekly_summary_card')), findsOneWidget);
     });

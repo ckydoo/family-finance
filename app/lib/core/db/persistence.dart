@@ -623,15 +623,32 @@ class Persistence {
 
   /// Server rows (already decode-ready JSON) upserted into local tables.
   /// goal_tx dedupes on server_id; everything else replaces by TEXT pk.
+  /// When [dirtyIds] is non-empty and [allowOverwriteDirty] is false, local
+  /// rows with pending outbox mutations are preserved until their push merges.
   Future<void> applyServerRows(
-      String entity, List<Map<String, Object?>> rows) async {
+    String entity,
+    List<Map<String, Object?>> rows, {
+    Set<String> dirtyIds = const {},
+    bool allowOverwriteDirty = false,
+  }) async {
     final adapter = kSyncAdapters[entity];
-    if (adapter == null) return;
+    if (adapter == null || rows.isEmpty) return;
+    final effectiveRows = (!allowOverwriteDirty && dirtyIds.isNotEmpty)
+        ? [
+            for (final row in rows)
+              if (!dirtyIds.contains('${row['id'] ?? ''}')) row,
+          ]
+        : rows;
+
     final knownTxEnvelopes = <String, String?>{};
-    if (entity == 'tx') {
-      for (final row in rows) {
+    final knownTxAccounts = <String, String?>{};
+    if (entity == 'tx' && effectiveRows.isNotEmpty) {
+      for (final row in effectiveRows) {
         final id = row['id']?.toString();
         if (id == null || row['deleted_at'] != null) continue;
+        if (row['_has_envelope_link'] == true && row['account_id'] != null) {
+          continue;
+        }
         final existing = await _d.query(
           'tx',
           columns: ['envelope_id', 'account_id'],
@@ -641,6 +658,8 @@ class Persistence {
         );
         knownTxEnvelopes[id] =
             existing.isEmpty ? null : existing.first['envelope_id'] as String?;
+        knownTxAccounts[id] =
+            existing.isEmpty ? null : existing.first['account_id'] as String?;
       }
     }
     final batch = _d.batch();
@@ -657,10 +676,13 @@ class Persistence {
             'entity': entity,
             'row_id': rowId,
             'server_updated_at': serverUpdatedAt,
+            'server_payload': jsonEncode(row),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
+    }
+    for (final row in effectiveRows) {
       switch (entity) {
         case 'account':
           if (row['is_archived'] == true) {
@@ -674,12 +696,17 @@ class Persistence {
             batch.delete('tx', where: 'id = ?', whereArgs: [row['id']]);
           } else {
             final pulled = adapter.decode(row) as Tx;
-            final envelopeId = pulled.envelopeId ?? knownTxEnvelopes[pulled.id];
-            final merged = envelopeId == pulled.envelopeId
+            final hasAuthoritativeEnvelope = row['_has_envelope_link'] == true;
+            final envelopeId = hasAuthoritativeEnvelope
+                ? pulled.envelopeId
+                : (pulled.envelopeId ?? knownTxEnvelopes[pulled.id]);
+            final accountId = pulled.accountId ?? knownTxAccounts[pulled.id];
+            final merged = (envelopeId == pulled.envelopeId &&
+                    accountId == pulled.accountId)
                 ? pulled
                 : Tx(
                     id: pulled.id,
-                    accountId: pulled.accountId,
+                    accountId: accountId,
                     envelopeId: envelopeId,
                     memberId: pulled.memberId,
                     type: pulled.type,
@@ -749,9 +776,14 @@ class Persistence {
               'circle', _circleRow(adapter.decode(row) as SavingsCircle),
               conflictAlgorithm: ConflictAlgorithm.replace);
         case 'mukando_payment':
-          batch.insert('mukando_payment',
-              _mukandoPaymentRow(adapter.decode(row) as MukandoPayment),
-              conflictAlgorithm: ConflictAlgorithm.replace);
+          if (row['deleted_at'] != null) {
+            batch.delete('mukando_payment',
+                where: 'id = ?', whereArgs: [row['id']]);
+          } else {
+            batch.insert('mukando_payment',
+                _mukandoPaymentRow(adapter.decode(row) as MukandoPayment),
+                conflictAlgorithm: ConflictAlgorithm.replace);
+          }
         case 'budget_cycle_plan':
           batch.insert('budget_cycle_plan',
               _budgetPlanRow(adapter.decode(row) as BudgetCyclePlan),
@@ -839,6 +871,7 @@ class Persistence {
       'tx_allocation',
       'family_chat_message',
       'family_task',
+      'family_reward',
       'commitment_payment',
       'commitment_occurrence',
       'financial_commitment',
@@ -847,6 +880,84 @@ class Persistence {
       batch.delete(t);
     }
     await batch.commit(noResult: true);
+  }
+
+  /// Atomically replaces a local [oldId] with the server's canonical [newId]
+  /// when natural-key deduplication adopts an existing family row (for example
+  /// two devices creating a "Groceries" envelope offline).
+  Future<void> remapEntityId({
+    required String entity,
+    required String oldId,
+    required String newId,
+    required Map<String, Object?> serverRow,
+  }) async {
+    if (oldId.isEmpty || newId.isEmpty || oldId == newId) {
+      await applyServerRows(entity, [serverRow], allowOverwriteDirty: true);
+      return;
+    }
+    await applyServerRows(entity, [serverRow], allowOverwriteDirty: true);
+    await _d.transaction((txn) async {
+      await txn.delete(
+        'sync_version',
+        where: 'entity = ? AND row_id = ?',
+        whereArgs: [entity, oldId],
+      );
+      switch (entity) {
+        case 'envelope':
+          for (final table in const [
+            'tx',
+            'recurring',
+            'tx_allocation',
+            'financial_commitment',
+            'proposal',
+          ]) {
+            await txn.update(
+              table,
+              {'envelope_id': newId},
+              where: 'envelope_id = ?',
+              whereArgs: [oldId],
+            );
+          }
+          final plans = await txn.query('budget_cycle_plan');
+          for (final plan in plans) {
+            final rawJson = plan['allocations_json']?.toString();
+            if (rawJson == null || !rawJson.contains(oldId)) continue;
+            final decoded = jsonDecode(rawJson);
+            if (decoded is! Map || !decoded.containsKey(oldId)) continue;
+            final updated = <String, dynamic>{...decoded};
+            final oldVal = (updated.remove(oldId) as num?)?.toInt() ?? 0;
+            updated[newId] = ((updated[newId] as num?)?.toInt() ?? 0) + oldVal;
+            await txn.update(
+              'budget_cycle_plan',
+              {'allocations_json': jsonEncode(updated)},
+              where: 'id = ?',
+              whereArgs: [plan['id']],
+            );
+          }
+          await txn.delete('envelope', where: 'id = ?', whereArgs: [oldId]);
+        case 'commitment_occurrence':
+          await txn.update(
+            'commitment_payment',
+            {'occurrence_id': newId},
+            where: 'occurrence_id = ?',
+            whereArgs: [oldId],
+          );
+          await txn.delete('commitment_occurrence',
+              where: 'id = ?', whereArgs: [oldId]);
+        case 'budget_cycle_plan':
+          await txn.delete('budget_cycle_plan',
+              where: 'id = ?', whereArgs: [oldId]);
+        case 'contribution_pledge':
+          await txn.delete('contribution_pledge',
+              where: 'id = ?', whereArgs: [oldId]);
+        case 'mukando_payment':
+          await txn.delete('mukando_payment',
+              where: 'id = ?', whereArgs: [oldId]);
+        case 'tx_allocation':
+          await txn.delete('tx_allocation',
+              where: 'id = ?', whereArgs: [oldId]);
+      }
+    });
   }
 
   // ── Row builders ───────────────────────────────────────────────────────

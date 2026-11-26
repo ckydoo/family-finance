@@ -726,10 +726,11 @@ class _SyncRecoveryNotice extends StatelessWidget {
     if (s.syncHealth != SyncHealthState.needsAttention) {
       return const SizedBox.shrink();
     }
+    final l = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.only(top: 14),
       child: Material(
-        color: context.warningSoft,
+        color: context.primarySoft,
         borderRadius: kBRadiusM,
         child: InkWell(
           key: const ValueKey('home_sync_recovery_notice'),
@@ -743,7 +744,6 @@ class _SyncRecoveryNotice extends StatelessWidget {
                 'locale': s.localeCode,
               },
             );
-            s.syncNow(force: true);
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
             );
@@ -752,8 +752,8 @@ class _SyncRecoveryNotice extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             child: Row(
               children: [
-                Icon(Icons.sync_problem_rounded,
-                    size: 18, color: context.expenseRed),
+                Icon(Icons.lock_outline_rounded,
+                    size: 18, color: context.primaryDark),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -761,7 +761,7 @@ class _SyncRecoveryNotice extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Sync needs attention',
+                        l.syncStateNeedsSignIn,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -769,7 +769,7 @@ class _SyncRecoveryNotice extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Your data is safe on this device. Tap to review and retry sync.',
+                        l.signinExpired,
                         style: TextStyle(
                           fontSize: 11.5,
                           color: context.inkSoft,
@@ -778,13 +778,10 @@ class _SyncRecoveryNotice extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(
-                  'Fix sync',
-                  style: TextStyle(
-                    color: context.primaryDark,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: context.primaryDark,
                 ),
               ],
             ),

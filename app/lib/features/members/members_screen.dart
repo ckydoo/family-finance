@@ -753,11 +753,9 @@ class MembersScreen extends StatelessWidget {
             .syncTime('${_twoDigits(last.hour)}:${_twoDigits(last.minute)}');
     final statusText = switch (s.syncStatus) {
       SyncStatus.syncing => AppLocalizations.of(context)!.syncing,
-      SyncStatus.offline => AppLocalizations.of(context)!.offlineRetry,
-      SyncStatus.error => userFacingErrorMessage(
-          s.syncLastError,
-          fallback: AppLocalizations.of(context)!.syncProblem,
-        ),
+      SyncStatus.offline ||
+      SyncStatus.error =>
+        AppLocalizations.of(context)!.offlineRetry,
       SyncStatus.needsSignIn => AppLocalizations.of(context)!.signinExpired,
       _ => AppLocalizations.of(context)!.lastSync(lastText),
     };

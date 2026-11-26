@@ -589,12 +589,19 @@ final kSyncAdapters = <String, SyncAdapter>{
         'deleted_at': t.deletedAt?.toUtc().toIso8601String(),
         'receipt_uri': t.receiptUri,
         'recurring_rule_id': t.recurringRuleId,
+        '_has_envelope_link': true,
+        '_envelope_id':
+            t.accountId == null && (t.envelopeId?.isNotEmpty ?? false)
+                ? t.envelopeId
+                : null,
       };
     },
     decode: (j) => Tx(
       id: j['id'] as String,
       accountId: j['account_id'] as String?,
-      envelopeId: j['envelope_id'] as String?,
+      envelopeId: j['_has_envelope_link'] == true
+          ? j['_envelope_id'] as String?
+          : (j['envelope_id'] as String?),
       memberId: j['member_id'] as String,
       type: TxType.values.byName(j['type'] as String),
       amount: _moneyOf(j, 'amount_minor', 'currency'),
@@ -981,6 +988,7 @@ final kSyncAdapters = <String, SyncAdapter>{
         'amount_minor': p.amount.minor,
         'currency': p.amount.currency.code,
         'paid_at': p.paidAt.toUtc().toIso8601String(),
+        'deleted_at': p.deletedAt?.toUtc().toIso8601String(),
       };
     },
     decode: (j) => MukandoPayment(
@@ -990,18 +998,20 @@ final kSyncAdapters = <String, SyncAdapter>{
       recordedBy: j['recorded_by'] as String,
       amount: _moneyOf(j, 'amount_minor', 'currency'),
       paidAt: _iso(j['paid_at']) ?? DateTime.now(),
+      deletedAt: _iso(j['deleted_at']),
     ),
   ),
 };
 
-/// Pull order: envelopes/goals before their children; the shopping-list
+/// Pull order: envelopes/goals/rules before their children; the shopping-list
 /// header before its items (joiners learn the list id first).
 const kPullOrder = [
-  'account', 'envelope', 'budget_cycle_plan', 'goal', 'shopping_list', 'tx',
+  'account', 'envelope', 'budget_cycle_plan', 'goal', 'shopping_list',
+  'recurring', 'tx',
   'goal_tx',
   'list_item',
   'kid_request', 'earning',
-  'recurring', 'chore', 'mukando', 'mukando_payment',
+  'chore', 'mukando', 'mukando_payment',
   'family_activity', // immutable server-authored audit trail
   'family_chat_message', // family-scoped conversation thread
   'family_task', // shared responsibilities
@@ -1011,6 +1021,51 @@ const kPullOrder = [
   'family_debt', 'debt_repayment',
   'tx_allocation',
 ];
+
+/// Topological parent-before-child push order across foreign-key edges:
+/// - `account`, `envelope`, `recurring` before `tx`
+/// - `shopping_list` and `tx` (`settled_tx_id`) before `list_item`
+/// - `tx` and `envelope` before `tx_allocation`
+/// - `financial_commitment` -> `commitment_occurrence` (+ `tx`) -> `commitment_payment`
+/// - `goal` before `goal_tx`
+/// - `family_debt` before `debt_repayment`
+/// - `contribution_campaign` before `contribution_pledge` & `contribution_payment`
+/// - `mukando` before `mukando_payment`
+const kPushOrder = [
+  'account',
+  'envelope',
+  'goal',
+  'shopping_list',
+  'mukando',
+  'chore',
+  'family_reward',
+  'family_task',
+  'family_chat_message',
+  'earning',
+  'kid_request',
+  'family_debt',
+  'contribution_campaign',
+  'budget_cycle_plan',
+  'recurring',
+  'financial_commitment',
+  'goal_tx',
+  'mukando_payment',
+  'debt_repayment',
+  'contribution_pledge',
+  'contribution_payment',
+  'tx',
+  'commitment_occurrence',
+  'list_item',
+  'tx_allocation',
+  'commitment_payment',
+  'family_activity',
+];
+
+final Map<String, int> _pushOrderRank = {
+  for (var i = 0; i < kPushOrder.length; i++) kPushOrder[i]: i,
+};
+
+int pushOrderIndex(String entity) => _pushOrderRank[entity] ?? 999;
 
 /// ── Family identity (live) ─────────────────────────────────────────────────
 /// Maps server [membership] + [user_profile] rows into the app's local member

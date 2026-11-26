@@ -454,10 +454,7 @@ class AppState extends ChangeNotifier {
     if (syncStatus == SyncStatus.syncing) {
       return SyncHealthState.syncing;
     }
-    if (syncStatus == SyncStatus.needsSignIn ||
-        syncStatus == SyncStatus.needsReview ||
-        syncStatus == SyncStatus.error ||
-        (syncLastError != null && syncLastError!.isNotEmpty)) {
+    if (syncStatus == SyncStatus.needsSignIn) {
       return SyncHealthState.needsAttention;
     }
     if (pendingOps > 0 || syncStatus == SyncStatus.offline) {
@@ -2081,13 +2078,37 @@ class AppState extends ChangeNotifier {
   Future<void> applyEnvelopeLinks(
     Map<String, String> txToEnvelope, {
     bool notify = true,
+    bool clearMissing = false,
+    Set<String> dirtyTxIds = const {},
   }) async {
     var changed = false;
     for (var i = 0; i < txs.length; i++) {
-      final link = txToEnvelope[txs[i].id];
-      if (link == null) continue;
-      if ((txs[i].envelopeId ?? '') == link) continue;
       final t = txs[i];
+      if (dirtyTxIds.contains(t.id)) continue;
+      final link = txToEnvelope[t.id];
+      if (link == null) {
+        if (!clearMissing || t.accountId != null || t.envelopeId == null) {
+          continue;
+        }
+        txs[i] = Tx(
+          id: t.id,
+          accountId: t.accountId,
+          envelopeId: null,
+          memberId: t.memberId,
+          type: t.type,
+          amount: t.amount,
+          method: t.method,
+          note: t.note,
+          when: t.when,
+          deletedAt: t.deletedAt,
+          receiptUri: t.receiptUri,
+          recurringRuleId: t.recurringRuleId,
+        );
+        await _store?.saveTx(txs[i]);
+        changed = true;
+        continue;
+      }
+      if ((t.envelopeId ?? '') == link) continue;
       txs[i] = Tx(
         id: t.id,
         accountId: t.accountId,
@@ -2378,10 +2399,13 @@ class AppState extends ChangeNotifier {
           // Dropping it here made budget spend and Available Today alternate
           // between attributed and unattributed values on every live sync.
           final existing = txs.where((x) => x.id == pulled.id).firstOrNull;
+          final hasAuthoritativeEnvelope = row['_has_envelope_link'] == true;
           final t = Tx(
             id: pulled.id,
             accountId: pulled.accountId ?? existing?.accountId,
-            envelopeId: pulled.envelopeId ?? existing?.envelopeId,
+            envelopeId: hasAuthoritativeEnvelope
+                ? pulled.envelopeId
+                : (pulled.envelopeId ?? existing?.envelopeId),
             memberId: pulled.memberId,
             type: pulled.type,
             amount: pulled.amount,
@@ -2679,6 +2703,11 @@ class AppState extends ChangeNotifier {
         changed = true;
       case 'mukando_payment':
         for (final row in rows) {
+          if (row['deleted_at'] != null) {
+            mukandoPayments.removeWhere((p) => p.id == row['id']);
+            changed = true;
+            continue;
+          }
           final payment = adapter.decode(row) as MukandoPayment;
           mukandoPayments.removeWhere((p) => p.id == payment.id);
           mukandoPayments.add(payment);
@@ -2690,6 +2719,120 @@ class AppState extends ChangeNotifier {
       _resyncReminders();
       notifyListeners();
     }
+  }
+
+  /// Reconciles in-memory state after natural-key deduplication adopts a
+  /// canonical server record [newId] in place of an offline-created [oldId].
+  void remapEntityId(
+    String entity,
+    String oldId,
+    String newId,
+    Map<String, Object?> serverRow,
+  ) {
+    if (oldId.isNotEmpty && newId.isNotEmpty && oldId != newId) {
+      switch (entity) {
+        case 'envelope':
+          envelopes.removeWhere((e) => e.id == oldId);
+          for (var i = 0; i < txs.length; i++) {
+            final t = txs[i];
+            if (t.envelopeId == oldId) {
+              txs[i] = Tx(
+                id: t.id,
+                accountId: t.accountId,
+                envelopeId: newId,
+                memberId: t.memberId,
+                type: t.type,
+                amount: t.amount,
+                method: t.method,
+                note: t.note,
+                when: t.when,
+                deletedAt: t.deletedAt,
+                receiptUri: t.receiptUri,
+                recurringRuleId: t.recurringRuleId,
+              );
+            }
+          }
+          for (final rule in recurring) {
+            if (rule.envelopeId == oldId) rule.envelopeId = newId;
+          }
+          for (var i = 0; i < txAllocations.length; i++) {
+            final a = txAllocations[i];
+            if (a.envelopeId == oldId) {
+              txAllocations[i] = TxAllocation(
+                id: a.id,
+                txId: a.txId,
+                envelopeId: newId,
+                amount: a.amount,
+              );
+            }
+          }
+          for (var i = 0; i < financialCommitments.length; i++) {
+            final c = financialCommitments[i];
+            if (c.envelopeId == oldId) {
+              financialCommitments[i] = FinancialCommitment(
+                id: c.id,
+                name: c.name,
+                amount: c.amount,
+                firstDueDate: c.firstDueDate,
+                recurrence: c.recurrence,
+                createdById: c.createdById,
+                envelopeId: newId,
+                status: c.status,
+                endDate: c.endDate,
+                reminderDaysBefore: c.reminderDaysBefore,
+              );
+            }
+          }
+          for (var i = 0; i < proposals.length; i++) {
+            final p = proposals[i];
+            if (p.envelopeId == oldId) {
+              proposals[i] = Proposal(
+                id: p.id,
+                teenId: p.teenId,
+                amount: p.amount,
+                envelopeId: newId,
+                reason: p.reason,
+                state: p.state,
+              );
+            }
+          }
+          for (final plan in budgetPlans) {
+            if (plan.allocations.containsKey(oldId)) {
+              final next = Map<String, int>.of(plan.allocations);
+              final oldVal = next.remove(oldId) ?? 0;
+              next[newId] = (next[newId] ?? 0) + oldVal;
+              plan.allocations = next;
+            }
+          }
+          if (lastUsedExpenseEnvelopeId == oldId) {
+            lastUsedExpenseEnvelopeId = newId;
+          }
+        case 'commitment_occurrence':
+          commitmentOccurrences.removeWhere((o) => o.id == oldId);
+          for (var i = 0; i < commitmentPayments.length; i++) {
+            final p = commitmentPayments[i];
+            if (p.occurrenceId == oldId) {
+              commitmentPayments[i] = CommitmentPayment(
+                id: p.id,
+                occurrenceId: newId,
+                transactionId: p.transactionId,
+                amount: p.amount,
+                createdById: p.createdById,
+                createdAt: p.createdAt,
+              );
+            }
+          }
+        case 'budget_cycle_plan':
+          budgetPlans.removeWhere((p) => p.id == oldId);
+        case 'contribution_pledge':
+          contributionPledges.removeWhere((p) => p.id == oldId);
+        case 'mukando_payment':
+          mukandoPayments.removeWhere((p) => p.id == oldId);
+        case 'tx_allocation':
+          txAllocations.removeWhere((a) => a.id == oldId);
+      }
+    }
+    applyPulled(entity, [serverRow]);
   }
 
   /// A full account pull is a server snapshot. Clearing first also removes
@@ -5080,6 +5223,7 @@ class AppState extends ChangeNotifier {
         memberId: realUser.id,
         amount: amount,
         paidAt: now);
+    final debtBefore = debt.copy();
     debtRepayments.add(value);
     final settled = remainingOnDebt(debt).minor == 0;
     if (settled) debt.status = 'settled';
@@ -5097,7 +5241,7 @@ class AppState extends ChangeNotifier {
     if (syncEngine != null && syncEngine.spaceId != null && env.isConfigured) {
       final mutations = <(String, Object, Object?)>[
         ('debt_repayment', value, null),
-        if (settled) ('family_debt', debt, debt.copy()),
+        if (settled) ('family_debt', debt, debtBefore),
         ('tx', transaction, null),
       ];
       _fire(syncEngine.enqueueBatch(
@@ -5416,6 +5560,16 @@ class AppState extends ChangeNotifier {
     if (paymentIndex < 0) return false;
     final payment = mukandoPayments.removeAt(paymentIndex);
     if (_store != null) _fire(_store!.deleteMukandoPayment(payment.id));
+    final tombstone = MukandoPayment(
+      id: payment.id,
+      round: payment.round,
+      memberId: payment.memberId,
+      recordedBy: payment.recordedBy,
+      amount: payment.amount,
+      paidAt: payment.paidAt,
+      deletedAt: DateTime.now(),
+    );
+    _queue('mukando_payment', tombstone, base: payment);
     final memberName = member(memberId)?.name ?? 'Member';
     _recordLocalAudit('mukando.undo_pay', 'mukando_payment', payment.id, {
       'round': circle.currentRound,

@@ -613,5 +613,287 @@ begin
   raise notice 'PASS sole-owner deletes family + identity completely';
 end $$;
 
+-- ── 7. Industrial Sync Engine v2 (push_sync_ops + pull_family_changes) ──────
+insert into auth.users (id, email, encrypted_password, email_confirmed_at) values
+  ('aaaaaaaa-1111-4111-8111-111111111111', 'syncv2_u1@example.com', 'x', now()),
+  ('bbbbbbbb-2222-4222-8222-222222222222', 'syncv2_u2@example.com', 'x', now());
+
+do $$
+declare
+  v_u1 uuid := 'aaaaaaaa-1111-4111-8111-111111111111';
+  v_u2 uuid := 'bbbbbbbb-2222-4222-8222-222222222222';
+  v_create jsonb;
+  v_space uuid;
+  v_list uuid;
+  v_inv jsonb;
+  v_env1 uuid := 'cccccccc-3333-4333-8333-333333333331';
+  v_env1_dup uuid := 'cccccccc-3333-4333-8333-333333333339';
+  v_env2 uuid := 'cccccccc-3333-4333-8333-333333333332';
+  v_plan1 uuid := 'dddddddd-4444-4444-8444-444444444441';
+  v_tx1 uuid := 'eeeeeeee-5555-4555-8555-555555555551';
+  v_priv_acc uuid := 'ffffffff-6666-4666-8666-666666666661';
+  v_priv_tx uuid := 'ffffffff-6666-4666-8666-666666666662';
+  v_mp1 uuid := '99999999-7777-4777-8777-777777777771';
+  v_mp2 uuid := '99999999-7777-4777-8777-777777777772';
+  v_item1 uuid := '88888888-8888-4888-8888-888888888881';
+  v_push jsonb;
+  v_pull jsonb;
+  v_pull2 jsonb;
+  v_base_env jsonb;
+  v_base_ua text;
+  v_base_plan jsonb;
+  v_plan_ua text;
+  v_seq_before bigint;
+  v_total_chats integer;
+  i integer;
+begin
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_u1::text, true);
+
+  v_create := public.create_space('SyncV2 Smoke Family', 'couple_kids', 'USD', 'Tendai');
+  if (v_create->>'sync_protocol')::int <> 2 then
+    raise exception 'FAIL: create_space missing sync_protocol=2';
+  end if;
+  v_space := (v_create->>'id')::uuid;
+  v_list := (v_create->>'default_list_id')::uuid;
+
+  if (public.restore_my_space()->>'sync_protocol')::int <> 2 then
+    raise exception 'FAIL: restore_my_space missing sync_protocol=2';
+  end if;
+
+  v_inv := public.create_invite('co_parent', 'syncv2_u2@example.com', v_space);
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
+  perform public.join_invite(v_inv->>'code');
+
+  perform set_config('request.jwt.claim.sub', v_u1::text, true);
+  v_push := public.push_sync_ops(jsonb_build_array(
+    jsonb_build_object(
+      'op_id', 'op-env-1', 'space_id', v_space, 'table', 'envelope', 'id', v_env1,
+      'payload', jsonb_build_object(
+        'id', v_env1, 'space_id', v_space, 'name', 'Groceries', 'icon', 'cart',
+        'limit_minor', 30000, 'limit_currency', 'USD', 'sharing', 'shared', 'is_archived', false
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-env-2', 'space_id', v_space, 'table', 'envelope', 'id', v_env2,
+      'payload', jsonb_build_object(
+        'id', v_env2, 'space_id', v_space, 'name', 'Transport', 'icon', 'car',
+        'limit_minor', 10000, 'limit_currency', 'USD', 'sharing', 'shared', 'is_archived', false
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-plan-1', 'space_id', v_space, 'table', 'budget_cycle_plan', 'id', v_plan1,
+      'payload', jsonb_build_object(
+        'id', v_plan1, 'space_id', v_space, 'cycle_start', '2026-11-01',
+        'income_mode', 'known_monthly', 'expected_income_minor', 100000, 'currency', 'USD',
+        'allocations', jsonb_build_object(v_env1::text, 30000), 'status', 'active'
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-tx-1', 'space_id', v_space, 'table', 'transaction', 'id', v_tx1,
+      'payload', jsonb_build_object(
+        'id', v_tx1, 'space_id', v_space, 'type', 'expense', 'amount_minor', 4500,
+        'currency', 'USD', 'member_id', v_u1, 'created_by', v_u1, 'method', 'cash',
+        'occurred_at', '2026-11-25T10:00:00.000Z', 'note', 'Bread and milk',
+        '_has_envelope_link', true, '_envelope_id', v_env1
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-mp-1', 'space_id', v_space, 'table', 'mukando_payment', 'id', v_mp1,
+      'payload', jsonb_build_object(
+        'id', v_mp1, 'space_id', v_space, 'round_no', 1, 'member_id', v_u1,
+        'recorded_by', v_u1, 'amount_minor', 5000, 'currency', 'USD',
+        'paid_at', '2026-11-25T10:00:00.000Z'
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-item-1', 'space_id', v_space, 'table', 'list_item', 'id', v_item1,
+      'payload', jsonb_build_object(
+        'id', v_item1, 'list_id', v_list, 'name', 'Sugar', 'qty', 2,
+        'est_price_minor', 250, 'currency', 'USD', 'added_by', v_u1,
+        'state', 'done', 'checked_out', true, 'purchased_by', v_u1
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-priv-acc', 'space_id', v_space, 'table', 'account', 'id', v_priv_acc,
+      'payload', jsonb_build_object(
+        'id', v_priv_acc, 'space_id', v_space, 'name', 'Private Pocket',
+        'kind', 'cash', 'currency', 'USD', 'sharing', 'private',
+        'owner_member_id', v_u1, 'opening_balance_minor', 9000, 'is_archived', false
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-priv-tx', 'space_id', v_space, 'table', 'transaction', 'id', v_priv_tx,
+      'payload', jsonb_build_object(
+        'id', v_priv_tx, 'space_id', v_space, 'account_id', v_priv_acc,
+        'type', 'expense', 'amount_minor', 1000, 'currency', 'USD',
+        'member_id', v_u1, 'created_by', v_u1, 'method', 'cash',
+        'occurred_at', '2026-11-25T10:05:00.000Z', 'note', 'Private coffee'
+      )
+    )
+  ));
+  if (select count(*) from jsonb_array_elements(v_push->'results') r where r->>'status' <> 'applied') <> 0 then
+    raise exception 'FAIL: SyncV2 initial push_sync_ops rejected ops: %', v_push;
+  end if;
+
+  -- Idempotent replay
+  v_seq_before := (v_push->'results'->0->>'sync_seq')::bigint;
+  v_push := public.push_sync_ops(jsonb_build_array(
+    jsonb_build_object(
+      'op_id', 'op-env-1', 'space_id', v_space, 'table', 'envelope', 'id', v_env1,
+      'payload', jsonb_build_object('id', v_env1, 'space_id', v_space, 'name', 'Groceries')
+    )
+  ));
+  if v_push->'results'->0->>'outcome' <> 'already_applied'
+     or (v_push->'results'->0->>'sync_seq')::bigint <> v_seq_before then
+    raise exception 'FAIL: op_id replay not idempotent';
+  end if;
+
+  -- Natural-key collision adoption + intra-batch child FK remapping
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
+  v_push := public.push_sync_ops(jsonb_build_array(
+    jsonb_build_object(
+      'op_id', 'op-env-dup', 'space_id', v_space, 'table', 'envelope', 'id', v_env1_dup,
+      'payload', jsonb_build_object(
+        'id', v_env1_dup, 'space_id', v_space, 'name', '  groceries ', 'icon', 'food',
+        'limit_minor', 35000, 'limit_currency', 'USD', 'sharing', 'shared', 'is_archived', false
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-tx-dup-env', 'space_id', v_space, 'table', 'transaction',
+      'id', 'eeeeeeee-5555-4555-8555-555555555559'::uuid,
+      'payload', jsonb_build_object(
+        'id', 'eeeeeeee-5555-4555-8555-555555555559'::uuid, 'space_id', v_space,
+        'type', 'expense', 'amount_minor', 1200, 'currency', 'USD',
+        'member_id', v_u2, 'created_by', v_u2, 'method', 'cash',
+        'occurred_at', '2026-11-25T10:02:00.000Z', 'note', 'Apples',
+        '_has_envelope_link', true, '_envelope_id', v_env1_dup
+      )
+    )
+  ));
+  if v_push->'results'->0->>'outcome' <> 'adopted_existing'
+     or (v_push->'results'->0->>'replaced_id')::uuid <> v_env1_dup
+     or (v_push->'results'->0->'row'->>'id')::uuid <> v_env1
+     or (v_push->'results'->1->'row'->>'_envelope_id')::uuid <> v_env1 then
+    raise exception 'FAIL: natural-key collision adoption or intra-batch remap failed: %', v_push;
+  end if;
+
+  -- 3-way merge + per-envelope budget_cycle_plan allocations merge
+  select to_jsonb(e.*), e.updated_at::text into v_base_env, v_base_ua
+    from public.envelope e where e.id = v_env1;
+  select to_jsonb(b.*), b.updated_at::text into v_base_plan, v_plan_ua
+    from public.budget_cycle_plan b where b.id = v_plan1;
+
+  perform set_config('request.jwt.claim.sub', v_u1::text, true);
+  perform public.push_sync_ops(jsonb_build_array(
+    jsonb_build_object(
+      'op_id', 'op-u1-env-icon', 'space_id', v_space, 'table', 'envelope', 'id', v_env1,
+      'base_updated_at', v_base_ua, 'base', v_base_env,
+      'payload', v_base_env || jsonb_build_object('icon', 'basket')
+    ),
+    jsonb_build_object(
+      'op_id', 'op-u1-plan', 'space_id', v_space, 'table', 'budget_cycle_plan', 'id', v_plan1,
+      'base_updated_at', v_plan_ua, 'base', v_base_plan,
+      'payload', jsonb_set(v_base_plan, '{allocations}', jsonb_build_object(v_env1::text, 32000))
+    )
+  ));
+
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
+  v_push := public.push_sync_ops(jsonb_build_array(
+    jsonb_build_object(
+      'op_id', 'op-u2-env-limit', 'space_id', v_space, 'table', 'envelope', 'id', v_env1,
+      'base_updated_at', v_base_ua, 'base', v_base_env,
+      'payload', v_base_env || jsonb_build_object('limit_minor', 42000)
+    ),
+    jsonb_build_object(
+      'op_id', 'op-u2-plan', 'space_id', v_space, 'table', 'budget_cycle_plan', 'id', v_plan1,
+      'base_updated_at', v_plan_ua, 'base', v_base_plan,
+      'payload', jsonb_set(v_base_plan, '{allocations}', jsonb_build_object(v_env1::text, 30000, v_env2::text, 12000))
+    )
+  ));
+  if v_push->'results'->0->'row'->>'icon' <> 'basket'
+     or (v_push->'results'->0->'row'->>'limit_minor')::bigint <> 42000 then
+    raise exception 'FAIL: 3-way envelope merge lost fields';
+  end if;
+  if (v_push->'results'->1->'row'->'allocations'->>(v_env1::text))::bigint <> 32000
+     or (v_push->'results'->1->'row'->'allocations'->>(v_env2::text))::bigint <> 12000 then
+    raise exception 'FAIL: 3-way budget_cycle_plan allocations merge lost keys';
+  end if;
+
+  -- Envelope un-attribution + mukando soft-delete/re-record + historical replan
+  perform set_config('request.jwt.claim.sub', v_u1::text, true);
+  v_push := public.push_sync_ops(jsonb_build_array(
+    jsonb_build_object(
+      'op_id', 'op-tx-unlink', 'space_id', v_space, 'table', 'transaction', 'id', v_tx1,
+      'force', true,
+      'payload', jsonb_build_object(
+        'id', v_tx1, 'space_id', v_space, 'type', 'expense', 'amount_minor', 4500,
+        'currency', 'USD', 'member_id', v_u1, 'method', 'cash',
+        'occurred_at', '2026-11-25T10:00:00.000Z', 'note', 'Bread and milk',
+        '_has_envelope_link', true, '_envelope_id', null
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-mp-del', 'space_id', v_space, 'table', 'mukando_payment', 'id', v_mp1,
+      'force', true,
+      'payload', jsonb_build_object('id', v_mp1, 'deleted_at', '2026-11-25T11:00:00.000Z')
+    ),
+    jsonb_build_object(
+      'op_id', 'op-mp-rerecord', 'space_id', v_space, 'table', 'mukando_payment', 'id', v_mp2,
+      'payload', jsonb_build_object(
+        'id', v_mp2, 'space_id', v_space, 'round_no', 1, 'member_id', v_u1,
+        'recorded_by', v_u1, 'amount_minor', 5500, 'currency', 'USD',
+        'paid_at', '2026-11-25T11:05:00.000Z'
+      )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-item-replan', 'space_id', v_space, 'table', 'list_item', 'id', v_item1,
+      'force', true,
+      'payload', jsonb_build_object(
+        'id', v_item1, 'list_id', v_list, 'name', 'Sugar', 'qty', 2,
+        'est_price_minor', 250, 'currency', 'USD', 'added_by', v_u1,
+        'state', 'tobuy', 'checked_out', false, 'actual_price_minor', null,
+        'purchased_by', null, 'settled_tx_id', null,
+        'replanned_at', '2026-11-25T11:10:00.000Z'
+      )
+    )
+  ));
+  if (select count(*) from jsonb_array_elements(v_push->'results') r where r->>'status' <> 'applied') <> 0
+     or (select count(*) from public.envelope_tx where transaction_id = v_tx1) <> 0 then
+    raise exception 'FAIL: unlink / mukando / replan batch failed: %', v_push;
+  end if;
+
+  -- Keyset pagination + RLS privacy check
+  for i in 1..55 loop
+    insert into public.family_chat_message (id, space_id, sender_id, text)
+    values (gen_random_uuid(), v_space, v_u1, 'Msg ' || i);
+  end loop;
+  select count(*) into v_total_chats from public.family_chat_message where space_id = v_space;
+
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
+  v_pull := public.pull_family_changes(v_space, '{}'::jsonb, 50);
+  if (v_pull->>'has_more')::boolean is not true
+     or jsonb_array_length(v_pull->'changes'->'family_chat_message') <> 50 then
+    raise exception 'FAIL: pull_family_changes page 1 pagination wrong';
+  end if;
+  if coalesce(jsonb_array_length(v_pull->'changes'->'account'), 0) <> 0
+     or (select count(*) from jsonb_array_elements(v_pull->'changes'->'tx') r where (r->>'id')::uuid = v_priv_tx) <> 0 then
+    raise exception 'FAIL: private account or transaction leaked via pull_family_changes';
+  end if;
+
+  v_pull2 := public.pull_family_changes(v_space, v_pull->'cursors', 50);
+  if (v_pull2->>'has_more')::boolean is not false
+     or jsonb_array_length(v_pull2->'changes'->'family_chat_message') <> (v_total_chats - 50) then
+    raise exception 'FAIL: pull_family_changes page 2 pagination wrong';
+  end if;
+
+  perform public.delete_own_account();
+  perform set_config('request.jwt.claim.sub', v_u1::text, true);
+  perform public.delete_own_account();
+  reset role;
+  raise notice 'PASS Industrial Sync Engine v2 (push_sync_ops + pull_family_changes + 3-way merge + RLS)';
+end $$;
+
 select set_config('request.jwt.claim.sub', '', false);
 drop table _t;

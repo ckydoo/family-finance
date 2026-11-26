@@ -5,10 +5,11 @@ import 'package:http/http.dart' as http;
 
 /// Thin Supabase REST (PostgREST) client for sync - hand-written, no SDK.
 ///
-///  push:  POST /rest/v1/{table}?on_conflict=id
-///         Prefer: resolution=merge-duplicates,return=minimal  (idempotent upsert)
-///  pull:  GET  /rest/v1/{table}?select=*&order=updated_at.asc[&filters]
-///  rpc:   POST /rest/v1/rpc/{fn}
+///  v2 push: POST /rest/v1/rpc/push_sync_ops
+///  v2 pull: POST /rest/v1/rpc/pull_family_changes
+///  v1 push: POST /rest/v1/{table}?on_conflict=id
+///  v1 pull: GET  /rest/v1/{table}?select=*&order=updated_at.asc[&filters]
+///  rpc:     POST /rest/v1/rpc/{fn}
 ///
 /// The HTTP client is injectable so every flow is testable offline.
 class SupabaseSyncClient {
@@ -20,12 +21,19 @@ class SupabaseSyncClient {
   })  : _base = baseUrl.replaceAll(RegExp(r'/+$'), ''),
         _anonKey = anonKey,
         _tokenGet = tokenGet,
+        _hasCustomHttpClient = client != null,
         _client = client ?? http.Client();
 
   final String _base;
   final String _anonKey;
   final Future<String?> Function() _tokenGet;
+  final bool _hasCustomHttpClient;
   final http.Client _client;
+
+  String get baseUrl => _base;
+  String get anonKey => _anonKey;
+  bool get hasCustomHttpClient => _hasCustomHttpClient;
+  Future<String?> currentToken() => _tokenGet();
 
   /// Hard ceiling on any REST call so a dead network can't hang a sync
   /// forever - timeouts surface as a typed SyncException(0), which the
@@ -64,6 +72,49 @@ class SupabaseSyncClient {
     };
   }
 
+  /// Sync Protocol v2 batch push RPC: idempotency (`op_id`), natural-key
+  /// adoption, 3-way field merge, and savepoint isolation in one round-trip.
+  Future<List<Map<String, Object?>>> pushSyncOps(
+    List<Map<String, Object?>> ops,
+  ) async {
+    if (ops.isEmpty) return const [];
+    final decoded = await rpc('push_sync_ops', {'p_ops': ops});
+    if (decoded is Map) {
+      final results = decoded['results'];
+      if (results is List) {
+        return [
+          for (final item in results)
+            if (item is Map) Map<String, Object?>.from(item),
+        ];
+      }
+    }
+    throw const SyncException(
+      500,
+      'push_sync_ops response did not contain results.',
+    );
+  }
+
+  /// Sync Protocol v2 keyset-paginated delta pull RPC across the entire family
+  /// graph, space settings, and active member roster in one round-trip.
+  Future<Map<String, Object?>> pullFamilyChanges(
+    String spaceId,
+    Map<String, int> cursors, {
+    int pageLimit = 500,
+  }) async {
+    final decoded = await rpc('pull_family_changes', {
+      'p_space_id': spaceId,
+      'p_cursors': cursors,
+      'p_page_limit': pageLimit,
+    });
+    if (decoded is Map) {
+      return Map<String, Object?>.from(decoded);
+    }
+    throw const SyncException(
+      500,
+      'pull_family_changes response was not a JSON object.',
+    );
+  }
+
   /// Idempotent upsert of a batch. Returns true on success.
   Future<bool> pushRows(
     String table,
@@ -84,6 +135,25 @@ class SupabaseSyncClient {
     throw SyncException(r.statusCode, _msg(r));
   }
 
+  /// Deletes rows matching exact PostgREST equality filters (e.g. clearing a
+  /// stale `envelope_tx` attribution on legacy REST fallback).
+  Future<void> deleteRows(
+    String table,
+    Map<String, String> eqFilters,
+  ) async {
+    if (eqFilters.isEmpty) return;
+    final headers = await _headers();
+    final uri = Uri.parse('$_base/rest/v1/$table').replace(
+      queryParameters: eqFilters,
+    );
+    final r = await _call(() => _client.delete(
+          uri,
+          headers: {...headers, 'Prefer': 'return=minimal'},
+        ));
+    if (r.statusCode >= 200 && r.statusCode < 300) return;
+    throw SyncException(r.statusCode, _msg(r));
+  }
+
   /// Atomically creates a row only when its id is absent, or updates it only
   /// when [baseUpdatedAt] still matches the authoritative server version.
   /// A false result is a data conflict, not a network failure.
@@ -98,18 +168,6 @@ class SupabaseSyncClient {
     final headers = await _headers();
     late final http.Response response;
     if (baseUpdatedAt == null || baseUpdatedAt.isEmpty) {
-      if (table == 'list_item') {
-        // A list-item create must never become an update through an upsert.
-        // Existing ids are handled as conflicts by the caller.
-        response = await _call(() => _client.post(
-              Uri.parse('$_base/rest/v1/$table?on_conflict=id'),
-              headers: {
-                ...headers,
-                'Prefer': 'resolution=ignore-duplicates,return=representation',
-              },
-              body: jsonEncode(row),
-            ));
-      } else {
       response = await _call(() => _client.post(
             Uri.parse('$_base/rest/v1/$table?on_conflict=id'),
             headers: {
@@ -118,7 +176,6 @@ class SupabaseSyncClient {
             },
             body: jsonEncode(row),
           ));
-      }
     } else {
       final uri = Uri.parse('$_base/rest/v1/$table').replace(
         queryParameters: {
@@ -226,7 +283,8 @@ class SupabaseSyncClient {
     final uri = Uri.parse('$_base/rest/v1/$table').replace(
       queryParameters: query,
     );
-    final r = await _client.get(uri, headers: await _headers());
+    final headers = await _headers();
+    final r = await _call(() => _client.get(uri, headers: headers));
     if (r.statusCode < 200 || r.statusCode >= 300) {
       throw SyncException(r.statusCode, _msg(r));
     }

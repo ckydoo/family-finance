@@ -158,13 +158,34 @@ jobs:
           echo "$out"
       - name: Run flutter test
         run: |
-          if ! out=$(flutter test --reporter expanded 2>&1); then
-            echo "$out"
-            summary=$( { echo "$out" | grep -A 35 "EXCEPTION CAUGHT"; echo "$out" | grep -B 10 -A 5 "\[E\]"; } | head -n 120 | tr '\n' ' ')
-            echo "::error title=flutter_test::$summary"
+          if ! flutter test --file-reporter json:/tmp/flutter_tests.jsonl; then
+            python3 - <<'PY'
+          import json
+          tests = {}
+          errors = {}
+          with open('/tmp/flutter_tests.jsonl') as f:
+              for raw in f:
+                  ev = json.loads(raw)
+                  t = ev.get('type')
+                  if t == 'testStart':
+                      test = ev.get('test', {})
+                      tests[test.get('id')] = test.get('name', '')
+                  elif t == 'error':
+                      tid = ev.get('testID')
+                      err = (ev.get('error') or '').replace('\n', ' | ')
+                      st = ' '.join(
+                          l.strip() for l in (ev.get('stackTrace') or '').splitlines()
+                          if 'test/' in l or 'lib/' in l
+                      )
+                      errors.setdefault(tid, []).append(f"{err} [{st[:300]}]")
+                  elif t == 'testDone' and ev.get('result') in ('error', 'failure'):
+                      tid = ev.get('testID')
+                      name = tests.get(tid, f'test#{tid}')
+                      detail = ' ;; '.join(errors.get(tid, ['failed']))[:800]
+                      print(f"::error title={name[:120]}::{detail}")
+          PY
             exit 1
           fi
-          echo "$out" | tail -n 5
   secrets:
     name: secret scanning (#18)
     runs-on: ubuntu-latest

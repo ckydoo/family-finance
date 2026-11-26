@@ -4,7 +4,6 @@ import '../../core/state/app_state.dart';
 import '../../core/sync/outbox.dart' show OutboxOp;
 import '../../core/sync/sync_engine.dart' show SyncStatus;
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/error_messages.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 
@@ -24,7 +23,6 @@ class SyncScreen extends StatelessWidget {
     final l = AppLocalizations.of(context)!;
     final status = s.syncStatus;
     final last = s.lastSyncAt;
-    final error = s.syncLastError;
     final cloudIsLive = s.syncHost != null &&
         status != SyncStatus.offline &&
         status != SyncStatus.error &&
@@ -33,8 +31,9 @@ class SyncScreen extends StatelessWidget {
 
     final (statusLabel, statusColor) = switch (status) {
       SyncStatus.syncing => (l.syncStateSyncing, context.information),
-      SyncStatus.error => (l.syncStateError, context.danger),
-      SyncStatus.offline => (l.syncStateOffline, context.inkSoft),
+      SyncStatus.error ||
+      SyncStatus.offline =>
+        (l.syncStateOffline, context.inkSoft),
       SyncStatus.needsSignIn => (l.syncStateNeedsSignIn, context.primaryLight),
       SyncStatus.needsSetup => (l.syncStateNeedsSetup, context.warning),
       SyncStatus.needsReview => ('Needs review', context.warning),
@@ -88,12 +87,12 @@ class SyncScreen extends StatelessWidget {
                           : () => _confirmFullReload(context, s),
                     ),
                   ),
-                  if (error != null && error.isNotEmpty)
+                  if (status == SyncStatus.needsSignIn)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        '${l.syncErrorLabel}: ${userFacingErrorMessage(error, fallback: l.syncProblem)}',
-                        style: TextStyle(fontSize: 12.5, color: context.danger),
+                        l.signinExpired,
+                        style: TextStyle(fontSize: 12.5, color: context.inkSoft),
                       ),
                     ),
                 ],
@@ -176,7 +175,7 @@ class SyncScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: context.card,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: context.danger, width: 1.2),
+                    border: Border.all(color: context.hairline, width: 1.2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,11 +183,11 @@ class SyncScreen extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(l.syncProblemsTitle,
+                            child: Text(l.syncPendingLabel,
                                 style: TextStyle(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
-                                    color: context.danger)),
+                                    color: context.ink)),
                           ),
                           TextButton.icon(
                             style: TextButton.styleFrom(
@@ -209,7 +208,7 @@ class SyncScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(l.syncProblemsBody,
+                      Text(l.offlineRetry,
                           style: TextStyle(
                               fontSize: 12.5, color: context.inkSoft)),
                       const SizedBox(height: 8),
@@ -217,8 +216,8 @@ class SyncScreen extends StatelessWidget {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           dense: true,
-                          leading: Icon(Icons.sync_problem,
-                              size: 20, color: context.danger),
+                          leading: Icon(Icons.cloud_upload_outlined,
+                              size: 20, color: context.inkSoft),
                           title: Text(_parkedTitle(l, op),
                               style: const TextStyle(fontSize: 13.5),
                               maxLines: 1,
@@ -273,19 +272,23 @@ class SyncScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: cloudIsLive
                               ? context.incomeGreen
-                              : context.danger,
+                              : context.inkSoft,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        cloudIsLive ? l.syncServiceLive : l.syncServiceDown,
+                        cloudIsLive
+                            ? l.syncServiceLive
+                            : (s.syncHost == null
+                                ? l.syncNotConnected
+                                : l.syncStateOffline),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: cloudIsLive
                               ? context.incomeGreen
-                              : context.danger,
+                              : context.inkSoft,
                         ),
                       ),
                     ],
