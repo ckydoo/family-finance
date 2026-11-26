@@ -342,11 +342,14 @@ class SettingsScreen extends StatelessWidget {
                     AppLocalizations.of(context)!.householdTimezoneSub,
                     style: TextStyle(fontSize: 12, color: context.inkSoft),
                   ),
-                  trailing: Flexible(
+                  trailing: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 170),
                     child: Text(
                       HouseholdTimezone.displayLabel(
                           s.effectiveHouseholdTimezone),
                       textAlign: TextAlign.end,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: context.primary,
                         fontWeight: FontWeight.w700,

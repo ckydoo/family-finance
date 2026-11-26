@@ -3475,9 +3475,13 @@ class AppState extends ChangeNotifier {
           year, month, monthStartDay, householdTimezone);
 
   DateTime cycleStartFor(DateTime now) {
-    final thisMonth = _cycleDate(now.year, now.month);
-    return now.isBefore(thisMonth)
-        ? _cycleDate(now.year, now.month - 1)
+    // Decide the containing month on the household wall clock: 23:30 UTC on
+    // Nov 30 is already Dec 1 in Africa/Harare, so a Harare family must roll
+    // into the December cycle while a UTC-only device would lag a day (#2).
+    final wall = HouseholdTimezone.wallNow(now, householdTimezone);
+    final thisMonth = _cycleDate(wall.year, wall.month);
+    return wall.isBefore(thisMonth)
+        ? _cycleDate(wall.year, wall.month - 1)
         : thisMonth;
   }
 
@@ -3486,13 +3490,17 @@ class AppState extends ChangeNotifier {
     return _cycleDate(cs.year, cs.month + 1);
   }
 
-  /// Cycle start [offset] cycles before the current one (0 = current). The
+  /// Cycle start [offset] cycles from the current one (0 = current, positive
+  /// = history, negative = future boundary such as Reports' period end). The
   /// short-month overflow bug is avoided by walking clamped boundaries
   /// instead of raw `month - offset` arithmetic (Reports history).
   DateTime cycleStartAtOffset(int offset) {
     var cursor = cycleStart;
     for (var i = 0; i < offset; i++) {
       cursor = _cycleDate(cursor.year, cursor.month - 1);
+    }
+    for (var i = 0; i < -offset; i++) {
+      cursor = _cycleDate(cursor.year, cursor.month + 1);
     }
     return cursor;
   }
@@ -4572,15 +4580,18 @@ class AppState extends ChangeNotifier {
     if (_store != null) await _store!.saveTx(updated);
     final engine = sync;
     if (engine != null) {
-      // Same seam as [_queue], but [triggerSchedule] follows [scheduleSync]:
-      // during a push-driven promotion the running sync cycle delivers the
-      // re-queued row itself; a manual promotion schedules a debounced sync.
-      _fire(
-        engine
-            .enqueue('tx', updated,
-                base: base, triggerSchedule: scheduleSync)
-            .then((_) => refreshPending()),
+      // Awaiting matters: the caller inside a push cycle must be able to rely
+      // on the promoted row already sitting in the outbox, or [_pushV2]'s
+      // final drain can race past it and strand the remote URL until the next
+      // sync. [triggerSchedule] follows [scheduleSync] so a push-driven
+      // promotion does not schedule a redundant debounced sync.
+      await engine.enqueue(
+        'tx',
+        updated,
+        base: base,
+        triggerSchedule: scheduleSync,
       );
+      await refreshPending();
     }
     notifyListeners();
     return true;
