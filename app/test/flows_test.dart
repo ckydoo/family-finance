@@ -130,7 +130,7 @@ void main() {
 
     final total = s.finishShopping();
     expect(total.minor, 1800);
-    expect(s.txs.first.note, 'Groceries run - FreshMart');
+    expect(s.txs.first.note, 'Groceries run');
     expect(s.txs.first.envelopeId, isNotNull);
     final target = s.envelope(s.txs.first.envelopeId)!;
     expect(target.name.toLowerCase().contains('grocer'), isTrue);

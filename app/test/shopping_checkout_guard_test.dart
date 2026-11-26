@@ -40,9 +40,10 @@ void main() {
     state.finishShopping();
     expect(item.checkedOut, isTrue);
 
-    state.advanceItem(item);
+    expect(state.replanItem(item), isTrue);
     expect(item.state, ItemState.tobuy);
     expect(item.checkedOut, isFalse);
+    expect(item.replannedAt, isNotNull);
   });
 
   test('checkout uses actual prices, selected budget, method and purchaser',

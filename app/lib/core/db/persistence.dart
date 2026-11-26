@@ -639,11 +639,10 @@ class Persistence {
               if (!dirtyIds.contains('${row['id'] ?? ''}')) row,
           ]
         : rows;
-    if (effectiveRows.isEmpty) return;
 
     final knownTxEnvelopes = <String, String?>{};
     final knownTxAccounts = <String, String?>{};
-    if (entity == 'tx') {
+    if (entity == 'tx' && effectiveRows.isNotEmpty) {
       for (final row in effectiveRows) {
         final id = row['id']?.toString();
         if (id == null || row['deleted_at'] != null) continue;
@@ -664,7 +663,7 @@ class Persistence {
       }
     }
     final batch = _d.batch();
-    for (final row in effectiveRows) {
+    for (final row in rows) {
       final rowId = row['id']?.toString();
       final serverUpdatedAt = row['updated_at']?.toString();
       if (rowId != null &&
@@ -682,6 +681,8 @@ class Persistence {
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
+    }
+    for (final row in effectiveRows) {
       switch (entity) {
         case 'account':
           if (row['is_archived'] == true) {
