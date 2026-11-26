@@ -4,7 +4,15 @@ import 'package:mhuri_money/core/l10n/localization_delegates.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 void main() {
-  for (final languageCode in ['sn', 'nd']) {
+  test('AppLocalizations exposes exact supported locales (en, es, fr, pt)', () {
+    final codes =
+        AppLocalizations.supportedLocales.map((l) => l.languageCode).toList();
+    expect(codes, ['en', 'es', 'fr', 'pt']);
+    expect(codes, isNot(contains('sn')));
+    expect(codes, isNot(contains('nd')));
+  });
+
+  for (final languageCode in ['en', 'es', 'fr', 'pt']) {
     testWidgets('$languageCode provides MaterialLocalizations', (tester) async {
       late BuildContext refreshContext;
 

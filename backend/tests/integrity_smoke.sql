@@ -919,6 +919,23 @@ begin
     raise exception 'FAIL: single-currency reset failed';
   end if;
 
+  -- Verify 082 language CHECK: 'es' allowed, 'sn' and 'nd' rejected.
+  reset role;
+  update public.user_profile set language = 'es' where id = v_u1;
+  begin
+    update public.user_profile set language = 'sn' where id = v_u1;
+    raise exception 'FAIL: user_profile accepted removed language sn';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.user_profile set language = 'nd' where id = v_u1;
+    raise exception 'FAIL: user_profile accepted removed language nd';
+  exception
+    when check_violation then null;
+  end;
+  set local role authenticated;
+
   perform set_config('request.jwt.claim.sub', v_u2::text, true);
   perform public.delete_own_account();
   perform set_config('request.jwt.claim.sub', v_u1::text, true);
@@ -943,7 +960,7 @@ begin
     raise exception 'FAIL: unindexed foreign key detected in public schema';
   end if;
 
-  raise notice 'PASS Industrial Sync Engine v2 + 081 Hardening & Household FX Sync';
+  raise notice 'PASS Industrial Sync Engine v2 + 081 Hardening + 082 Supported Locales';
 end $$;
 
 select set_config('request.jwt.claim.sub', '', false);

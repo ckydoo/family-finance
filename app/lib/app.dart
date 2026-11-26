@@ -7,6 +7,7 @@ import 'core/auth/recovery_link.dart';
 import 'core/config/app_env.dart';
 import 'core/firebase/firebase_services.dart';
 import 'core/db/app_database.dart';
+import 'core/l10n/app_strings.dart';
 import 'core/l10n/localization_delegates.dart';
 import 'core/notifications/notifier.dart';
 import 'l10n/generated/app_localizations.dart';
@@ -447,9 +448,10 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 : _state.themeMode == 2
                     ? ThemeMode.dark
                     : ThemeMode.system,
-            // M6 international: 6 languages, system-aware, user-overridable.
-            locale:
-                _state.localeCode.isEmpty ? null : Locale(_state.localeCode),
+            // M6 international: 4 languages (en, es, fr, pt), system-aware, user-overridable.
+            locale: _state.localeCode.isEmpty
+                ? null
+                : Locale(normalizeSupportedLocale(_state.localeCode)),
             localizationsDelegates: mhuriLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             // Android may deliver a failed OAuth callback twice: once through

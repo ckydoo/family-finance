@@ -8,9 +8,7 @@ import 'package:intl/intl.dart' as intl;
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
-import 'app_localizations_nd.dart';
 import 'app_localizations_pt.dart';
-import 'app_localizations_sn.dart';
 
 // ignore_for_file: type=lint
 
@@ -101,9 +99,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
-    Locale('nd'),
-    Locale('pt'),
-    Locale('sn')
+    Locale('pt')
   ];
 
   /// No description provided for @tabHome.
@@ -4557,14 +4553,8 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) => <String>[
-        'en',
-        'es',
-        'fr',
-        'nd',
-        'pt',
-        'sn'
-      ].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'es', 'fr', 'pt'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -4579,12 +4569,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEs();
     case 'fr':
       return AppLocalizationsFr();
-    case 'nd':
-      return AppLocalizationsNd();
     case 'pt':
       return AppLocalizationsPt();
-    case 'sn':
-      return AppLocalizationsSn();
   }
 
   throw FlutterError(

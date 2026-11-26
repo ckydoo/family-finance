@@ -4,12 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Localization coverage guard.
 ///
-/// Mhuri ships in six languages, so a user-facing sentence that is hard-coded
+/// Mhuri ships in four languages, so a user-facing sentence that is hard-coded
 /// in English is a bug: those users see an untranslated screen. This test
 /// locks the current backlog in `test/hardcoded_ui_strings.txt` and fails when
 /// new hard-coded UI text appears.
 ///
-/// Burning down the backlog is a mechanical job (add the key to the six ARBs,
+/// Burning down the backlog is a mechanical job (add the key to the four ARBs,
 /// then delete the line from the allowlist). Deleting a line that no longer
 /// matches is harmless, so the list only ever shrinks by intent.
 void main() {
@@ -63,8 +63,8 @@ void main() {
     expect(
       regressions,
       isEmpty,
-      reason: 'New hard-coded UI text found. Move these into the six ARB '
-          'files (app_en/sn/nd/es/fr/pt.arb) and read them through '
+      reason: 'New hard-coded UI text found. Move these into the four ARB '
+          'files (app_en/es/fr/pt.arb) and read them through '
           'AppLocalizations:\n${regressions.take(25).join('\n')}',
     );
   });

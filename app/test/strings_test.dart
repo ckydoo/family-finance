@@ -13,17 +13,17 @@ import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 import 'fake_auth.dart';
 
-/// M6 - internationalization: all six ARB languages stay in lockstep, the
+/// M6 - internationalization: all four ARB languages stay in lockstep, the
 /// English template keeps the strings the widget tests assert, and the
 /// locale switch actually re-renders the app.
-const kLocales = ['en', 'sn', 'nd', 'es', 'fr', 'pt'];
+const kLocales = ['en', 'es', 'fr', 'pt'];
 
 Map<String, dynamic> arb(String code) =>
     jsonDecode(File('lib/l10n/app_$code.arb').readAsStringSync())
         as Map<String, dynamic>;
 
 void main() {
-  group('ARB files (6 languages)', () {
+  group('ARB files (4 languages)', () {
     test('every language has the template key set, with non-empty values', () {
       final en = arb('en');
       final enKeys = en.keys.where((k) => !k.startsWith('@')).toSet();
@@ -125,11 +125,18 @@ void main() {
     expect(find.text('Planificar'), findsOneWidget);
     expect(AppLocalizations.of(context)!.localeName, 'es');
 
-    // And to chiShona.
+    // And to Português.
+    s.setLocale('pt');
+    await tester.pumpAndSettle();
+    expect(find.text('Orçamentos'), findsOneWidget);
+    expect(find.text('Planear'), findsOneWidget);
+    expect(AppLocalizations.of(context)!.localeName, 'pt');
+
+    // Removed locales fall back cleanly to English.
     s.setLocale('sn');
     await tester.pumpAndSettle();
-    expect(find.text('Bhajeti'), findsOneWidget);
-    expect(find.text('Ronga Mberi'), findsOneWidget);
+    expect(AppLocalizations.of(context)!.localeName, 'en');
+    expect(find.text('Available to spend'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 5));
   });

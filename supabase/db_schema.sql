@@ -18,7 +18,7 @@ CREATE TABLE public.user_profile (
   phone text UNIQUE,
   name text NOT NULL,
   avatar text NOT NULL DEFAULT '🙂'::text,
-  language text NOT NULL DEFAULT 'en'::text CHECK (language = ANY (ARRAY['en'::text, 'es'::text, 'fr'::text, 'pt'::text, 'sn'::text, 'nd'::text])),
+  language text NOT NULL DEFAULT 'en'::text CHECK (language = ANY (ARRAY['en'::text, 'es'::text, 'fr'::text, 'pt'::text])),
   ui_size text NOT NULL DEFAULT 'normal'::text CHECK (ui_size = ANY (ARRAY['normal'::text, 'large'::text])),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   email text UNIQUE,

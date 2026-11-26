@@ -11,6 +11,7 @@ import '../auth/pin_store.dart';
 import '../config/app_env.dart';
 import '../db/app_database.dart';
 import '../db/persistence.dart';
+import '../l10n/app_strings.dart';
 import '../sync/sync_engine.dart';
 import '../sync/sync_mappers.dart';
 import '../billing/entitlement.dart';
@@ -790,7 +791,11 @@ class AppState extends ChangeNotifier {
       }
       final lc = kv['locale'];
       if (lc != null && lc.isNotEmpty) {
-        localeCode = lc;
+        final normalized = normalizeSupportedLocale(lc);
+        localeCode = normalized;
+        if (normalized != lc) {
+          _persistKv('locale', normalized);
+        }
       }
       final op = kv['overspend_policy'];
       if (op != null && op.isNotEmpty) {
@@ -940,7 +945,9 @@ class AppState extends ChangeNotifier {
             .where((e) => e.isNotEmpty)
             .toSet();
         stars = data.stars;
-        if (data.locale != null) localeCode = data.locale!;
+        if (data.locale != null) {
+          localeCode = normalizeSupportedLocale(data.locale);
+        }
         largeText = data.largeText ?? false;
         themeMode = data.themeMode ?? 0;
         hideAmounts = data.hideAmounts ?? false;
@@ -3307,8 +3314,9 @@ class AppState extends ChangeNotifier {
   }
 
   void setLocale(String code) {
-    localeCode = code;
-    _persistKv('locale', code);
+    final normalized = normalizeSupportedLocale(code);
+    localeCode = normalized;
+    _persistKv('locale', normalized);
     notifyListeners();
   }
 
