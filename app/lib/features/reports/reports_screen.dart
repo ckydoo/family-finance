@@ -11,6 +11,7 @@ import '../../core/models/models.dart';
 import '../../core/widgets/charts.dart';
 import '../../core/widgets/ring_progress.dart';
 import 'package:intl/intl.dart' show DateFormat;
+import '../activity/activity_screen.dart';
 import '../meeting/family_meeting_screen.dart';
 import '../lists/lists_screen.dart';
 import '../../core/widgets/tx_tile.dart';
@@ -93,11 +94,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       spentMinor += inDisplay;
       spentByCur.update(tx.amount.currency, (v) => v + tx.amount.minor,
           ifAbsent: () => tx.amount.minor);
-      if (tx.memberId.isNotEmpty) {
-        spentByMember.update(tx.memberId, (v) => v + inDisplay,
-            ifAbsent: () => inDisplay);
-        txCountByMember.update(tx.memberId, (v) => v + 1, ifAbsent: () => 1);
-      }
+      final actorId = tx.memberId.isEmpty ? s.user.id : tx.memberId;
+      spentByMember.update(actorId, (v) => v + inDisplay,
+          ifAbsent: () => inDisplay);
+      txCountByMember.update(actorId, (v) => v + 1, ifAbsent: () => 1);
       if (tx.method == Method.cash) cashSpent += inDisplay;
       final allocations = allocationsByTx[tx.id] ?? const <TxAllocation>[];
       final categoryParts = allocations.isNotEmpty
@@ -1830,7 +1830,25 @@ class _MemberSpendingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final membersWithSpend = state.members.toList()
+    final byId = <String, Member>{
+      for (final m in state.members) m.id: m,
+    };
+    if (byId.isEmpty || spentByMember.containsKey(state.user.id)) {
+      byId.putIfAbsent(state.user.id, () => state.user);
+    }
+    for (final memberId in spentByMember.keys) {
+      byId.putIfAbsent(
+        memberId,
+        () => state.member(memberId) ??
+            Member(
+              id: memberId,
+              name: 'Family member',
+              emoji: 'person',
+              role: Role.adult,
+            ),
+      );
+    }
+    final membersWithSpend = byId.values.toList()
       ..sort((a, b) {
         final aSpend = spentByMember[a.id] ?? 0;
         final bSpend = spentByMember[b.id] ?? 0;
@@ -1889,9 +1907,22 @@ class _MemberSpendingCard extends StatelessWidget {
                     : 0.0;
                 final sharePercent = (ratio * 100).round();
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Column(
+                return InkWell(
+                  key: ValueKey('report_member_row_${member.id}'),
+                  borderRadius: kBRadiusS,
+                  onTap: count == 0
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ActivityScreen(
+                                initialMemberId: member.id,
+                                initialType: TxType.expense,
+                              ),
+                            ),
+                          ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -1993,7 +2024,8 @@ class _MemberSpendingCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                );
+                ),
+              );
               }(),
             ],
           ],
