@@ -750,7 +750,7 @@ begin
     raise exception 'FAIL: op_id replay not idempotent';
   end if;
 
-  -- Natural-key collision adoption
+  -- Natural-key collision adoption + intra-batch child FK remapping
   perform set_config('request.jwt.claim.sub', v_u2::text, true);
   v_push := public.push_sync_ops(jsonb_build_array(
     jsonb_build_object(
@@ -759,12 +759,24 @@ begin
         'id', v_env1_dup, 'space_id', v_space, 'name', '  groceries ', 'icon', 'food',
         'limit_minor', 35000, 'limit_currency', 'USD', 'sharing', 'shared', 'is_archived', false
       )
+    ),
+    jsonb_build_object(
+      'op_id', 'op-tx-dup-env', 'space_id', v_space, 'table', 'transaction',
+      'id', 'eeeeeeee-5555-4555-8555-555555555559'::uuid,
+      'payload', jsonb_build_object(
+        'id', 'eeeeeeee-5555-4555-8555-555555555559'::uuid, 'space_id', v_space,
+        'type', 'expense', 'amount_minor', 1200, 'currency', 'USD',
+        'member_id', v_u2, 'created_by', v_u2, 'method', 'cash',
+        'occurred_at', '2026-11-25T10:02:00.000Z', 'note', 'Apples',
+        '_has_envelope_link', true, '_envelope_id', v_env1_dup
+      )
     )
   ));
   if v_push->'results'->0->>'outcome' <> 'adopted_existing'
      or (v_push->'results'->0->>'replaced_id')::uuid <> v_env1_dup
-     or (v_push->'results'->0->'row'->>'id')::uuid <> v_env1 then
-    raise exception 'FAIL: natural-key collision adoption failed';
+     or (v_push->'results'->0->'row'->>'id')::uuid <> v_env1
+     or (v_push->'results'->1->'row'->>'_envelope_id')::uuid <> v_env1 then
+    raise exception 'FAIL: natural-key collision adoption or intra-batch remap failed: %', v_push;
   end if;
 
   -- 3-way merge + per-envelope budget_cycle_plan allocations merge

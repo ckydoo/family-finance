@@ -78,7 +78,7 @@ class MockSyncV2Server extends http.BaseClient {
         {
           'space_id': spaceId,
           'user_id': m.id,
-          'role': m.role.name,
+          'role': m.role == Role.admin ? 'co_parent' : m.role.name,
           'invite_status': 'active',
         },
     ];
@@ -104,7 +104,57 @@ class MockSyncV2Server extends http.BaseClient {
     };
   }
 
-  Map<String, Object?> _applyOp(Map<String, Object?> rawOp) {
+  static const List<String> _remappableFields = [
+    'id',
+    'account_id',
+    'envelope_id',
+    '_envelope_id',
+    'goal_id',
+    'list_id',
+    'recurring_rule_id',
+    'commitment_id',
+    'occurrence_id',
+    'campaign_id',
+    'pledge_id',
+    'debt_id',
+    'settled_tx_id',
+    'transaction_id',
+  ];
+
+  Map<String, Object?> _remapPayloadIds(
+    Map<String, Object?> src,
+    Map<String, String> idRemap,
+  ) {
+    if (idRemap.isEmpty) return src;
+    final out = Map<String, Object?>.from(src);
+    for (final field in _remappableFields) {
+      final v = out[field];
+      if (v is String && idRemap.containsKey(v)) {
+        out[field] = idRemap[v];
+      }
+    }
+    final alloc = out['allocations'];
+    if (alloc is Map) {
+      final mappedAlloc = <String, Object?>{};
+      for (final e in alloc.entries) {
+        final k = e.key.toString();
+        final mappedKey = idRemap[k] ?? k;
+        final prev = mappedAlloc[mappedKey];
+        if (prev is num && e.value is num) {
+          mappedAlloc[mappedKey] = prev + (e.value as num);
+        } else {
+          mappedAlloc[mappedKey] = e.value;
+        }
+      }
+      out['allocations'] = mappedAlloc;
+    }
+    return out;
+  }
+
+  Map<String, Object?> _applyOp(
+    Map<String, Object?> rawOp,
+    Map<String, String> idRemap,
+  ) {
     final opId = rawOp['op_id']?.toString() ?? '';
     if (opId.isNotEmpty && appliedOps.containsKey(opId)) {
       return appliedOps[opId]!;
@@ -112,14 +162,22 @@ class MockSyncV2Server extends http.BaseClient {
 
     final table = rawOp['table']?.toString() ?? '';
     final spaceId = rawOp['space_id']?.toString() ?? '';
-    final payload =
-        Map<String, Object?>.from((rawOp['payload'] as Map?) ?? const {});
+    final payload = _remapPayloadIds(
+      Map<String, Object?>.from((rawOp['payload'] as Map?) ?? const {}),
+      idRemap,
+    );
     final hasEnvFlag = payload.remove('_has_envelope_link') == true;
     final envId = payload.remove('_envelope_id')?.toString();
-    final rowId = (rawOp['id'] ?? payload['id'])?.toString() ?? '';
+    var rowId = (rawOp['id'] ?? payload['id'])?.toString() ?? '';
+    if (idRemap.containsKey(rowId)) {
+      rowId = idRemap[rowId]!;
+    }
     final baseUpdatedAt = rawOp['base_updated_at']?.toString();
     final baseMap = rawOp['base'] is Map
-        ? Map<String, Object?>.from(rawOp['base'] as Map)
+        ? _remapPayloadIds(
+            Map<String, Object?>.from(rawOp['base'] as Map),
+            idRemap,
+          )
         : null;
 
     final rows = tables.putIfAbsent(table, () => []);
@@ -250,9 +308,21 @@ class MockSyncV2Server extends http.BaseClient {
       final decoded = jsonDecode(bodyText) as Map<String, Object?>;
       final ops = (decoded['p_ops'] as List).cast<Map>();
       pushedTableBatches.add([for (final op in ops) '${op['table']}']);
-      final out = [
-        for (final op in ops) _applyOp(Map<String, Object?>.from(op)),
-      ];
+      final idRemap = <String, String>{};
+      final out = <Map<String, Object?>>[];
+      for (final op in ops) {
+        final res = _applyOp(Map<String, Object?>.from(op), idRemap);
+        if (res['outcome'] == 'adopted_existing') {
+          final replacedId = res['replaced_id']?.toString();
+          final canonicalId = (res['row'] as Map?)?['id']?.toString();
+          if (replacedId != null &&
+              canonicalId != null &&
+              replacedId != canonicalId) {
+            idRemap[replacedId] = canonicalId;
+          }
+        }
+        out.add(res);
+      }
       return _resp({'results': out}, 200);
     }
 

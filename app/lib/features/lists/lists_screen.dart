@@ -594,8 +594,7 @@ class _ListsScreenState extends State<ListsScreen> {
                 : () {
                     for (final item in purchased) {
                       if (selected.contains(item.id)) {
-                        state.addItem(item.name, item.qty, item.est,
-                            assignedToId: item.assignedToId);
+                        state.replanItem(item);
                       }
                     }
                     final count = selected.length;
@@ -700,9 +699,10 @@ Future<({String? envelopeId, Method method, Money customTotal})?>
     scannedItems = const [];
     scanNotice = null;
     refresh();
+    final itemWord = count == 1 ? 'item' : 'items';
     ScaffoldMessenger.of(sheetContext).showSnackBar(
       SnackBar(
-        content: Text('Added $count item${count == 1 ? '' : 's'} to the list'),
+        content: Text('Added $count $itemWord to the list'),
         behavior: SnackBarBehavior.floating,
       ),
     );

@@ -642,11 +642,14 @@ class Persistence {
     if (effectiveRows.isEmpty) return;
 
     final knownTxEnvelopes = <String, String?>{};
+    final knownTxAccounts = <String, String?>{};
     if (entity == 'tx') {
       for (final row in effectiveRows) {
         final id = row['id']?.toString();
         if (id == null || row['deleted_at'] != null) continue;
-        if (row['_has_envelope_link'] == true) continue;
+        if (row['_has_envelope_link'] == true && row['account_id'] != null) {
+          continue;
+        }
         final existing = await _d.query(
           'tx',
           columns: ['envelope_id', 'account_id'],
@@ -656,6 +659,8 @@ class Persistence {
         );
         knownTxEnvelopes[id] =
             existing.isEmpty ? null : existing.first['envelope_id'] as String?;
+        knownTxAccounts[id] =
+            existing.isEmpty ? null : existing.first['account_id'] as String?;
       }
     }
     final batch = _d.batch();
@@ -694,11 +699,13 @@ class Persistence {
             final envelopeId = hasAuthoritativeEnvelope
                 ? pulled.envelopeId
                 : (pulled.envelopeId ?? knownTxEnvelopes[pulled.id]);
-            final merged = envelopeId == pulled.envelopeId
+            final accountId = pulled.accountId ?? knownTxAccounts[pulled.id];
+            final merged = (envelopeId == pulled.envelopeId &&
+                    accountId == pulled.accountId)
                 ? pulled
                 : Tx(
                     id: pulled.id,
-                    accountId: pulled.accountId,
+                    accountId: accountId,
                     envelopeId: envelopeId,
                     memberId: pulled.memberId,
                     type: pulled.type,

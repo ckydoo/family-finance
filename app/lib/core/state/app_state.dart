@@ -2400,12 +2400,9 @@ class AppState extends ChangeNotifier {
           // between attributed and unattributed values on every live sync.
           final existing = txs.where((x) => x.id == pulled.id).firstOrNull;
           final hasAuthoritativeEnvelope = row['_has_envelope_link'] == true;
-          final hasAccountKey = row.containsKey('account_id');
           final t = Tx(
             id: pulled.id,
-            accountId: hasAccountKey
-                ? pulled.accountId
-                : (pulled.accountId ?? existing?.accountId),
+            accountId: pulled.accountId ?? existing?.accountId,
             envelopeId: hasAuthoritativeEnvelope
                 ? pulled.envelopeId
                 : (pulled.envelopeId ?? existing?.envelopeId),

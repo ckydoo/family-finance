@@ -1846,6 +1846,7 @@ class SyncEngine {
       final doneRowIds = <int>[];
       final retryRowIds = <int>[];
       final sentChatIds = <String>[];
+      final batchRemap = <String, String>{};
 
       for (final unit in units) {
         final res = byOpId[unit.opId];
@@ -1858,9 +1859,12 @@ class SyncEngine {
 
         final resStatus = res['status']?.toString();
         final outcome = res['outcome']?.toString();
-        final serverRow = res['row'] is Map
+        var serverRow = res['row'] is Map
             ? Map<String, Object?>.from(res['row'] as Map)
             : null;
+        if (serverRow != null && batchRemap.isNotEmpty) {
+          serverRow = _remapBatchRowIds(serverRow, batchRemap);
+        }
         final fallbackServerRow = res['server_row'] is Map
             ? Map<String, Object?>.from(res['server_row'] as Map)
             : null;
@@ -1873,6 +1877,9 @@ class SyncEngine {
               replacedId.isNotEmpty &&
               serverRow != null) {
             final canonicalId = serverRow['id']?.toString() ?? '';
+            if (canonicalId.isNotEmpty && canonicalId != replacedId) {
+              batchRemap[replacedId] = canonicalId;
+            }
             await _handleAdoptedExisting(
               unit.entity,
               replacedId,
@@ -1927,6 +1934,52 @@ class SyncEngine {
       }
       if (taken.length < 200) return;
     }
+  }
+
+  static const List<String> _remappableRowFields = [
+    'id',
+    'account_id',
+    'envelope_id',
+    '_envelope_id',
+    'goal_id',
+    'list_id',
+    'recurring_rule_id',
+    'commitment_id',
+    'occurrence_id',
+    'campaign_id',
+    'pledge_id',
+    'debt_id',
+    'settled_tx_id',
+    'transaction_id',
+  ];
+
+  Map<String, Object?> _remapBatchRowIds(
+    Map<String, Object?> row,
+    Map<String, String> idRemap,
+  ) {
+    final out = Map<String, Object?>.from(row);
+    for (final field in _remappableRowFields) {
+      final v = out[field];
+      if (v is String && idRemap.containsKey(v)) {
+        out[field] = idRemap[v];
+      }
+    }
+    final alloc = out['allocations'];
+    if (alloc is Map) {
+      final mapped = <String, Object?>{};
+      for (final e in alloc.entries) {
+        final k = e.key.toString();
+        final nk = idRemap[k] ?? k;
+        final prev = mapped[nk];
+        if (prev is num && e.value is num) {
+          mapped[nk] = prev + (e.value as num);
+        } else {
+          mapped[nk] = e.value;
+        }
+      }
+      out['allocations'] = mapped;
+    }
+    return out;
   }
 
   Future<void> _handleAdoptedExisting(
