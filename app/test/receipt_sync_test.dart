@@ -10,6 +10,7 @@ import 'package:mhuri_money/core/config/app_env.dart';
 import 'package:mhuri_money/core/db/app_database.dart';
 import 'package:mhuri_money/core/db/persistence.dart';
 import 'package:mhuri_money/core/models/models.dart';
+import 'package:mhuri_money/core/money/money.dart';
 import 'package:mhuri_money/core/state/app_state.dart';
 import 'package:mhuri_money/core/sync/outbox.dart';
 import 'package:mhuri_money/core/sync/receipt_storage_service.dart';
@@ -131,7 +132,7 @@ void main() {
   group('Receipt URL + extension helpers', () {
     test('normalizeAuthenticatedReceiptUrl rewrites to the authenticated path',
         () {
-      final base = 'https://oltc.supabase.co';
+      const base = 'https://oltc.supabase.co';
       expect(
         normalizeAuthenticatedReceiptUrl(
           supabaseUrl: base,
@@ -150,7 +151,7 @@ void main() {
     });
 
     test('normalizeAuthenticatedReceiptUrl rejects foreign origins + paths', () {
-      final base = 'https://oltc.supabase.co';
+      const base = 'https://oltc.supabase.co';
       expect(
         normalizeAuthenticatedReceiptUrl(
           supabaseUrl: base,
@@ -511,7 +512,7 @@ void main() {
       expect(lastPush['receipt_uri'], promoted.receiptUri);
 
       // The outbox is fully drained: promotion did not strand a row.
-      final outbox = Outbox(db);
+      final outbox = Outbox(db.raw);
       expect(await outbox.countConflicts(), 0);
     });
 

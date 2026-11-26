@@ -116,7 +116,7 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
       _state.attachReceiptStorage(receiptStorage);
       final engine = SyncEngine(
         client: SupabaseSyncClient(
-          baseUrl: url!,
+          baseUrl: url,
           anonKey: key ?? '',
           // Auth credentials live in Keychain/encrypted storage, never in the
           // SQLite family ledger. The controller owns refresh and persistence.
@@ -128,7 +128,8 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         kvGet: db.kvGet,
         kvSet: db.kvSet,
         // #1: offline-first receipt photo upload/cache against the private
-        // `receipts` bucket. Same credentials as the sync client.
+        // `receipts` bucket. Same credentials as the sync client. (The first
+        // `url!` above already promoted it to non-null.)
         receiptStorage: receiptStorage,
         // 401 mid-session → force one token refresh, retry once (#8).
         retryAuth: () async => await _auth.refreshAccessToken() != null,
