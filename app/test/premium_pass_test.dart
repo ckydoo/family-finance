@@ -103,8 +103,8 @@ void main() {
     );
     Money.localeTag = 'pt';
     expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1.240,50');
-    // Untranslated locales fall back to the en grouping.
-    Money.localeTag = 'sn';
+    // Unmapped locales fall back to the en grouping.
+    Money.localeTag = 'en';
     expect(Money.fromMajor(1240.50, Currency.usd).text, 'US\$ 1,240.50');
     Money.localeTag = null;
   });

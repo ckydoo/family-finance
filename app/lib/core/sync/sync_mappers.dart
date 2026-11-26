@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../money/money.dart';
 import '../planning/commitments.dart';
 import '../utils/ids.dart';
+import 'receipt_storage_service.dart';
 
 /// Context a mapper needs beyond the domain object itself.
 class SyncCtx {
@@ -587,7 +588,10 @@ final kSyncAdapters = <String, SyncAdapter>{
         // from the signed-in adult who recorded/approved it.
         'created_by': ctx.actorId ?? t.memberId,
         'deleted_at': t.deletedAt?.toUtc().toIso8601String(),
-        'receipt_uri': t.receiptUri,
+        // Never leak device-local file paths to the family ledger; pending
+        // offline receipt files are uploaded to the private `receipts` bucket
+        // first and promoted to authenticated HTTPS URLs.
+        'receipt_uri': isRemoteReceiptUri(t.receiptUri) ? t.receiptUri : null,
         'recurring_rule_id': t.recurringRuleId,
         '_has_envelope_link': true,
         '_envelope_id':

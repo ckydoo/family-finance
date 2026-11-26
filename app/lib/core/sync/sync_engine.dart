@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart'
@@ -14,6 +15,7 @@ import 'outbox.dart';
 import '../observability/reporter.dart';
 import '../billing/entitlement.dart';
 import 'realtime_sync_signal.dart';
+import 'receipt_storage_service.dart';
 import 'supabase_sync_client.dart';
 import 'sync_mappers.dart';
 
@@ -95,6 +97,7 @@ class SyncEngine {
     this.retryAuth,
     this.autoSchedule = true,
     this.useBatchProtocol,
+    this.receiptStorage,
     bool? enableRealtime,
     RealtimeSocketConnector? realtimeConnector,
   })  : _persistence = persistence,
@@ -147,6 +150,10 @@ class SyncEngine {
   /// Forces a token refresh after a 401 and lets [syncNow] retry exactly
   /// once before surfacing "sign in". Null (tests) = no retry.
   final Future<bool> Function()? retryAuth;
+
+  /// Optional private `receipts` Storage bridge (#1). Null (unit tests) =
+  /// staged offline receipt photos stay device-local and are simply skipped.
+  final ReceiptStorageService? receiptStorage;
 
   Timer? _timer;
   Timer? _debounce;
@@ -553,8 +560,11 @@ class SyncEngine {
 
   /// Enqueue a domain object as final server-shaped JSON. Called by AppState
   /// on every live-mode mutation; nothing waits on the network here.
+  /// [triggerSchedule] can be false when the caller is already inside a sync
+  /// cycle (e.g. receipt promotion during [_push]) and a debounced re-sync
+  /// would only add churn.
   Future<void> enqueue(String entity, Object domain,
-      {Object? base}) async {
+      {Object? base, bool triggerSchedule = true}) async {
     final sid = _spaceId;
     if (sid == null) return;
     try {
@@ -572,7 +582,7 @@ class SyncEngine {
       await _outbox.enqueue(entity, newClientId(), payload,
           basePayload: basePayload);
       state.refreshPending();
-      schedule();
+      if (triggerSchedule) schedule();
     } catch (e) {
       debugPrint('Mhuri outbox warning: $e');
       reportError?.call('outbox', e, StackTrace.current);
@@ -930,13 +940,25 @@ class SyncEngine {
     }
   }
 
-  Future<bool> saveFamilyMonthStart(int day) async {
+  Future<bool> saveFamilyMonthStart(int day) =>
+      saveFamilyCycleSettings(day: day, timezone: state.householdTimezone);
+
+  /// Persists payday start day + household timezone on `family_space` in one
+  /// round trip (migration 083 `set_family_cycle_settings`), so a Harare
+  /// family with members in London or New York all roll over together.
+  Future<bool> saveFamilyCycleSettings({
+    required int day,
+    String? timezone,
+  }) async {
     final sid = _spaceId;
     if (sid == null || day < 1 || day > 31) return false;
     try {
-      await client.rpc('set_family_month_start', {
+      await client.rpc('set_family_cycle_settings', {
         'p_space_id': sid,
         'p_day': day,
+        'p_timezone': (timezone == null || timezone.trim().isEmpty)
+            ? null
+            : timezone.trim(),
       });
       return true;
     } on SyncException catch (e) {
@@ -948,6 +970,36 @@ class SyncEngine {
     } catch (_) {
       _setStatus(SyncStatus.offline,
           'Could not update the family budget cycle. Try again.');
+      return false;
+    }
+  }
+
+  /// Persists household primary/secondary currency and optional custom FX rate
+  /// on `family_space` so every member device sees identical totals.
+  Future<bool> saveFamilyCurrencySettings({
+    required Currency primary,
+    required Currency? secondary,
+    double? customRate,
+  }) async {
+    final sid = _spaceId;
+    if (sid == null) return false;
+    try {
+      await client.rpc('set_family_currency_settings', {
+        'p_space_id': sid,
+        'p_primary': primary.code,
+        'p_secondary': secondary?.code,
+        'p_custom_rate': secondary == null ? null : customRate,
+      });
+      return true;
+    } on SyncException catch (e) {
+      _setStatus(
+        e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
+        e.message,
+      );
+      return false;
+    } catch (_) {
+      _setStatus(SyncStatus.offline,
+          'Could not sync family currency settings right now.');
       return false;
     }
   }
@@ -1791,11 +1843,64 @@ class SyncEngine {
 
   Future<void> _push() async {
     final sid = _spaceId;
+    // Promote staged offline receipt photos BEFORE the row push, so the same
+    // sync cycle sends the canonical remote URL instead of a device path (#1).
+    if (sid != null) {
+      await _syncPendingReceipts(sid);
+    }
     if (sid != null && _isSyncV2(sid)) {
       await _pushV2(sid);
       return;
     }
     await _pushLegacy();
+  }
+
+  /// Uploads every transaction's staged local receipt photo to the private
+  /// `receipts` bucket and swaps the local file path for the canonical
+  /// authenticated URL (idempotent - already-promoted rows are skipped).
+  /// Failures keep the local path so the next push retries automatically.
+  Future<void> _syncPendingReceipts(String sid) async {
+    final storage = receiptStorage;
+    if (storage == null) return;
+    try {
+      for (final tx in [...state.txs]) {
+        final uri = tx.receiptUri;
+        if (uri == null || isRemoteReceiptUri(uri)) continue;
+        final file = File(uri);
+        if (!await file.exists()) continue;
+        final Uint8List bytes;
+        try {
+          bytes = await file.readAsBytes();
+        } catch (e) {
+          debugPrint('Mhuri receipt read warning: $e');
+          continue;
+        }
+        if (bytes.isEmpty) continue;
+        try {
+          final remoteUrl = await storage.upload(
+            bytes: bytes,
+            spaceId: sid,
+            txId: tx.id,
+            extension: receiptExtensionOf(uri),
+            // Private-account receipts are owner-scoped objects
+            // (<space>/private/<owner>/<tx>.<ext>); family transactions
+            // share one household object per transaction.
+            privateOwnerUserId:
+                tx.accountId != null ? state.realUser.id : null,
+          );
+          await state.promoteTxReceiptUri(
+            tx.id,
+            remoteUrl,
+            scheduleSync: false,
+          );
+        } catch (e) {
+          debugPrint('Mhuri receipt upload warning: $e');
+          reportError?.call('receipt_upload', e, StackTrace.current);
+        }
+      }
+    } catch (e) {
+      debugPrint('Mhuri receipt sync warning: $e');
+    }
   }
 
   Future<void> _pushV2(String sid) async {
@@ -2563,21 +2668,35 @@ class SyncEngine {
       // children and viewers must enter the shared experience directly,
       // even if the creator has not finished every optional setup step.
       final stage = state.user.role == Role.owner ? familyStage : 'complete';
+      final rawCustomRate = settings['custom_rate'];
+      final customRate = rawCustomRate is num
+          ? rawCustomRate.toDouble()
+          : double.tryParse('${rawCustomRate ?? ''}');
       await state.applyFamilySetupSettings(
         stage: stage,
         primary: settings['primary_currency']?.toString() ??
             spaceRow['base_currency']?.toString(),
         secondary: settings['secondary_currency']?.toString(),
+        customRate: customRate,
+        rateMode: settings['rate_mode']?.toString(),
         // The typed family_space column is authoritative. Older setup
         // versions also stored this in JSON and could leave the two values
         // out of sync, causing totals to jump after the settings pull.
         monthStart: int.tryParse(
             '${spaceRow['month_start_day'] ?? settings['month_start_day'] ?? ''}'),
+        // Same precedence for the household timezone (spec #2): typed column
+        // first, JSON settings fallback for spaces synced before 083.
+        timezone: (spaceRow['timezone'] ?? settings['timezone'])?.toString(),
         templates: templates,
       );
     }
     if (settings is! Map) {
-      await state.applyFamilySetupSettings(stage: 'complete');
+      await state.applyFamilySetupSettings(
+        stage: 'complete',
+        primary: spaceRow['base_currency']?.toString(),
+        monthStart: int.tryParse('${spaceRow['month_start_day'] ?? ''}'),
+        timezone: spaceRow['timezone']?.toString(),
+      );
     }
     await state.applyRolePermissions(perms);
   }

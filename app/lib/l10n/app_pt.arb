@@ -745,5 +745,21 @@
   "renameChat": "Renomear conversa",
   "chatName": "Nome da conversa",
   "deleteChatQuestion": "Eliminar conversa?",
-  "delete": "Eliminar"
+  "delete": "Eliminar",
+  "askMhuriDeepAdvice": "Pedir conselho detalhado à IA",
+  "askMhuriInstantBadge": "Instantâneo · 0 limite usado",
+  "askMhuriPrivacyCaption": "Apenas registos familiares partilhados · As contas privadas permanecem privadas",
+  "askMhuriFollowUpLabel": "Perguntar a seguir",
+  "householdTimezone": "Fuso horário do agregado",
+  "householdTimezoneSub": "Os ciclos de pagamento viram à meia-noite neste fuso horário — as mesmas datas de orçamento para a família em casa e no estrangeiro",
+  "receiptPhoto": "Foto do recibo",
+  "receiptSavedToCloud": "Sincronizada com a nuvem da família",
+  "receiptWaitingUpload": "Será enviada quando voltar a ter ligação",
+  "receiptOnThisDevice": "Guardada neste dispositivo",
+  "receiptLoadFailed": "Não foi possível carregar esta foto do recibo",
+  "receiptCameraButton": "Câmara",
+  "receiptGalleryButton": "Galeria",
+  "receiptAdded": "Recibo adicionado",
+  "removeReceipt": "Remover recibo",
+  "cameraUnavailable": "Câmara indisponível. Verifique a permissão da câmara e tente novamente."
 }

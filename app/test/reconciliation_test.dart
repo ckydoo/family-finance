@@ -529,5 +529,48 @@ void main() {
       expect(transaction.accountId, account.id);
       expect(s.familyTransactions.contains(transaction), isFalse);
     });
+
+    test('rollover carry reconciles identically across remainingOn and reservedForEnvelopes',
+        () {
+      s.accounts
+        ..clear()
+        ..add(const Account(
+          id: 'shared-pool',
+          name: 'Household pool',
+          emoji: 'bank',
+          balance: Money(50000, Currency.usd),
+        ));
+      s.txs.clear();
+      s.txAllocations.clear();
+      s.goals.clear();
+      s.goalTxs.clear();
+      final groceries = Envelope(
+        id: 'env-roll',
+        name: 'Groceries',
+        emoji: 'cart',
+        limit: const Money(10000, Currency.usd),
+        rollover: Rollover.roll,
+      );
+      s.envelopes
+        ..clear()
+        ..add(groceries);
+
+      // Spend $30 in the previous cycle -> $70 carries forward ($170 effective limit).
+      final prevCycleTxTime = s.cycleStart.subtract(const Duration(days: 5));
+      s.addTx(
+        id: 'prev-cycle-spend',
+        envelopeId: groceries.id,
+        type: TxType.expense,
+        amount: const Money(3000, Currency.usd),
+        memberId: s.realUser.id,
+        method: Method.cash,
+        note: 'Last cycle groceries',
+        when: prevCycleTxTime,
+      );
+
+      expect(s.effectiveLimit(groceries).minor, 17000);
+      expect(s.remainingOn(groceries).minor, 17000);
+      expect(s.reservedForEnvelopes.minor, 17000);
+    });
   });
 }

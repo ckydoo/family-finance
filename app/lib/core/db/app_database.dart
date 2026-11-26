@@ -82,6 +82,7 @@ class AppDatabase {
     'onboarding_templates',
     'dismissed_getting_started',
     'month_start_day',
+    'household_timezone',
     'primary_currency',
     'secondary_currency',
     'displayCurrency',

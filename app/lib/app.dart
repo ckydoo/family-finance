@@ -7,12 +7,14 @@ import 'core/auth/recovery_link.dart';
 import 'core/config/app_env.dart';
 import 'core/firebase/firebase_services.dart';
 import 'core/db/app_database.dart';
+import 'core/l10n/app_strings.dart';
 import 'core/l10n/localization_delegates.dart';
 import 'core/notifications/notifier.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'core/db/persistence.dart';
 import 'core/models/models.dart' show Role;
 import 'core/state/app_state.dart';
+import 'core/sync/receipt_storage_service.dart';
 import 'core/sync/supabase_sync_client.dart';
 import 'core/sync/sync_engine.dart';
 import 'core/observability/reporter.dart';
@@ -104,9 +106,17 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
     final url = env.supabaseUrl;
     final key = env.supabaseAnonKey;
     if (_configured && db != null && (url?.isNotEmpty ?? false)) {
+      // #1: one shared receipt store for uploads (sync engine) and viewing
+      // (transaction tiles); both use the same auth token source.
+      final receiptStorage = ReceiptStorageService(
+        baseUrl: url!,
+        anonKey: key ?? '',
+        tokenGet: _auth.validAccessToken,
+      );
+      _state.attachReceiptStorage(receiptStorage);
       final engine = SyncEngine(
         client: SupabaseSyncClient(
-          baseUrl: url!,
+          baseUrl: url,
           anonKey: key ?? '',
           // Auth credentials live in Keychain/encrypted storage, never in the
           // SQLite family ledger. The controller owns refresh and persistence.
@@ -117,6 +127,10 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
         state: _state,
         kvGet: db.kvGet,
         kvSet: db.kvSet,
+        // #1: offline-first receipt photo upload/cache against the private
+        // `receipts` bucket. Same credentials as the sync client. (The first
+        // `url!` above already promoted it to non-null.)
+        receiptStorage: receiptStorage,
         // 401 mid-session → force one token refresh, retry once (#8).
         retryAuth: () async => await _auth.refreshAccessToken() != null,
       );
@@ -447,9 +461,10 @@ class _MhuriMoneyAppState extends State<MhuriMoneyApp>
                 : _state.themeMode == 2
                     ? ThemeMode.dark
                     : ThemeMode.system,
-            // M6 international: 6 languages, system-aware, user-overridable.
-            locale:
-                _state.localeCode.isEmpty ? null : Locale(_state.localeCode),
+            // M6 international: 4 languages (en, es, fr, pt), system-aware, user-overridable.
+            locale: _state.localeCode.isEmpty
+                ? null
+                : Locale(normalizeSupportedLocale(_state.localeCode)),
             localizationsDelegates: mhuriLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             // Android may deliver a failed OAuth callback twice: once through

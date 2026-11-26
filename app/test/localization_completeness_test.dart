@@ -13,7 +13,14 @@ void main() {
       expect(enKeys.length, greaterThan(150));
     });
 
-    const targetLangs = ['es', 'fr', 'nd', 'pt', 'sn'];
+    const targetLangs = ['es', 'fr', 'pt'];
+    const removedLangs = ['sn', 'nd'];
+
+    for (final removed in removedLangs) {
+      test('removed locale app_$removed.arb is no longer shipped', () {
+        expect(File('lib/l10n/app_$removed.arb').existsSync(), isFalse);
+      });
+    }
 
     for (final lang in targetLangs) {
       test('app_$lang.arb contains translations for all keys defined in app_en.arb', () {

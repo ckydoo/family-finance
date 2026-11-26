@@ -13,9 +13,16 @@ import '../../core/widgets/ui.dart';
 
 /// Full transaction feed grouped by day (spec §7.4).
 class ActivityScreen extends StatefulWidget {
-  const ActivityScreen({super.key, this.initialAccountId});
+  const ActivityScreen({
+    super.key,
+    this.initialAccountId,
+    this.initialMemberId,
+    this.initialType,
+  });
 
   final String? initialAccountId;
+  final String? initialMemberId;
+  final TxType? initialType;
 
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
@@ -35,6 +42,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   void initState() {
     super.initState();
     _accountId = widget.initialAccountId;
+    _memberId = widget.initialMemberId;
+    _type = widget.initialType;
   }
 
   bool get _hasFilters =>
@@ -245,27 +254,40 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     'currency': transaction.amount.currency.code,
                   },
                 ));
+    final seenFilteredTxIds = <String>{};
     final activities = sourceActivities.where((activity) {
       if (activity.action.startsWith('contribution.') ||
           activity.action.startsWith('contribution_campaign.')) {
         return false;
       }
-      if (_memberId != null && activity.actorId != _memberId) return false;
+      final tx = activity.entity == 'transaction'
+          ? s.txs.where((t) => t.id == activity.entityId).firstOrNull
+          : null;
+      if (_memberId != null) {
+        if (activity.entity == 'transaction') {
+          final txMemberId = (tx != null && tx.memberId.isNotEmpty)
+              ? tx.memberId
+              : (activity.detail['member_id']?.toString() ?? activity.actorId);
+          final matchesMember = _type != null
+              ? txMemberId == _memberId
+              : (txMemberId == _memberId || activity.actorId == _memberId);
+          if (!matchesMember) return false;
+        } else if (activity.actorId != _memberId) {
+          return false;
+        }
+      }
       if (privateAccount == null &&
-          activity.entity == 'transaction' &&
-          s.txs.any((tx) =>
-              tx.id == activity.entityId &&
-              tx.accountId != null &&
-              s.accounts.any((account) =>
-                  account.id == tx.accountId && account.isPrivate))) {
+          tx != null &&
+          tx.accountId != null &&
+          s.accounts.any(
+              (account) => account.id == tx.accountId && account.isPrivate)) {
         return false;
       }
       if (!_inPeriod(activity.at, now)) return false;
       final searchable = [
         activity.action,
         activity.entity,
-        if (activity.entity == 'transaction')
-          s.txs.where((tx) => tx.id == activity.entityId).firstOrNull?.note,
+        if (tx != null) tx.note,
         ...activity.detail.values.map((value) => '$value'),
       ].join(' ').toLowerCase();
       if (query.isNotEmpty && !searchable.contains(query)) {
@@ -273,8 +295,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
       }
       if (_type != null) {
         if (activity.entity != 'transaction') return false;
-        final tx = s.txs.where((t) => t.id == activity.entityId).firstOrNull;
-        if (tx == null || tx.type != _type) return false;
+        if (tx == null ||
+            tx.deletedAt != null ||
+            activity.action == 'tx.delete' ||
+            tx.type != _type) {
+          return false;
+        }
+        if (!seenFilteredTxIds.add(tx.id)) return false;
       }
       if (privateAccount != null && activity.entity != 'transaction') {
         return false;
@@ -412,8 +439,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       );
                     }
                     final activity = row as FamilyActivity;
-                    if (activity.entity == 'transaction') {
-                      final tx = s.txs
+                    if (activity.entity == 'transaction' &&
+                        activity.action != 'tx.delete') {
+                      final tx = s.liveTransactions
                           .where((t) => t.id == activity.entityId)
                           .firstOrNull;
                       if (tx != null) {

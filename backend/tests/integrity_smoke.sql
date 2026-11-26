@@ -888,11 +888,119 @@ begin
     raise exception 'FAIL: pull_family_changes page 2 pagination wrong';
   end if;
 
+  -- Household currency & FX sync (migration 081): non-admin blocked, admin syncs to family
+  perform set_config('request.jwt.claim.sub', v_u1::text, true);
+  perform public.change_member_role(v_u2, 'adult', v_space);
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
+  begin
+    perform public.set_family_currency_settings(v_space, 'USD', 'ZWG', 28.5);
+    raise exception 'FAIL: non-admin set_family_currency_settings should have failed';
+  exception
+    when others then
+      if sqlerrm <> 'ADMIN_REQUIRED' then
+        raise exception 'FAIL: expected ADMIN_REQUIRED, got %', sqlerrm;
+      end if;
+  end;
+
+  perform set_config('request.jwt.claim.sub', v_u1::text, true);
+  if (public.set_family_currency_settings(v_space, 'USD', 'ZWG', 28.5)->>'rate_mode') <> 'custom' then
+    raise exception 'FAIL: admin set_family_currency_settings did not persist custom rate';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
+  v_pull := public.pull_family_changes(v_space, v_pull2->'cursors', 50);
+  if (v_pull->'family_space'->0->'settings'->>'secondary_currency') <> 'ZWG'
+     or ((v_pull->'family_space'->0->'settings'->>'custom_rate')::numeric) <> 28.5 then
+    raise exception 'FAIL: synced family_space did not deliver household FX settings: %', v_pull->'family_space';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', v_u1::text, true);
+  if (public.set_family_currency_settings(v_space, 'USD', null, null)->>'rate_mode') <> 'single' then
+    raise exception 'FAIL: single-currency reset failed';
+  end if;
+
+  -- Verify 083 household timezone & payday cycle sync + receipt object access guards.
+  if (public.set_family_cycle_settings(v_space, 25, 'Europe/London')->>'timezone') <> 'Europe/London' then
+    raise exception 'FAIL: set_family_cycle_settings did not persist Europe/London';
+  end if;
+  begin
+    perform public.set_family_cycle_settings(v_space, 25, 'Invalid/Zone');
+    raise exception 'FAIL: set_family_cycle_settings accepted invalid timezone';
+  exception
+    when others then
+      if sqlerrm not like '%INVALID_TIMEZONE%' then
+        raise;
+      end if;
+  end;
+
+  -- Shared receipt readable by both members; private receipt isolated to owner.
+  if not public.can_access_receipt_object(v_space::text || '/shared/tx1.jpg', 'read')
+     or not public.can_access_receipt_object(v_space::text || '/private/' || v_u1::text || '/tx2.jpg', 'read') then
+    raise exception 'FAIL: owner could not access own shared/private receipt paths';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
+  if not public.can_access_receipt_object(v_space::text || '/shared/tx1.jpg', 'read') then
+    raise exception 'FAIL: co-parent could not read shared receipt path';
+  end if;
+  if public.can_access_receipt_object(v_space::text || '/private/' || v_u1::text || '/tx2.jpg', 'read') then
+    raise exception 'FAIL: co-parent accessed private receipt path of another member';
+  end if;
+  v_pull := public.pull_family_changes(v_space, v_pull->'cursors', 50);
+  if (v_pull->'family_space'->0->>'timezone') <> 'Europe/London'
+     or ((v_pull->'family_space'->0->>'month_start_day')::int) <> 25 then
+    raise exception 'FAIL: pull_family_changes did not sync cycle day + timezone: %', v_pull->'family_space';
+  end if;
+
+  reset role;
+  if not exists (select 1 from storage.buckets where id = 'receipts' and public = false) then
+    raise exception 'FAIL: private receipts bucket missing';
+  end if;
+  if (public.get_ask_mhuri_context(v_space, v_u1)->>'timezone') <> 'Europe/London' then
+    raise exception 'FAIL: get_ask_mhuri_context did not expose household timezone';
+  end if;
+
+  -- Verify 082 language CHECK: 'es' allowed, 'sn' and 'nd' rejected.
+  update public.user_profile set language = 'es' where id = v_u1;
+  begin
+    update public.user_profile set language = 'sn' where id = v_u1;
+    raise exception 'FAIL: user_profile accepted removed language sn';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    update public.user_profile set language = 'nd' where id = v_u1;
+    raise exception 'FAIL: user_profile accepted removed language nd';
+  exception
+    when check_violation then null;
+  end;
+  set local role authenticated;
+
+  perform set_config('request.jwt.claim.sub', v_u2::text, true);
   perform public.delete_own_account();
   perform set_config('request.jwt.claim.sub', v_u1::text, true);
   perform public.delete_own_account();
   reset role;
-  raise notice 'PASS Industrial Sync Engine v2 (push_sync_ops + pull_family_changes + 3-way merge + RLS)';
+
+  if (public.run_mhuri_maintenance()->>'ran_at') is null then
+    raise exception 'FAIL: run_mhuri_maintenance failed';
+  end if;
+  if exists (
+    select 1
+      from pg_constraint c
+      join pg_namespace n on n.oid = c.connamespace
+     where c.contype = 'f' and n.nspname = 'public'
+       and not exists (
+         select 1 from pg_index i
+          where i.indrelid = c.conrelid
+            and (i.indkey::smallint[])[0:cardinality(c.conkey)-1] @> c.conkey
+            and (i.indkey::smallint[])[0:cardinality(c.conkey)-1] <@ c.conkey
+       )
+  ) then
+    raise exception 'FAIL: unindexed foreign key detected in public schema';
+  end if;
+
+  raise notice 'PASS Industrial Sync Engine v2 + 081 Hardening + 082 Locales + 083 Receipts & Household TZ';
 end $$;
 
 select set_config('request.jwt.claim.sub', '', false);

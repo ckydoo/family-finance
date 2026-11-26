@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
@@ -589,7 +591,7 @@ class MembersScreen extends StatelessWidget {
               icon: Icons.workspace_premium_outlined,
               title: 'Points & rewards',
               subtitle: '${s.familyTaskPoints} family points',
-              screen: const _PointsRewardsScreen(),
+              screen: const PointsRewardsScreen(),
             ),
             _familyDestination(
               context,
@@ -1307,25 +1309,43 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
   if (s.secondaryCurrency != null) {
     final isZwgPair = s.primaryCurrency == Currency.zwg ||
         s.secondaryCurrency == Currency.zwg;
-    if (!isZwgPair && s.rate > 15) {
+    if (!isZwgPair && s.rate > 15 && s.canAdmin) {
       final def = s.primaryCurrency.defaultRateTo(s.secondaryCurrency!);
       s.setCustomRate(def);
     }
   }
+
+  void syncCurrencySettings({double? customRate}) {
+    final engine = s.sync;
+    if (!s.canAdmin || engine == null || !s.env.isConfigured) return;
+    unawaited(
+      engine.saveFamilyCurrencySettings(
+        primary: s.primaryCurrency,
+        secondary: s.secondaryCurrency,
+        customRate: customRate,
+      ),
+    );
+  }
+
   final rateCtrl = TextEditingController(text: s.rate.toString());
-    showMhuriSheet<void>(
-      context: context,
-      builder: (ctx) => AnimatedBuilder(
-        animation: s,
-        builder: (ctx, _) => MhuriSheetShell(
+  showMhuriSheet<void>(
+    context: context,
+    builder: (ctx) => AnimatedBuilder(
+      animation: s,
+      builder: (ctx, _) {
+        final canEditHouseholdCurrency = s.canAdmin;
+        return MhuriSheetShell(
           title: l.setCurrency,
-          footer: s.secondaryCurrency == null
+          footer: (s.secondaryCurrency == null || !canEditHouseholdCurrency)
               ? null
               : PrimaryButton(
                   label: l.rateSave,
                   onPressed: () {
                     final v = double.tryParse(rateCtrl.text.trim());
-                    if (v != null && v > 0) s.setCustomRate(v);
+                    if (v != null && v > 0) {
+                      s.setCustomRate(v);
+                      syncCurrencySettings(customRate: s.rate);
+                    }
                     Navigator.pop(ctx);
                   },
                 ),
@@ -1343,6 +1363,7 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<Currency>(
+                key: ValueKey('primary_${s.primaryCurrency.name}'),
                 initialValue: s.primaryCurrency,
                 isExpanded: true,
                 decoration: InputDecoration(
@@ -1357,12 +1378,15 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
                       child: Text('${c.long} (${c.symbol})'),
                     ),
                 ],
-                onChanged: (v) {
-                  if (v != null) {
-                    s.setPrimaryCurrency(v);
-                    rateCtrl.text = s.rate.toString();
-                  }
-                },
+                onChanged: !canEditHouseholdCurrency
+                    ? null
+                    : (v) {
+                        if (v != null) {
+                          s.setPrimaryCurrency(v);
+                          rateCtrl.text = s.rate.toString();
+                          syncCurrencySettings(customRate: null);
+                        }
+                      },
               ),
               const SizedBox(height: 14),
               Text(
@@ -1375,6 +1399,9 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<Currency?>(
+                key: ValueKey(
+                  'secondary_${s.primaryCurrency.name}_${s.secondaryCurrency?.name ?? 'none'}',
+                ),
                 initialValue: s.secondaryCurrency,
                 isExpanded: true,
                 decoration: InputDecoration(
@@ -1394,10 +1421,13 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
                       child: Text('${c.long} (${c.symbol})'),
                     ),
                 ],
-                onChanged: (v) {
-                  s.setSecondaryCurrency(v);
-                  rateCtrl.text = s.rate.toString();
-                },
+                onChanged: !canEditHouseholdCurrency
+                    ? null
+                    : (v) {
+                        s.setSecondaryCurrency(v);
+                        rateCtrl.text = s.rate.toString();
+                        syncCurrencySettings(customRate: null);
+                      },
               ),
               const SizedBox(height: 14),
               if (s.secondaryCurrency != null) ...[
@@ -1412,6 +1442,7 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
                 const SizedBox(height: 6),
                 TextField(
                   controller: rateCtrl,
+                  readOnly: !canEditHouseholdCurrency,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: amountInputFormatters,
@@ -1420,17 +1451,18 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
                     fillColor: ctx.card,
                     border:
                         const OutlineInputBorder(borderSide: BorderSide.none),
-                    suffixIcon: TextButton(
-                      onPressed: () {
-                        if (s.secondaryCurrency != null) {
-                          final def = s.primaryCurrency
-                              .defaultRateTo(s.secondaryCurrency!);
-                          s.setCustomRate(def);
-                          rateCtrl.text = def.toString();
-                        }
-                      },
-                      child: Text(l.rateReset),
-                    ),
+                    suffixIcon: !canEditHouseholdCurrency
+                        ? null
+                        : TextButton(
+                            onPressed: () {
+                              if (s.secondaryCurrency != null) {
+                                s.resetRateToDefault();
+                                rateCtrl.text = s.rate.toString();
+                                syncCurrencySettings(customRate: null);
+                              }
+                            },
+                            child: Text(l.rateReset),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1481,9 +1513,10 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
+      },
+    ),
+  );
 }
 
 void showPrivacySettingsSheet(BuildContext context, AppState s) {
@@ -1531,8 +1564,8 @@ void showPrivacySettingsSheet(BuildContext context, AppState s) {
   );
 }
 
-class _PointsRewardsScreen extends StatelessWidget {
-  const _PointsRewardsScreen();
+class PointsRewardsScreen extends StatelessWidget {
+  const PointsRewardsScreen({super.key});
 
   Future<void> _editLegacyChore(
     BuildContext context,
@@ -1646,11 +1679,17 @@ class _PointsRewardsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    final rosterById = <String, Member>{
+      for (final member in state.members) member.id: member,
+    };
+    if (rosterById.isEmpty) {
+      rosterById[state.user.id] = state.user;
+    }
     final pointsByMember = <String, int>{
-      for (final member in state.members)
+      for (final member in rosterById.values)
         member.id: state.pointsForMember(member.id),
     };
-    final ranking = state.members.toList()
+    final ranking = rosterById.values.toList()
       ..sort((a, b) =>
           (pointsByMember[b.id] ?? 0).compareTo(pointsByMember[a.id] ?? 0));
     return Scaffold(
@@ -1672,22 +1711,101 @@ class _PointsRewardsScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           for (var index = 0; index < ranking.length; index++)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: SizedBox(
-                width: 28,
-                child: Text('${index + 1}',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ),
-              title: Text(ranking[index].name),
-              trailing: Text('${pointsByMember[ranking[index].id] ?? 0} pts'),
+            Builder(builder: (context) {
+              final member = ranking[index];
+              final available = pointsByMember[member.id] ?? 0;
+              final earned = state.earnedPointsForMember(member.id);
+              final spent = state.spentPointsForMember(member.id);
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: SizedBox(
+                  width: 28,
+                  child: Text('${index + 1}',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                title: Text(member.name),
+                subtitle: spent > 0
+                    ? Text('$earned earned · $spent redeemed')
+                    : null,
+                trailing: Text(
+                  '$available pts',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              );
+            }),
+          const Divider(height: 28),
+          Text('Rewards', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (state.familyRewards.where((reward) => !reward.isArchived).isEmpty)
+            Text(
+              state.canApprove
+                  ? 'Add a reward for family members to work toward.'
+                  : 'No family rewards have been added yet.',
+              style: TextStyle(color: context.inkSoft),
             ),
+          for (final reward
+              in state.familyRewards.where((item) => !item.isArchived))
+            Builder(builder: (context) {
+              final actorName = state.member(reward.redeemedByMemberId ?? '')
+                      ?.name ??
+                  (reward.redeemedByMemberId == state.realUser.id
+                      ? state.realUser.name
+                      : null);
+              final memberPoints = state.pointsForMember(state.realUser.id);
+              final canRedeem = state.canRedeemFamilyRewards &&
+                  reward.redeemedAt == null &&
+                  memberPoints >= reward.pointsCost;
+              final showRedeemButton = state.canRedeemFamilyRewards &&
+                  (!state.canApprove || canRedeem);
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.card_giftcard_outlined),
+                title: Text(reward.name),
+                subtitle: Text(reward.description?.isNotEmpty == true
+                    ? '${reward.description} · ${reward.pointsCost} pts'
+                    : '${reward.pointsCost} pts'),
+                trailing: reward.redeemedAt != null
+                    ? Text('Redeemed by ${actorName ?? 'member'}')
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (showRedeemButton)
+                            FilledButton.tonal(
+                              onPressed: canRedeem
+                                  ? () => state.redeemFamilyReward(reward)
+                                  : null,
+                              child: Text(
+                                canRedeem
+                                    ? 'Redeem'
+                                    : '${(reward.pointsCost - memberPoints).clamp(0, reward.pointsCost)} more',
+                              ),
+                            ),
+                          if (state.canApprove)
+                            IconButton(
+                              tooltip: 'Archive reward',
+                              onPressed: () =>
+                                  state.archiveFamilyReward(reward),
+                              icon: const Icon(Icons.archive_outlined),
+                            ),
+                        ],
+                      ),
+              );
+            }),
           const Divider(height: 28),
           Row(
             children: [
               Expanded(
-                child: Text('Kids Mode chores',
-                    style: Theme.of(context).textTheme.titleMedium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Kids Mode chores',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Legacy chores award stars in Kids Mode.',
+                      style: TextStyle(fontSize: 12, color: context.inkSoft),
+                    ),
+                  ],
+                ),
               ),
               if (state.canApprove)
                 IconButton(
@@ -1716,53 +1834,6 @@ class _PointsRewardsScreen extends StatelessWidget {
                   ? () => _editLegacyChore(context, state, chore: chore)
                   : null,
             ),
-          const Divider(height: 28),
-          Text('Rewards', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (state.familyRewards.where((reward) => !reward.isArchived).isEmpty)
-            Text(
-              state.canApprove
-                  ? 'Add a reward for family members to work toward.'
-                  : 'No family rewards have been added yet.',
-              style: TextStyle(color: context.inkSoft),
-            ),
-          for (final reward
-              in state.familyRewards.where((item) => !item.isArchived))
-            Builder(builder: (context) {
-              final redeemedBy = reward.redeemedByMemberId == null
-                  ? null
-                  : state.member(reward.redeemedByMemberId!);
-              final memberPoints = state.pointsForMember(state.realUser.id);
-              final canRedeem = state.canSubmitFamilyTasks &&
-                  reward.redeemedAt == null &&
-                  memberPoints >= reward.pointsCost;
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.card_giftcard_outlined),
-                title: Text(reward.name),
-                subtitle: Text(reward.description?.isNotEmpty == true
-                    ? '${reward.description} · ${reward.pointsCost} pts'
-                    : '${reward.pointsCost} pts'),
-                trailing: reward.redeemedAt != null
-                    ? Text('Redeemed by ${redeemedBy?.name ?? 'member'}')
-                    : state.canApprove
-                        ? IconButton(
-                            tooltip: 'Archive reward',
-                            onPressed: () => state.archiveFamilyReward(reward),
-                            icon: const Icon(Icons.archive_outlined),
-                          )
-                        : state.canSubmitFamilyTasks
-                            ? FilledButton.tonal(
-                                onPressed: canRedeem
-                                    ? () => state.redeemFamilyReward(reward)
-                                    : null,
-                                child: Text(canRedeem
-                                    ? 'Redeem'
-                                    : '${(reward.pointsCost - memberPoints).clamp(0, reward.pointsCost)} more'),
-                              )
-                            : null,
-              );
-            }),
         ],
       ),
     );

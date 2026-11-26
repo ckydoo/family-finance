@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
+import '../../l10n/generated/app_localizations.dart';
 import '../models/models.dart';
 import '../money/money.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/when.dart';
 import 'app_icons.dart';
+import 'receipt_viewer.dart';
 import 'ui.dart';
 
 /// One transaction row - used on Home (recent) and Activity (full feed).
@@ -344,7 +346,7 @@ class TxTile extends StatelessWidget {
                                 .join(' · '),
                       ),
                     if (tx.receiptUri != null)
-                      _detailRow(sheetContext, 'Receipt', 'Attached'),
+                      _receiptRow(sheetContext, state, tx),
                     _detailRow(
                       sheetContext,
                       'Date & time',
@@ -354,6 +356,66 @@ class TxTile extends StatelessWidget {
                   ],
                 ),
         ),
+      ),
+    );
+  }
+
+  /// Receipt photo row (#1): thumbnail + sync status; tapping opens the
+  /// zoomable viewer backed by the offline cache / authenticated Storage.
+  Widget _receiptRow(BuildContext sheetContext, AppState state, Tx tx) {
+    final l = AppLocalizations.of(sheetContext)!;
+    final uri = tx.receiptUri!;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration:
+          BoxDecoration(border: Border(bottom: BorderSide(color: sheetContext.hairline))),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 116,
+            child: Text(
+              l.receiptPhoto,
+              style: TextStyle(fontSize: 12, color: sheetContext.inkSoft),
+            ),
+          ),
+          Expanded(
+            child: InkWell(
+              borderRadius: kBRadiusS,
+              onTap: () => showReceiptViewer(sheetContext, state: state, tx: tx),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    ReceiptThumb(
+                      receiptUri: uri,
+                      storage: state.receiptStorage,
+                      size: 44,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        receiptStatusLabel(
+                          sheetContext,
+                          receiptSyncStateOf(state, tx),
+                        ),
+                        textAlign: TextAlign.end,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: sheetContext.ink,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right,
+                        size: 18, color: sheetContext.inkSoft),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

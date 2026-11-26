@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/sync/receipt_storage_service.dart';
 import '../../core/utils/ids.dart';
 import '../../core/observability/reporter.dart';
 
@@ -11,6 +15,7 @@ import '../../core/state/app_state.dart';
 import '../../core/sync/sync_engine.dart' show SyncStatus;
 import '../../core/widgets/app_icons.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/receipt_viewer.dart';
 import '../../core/widgets/ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/l10n/app_strings.dart';
@@ -264,6 +269,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   final _amount = TextEditingController();
   final _note = TextEditingController();
   String? _receiptUri;
+  Uint8List? _receiptBytes;
   DateTime? _when;
   Map<String, Money> _allocations = {};
   late final DateTime _openedAt = DateTime.now();
@@ -318,6 +324,60 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   double? get _parsedAmount {
     final v = double.tryParse(_amount.text.replaceAll(',', ''));
     return (v == null || v <= 0) ? null : v;
+  }
+
+  /// Picks a receipt photo and stages it into the persistent local receipts
+  /// directory (#1) so OS temp-cache eviction cannot destroy an offline
+  /// receipt before the sync engine uploads it to the private bucket.
+  Future<void> _pickReceipt(ImageSource source) async {
+    try {
+      final file = await ImagePicker()
+          .pickImage(source: source, imageQuality: 82, maxWidth: 2048);
+      if (file == null || !mounted) return;
+      Uint8List bytes;
+      try {
+        bytes = await file.readAsBytes();
+      } catch (_) {
+        return;
+      }
+      final staged = await ReceiptStorageService.stageLocalReceipt(
+        bytes: bytes,
+        fallbackPath: file.path,
+      );
+      if (!mounted) return;
+      setState(() {
+        _receiptUri = staged;
+        _receiptBytes = bytes;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _amountError = AppLocalizations.of(context)!.cameraUnavailable;
+        });
+      }
+    }
+  }
+
+  void _previewStagedReceipt() {
+    final uri = _receiptUri;
+    final bytes = _receiptBytes;
+    if (uri == null) return;
+    if (bytes != null && bytes.isNotEmpty) {
+      showStagedReceiptViewer(context, path: uri, bytes: bytes);
+    } else {
+      unawaited(_previewFromDisk(uri));
+    }
+  }
+
+  Future<void> _previewFromDisk(String path) async {
+    try {
+      final bytes = await File(path).readAsBytes();
+      if (!mounted) return;
+      if (bytes.isEmpty) return;
+      showStagedReceiptViewer(context, path: path, bytes: bytes);
+    } catch (_) {
+      // Photo vanished from disk; nothing sensible to preview.
+    }
   }
 
   /// Guard only when the user actually typed something and did not save.
@@ -1292,26 +1352,18 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                   Row(children: [
                     Expanded(
                         child: OutlinedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final file = await ImagePicker().pickImage(
-                              source: ImageSource.camera, imageQuality: 82);
-                          if (file != null && mounted) {
-                            setState(() => _receiptUri = file.path);
-                          }
-                        } catch (_) {
-                          if (mounted) {
-                            setState(() => _amountError =
-                                'Camera unavailable. Check camera permission and try again.');
-                          }
-                        }
-                      },
-                      icon: Icon(_receiptUri == null
-                          ? Icons.camera_alt_outlined
-                          : Icons.check_circle_outline),
-                      label: Text(_receiptUri == null
-                          ? 'Add receipt'
-                          : 'Receipt added'),
+                      onPressed: () => _pickReceipt(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                      label:
+                          Text(AppLocalizations.of(context)!.receiptCameraButton),
+                    )),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: OutlinedButton.icon(
+                      onPressed: () => _pickReceipt(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_outlined, size: 18),
+                      label: Text(
+                          AppLocalizations.of(context)!.receiptGalleryButton),
                     )),
                     const SizedBox(width: 8),
                     Expanded(
@@ -1326,6 +1378,83 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                               _allocations.length)),
                     )),
                   ]),
+                  if (_receiptUri != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.surfaceSecondary,
+                        borderRadius: kBRadiusM,
+                        border: Border.all(color: context.hairline),
+                      ),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _previewStagedReceipt,
+                            child: ReceiptThumb(
+                              receiptUri: _receiptUri!,
+                              size: 52,
+                              borderRadius: 8,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_outline,
+                                        size: 15, color: Color(0xFF2E9E5B)),
+                                    const SizedBox(width: 5),
+                                    Expanded(
+                                      child: Text(
+                                        AppLocalizations.of(context)!
+                                            .receiptAdded,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF2E9E5B),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  s.sync != null && s.env.isConfigured
+                                      ? AppLocalizations.of(context)!
+                                          .receiptWaitingUpload
+                                      : AppLocalizations.of(context)!
+                                          .receiptOnThisDevice,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: context.inkSoft,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () =>
+                                setState(() {
+                                  _receiptUri = null;
+                                  _receiptBytes = null;
+                                }),
+                            icon: const Icon(Icons.close, size: 16),
+                            label: Text(
+                              AppLocalizations.of(context)!.removeReceipt,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 8),
               ],

@@ -120,11 +120,49 @@ void main() {
     expect(state.familyTaskPoints, 4);
 
     expect(state.addFamilyReward(name: 'Movie night', pointsCost: 4), isTrue);
-    final reward = state.familyRewards.single;
+    expect(state.addFamilyReward(name: 'Extra data', pointsCost: 2), isTrue);
+    final reward = state.familyRewards.first;
+    final secondReward = state.familyRewards.last;
     state.setRealUser(kid);
     expect(state.redeemFamilyReward(reward), isTrue);
     expect(state.redeemFamilyReward(reward), isFalse);
-    expect(state.familyRewards.single.redeemedByMemberId, kid.id);
+    expect(state.familyRewards.first.redeemedByMemberId, kid.id);
+
+    // Points balance accurately deducts redeemed cost (4 earned - 4 spent = 0).
+    expect(state.earnedPointsForMember(kid.id), 4);
+    expect(state.spentPointsForMember(kid.id), 4);
+    expect(state.pointsForMember(kid.id), 0);
+    expect(state.familyTaskPoints, 0);
+    expect(state.redeemFamilyReward(secondReward), isFalse);
+
+    // Admin cannot reopen a task whose points were already redeemed, and
+    // archiving a completed task keeps lifetime earned points intact.
+    final admin = state.members.firstWhere((member) => member.id == 'admin-a');
+    state.setRealUser(admin);
+    state.toggleFamilyTaskCompletion(state.familyTasks.single);
+    expect(state.familyTasks.single.status, FamilyTaskStatus.done);
+    state.updateFamilyTask(state.familyTasks.single.copyWith(isArchived: true));
+    expect(state.earnedPointsForMember(kid.id), 4);
+
+    // Admin 1-tap completion finishes immediately without self-approval limbo.
+    final adultTask = FamilyTask(
+      id: 'task-admin-direct',
+      title: 'Pay ZESA bill',
+      assigneeMemberId: admin.id,
+      createdByMemberId: admin.id,
+      createdAt: DateTime(2026, 9, 2),
+      points: 2,
+      requiresApproval: true,
+    );
+    state.addFamilyTask(adultTask);
+    state.toggleFamilyTaskCompletion(adultTask);
+    final savedAdultTask =
+        state.familyTasks.firstWhere((item) => item.id == 'task-admin-direct');
+    expect(savedAdultTask.status, FamilyTaskStatus.done);
+    expect(savedAdultTask.approvedByMemberId, admin.id);
+    expect(state.pointsForMember(admin.id), 2);
+    expect(state.redeemFamilyReward(secondReward), isTrue);
+    expect(state.pointsForMember(admin.id), 0);
   });
 
   test('shopping, savings, recurring and chore lifecycles are complete', () {

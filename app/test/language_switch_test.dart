@@ -7,7 +7,8 @@ import 'package:mhuri_money/features/settings/settings_screen.dart';
 import 'package:mhuri_money/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('switching to Shona in Settings keeps MaterialLocalizations available',
+  testWidgets(
+      'Settings language picker omits Shona/Ndebele and switches cleanly',
       (tester) async {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1;
@@ -39,12 +40,25 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('English'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('chiShona').last);
+
+    expect(find.text('chiShona'), findsNothing);
+    expect(find.text('isiNdebele'), findsNothing);
+    expect(find.text('Español'), findsWidgets);
+    expect(find.text('Français'), findsWidgets);
+    expect(find.text('Português'), findsWidgets);
+
+    await tester.tap(find.text('Español').last);
     await tester.pumpAndSettle();
 
-    expect(state.localeCode, 'sn');
+    expect(state.localeCode, 'es');
     expect(find.byType(AppBar), findsOneWidget);
     expect(tester.takeException(), isNull);
+
+    // Legacy removed codes safely normalize to English.
+    state.setLocale('sn');
+    expect(state.localeCode, 'en');
+    state.setLocale('nd');
+    expect(state.localeCode, 'en');
   });
 
   testWidgets('MembersScreen links cleanly to unified SettingsScreen',

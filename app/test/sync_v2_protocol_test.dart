@@ -326,6 +326,52 @@ class MockSyncV2Server extends http.BaseClient {
       return _resp({'results': out}, 200);
     }
 
+    if (path.endsWith('/rpc/set_family_currency_settings')) {
+      final decoded = jsonDecode(bodyText) as Map<String, Object?>;
+      final sid = decoded['p_space_id']?.toString() ?? '';
+      final primary = (decoded['p_primary']?.toString() ?? 'USD').toUpperCase();
+      final rawSec = decoded['p_secondary']?.toString().toUpperCase();
+      final secondary =
+          (rawSec == null || rawSec.isEmpty || rawSec == 'NONE') ? null : rawSec;
+      final customRate = (decoded['p_custom_rate'] as num?)?.toDouble();
+
+      final spaceRows = tables['family_space'] ?? [];
+      final idx = spaceRows.indexWhere((r) => r['id'] == sid);
+      if (idx >= 0) {
+        final existing = Map<String, Object?>.from(spaceRows[idx]);
+        final nextSettings = Map<String, Object?>.from(
+          (existing['settings'] as Map?) ?? const {},
+        )
+          ..remove('secondary_currency')
+          ..remove('custom_rate')
+          ..remove('rate_mode');
+        nextSettings['primary_currency'] = primary;
+        if (secondary != null) {
+          nextSettings['secondary_currency'] = secondary;
+          if (customRate != null && customRate > 0) {
+            nextSettings['custom_rate'] = customRate;
+            nextSettings['rate_mode'] = 'custom';
+          } else {
+            nextSettings['rate_mode'] = 'market';
+          }
+        }
+        existing['base_currency'] = primary;
+        existing['settings'] = nextSettings;
+        existing['sync_seq'] = nextSeq();
+        existing['updated_at'] = DateTime.now().toUtc().toIso8601String();
+        spaceRows[idx] = existing;
+      }
+      return _resp({
+        'space_id': sid,
+        'primary_currency': primary,
+        'secondary_currency': secondary,
+        'custom_rate': secondary == null ? null : customRate,
+        'rate_mode': secondary == null
+            ? 'single'
+            : (customRate != null && customRate > 0 ? 'custom' : 'market'),
+      }, 200);
+    }
+
     if (path.endsWith('/rpc/pull_family_changes')) {
       if (disableV2Rpcs) {
         return _resp(
@@ -943,6 +989,51 @@ void main() {
       signal.dispose();
       await Future<void>.delayed(const Duration(milliseconds: 10));
       expect(fakeWs.closed, isTrue);
+    });
+
+    test(
+        '9. Household currency & custom FX rate sync across devices without clobbering member display view',
+        () async {
+      // Device A (owner) enables ZiG secondary currency and sets 1 USD = 28.50 ZiG.
+      devA.state.setSecondaryCurrency(Currency.zwg);
+      devA.state.setCustomRate(28.50);
+      final saved = await devA.engine.saveFamilyCurrencySettings(
+        primary: Currency.usd,
+        secondary: Currency.zwg,
+        customRate: 28.50,
+      );
+      expect(saved, isTrue);
+
+      // Device B (co-parent) syncs and immediately converges on USD + ZiG @ 28.50.
+      await devB.sync();
+      expect(devB.state.primaryCurrency, Currency.usd);
+      expect(devB.state.secondaryCurrency, Currency.zwg);
+      expect(devB.state.rate, closeTo(28.50, 0.0001));
+
+      // Device B chooses ZiG as its personal display currency; subsequent syncs
+      // must neither reset displayCurrency back to USD nor clobber the 28.50 rate.
+      devB.state.setDisplayCurrency(Currency.zwg);
+      await devB.sync();
+      expect(devB.state.displayCurrency, Currency.zwg);
+      expect(devB.state.rate, closeTo(28.50, 0.0001));
+
+      // Device A resets the household rate back to market/benchmark.
+      devA.state.resetRateToDefault();
+      expect(
+        await devA.engine.saveFamilyCurrencySettings(
+          primary: Currency.usd,
+          secondary: Currency.zwg,
+          customRate: null,
+        ),
+        isTrue,
+      );
+
+      await devB.sync();
+      expect(
+        devB.state.rate,
+        closeTo(Currency.usd.defaultRateTo(Currency.zwg), 0.0001),
+      );
+      expect(devB.state.displayCurrency, Currency.zwg);
     });
   });
 }

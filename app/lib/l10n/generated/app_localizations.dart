@@ -8,9 +8,7 @@ import 'package:intl/intl.dart' as intl;
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
-import 'app_localizations_nd.dart';
 import 'app_localizations_pt.dart';
-import 'app_localizations_sn.dart';
 
 // ignore_for_file: type=lint
 
@@ -101,9 +99,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
-    Locale('nd'),
-    Locale('pt'),
-    Locale('sn')
+    Locale('pt')
   ];
 
   /// No description provided for @tabHome.
@@ -4521,6 +4517,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get delete;
+
+  /// No description provided for @askMhuriDeepAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI for deeper advice'**
+  String get askMhuriDeepAdvice;
+
+  /// No description provided for @askMhuriInstantBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant · 0 limit used'**
+  String get askMhuriInstantBadge;
+
+  /// No description provided for @askMhuriPrivacyCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared family records only · Private accounts stay private'**
+  String get askMhuriPrivacyCaption;
+
+  /// No description provided for @askMhuriFollowUpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask next'**
+  String get askMhuriFollowUpLabel;
+
+  /// No description provided for @householdTimezone.
+  ///
+  /// In en, this message translates to:
+  /// **'Household timezone'**
+  String get householdTimezone;
+
+  /// No description provided for @householdTimezoneSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Payday cycles roll over at midnight in this timezone — the same budget dates for family at home and abroad'**
+  String get householdTimezoneSub;
+
+  /// No description provided for @receiptPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt photo'**
+  String get receiptPhoto;
+
+  /// No description provided for @receiptSavedToCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced to the family cloud'**
+  String get receiptSavedToCloud;
+
+  /// No description provided for @receiptWaitingUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Will upload when you're back online'**
+  String get receiptWaitingUpload;
+
+  /// No description provided for @receiptOnThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device'**
+  String get receiptOnThisDevice;
+
+  /// No description provided for @receiptLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this receipt photo'**
+  String get receiptLoadFailed;
+
+  /// No description provided for @receiptCameraButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get receiptCameraButton;
+
+  /// No description provided for @receiptGalleryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get receiptGalleryButton;
+
+  /// No description provided for @receiptAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt added'**
+  String get receiptAdded;
+
+  /// No description provided for @removeReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove receipt'**
+  String get removeReceipt;
+
+  /// No description provided for @cameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera unavailable. Check camera permission and try again.'**
+  String get cameraUnavailable;
 }
 
 class _AppLocalizationsDelegate
@@ -4533,14 +4625,8 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) => <String>[
-        'en',
-        'es',
-        'fr',
-        'nd',
-        'pt',
-        'sn'
-      ].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'es', 'fr', 'pt'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -4555,12 +4641,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEs();
     case 'fr':
       return AppLocalizationsFr();
-    case 'nd':
-      return AppLocalizationsNd();
     case 'pt':
       return AppLocalizationsPt();
-    case 'sn':
-      return AppLocalizationsSn();
   }
 
   throw FlutterError(

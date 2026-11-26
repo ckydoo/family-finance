@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'arena/**']
   pull_request:
     branches: [main]
 
@@ -202,6 +202,20 @@ jobs:
             echo "POTENTIAL SECRETS FOUND:"; echo "$hits" | head -20; exit 1
           fi
           echo "✅ no credential patterns in tracked files (last 30 commits)"
+
+  edge_functions:
+    name: edge functions test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run Supabase Edge Function tests
+        run: |
+          node --experimental-strip-types --test \
+            supabase/functions/ask-mhuri/index_test.mjs \
+            supabase/functions/send-family-push/index_test.mjs
 
   android:
     name: android debug build (#18)

@@ -745,5 +745,21 @@
   "renameChat": "Renommer la conversation",
   "chatName": "Nom de la conversation",
   "deleteChatQuestion": "Supprimer la conversation ?",
-  "delete": "Supprimer"
+  "delete": "Supprimer",
+  "askMhuriDeepAdvice": "Demander un conseil approfondi à l’IA",
+  "askMhuriInstantBadge": "Instantané · 0 quota utilisé",
+  "askMhuriPrivacyCaption": "Données familiales partagées uniquement · Les comptes privés restent privés",
+  "askMhuriFollowUpLabel": "Question suivante",
+  "householdTimezone": "Fuseau horaire du foyer",
+  "householdTimezoneSub": "Les cycles de paie basculent à minuit dans ce fuseau horaire — les mêmes dates de budget pour la famille au pays et à l'étranger",
+  "receiptPhoto": "Photo du reçu",
+  "receiptSavedToCloud": "Synchronisée avec le cloud familial",
+  "receiptWaitingUpload": "Sera envoyée à votre retour en ligne",
+  "receiptOnThisDevice": "Enregistrée sur cet appareil",
+  "receiptLoadFailed": "Impossible de charger cette photo de reçu",
+  "receiptCameraButton": "Appareil photo",
+  "receiptGalleryButton": "Galerie",
+  "receiptAdded": "Reçu ajouté",
+  "removeReceipt": "Retirer le reçu",
+  "cameraUnavailable": "Appareil photo indisponible. Vérifiez l'autorisation de l'appareil photo et réessayez."
 }
