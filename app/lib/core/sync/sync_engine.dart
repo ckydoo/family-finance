@@ -952,6 +952,36 @@ class SyncEngine {
     }
   }
 
+  /// Persists household primary/secondary currency and optional custom FX rate
+  /// on `family_space` so every member device sees identical totals.
+  Future<bool> saveFamilyCurrencySettings({
+    required Currency primary,
+    required Currency? secondary,
+    double? customRate,
+  }) async {
+    final sid = _spaceId;
+    if (sid == null) return false;
+    try {
+      await client.rpc('set_family_currency_settings', {
+        'p_space_id': sid,
+        'p_primary': primary.code,
+        'p_secondary': secondary?.code,
+        'p_custom_rate': secondary == null ? null : customRate,
+      });
+      return true;
+    } on SyncException catch (e) {
+      _setStatus(
+        e.isAuthError ? SyncStatus.needsSignIn : SyncStatus.error,
+        e.message,
+      );
+      return false;
+    } catch (_) {
+      _setStatus(SyncStatus.offline,
+          'Could not sync family currency settings right now.');
+      return false;
+    }
+  }
+
   Future<bool> saveFamilySetup({
     required Currency primary,
     required Currency? secondary,
@@ -2563,11 +2593,17 @@ class SyncEngine {
       // children and viewers must enter the shared experience directly,
       // even if the creator has not finished every optional setup step.
       final stage = state.user.role == Role.owner ? familyStage : 'complete';
+      final rawCustomRate = settings['custom_rate'];
+      final customRate = rawCustomRate is num
+          ? rawCustomRate.toDouble()
+          : double.tryParse('${rawCustomRate ?? ''}');
       await state.applyFamilySetupSettings(
         stage: stage,
         primary: settings['primary_currency']?.toString() ??
             spaceRow['base_currency']?.toString(),
         secondary: settings['secondary_currency']?.toString(),
+        customRate: customRate,
+        rateMode: settings['rate_mode']?.toString(),
         // The typed family_space column is authoritative. Older setup
         // versions also stored this in JSON and could leave the two values
         // out of sync, causing totals to jump after the settings pull.
@@ -2577,7 +2613,11 @@ class SyncEngine {
       );
     }
     if (settings is! Map) {
-      await state.applyFamilySetupSettings(stage: 'complete');
+      await state.applyFamilySetupSettings(
+        stage: 'complete',
+        primary: spaceRow['base_currency']?.toString(),
+        monthStart: int.tryParse('${spaceRow['month_start_day'] ?? ''}'),
+      );
     }
     await state.applyRolePermissions(perms);
   }

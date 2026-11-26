@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
@@ -1307,25 +1309,43 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
   if (s.secondaryCurrency != null) {
     final isZwgPair = s.primaryCurrency == Currency.zwg ||
         s.secondaryCurrency == Currency.zwg;
-    if (!isZwgPair && s.rate > 15) {
+    if (!isZwgPair && s.rate > 15 && s.canAdmin) {
       final def = s.primaryCurrency.defaultRateTo(s.secondaryCurrency!);
       s.setCustomRate(def);
     }
   }
+
+  void syncCurrencySettings({double? customRate}) {
+    final engine = s.sync;
+    if (!s.canAdmin || engine == null || !s.env.isConfigured) return;
+    unawaited(
+      engine.saveFamilyCurrencySettings(
+        primary: s.primaryCurrency,
+        secondary: s.secondaryCurrency,
+        customRate: customRate,
+      ),
+    );
+  }
+
   final rateCtrl = TextEditingController(text: s.rate.toString());
-    showMhuriSheet<void>(
-      context: context,
-      builder: (ctx) => AnimatedBuilder(
-        animation: s,
-        builder: (ctx, _) => MhuriSheetShell(
+  showMhuriSheet<void>(
+    context: context,
+    builder: (ctx) => AnimatedBuilder(
+      animation: s,
+      builder: (ctx, _) {
+        final canEditHouseholdCurrency = s.canAdmin;
+        return MhuriSheetShell(
           title: l.setCurrency,
-          footer: s.secondaryCurrency == null
+          footer: (s.secondaryCurrency == null || !canEditHouseholdCurrency)
               ? null
               : PrimaryButton(
                   label: l.rateSave,
                   onPressed: () {
                     final v = double.tryParse(rateCtrl.text.trim());
-                    if (v != null && v > 0) s.setCustomRate(v);
+                    if (v != null && v > 0) {
+                      s.setCustomRate(v);
+                      syncCurrencySettings(customRate: s.rate);
+                    }
                     Navigator.pop(ctx);
                   },
                 ),
@@ -1343,6 +1363,7 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<Currency>(
+                key: ValueKey('primary_${s.primaryCurrency.name}'),
                 initialValue: s.primaryCurrency,
                 isExpanded: true,
                 decoration: InputDecoration(
@@ -1357,12 +1378,15 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
                       child: Text('${c.long} (${c.symbol})'),
                     ),
                 ],
-                onChanged: (v) {
-                  if (v != null) {
-                    s.setPrimaryCurrency(v);
-                    rateCtrl.text = s.rate.toString();
-                  }
-                },
+                onChanged: !canEditHouseholdCurrency
+                    ? null
+                    : (v) {
+                        if (v != null) {
+                          s.setPrimaryCurrency(v);
+                          rateCtrl.text = s.rate.toString();
+                          syncCurrencySettings(customRate: null);
+                        }
+                      },
               ),
               const SizedBox(height: 14),
               Text(
@@ -1375,6 +1399,9 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<Currency?>(
+                key: ValueKey(
+                  'secondary_${s.primaryCurrency.name}_${s.secondaryCurrency?.name ?? 'none'}',
+                ),
                 initialValue: s.secondaryCurrency,
                 isExpanded: true,
                 decoration: InputDecoration(
@@ -1394,10 +1421,13 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
                       child: Text('${c.long} (${c.symbol})'),
                     ),
                 ],
-                onChanged: (v) {
-                  s.setSecondaryCurrency(v);
-                  rateCtrl.text = s.rate.toString();
-                },
+                onChanged: !canEditHouseholdCurrency
+                    ? null
+                    : (v) {
+                        s.setSecondaryCurrency(v);
+                        rateCtrl.text = s.rate.toString();
+                        syncCurrencySettings(customRate: null);
+                      },
               ),
               const SizedBox(height: 14),
               if (s.secondaryCurrency != null) ...[
@@ -1412,6 +1442,7 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
                 const SizedBox(height: 6),
                 TextField(
                   controller: rateCtrl,
+                  readOnly: !canEditHouseholdCurrency,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: amountInputFormatters,
@@ -1420,17 +1451,18 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
                     fillColor: ctx.card,
                     border:
                         const OutlineInputBorder(borderSide: BorderSide.none),
-                    suffixIcon: TextButton(
-                      onPressed: () {
-                        if (s.secondaryCurrency != null) {
-                          final def = s.primaryCurrency
-                              .defaultRateTo(s.secondaryCurrency!);
-                          s.setCustomRate(def);
-                          rateCtrl.text = def.toString();
-                        }
-                      },
-                      child: Text(l.rateReset),
-                    ),
+                    suffixIcon: !canEditHouseholdCurrency
+                        ? null
+                        : TextButton(
+                            onPressed: () {
+                              if (s.secondaryCurrency != null) {
+                                s.resetRateToDefault();
+                                rateCtrl.text = s.rate.toString();
+                                syncCurrencySettings(customRate: null);
+                              }
+                            },
+                            child: Text(l.rateReset),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1481,9 +1513,10 @@ void showCurrencySettingsSheet(BuildContext context, AppState s) {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
+      },
+    ),
+  );
 }
 
 void showPrivacySettingsSheet(BuildContext context, AppState s) {

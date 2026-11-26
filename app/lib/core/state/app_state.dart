@@ -1173,6 +1173,8 @@ class AppState extends ChangeNotifier {
     required String stage,
     String? primary,
     String? secondary,
+    double? customRate,
+    String? rateMode,
     int? monthStart,
     List<Map<String, String>>? templates,
   }) async {
@@ -1186,12 +1188,79 @@ class AppState extends ChangeNotifier {
           .toList(growable: false);
       await db?.kvSet('onboarding_templates', jsonEncode(onboardingTemplates));
     }
-    final primaryValue = Currency.values.where((c) => c.code == primary);
-    if (primaryValue.isNotEmpty) setPrimaryCurrency(primaryValue.first);
-    final secondaryValue = Currency.values.where((c) => c.code == secondary);
-    setSecondaryCurrency(secondaryValue.isEmpty ? null : secondaryValue.first);
+    if (primary != null && primary.isNotEmpty) {
+      final primaryMatches = Currency.values.where((c) => c.code == primary);
+      if (primaryMatches.isNotEmpty) {
+        final nextPrimary = primaryMatches.first;
+        final secondaryMatches =
+            Currency.values.where((c) => c.code == secondary);
+        var nextSecondary =
+            secondaryMatches.isEmpty ? null : secondaryMatches.first;
+        if (nextSecondary == nextPrimary) nextSecondary = null;
+
+        final primaryChanged = primaryCurrency != nextPrimary;
+        final secondaryChanged = secondaryCurrency != nextSecondary;
+
+        primaryCurrency = nextPrimary;
+        secondaryCurrency = nextSecondary;
+        if (primaryChanged ||
+            (nextSecondary == null && displayCurrency != nextPrimary) ||
+            (displayCurrency != nextPrimary &&
+                displayCurrency != nextSecondary)) {
+          displayCurrency = nextPrimary;
+        }
+        Money.primaryCurrency = primaryCurrency;
+        Money.secondaryCurrency = secondaryCurrency;
+        await db?.kvSet('primary_currency', primaryCurrency.name);
+        await db?.kvSet('secondary_currency', secondaryCurrency?.name ?? 'none');
+        await db?.kvSet('displayCurrency', displayCurrency.name);
+
+        if (secondaryCurrency != null) {
+          final pairKey =
+              'rate_${primaryCurrency.name}_${secondaryCurrency!.name}';
+          if (customRate != null && customRate > 0) {
+            rate = customRate.clamp(0.0001, 10000000);
+            await db?.kvSet('custom_rate', rate.toStringAsFixed(4));
+            await db?.kvSet(pairKey, rate.toStringAsFixed(4));
+          } else if (rateMode == 'market') {
+            await db?.kvSet('custom_rate', '');
+            rate = await _resolveDefaultOrServerRate(
+              primaryCurrency,
+              secondaryCurrency!,
+            );
+            await db?.kvSet(pairKey, rate.toStringAsFixed(4));
+          } else if (primaryChanged || secondaryChanged) {
+            final savedPair = await db?.kvGet(pairKey);
+            final parsedPair =
+                savedPair == null ? null : double.tryParse(savedPair);
+            rate = (parsedPair != null && parsedPair > 0)
+                ? parsedPair
+                : primaryCurrency.defaultRateTo(secondaryCurrency!);
+            await db?.kvSet(pairKey, rate.toStringAsFixed(4));
+          }
+        }
+      }
+    }
     if (monthStart != null) setMonthStartDay(monthStart);
     notifyListeners();
+  }
+
+  Future<double> _resolveDefaultOrServerRate(
+    Currency primary,
+    Currency secondary,
+  ) async {
+    final cachedServer = await db?.kvGet('server_rate');
+    final serverUsdZwg =
+        cachedServer == null ? null : double.tryParse(cachedServer);
+    if (serverUsdZwg != null && serverUsdZwg > 0) {
+      if (primary == Currency.usd && secondary == Currency.zwg) {
+        return serverUsdZwg;
+      }
+      if (primary == Currency.zwg && secondary == Currency.usd) {
+        return double.parse((1.0 / serverUsdZwg).toStringAsFixed(4));
+      }
+    }
+    return primary.defaultRateTo(secondary);
   }
 
   /// Whether the guided first-time home state should be active.
@@ -2164,14 +2233,24 @@ class AppState extends ChangeNotifier {
     if (changed && notify) notifyListeners();
   }
 
-  /// Latest server FX snapshot - never overrides a user-set custom rate.
+  /// Latest server FX snapshot (`usd_zwg`) - never overrides a user-set
+  /// custom rate, and only updates `rate` when the active pair is USD/ZWG.
   Future<void> applyServerRate(double v) async {
+    if (v <= 0) return;
+    _persistKv('server_rate', v.toStringAsFixed(4));
     if (await db?.kvGet('custom_rate') case final cr? when cr.isNotEmpty) {
       return; // user override wins (spec §5.1 market profile)
     }
-    if ((v - rate).abs() < 0.0001) return;
-    rate = v;
-    _persistKv('server_rate', v.toStringAsFixed(4));
+    double? effective;
+    if (primaryCurrency == Currency.usd &&
+        (secondaryCurrency == null || secondaryCurrency == Currency.zwg)) {
+      effective = v;
+    } else if (primaryCurrency == Currency.zwg &&
+        secondaryCurrency == Currency.usd) {
+      effective = double.parse((1.0 / v).toStringAsFixed(4));
+    }
+    if (effective == null || (effective - rate).abs() < 0.0001) return;
+    rate = effective;
     notifyListeners();
   }
 
@@ -3161,6 +3240,17 @@ class AppState extends ChangeNotifier {
     rate = r.clamp(0.0001, 10000000);
     _persistKv('custom_rate', rate.toStringAsFixed(4));
     if (secondaryCurrency != null) {
+      _persistKv('rate_${primaryCurrency.name}_${secondaryCurrency!.name}',
+          rate.toStringAsFixed(4));
+    }
+    notifyListeners();
+  }
+
+  /// Clears a manual custom rate override so benchmark / server FX applies.
+  void resetRateToDefault() {
+    _persistKv('custom_rate', '');
+    if (secondaryCurrency != null) {
+      rate = primaryCurrency.defaultRateTo(secondaryCurrency!);
       _persistKv('rate_${primaryCurrency.name}_${secondaryCurrency!.name}',
           rate.toStringAsFixed(4));
     }
