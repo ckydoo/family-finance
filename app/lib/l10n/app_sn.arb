@@ -745,5 +745,9 @@
   "renameChat": "Tumidza hurukuro patsva",
   "chatName": "Zita rehurukuro",
   "deleteChatQuestion": "Dzima hurukuro here?",
-  "delete": "Dzima"
+  "delete": "Dzima",
+  "askMhuriDeepAdvice": "Bvunza AI mazano akadzama",
+  "askMhuriInstantBadge": "Pakarepo · 0 mukana washandiswa",
+  "askMhuriPrivacyCaption": "Zvinyorwa zvemhuri chete · Maakaundi epachivande anogara akavanzika",
+  "askMhuriFollowUpLabel": "Bvunza zvinotevera"
 }

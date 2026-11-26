@@ -2495,4 +2495,16 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get delete => 'Eliminar';
+
+  @override
+  String get askMhuriDeepAdvice => 'Pedir conselho detalhado à IA';
+
+  @override
+  String get askMhuriInstantBadge => 'Instantâneo · 0 limite usado';
+
+  @override
+  String get askMhuriPrivacyCaption => 'Apenas registos familiares partilhados · As contas privadas permanecem privadas';
+
+  @override
+  String get askMhuriFollowUpLabel => 'Perguntar a seguir';
 }

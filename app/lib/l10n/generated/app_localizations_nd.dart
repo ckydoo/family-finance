@@ -2491,4 +2491,16 @@ class AppLocalizationsNd extends AppLocalizations {
 
   @override
   String get delete => 'Susa';
+
+  @override
+  String get askMhuriDeepAdvice => 'Buza i-AI icebo elijulileyo';
+
+  @override
+  String get askMhuriInstantBadge => 'Khonokho · 0 umkhawulo osetshisiweyo';
+
+  @override
+  String get askMhuriPrivacyCaption => 'Izinto zemuli ezabiwayo kuphela · Ama-akhawunti angasese ahlala efihlakele';
+
+  @override
+  String get askMhuriFollowUpLabel => 'Buza okulandelayo';
 }

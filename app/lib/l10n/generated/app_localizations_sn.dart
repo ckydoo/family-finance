@@ -2488,4 +2488,16 @@ class AppLocalizationsSn extends AppLocalizations {
 
   @override
   String get delete => 'Dzima';
+
+  @override
+  String get askMhuriDeepAdvice => 'Bvunza AI mazano akadzama';
+
+  @override
+  String get askMhuriInstantBadge => 'Pakarepo · 0 mukana washandiswa';
+
+  @override
+  String get askMhuriPrivacyCaption => 'Zvinyorwa zvemhuri chete · Maakaundi epachivande anogara akavanzika';
+
+  @override
+  String get askMhuriFollowUpLabel => 'Bvunza zvinotevera';
 }

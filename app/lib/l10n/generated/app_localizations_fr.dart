@@ -2510,4 +2510,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get delete => 'Supprimer';
+
+  @override
+  String get askMhuriDeepAdvice => 'Demander un conseil approfondi à l’IA';
+
+  @override
+  String get askMhuriInstantBadge => 'Instantané · 0 quota utilisé';
+
+  @override
+  String get askMhuriPrivacyCaption => 'Données familiales partagées uniquement · Les comptes privés restent privés';
+
+  @override
+  String get askMhuriFollowUpLabel => 'Question suivante';
 }

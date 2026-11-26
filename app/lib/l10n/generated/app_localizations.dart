@@ -4521,6 +4521,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get delete;
+
+  /// No description provided for @askMhuriDeepAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI for deeper advice'**
+  String get askMhuriDeepAdvice;
+
+  /// No description provided for @askMhuriInstantBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant · 0 limit used'**
+  String get askMhuriInstantBadge;
+
+  /// No description provided for @askMhuriPrivacyCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared family records only · Private accounts stay private'**
+  String get askMhuriPrivacyCaption;
+
+  /// No description provided for @askMhuriFollowUpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask next'**
+  String get askMhuriFollowUpLabel;
 }
 
 class _AppLocalizationsDelegate

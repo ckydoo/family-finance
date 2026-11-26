@@ -745,5 +745,9 @@
   "renameChat": "Tshintsha ibizo lengxoxo",
   "chatName": "Ibizo lengxoxo",
   "deleteChatQuestion": "Susa ingxoxo?",
-  "delete": "Susa"
+  "delete": "Susa",
+  "askMhuriDeepAdvice": "Buza i-AI icebo elijulileyo",
+  "askMhuriInstantBadge": "Khonokho · 0 umkhawulo osetshisiweyo",
+  "askMhuriPrivacyCaption": "Izinto zemuli ezabiwayo kuphela · Ama-akhawunti angasese ahlala efihlakele",
+  "askMhuriFollowUpLabel": "Buza okulandelayo"
 }

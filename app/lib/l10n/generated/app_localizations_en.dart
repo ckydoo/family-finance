@@ -2479,4 +2479,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get delete => 'Delete';
+
+  @override
+  String get askMhuriDeepAdvice => 'Ask AI for deeper advice';
+
+  @override
+  String get askMhuriInstantBadge => 'Instant · 0 limit used';
+
+  @override
+  String get askMhuriPrivacyCaption => 'Shared family records only · Private accounts stay private';
+
+  @override
+  String get askMhuriFollowUpLabel => 'Ask next';
 }

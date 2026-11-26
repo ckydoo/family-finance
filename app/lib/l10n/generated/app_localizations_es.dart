@@ -2501,4 +2501,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get delete => 'Eliminar';
+
+  @override
+  String get askMhuriDeepAdvice => 'Pedir consejo detallado a la IA';
+
+  @override
+  String get askMhuriInstantBadge => 'Instantáneo · 0 límite usado';
+
+  @override
+  String get askMhuriPrivacyCaption => 'Solo registros familiares compartidos · Las cuentas privadas siguen siendo privadas';
+
+  @override
+  String get askMhuriFollowUpLabel => 'Preguntar después';
 }

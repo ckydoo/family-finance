@@ -1169,5 +1169,9 @@
   "renameChat": "Rename chat",
   "chatName": "Chat name",
   "deleteChatQuestion": "Delete chat?",
-  "delete": "Delete"
+  "delete": "Delete",
+  "askMhuriDeepAdvice": "Ask AI for deeper advice",
+  "askMhuriInstantBadge": "Instant · 0 limit used",
+  "askMhuriPrivacyCaption": "Shared family records only · Private accounts stay private",
+  "askMhuriFollowUpLabel": "Ask next"
 }

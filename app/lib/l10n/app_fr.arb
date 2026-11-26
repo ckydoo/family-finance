@@ -745,5 +745,9 @@
   "renameChat": "Renommer la conversation",
   "chatName": "Nom de la conversation",
   "deleteChatQuestion": "Supprimer la conversation ?",
-  "delete": "Supprimer"
+  "delete": "Supprimer",
+  "askMhuriDeepAdvice": "Demander un conseil approfondi à l’IA",
+  "askMhuriInstantBadge": "Instantané · 0 quota utilisé",
+  "askMhuriPrivacyCaption": "Données familiales partagées uniquement · Les comptes privés restent privés",
+  "askMhuriFollowUpLabel": "Question suivante"
 }

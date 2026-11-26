@@ -745,5 +745,9 @@
   "renameChat": "Cambiar nombre del chat",
   "chatName": "Nombre del chat",
   "deleteChatQuestion": "¿Eliminar chat?",
-  "delete": "Eliminar"
+  "delete": "Eliminar",
+  "askMhuriDeepAdvice": "Pedir consejo detallado a la IA",
+  "askMhuriInstantBadge": "Instantáneo · 0 límite usado",
+  "askMhuriPrivacyCaption": "Solo registros familiares compartidos · Las cuentas privadas siguen siendo privadas",
+  "askMhuriFollowUpLabel": "Preguntar después"
 }
